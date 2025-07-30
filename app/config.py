@@ -1,6 +1,8 @@
 import json
 import os
 
+NL_PREFIX = "notifynl"
+
 
 class Config:
     ADMIN_CLIENT_SECRET = os.environ.get("ADMIN_CLIENT_SECRET")
@@ -103,19 +105,32 @@ class Config:
     FEEDBACK_ZENDESK_SUBJECT_PREFIX_ENABLED = os.environ.get("FEEDBACK_ZENDESK_SUBJECT_PREFIX_ENABLED", "1") == "1"
 
 
-class Development(Config):
+class ConfigNL(Config):
+    S3_BUCKET_CSV_UPLOAD = os.environ.get("S3_BUCKET_CSV_UPLOAD")
+    S3_BUCKET_CONTACT_LIST_UPLOAD = os.environ.get("S3_BUCKET_CONTACT_LIST_UPLOAD")
+    S3_BUCKET_LOGO_UPLOAD = os.environ.get("S3_BUCKET_LOGO_UPLOAD")
+    S3_BUCKET_MOU = os.environ.get("S3_BUCKET_MOU")
+    S3_BUCKET_TRANSIENT_UPLOADED_LETTERS = os.environ.get("S3_BUCKET_TRANSIENT_UPLOADED_LETTERS")
+    S3_BUCKET_PRECOMPILED_ORIGINALS_BACKUP_LETTERS = os.environ.get("S3_BUCKET_PRECOMPILED_ORIGINALS_BACKUP_LETTERS")
+    S3_BUCKET_LETTER_ATTACHMENTS = os.environ.get("S3_BUCKET_LETTER_ATTACHMENTS")
+    S3_BUCKET_REPORT_REQUESTS_DOWNLOAD = os.environ.get("S3_BUCKET_REPORT_REQUESTS_DOWNLOAD")
+
+
+class Development(ConfigNL):
+    NOTIFY_ENVIRONMENT = "development"
     SERVER_NAME = os.getenv("SERVER_NAME")
     DEBUG = True
     SESSION_COOKIE_SECURE = False
     SESSION_PROTECTION = None
-    S3_BUCKET_CSV_UPLOAD = "development-notifications-csv-upload"
-    S3_BUCKET_CONTACT_LIST_UPLOAD = "development-contact-list"
-    S3_BUCKET_LOGO_UPLOAD = "public-logos-tools"
-    S3_BUCKET_MOU = "notify.tools-mou"
-    S3_BUCKET_TRANSIENT_UPLOADED_LETTERS = "development-transient-uploaded-letters"
-    S3_BUCKET_PRECOMPILED_ORIGINALS_BACKUP_LETTERS = "development-letters-precompiled-originals-backup"
-    S3_BUCKET_LETTER_ATTACHMENTS = "development-letter-attachments"
-    S3_BUCKET_REPORT_REQUESTS_DOWNLOAD = "development-report-requests-download"
+
+    S3_BUCKET_CSV_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-csv-upload"
+    S3_BUCKET_CONTACT_LIST = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-contact-list"
+    S3_BUCKET_LOGO_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-logo-upload"
+    S3_BUCKET_MOU = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-mou"
+    S3_BUCKET_TRANSIENT_UPLOADED_LETTERS = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-transient-uploaded-letters"
+    S3_BUCKET_PRECOMPILED_ORIGINALS_BACKUP_LETTERS = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-precompiled-original-letters"
+    S3_BUCKET_LETTER_ATTACHMENTS = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-letter-attachments"
+    S3_BUCKET_REPORT_REQUESTS_DOWNLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-report-requests-download"
 
     LOGO_CDN_DOMAIN = "static-logos.notify.tools"
 
