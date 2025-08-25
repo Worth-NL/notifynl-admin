@@ -78,8 +78,8 @@ html.rhc-theme {
         justify-content: center;
 
         .logo-bg {
-            width: 80px;
-            height: 110px;
+
+            padding-bottom: 20px;
             display: inline-flex;
             align-items: center;
 
@@ -97,10 +97,11 @@ html.rhc-theme {
 
     .govuk-header {
         background-color: var(--rhc-color-lintblauw-500);
+        margin-bottom: 0;
+        border-bottom: 0;
 
         .govuk-header__container {
             border: none;
-            padding-bottom: 10px;
         }
     }
 
@@ -203,6 +204,7 @@ html.rhc-theme {
 
     .govuk-footer {
         background: var(--rhc-color-lichtblauw-100);
+        border: none;
 
         .govuk-footer__heading+ul {
             margin-top: 30px;
@@ -359,6 +361,10 @@ html.rhc-theme {
 
 @media (min-width: 48.0625em) {
     .govuk-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+
         .govuk-header__container {
             display: flex;
             flex-direction: row;
