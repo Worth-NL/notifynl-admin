@@ -176,7 +176,7 @@ def test_should_show_job_in_progress(
         job_id=fake_uuid,
     )
     assert [normalize_spaces(link.text) for link in page.select(".pill a:not(.pill-item--selected)")] == [
-        "10 sending text messages",
+        "10 delivering text messages",
         "0 delivered text messages",
         "0 failed text messages",
     ]
@@ -199,7 +199,7 @@ def test_should_show_job_without_notifications(
         job_id=fake_uuid,
     )
     assert [normalize_spaces(link.text) for link in page.select(".pill a:not(.pill-item--selected)")] == [
-        "10 sending text messages",
+        "10 delivering text messages",
         "0 delivered text messages",
         "0 failed text messages",
     ]
@@ -293,7 +293,7 @@ def test_should_show_old_job(
     assert page.select_one("tbody").text.strip() == expected_message
     assert [normalize_spaces(column.text) for column in page.select("main .govuk-grid-column-one-quarter")] == [
         "1 total text messages",
-        "1 sending text message",
+        "1 delivering text message",
         "0 delivered text messages",
         "0 failed text messages",
     ]
@@ -328,7 +328,7 @@ def test_should_show_letter_job(
         "1 Example Street template subject 1 January at 11:09am"
     )
     assert normalize_spaces(page.select(".keyline-block")[0].text) == "1 Letter"
-    assert normalize_spaces(page.select(".keyline-block")[1].text) == "6 January Estimated delivery date"
+    assert normalize_spaces(page.select(".keyline-block")[1].text) == "11 January Estimated delivery date"
     assert page.select_one("a[id=download-job-report]")["href"] == url_for(
         "main.view_job_csv",
         service_id=SERVICE_ONE_ID,
