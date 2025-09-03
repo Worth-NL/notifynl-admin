@@ -24,7 +24,6 @@ from app.main.views_nl import (  # noqa
     jobs,
     join_service,
     letter_branding,
-    make_your_service_live,
     manage_users,
     new_password,
     notifications,

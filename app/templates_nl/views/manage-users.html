@@ -37,9 +37,9 @@
                 </span>&ensp;
               {%- endif -%}
               <span class="hint">
-              {%- if user.status == 'pending' -%}
+              {%- if user.is_invited_user and user.status == 'pending' -%}
                 <span class="live-search-relevant">{{ user.email_address }}</span> (uitgenodigd)
-              {%- elif user.status == 'cancelled' -%}
+              {%- elif user.is_invited_user and user.status == 'cancelled' -%}
                 <span class="live-search-relevant">{{ user.email_address }}</span> (uitnodiging geannuleerd)
               {%- elif user.id == current_user.id -%}
                 <span class="live-search-relevant">(jij)</span>
@@ -56,7 +56,7 @@
                 ) }}
               {% endfor %}
             </ul>
-            {# alleen tonen als de dienst mappen heeft #}
+            {# only show if the service has folders #}
             {% if current_service.all_template_folders %}
               <p class="govuk-body tick-cross__hint">
                 {% set folder_count = user.template_folders_for_service(current_service) | length %}

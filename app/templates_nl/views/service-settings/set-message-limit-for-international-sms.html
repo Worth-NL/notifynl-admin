@@ -22,6 +22,9 @@
         <p class="govuk-body">
             Aantal internationale sms-berichten dat deze dienst per dag mag versturen.
         </p>
+
+        {{ ajax_block(partials, updates_url, 'remaining_limit') }}
+
         <p class="govuk-body">
             Bij het kiezen van een limiet moet u rekening houden met:
         </p>
