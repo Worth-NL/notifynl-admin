@@ -81,7 +81,7 @@ def get_example_csv_rows(template, use_example_as_example=True, submitted_fields
 
 
 def get_example_letter_address(key):
-    return {"address line 1": "A. Naam", "address line 2": "Voorbeeldstraat 123", "address line 3": "1234 AB"}.get(
+    return {"address line 1": "A. Name", "address line 2": "123 Example Street", "address line 3": "XM4 5HQ"}.get(
         key, ""
     )
 
@@ -141,16 +141,11 @@ def send_messages(service_id, template_id):
                 )
             )
         except (UnicodeDecodeError, BadZipFile, XLRDError):
-            current_app.logger.warning("Kon %s niet lezen", form.file.data.filename, exc_info=True)
-            form.file.errors = ["Notify kan dit bestand niet lezen - probeer een ander bestandstype te gebruiken"]
+            current_app.logger.warning("Could not read %s", form.file.data.filename, exc_info=True)
+            form.file.errors = ["Notify cannot read this file - try using a different file type"]
         except XLDateError:
-            current_app.logger.warning(
-                "Kon nummers/datums in %s niet verwerken", form.file.data.filename, exc_info=True
-            )
-            form.file.errors = [
-                "Notify kan dit bestand niet lezen - probeer het in plaats daarvan op te slaan als een CSV-bestand"
-            ]
-
+            current_app.logger.warning("Could not parse numbers/dates in %s", form.file.data.filename, exc_info=True)
+            form.file.errors = ["Notify cannot read this file - try saving it as a CSV instead"]
     elif form.errors:
         # just show the first error, as we don't expect the form to have more
         # than one, since it only has one field
@@ -261,18 +256,18 @@ def set_sender(service_id, template_id):
 def get_sender_context(sender_details, template_type):
     context = {
         "email": {
-            "title": "Waar moeten de antwoorden heen?",
-            "description": "Waar moeten de antwoorden heen?",
+            "title": "Where should replies come back to?",
+            "description": "Where should replies come back to?",
             "field_name": "email_address",
         },
         "letter": {
-            "title": "Verzenden naar één ontvanger",
-            "description": "Wat moet er rechtsboven in de brief staan?",
+            "title": "Send to one recipient",
+            "description": "What should appear in the top right of the letter?",
             "field_name": "contact_block",
         },
         "sms": {
-            "title": "Van wie komt het bericht?",
-            "description": "Van wie komt het bericht?",
+            "title": "Who should the message come from?",
+            "description": "Who should the message come from?",
             "field_name": "sms_sender",
         },
     }[template_type]
