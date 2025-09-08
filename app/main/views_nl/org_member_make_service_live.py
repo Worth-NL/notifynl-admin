@@ -36,6 +36,8 @@ def org_member_make_service_live_check_unique(service_id):
 
     form = UniqueServiceForm(service_name=current_service.name)
 
+    # Re-populate the form field data from URL query args, if present. This allows backlinks to take a user back to
+    # this page and display the state the page was on when they submitted the form previously.
     if (unique := request.args.get("unique")) and unique in {"yes", "unsure", "no"} and request.method == "GET":
         form.is_unique.data = unique
 
@@ -87,6 +89,8 @@ def org_member_make_service_live_service_name(service_id):
         choices_for_error_message="‘ja’ als de naam van de dienst duidelijk te begrijpen is",
     )
 
+    # Re-populate the form field data from URL query args, if present. This allows backlinks to take a user back to
+    # this page and display the state the page was on when they submitted the form previously.
     if (name := request.args.get("name")) and name in {"ok", "bad"} and request.method == "GET":
         form.enabled.data = name == "ok"
 
@@ -132,6 +136,7 @@ def org_member_make_service_live_contact_user(service_id):
     if not current_user.can_make_service_live(current_service):
         abort(403)
 
+    # Validate expected query params
     name = request.args.get("name", "").lower()
     unique = request.args.get("unique", "").lower()
     if "name" not in request.args or "unique" not in request.args:

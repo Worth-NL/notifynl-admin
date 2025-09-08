@@ -334,10 +334,7 @@ def confirm_edit_user_email(service_id, user_id):
 
         return redirect(url_for(".manage_users", service_id=service_id))
     return render_template(
-        "views/manage-users/confirm-edit-user-email.html",
-        user=user,
-        service_id=service_id,
-        new_email=new_email,
+        "views/manage-users/confirm-edit-user-email.html", user=user, service_id=service_id, new_email=new_email
     )
 
 
