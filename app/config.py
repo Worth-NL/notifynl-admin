@@ -262,4 +262,4 @@ class ProdNL(Config):
     S3_BUCKET_REPORT_REQUESTS_DOWNLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-report-requests-download"
 
 
-configs = {"development": DevNL, "test": TestNL, "acceptance": AccNL, "production": ProdNL}
+configs = {"development": DevNL, "test": Test, "acceptance": AccNL, "production": ProdNL}
