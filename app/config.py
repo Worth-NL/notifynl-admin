@@ -1,6 +1,10 @@
 import json
 import os
 
+from config_nl import Acceptance, Production
+from config_nl import Development as DevNL
+from config_nl import Test as TestNL
+
 
 class Config:
     ADMIN_CLIENT_SECRET = os.environ.get("ADMIN_CLIENT_SECRET")
@@ -170,8 +174,4 @@ class Sandbox(CloudFoundryConfig):
     NOTIFY_ENVIRONMENT = "sandbox"
 
 
-configs = {
-    "development": Development,
-    "test": Test,
-    "sandbox": Sandbox,
-}
+configs = {"development": DevNL, "test": TestNL, "acceptance": Acceptance, "production": Production}
