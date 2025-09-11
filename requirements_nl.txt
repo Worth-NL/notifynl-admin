@@ -9,9 +9,11 @@ blinker==1.9.0
     #   flask
     #   gds-metrics
     #   sentry-sdk
+
 boto3==1.40.28
     # via notifications-utils
 botocore==1.40.28
+
     # via
     #   boto3
     #   s3transfer
