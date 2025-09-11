@@ -73,20 +73,21 @@ html.rhc-theme {
     }
 
     .dutch-logo-above-header {
-        display: flex;
         align-items: center;
+        display: flex;
         justify-content: center;
 
+
         .logo-bg {
-            width: 80px;
-            height: 110px;
-            display: inline-flex;
             align-items: center;
+            display: inline-flex;
+            width: auto;
 
             svg {
                 fill: var(--rhc-color-lintblauw-500);
-                max-width: 100%;
                 height: auto;
+                width: 60px;
+                margin-bottom: 10px;
             }
         }
     }
@@ -97,10 +98,14 @@ html.rhc-theme {
 
     .govuk-header {
         background-color: var(--rhc-color-lintblauw-500);
+        padding: 10px 0;
+        border: none;
 
-        .govuk-header__container {
+
+        .govuk-header__container,
+        .govuk-header__logo {
+            padding: 0px;
             border: none;
-            padding-bottom: 10px;
         }
     }
 
@@ -253,6 +258,19 @@ html.rhc-theme {
         font-family: var(--utrecht-heading-3-font-family);
         color: var(--utrecht-heading-3-color)
     }
+
+    @media (min-width: 40.0625em) {
+        .heading-large {
+            margin-bottom: .5555555556em;
+            margin-top: 1.25em;
+        }
+
+        .heading-medium {
+            margin-top: .8333333333em;
+            margin-bottom: .8333333333em;
+        }
+    }
+
 
 
     .big-number-with-status {
