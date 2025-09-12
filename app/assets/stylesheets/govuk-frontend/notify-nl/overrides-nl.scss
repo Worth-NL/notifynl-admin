@@ -69,7 +69,9 @@ html.rhc-theme {
 
     // hide inconcistent data with NL service
     .nl-hide-demo,
-    .nl-hide {
+    .nl-hide,
+    .govuk-footer__licence-description,
+    .govuk-footer__copyright-logo {
         display: none;
     }
 
