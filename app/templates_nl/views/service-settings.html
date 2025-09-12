@@ -48,7 +48,7 @@
               "text": "Aanmeldmethode"
             },
             "value": {
-              "text": ("E-maillink of sms-code" if current_service.has_permission("email_auth") else "SMS-code")
+              "text": ("E-maillink of SMS-code" if current_service.has_permission("email_auth") else "SMS-code")
             },
             "actions": {
               "items": [
@@ -101,7 +101,7 @@
       {% endset %}
 
       {% set email_limit_html %}
-        {{ "{} per day".format(current_service.get_message_limit("email")|format_thousands) }}
+        {{ "{} per dag".format(current_service.get_message_limit("email")|format_thousands) }}
         <div class="govuk-hint">
           {{ current_service.sent_today("email")|format_thousands + " sent today" }}
         </div>
@@ -207,9 +207,9 @@
                   "visuallyHiddenText": "bestanden per e-mail verzenden",
                   "classes": "govuk-link--no-visited-state"
                 }
-              ]
+              ] if current_user.has_permissions('manage_service') else []
             }
-          }
+          },
         ]%}
       {% endif %}
 
@@ -219,7 +219,7 @@
           {
             "key": {
               "classes": "notify-summary-list__key notify-summary-list__key--35-100",
-              "text": "Email limit",
+              "text": "E -maillimiet",
             },
             "value": {
               "text": email_limit_html,
@@ -229,7 +229,7 @@
               "items": [
                 {
                   "href": url_for("main.set_daily_message_limit", service_id=current_service.id, daily_limit_type="email"),
-                  "text": "Change",
+                  "text": "Wijzigen",
                   "visuallyHiddenText": "daily {} limit".format("email"|format_notification_type|lower),
                   "classes": "govuk-link--no-visited-state"
                 }
@@ -249,6 +249,7 @@
     {% endset %}
 
     {% set service_text_message_settings %}
+
       {% set text_message_sender_ids_html %}
         {{ current_service.default_sms_sender | nl2br if current_service.default_sms_sender else 'Geen' }}
         {% if current_service.count_sms_senders > 1 %}
@@ -259,16 +260,16 @@
       {% endset %}
 
       {% set text_message_limit_html %}
-        {{ "{} per day".format(current_service.get_message_limit("sms")|format_thousands) }}
+        {{ "{} per dag".format(current_service.get_message_limit("sms")|format_thousands) }}
         <div class="govuk-hint">
-          {{ current_service.sent_today("sms")|format_thousands + " sent today" }}
+          {{ current_service.sent_today("sms")|format_thousands + " vandaag verzonden" }}
         </div>
       {% endset %}
 
       {% set international_text_message_limit_html %}
-        {{ "{} per day".format(current_service.get_message_limit("international_sms")|format_thousands) }}
+        {{ "{} per dag".format(current_service.get_message_limit("international_sms")|format_thousands) }}
         <div class="govuk-hint">
-          {{ current_service.sent_today("international_sms")|format_thousands + " sent today" }}
+          {{ current_service.sent_today("international_sms")|format_thousands + " vandaag verzonden" }}
         </div>
       {% endset %}
 
@@ -294,7 +295,7 @@
                 "visuallyHiddenText": "uw instellingen voor het verzenden van sms-berichten",
                 "classes": "govuk-link--no-visited-state"
               }
-            ]
+            ] if current_user.has_permissions('manage_service') else []
           }
         }
       ]%}
@@ -339,7 +340,7 @@
                   "visuallyHiddenText": "uw instellingen voor het starten van sms-berichten met servicenaam",
                   "classes": "govuk-link--no-visited-state"
                 }
-              ]
+              ] if current_user.has_permissions('manage_service') else []
             }
           },
           {
@@ -358,7 +359,7 @@
                   "visuallyHiddenText": "uw instellingen voor het ontvangen van sms-berichten",
                   "classes": "govuk-link--no-visited-state"
                 }
-              ]
+              ] if current_user.has_permissions('manage_service') else []
             }
           },
         ]%}
@@ -373,14 +374,14 @@
               "text": "Internationale sms-berichten verzenden"
             },
             "value": {
-              "text": "Aan" if current_service.has_permission("international_sms") else "Uit"
+              "text": "Aan" if current_service.has_permission("international_sms") else "Uit",
               "classes": "govuk-summary-list__value--truncate"
             },
             "actions": {
               "items": [
                 {
                   "href": url_for("main.set_daily_message_limit", service_id=current_service.id, daily_limit_type="sms"),
-                  "text": "Change",
+                  "text": "Wijzigen",
                   "visuallyHiddenText": "daily {} limit".format("sms"|format_notification_type|lower),
                   "classes": "govuk-link--no-visited-state"
                 }
@@ -430,9 +431,9 @@
             "actions": {
               "items": [
                 {
-                  "href": url_for('main.set_per_day_international_sms_message_limit', service_id=current_service.id),
+                  "href": url_for("main.set_per_day_international_sms_message_limit", service_id=current_service.id),
                   "text": "Wijzigen",
-                  visuallyHiddenText": "dagelijkse limiet internationale sms {}".format("sms"|format_notification_type|lower),
+                  "visuallyHiddenText": "dagelijkse limiet internationale sms {}".format("sms"|format_notification_type|lower),
 
                   "classes": "govuk-link--no-visited-state"
                 }
@@ -453,7 +454,7 @@
 {% set service_letter_settings %}
 
     {% set letter_limit_html %}
-      {{ "{} per day".format(current_service.get_message_limit("letter")|format_thousands) }}
+      {{ "{} per dag".format(current_service.get_message_limit("letter")|format_thousands) }}
       <div class="govuk-hint">
         {{ current_service.sent_today("letter")|format_thousands + " sent today" }}
       </div>
@@ -560,7 +561,7 @@
                 }
               ] if current_user.has_permissions('manage_service') else []
             }
-          }
+          },
         ] %}
       {% endif %}
       <!-- only show limit page for live services -->
@@ -579,7 +580,7 @@
               "items": [
                 {
                 "href": url_for("main.set_daily_message_limit", service_id=current_service.id, daily_limit_type="letter"),
-                "text": "Change",
+                "text": "Wijzigen",
                 "visuallyHiddenText": "daily {} limit".format("letter"|format_notification_type|lower),
                 "classes": "govuk-link--no-visited-state"
                 }

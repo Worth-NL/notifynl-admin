@@ -179,7 +179,7 @@ class HeaderNavigation(Navigation):
                 0,
                 {
                     "href": url_for("main.your_services"),
-                    "text": "Your services",
+                    "text": "Uw diensten",
                     "active": not any(self.is_selected(item) for item in self.mapping.keys()),
                 },
             )
