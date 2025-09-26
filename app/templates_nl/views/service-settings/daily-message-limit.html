@@ -33,18 +33,15 @@
 
         <ul class="govuk-list govuk-list--bullet">
             <li>what you need to change your limit to</li>
-
             {% if daily_limit_type == "letter" %}
                 <li>de start- en einddata van uw briefcampagne</li>
                 <lihet totale aantal letters dat uw service gedurende deze tijd zal verzenden</li>
                 <li>het aantal pagina's per letter</li>
                 <li>de verzendklasse die u gaat gebruiken</li>
-
             {% else %}
                 <li>hoe lang moet u uw limiet verhogen</li>
                 <li>het totale aantal {{ 3|message_count_noun(daily_limit_type) }} dat uw service gedurende deze tijd zal verzenden</li>
             {% endif %}
-
         </ul>
     </div>
 </div>

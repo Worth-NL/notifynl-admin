@@ -91,7 +91,7 @@
           {{ retention_text }}
         </p>
       </div>
-    {% else %}
+      {% else %}
         {% if can_download %}
         <p class="bottom-gutter">
             <a href="{{ download_link }}" class="govuk-link govuk-link--no-visited-state govuk-!-font-weight-bold">
@@ -101,13 +101,14 @@
           {{ retention_text }}
         </p>
         {% else %}
-            <a class="govuk-link govuk-link--no-visited-state govuk-!-font-weight-bold" href="{{ url_for('main.feedback', ticket_type='ask-question-give-feedback') }}">
-                Neem contact op met de helpdesk om dit rapport te downloaden
-            </a>
-    </p>
+        <p class="bottom-gutter">
+          <a class="govuk-link govuk-link--no-visited-state govuk-!-font-weight-bold" href="{{ url_for('main.feedback', ticket_type='ask-question-give-feedback') }}">
+              Neem contact op met de helpdesk om dit rapport te downloaden
+          </a>
+        </p>
+        {% endif %}
       {% endif %}
     {% endif %}
-  {% endif %}
 
   {{ ajax_block(
     partials,

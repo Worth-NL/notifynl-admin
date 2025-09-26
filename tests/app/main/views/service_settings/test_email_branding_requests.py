@@ -810,7 +810,7 @@ def test_email_branding_request_submit(
 
     mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
     mock_send_ticket_to_zendesk = mocker.patch(
-        "app.main.views.service_settings.index.zendesk_client.send_ticket_to_zendesk",
+        "app.main.views_nl.service_settings.index.zendesk_client.send_ticket_to_zendesk",
         autospec=True,
     )
 
@@ -1047,7 +1047,7 @@ def test_POST_email_branding_enter_government_identity_logo_text(
     mocker,
 ):
     mock_send_ticket_to_zendesk = mocker.patch(
-        "app.main.views.service_settings.index.zendesk_client.send_ticket_to_zendesk",
+        "app.main.views_nl.service_settings.index.zendesk_client.send_ticket_to_zendesk",
         autospec=True,
     )
     mock_flash = mocker.patch("app.main.views_nl.service_settings.branding.flash", autospec=True)
