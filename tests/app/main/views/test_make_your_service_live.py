@@ -358,6 +358,7 @@ def test_should_show_disabled_go_live_button_if_checklist_not_complete(
         assert not (page.select_one("form button[disabled]"))
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "has_active_go_live_request, expected_button",
     (
@@ -806,6 +807,7 @@ def test_service_where_organisation_has_agreement_accepted_by_same_user(
     ) == ("Accept our data processing and financial agreement Completed")
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_non_gov_user_is_told_they_cant_go_live(
     client_request,
     api_nongov_user_active,

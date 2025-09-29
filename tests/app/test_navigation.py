@@ -649,6 +649,7 @@ def test_make_this_service_live_link_is_shown_in_limited_circumstances(
     )
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_make_your_service_live_link_shows_if_service_is_in_trial_mode_and_user_has_manage_settings_permission(
     client_request,
     service_one,

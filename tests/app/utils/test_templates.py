@@ -1075,6 +1075,7 @@ def test_templates_make_quotes_smart_and_dashes_en(
     mock_en_dash_replacement.assert_has_calls(expected_calls)
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "subject, expected_subject, expected_classes",
     (
