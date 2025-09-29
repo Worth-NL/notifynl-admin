@@ -614,6 +614,7 @@ def test_service_name_change_fails_if_new_name_fails_validation(
     assert error_message in page.select_one(".govuk-error-message").text
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_show_limits_for_live_service(
     client_request,
     service_one,

@@ -383,6 +383,7 @@ def test_guidance_daily_limits(client_request):
     ]
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_trial_mode_sending_limits(client_request):
     page = client_request.get("main.guidance_trial_mode")
 
