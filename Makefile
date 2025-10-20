@@ -114,7 +114,7 @@ upload-static: check-env-vars
 bootstrap-nl: generate-version-file ## Set up everything to run the app
 	uv pip install -r requirements_nl_test.txt
 	npm ci --no-audit
-	. environment.sh; npm run build
+	npm run build
 
 .PHONY: test-nl
 test-nl: ## Set environment to test
