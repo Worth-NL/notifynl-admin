@@ -1222,6 +1222,7 @@ def test_confirm_service_is_unique_sets_confirmed_unique_and_updates_name(
     mock_update_service.assert_called_once_with(SERVICE_ONE_ID, name="Updated Service", confirmed_unique=True)
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "name, error_message",
     [

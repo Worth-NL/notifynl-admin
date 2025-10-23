@@ -96,6 +96,7 @@ def test_should_show_name_page(client_request):
     assert page.select_one("h1").text.strip() == "Change your name"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "name",
     (

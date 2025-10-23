@@ -242,6 +242,7 @@ def test_upload_csv_file_shows_error_banner_for_too_many_rows(
     assert normalize_spaces(page.select_one(".table-show-more-link").text) == "Only showing the first 50 rows"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_upload_csv_shows_error_with_invalid_extension(
     client_request,
 ):

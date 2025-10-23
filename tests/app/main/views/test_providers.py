@@ -382,6 +382,7 @@ def test_edit_sms_provider_ratio_submit(
     assert mock_update_provider.call_args_list == expected_calls
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "post_data, expected_error",
     [

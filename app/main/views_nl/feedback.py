@@ -198,9 +198,7 @@ def in_business_hours():
 
 def london_time_today_as_utc(hour, minute):
     return (
-        pytz.timezone("Europe/Amsterdam")
-        .localize(datetime.now().replace(hour=hour, minute=minute))
-        .astimezone(pytz.utc)
+        pytz.timezone("Europe/London").localize(datetime.now().replace(hour=hour, minute=minute)).astimezone(pytz.utc)
     )
 
 

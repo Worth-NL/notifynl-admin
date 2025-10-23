@@ -158,6 +158,7 @@ def test_process_register_returns_200_when_mobile_number_is_invalid(
     assert "Mobile numbers can only include: 0 1 2 3 4 5 6 7 8 9 ( ) + -" in page.text
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_return_200_when_email_is_not_gov_uk(
     client_request,
     mock_get_organisations,

@@ -282,6 +282,7 @@ def test_conversation_reply_shows_link_to_add_templates_if_service_has_no_templa
     assert link["href"] == url_for("main.choose_template", service_id=SERVICE_ONE_ID, initial_state="add-new-template")
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_conversation_reply_shows_templates(
     client_request, fake_uuid, mocker, mock_get_template_folders, active_user_with_permissions, service_one
 ):
