@@ -2,7 +2,7 @@ from flask import abort, redirect, render_template, url_for
 
 from app import current_user
 from app.main import main
-from app.main.forms import JoinServiceForm, SearchByNameForm
+from app.main.overrides_nl.forms import JoinServiceForm, SearchByNameForm
 from app.models.service import Service
 from app.utils.user import user_is_gov_user, user_is_logged_in
 

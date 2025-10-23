@@ -5,7 +5,7 @@ from notifications_utils.url_safe_token import check_token
 from app import user_api_client
 from app.constants import PERMISSION_CAN_MAKE_SERVICES_LIVE
 from app.main import main
-from app.main.forms import TwoFactorForm
+from app.main.overrides_nl.forms import TwoFactorForm
 from app.models.token import Token
 from app.models.user import InvitedOrgUser, InvitedUser, User
 from app.utils.login import redirect_to_sign_in

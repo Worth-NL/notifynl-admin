@@ -9,7 +9,7 @@ from notifications_utils.clients.zendesk.zendesk_client import NotifySupportTick
 from app import convert_to_boolean, current_service
 from app.extensions import zendesk_client
 from app.main import main
-from app.main.forms import FeedbackOrProblem, SupportRedirect, SupportType, Triage
+from app.main.overrides_nl.forms import FeedbackOrProblem, SupportRedirect, SupportType, Triage
 from app.models.feedback import (
     GENERAL_TICKET_TYPE,
     PROBLEM_TICKET_TYPE,
@@ -19,12 +19,7 @@ from app.utils import hide_from_search_engines
 
 bank_holidays = BankHolidays(use_cached_holidays=True)
 
-ZENDESK_USER_LOGGED_OUT_NOTE = (
-    "The requester is not signed in to GOV.UK Notify.\n\n"
-    "To confirm they have access to the email address they entered in the support form:\n\n"
-    "1. Submit a public reply to this ticket.\n"
-    "2. Wait for the requester to reply."
-)
+ZENDESK_USER_LOGGED_OUT_NOTE = "De aanvrager van dit bericht is niet ingelogd in Notify."
 
 
 @main.route("/support", methods=["GET", "POST"])
@@ -78,11 +73,11 @@ def feedback(ticket_type):
 
     ticket_type_names = {
         GENERAL_TICKET_TYPE: {
-            "page_title": "Contact GOV.UK Notify support",
-            "ticket_subject": "General Notify Support",
+            "page_title": "Neem contact op met NotifyNL support",
+            "ticket_subject": "NotifyNL support",
         },
-        PROBLEM_TICKET_TYPE: {"page_title": "Report a problem", "ticket_subject": "Reported Problem"},
-        QUESTION_TICKET_TYPE: {"page_title": "Ask a question or give feedback", "ticket_subject": "Question/Feedback"},
+        PROBLEM_TICKET_TYPE: {"page_title": "Rapporteer een probleem", "ticket_subject": "Gerapporteerd probleem"},
+        QUESTION_TICKET_TYPE: {"page_title": "Stel een vraag of geef feedback", "ticket_subject": "Vraag/feedback"},
     }
 
     if not form.feedback.data:
@@ -159,7 +154,7 @@ def feedback(ticket_type):
         )
 
     if severe:
-        page_title = "Tell us about the emergency"
+        page_title = "Vertel u wat uw noodgeval is"
     else:
         page_title = ticket_type_names[ticket_type]["page_title"]
 
@@ -203,7 +198,9 @@ def in_business_hours():
 
 def london_time_today_as_utc(hour, minute):
     return (
-        pytz.timezone("Europe/London").localize(datetime.now().replace(hour=hour, minute=minute)).astimezone(pytz.utc)
+        pytz.timezone("Europe/Amsterdam")
+        .localize(datetime.now().replace(hour=hour, minute=minute))
+        .astimezone(pytz.utc)
     )
 
 

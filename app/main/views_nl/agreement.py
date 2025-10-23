@@ -5,7 +5,7 @@ from flask_login import current_user
 
 from app import current_service
 from app.main import main
-from app.main.forms import AcceptAgreementForm
+from app.main.overrides_nl.forms import AcceptAgreementForm
 from app.models.organisation import Organisation
 from app.s3_client.s3_mou_client import get_mou
 from app.utils import hide_from_search_engines

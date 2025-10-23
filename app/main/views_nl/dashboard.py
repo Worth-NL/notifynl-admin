@@ -19,7 +19,7 @@ from app.constants import MAX_NOTIFICATION_FOR_DOWNLOAD, REPORT_REQUEST_MAX_NOTI
 from app.extensions import redis_client
 from app.formatters import format_date_numeric, format_datetime_numeric, format_phone_number_human_readable
 from app.main import json_updates, main
-from app.main.forms import SearchNotificationsForm
+from app.main.overrides_nl.forms import SearchNotificationsForm
 from app.models.notification import InboundSMSMessages, Notifications
 from app.statistics_utils import get_formatted_percentage
 from app.utils import (

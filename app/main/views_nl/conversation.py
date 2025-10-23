@@ -6,7 +6,7 @@ from notifications_utils.template import SMSPreviewTemplate
 from app import current_service, notification_api_client, service_api_client
 from app.formatters import format_phone_number_human_readable
 from app.main import json_updates, main
-from app.main.forms import SearchByNameForm
+from app.main.overrides_nl.forms import SearchByNameForm
 from app.models.notification import InboundSMSMessage, InboundSMSMessages, Notifications
 from app.models.template_list import UserTemplateList
 from app.utils.user import user_has_permissions

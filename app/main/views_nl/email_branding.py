@@ -8,7 +8,7 @@ from werkzeug.datastructures import FileStorage
 from app import email_branding_client
 from app.event_handlers import Events
 from app.main import main
-from app.main.forms import (
+from app.main.overrides_nl.forms import (
     AdminEditEmailBrandingForm,
     GovernmentIdentityCoatOfArmsOrInsignia,
     GovernmentIdentityColour,

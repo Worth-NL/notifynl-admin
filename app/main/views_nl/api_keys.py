@@ -9,7 +9,7 @@ from app import (
 )
 from app.constants import ServiceCallbackTypes
 from app.main import main
-from app.main.forms import CallbackForm, CreateKeyForm, GuestList
+from app.main.overrides_nl.forms import CallbackForm, CreateKeyForm, GuestList
 from app.models.api_key import APIKey
 from app.models.notification import APINotifications
 from app.utils.user import user_has_permissions

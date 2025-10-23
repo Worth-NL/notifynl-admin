@@ -7,7 +7,7 @@ from app.constants import SERVICE_JOIN_REQUEST_APPROVED, SERVICE_JOIN_REQUEST_RE
 from app.event_handlers import Events
 from app.formatters import redact_mobile_number
 from app.main import main
-from app.main.forms import (
+from app.main.overrides_nl.forms import (
     ChangeEmailForm,
     ChangeMobileNumberForm,
     ChangeNonGovEmailForm,

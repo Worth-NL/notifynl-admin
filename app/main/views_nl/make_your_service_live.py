@@ -6,7 +6,7 @@ from notifications_utils.clients.zendesk.zendesk_client import NotifySupportTick
 from app import current_service, service_api_client
 from app.extensions import zendesk_client
 from app.main import main
-from app.main.forms import RenameServiceForm
+from app.main.overrides_nl.forms import RenameServiceForm
 from app.utils.user import user_has_permissions, user_is_gov_user
 
 

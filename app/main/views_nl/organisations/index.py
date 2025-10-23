@@ -13,7 +13,7 @@ from app import (
     organisations_client,
 )
 from app.main import main
-from app.main.forms import (
+from app.main.overrides_nl.forms import (
     AddGPOrganisationForm,
     AddNHSLocalOrganisationForm,
     AdminBillingDetailsForm,
@@ -69,7 +69,7 @@ def add_organisation():
         except HTTPError as e:
             org_name_exists_message = "Organisation name already exists"
             if e.status_code == 400 and org_name_exists_message in e.message:
-                form.name.errors.append("This organisation name is already in use.")
+                form.name.errors.append("Deze organisatienaam bestaat al.")
             else:
                 raise e
 
@@ -95,7 +95,7 @@ def add_organisation_from_gp_service(service_id):
         except HTTPError as e:
             org_name_exists_message = "Organisation name already exists"
             if e.status_code == 400 and org_name_exists_message in e.message:
-                flash("This organisation name is already in use.")
+                flash("Deze organisatienaam bestaat al.")
             else:
                 raise e
 
@@ -168,15 +168,15 @@ def download_organisation_usage_report(org_id):
     services_usage, _ = current_organisation.services_and_usage(financial_year=selected_year)
 
     unit_column_names = {
-        "service_id": "Service ID",
-        "service_name": "Service Name",
-        "emails_sent": "Emails sent",
-        "sms_remainder": "Free text message allowance remaining",
+        "service_id": "Dienst ID",
+        "service_name": "Dienstnaam",
+        "emails_sent": "E-mails verstuurd",
+        "sms_remainder": "Gratis SMS-berichtentegoed over",
     }
 
     monetary_column_names = {
-        "sms_cost": "Spent on text messages (£)",
-        "letter_cost": "Spent on letters (£)",
+        "sms_cost": "Uitgegeven aan SMS-berichten (€)",
+        "letter_cost": "Uitgegeven aan brieven (€)",
     }
 
     org_usage_data = [list(unit_column_names.values()) + list(monetary_column_names.values())] + [
@@ -191,7 +191,7 @@ def download_organisation_usage_report(org_id):
         {
             "Content-Type": "text/csv; charset=utf-8",
             "Content-Disposition": (
-                'inline;filename="{} organisation usage report for year {} - generated on {}.csv"'.format(
+                'inline;filename="{} ogranisatieverbruik {} - gegenereerd op {}.csv"'.format(
                     current_organisation.name, selected_year, datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
                 )
             ),
@@ -305,7 +305,7 @@ def edit_organisation_name(org_id):
         except HTTPError as http_error:
             error_msg = "Organisation name already exists"
             if http_error.status_code == 400 and error_msg in http_error.message:
-                form.name.errors.append("This organisation name is already in use")
+                form.name.errors.append("Deze organisatienaam is al in gebruik")
             else:
                 raise http_error
         else:
@@ -403,7 +403,7 @@ def edit_organisation_domains(org_id):
         except HTTPError as e:
             error_message = "Domain already exists"
             if e.status_code == 400 and error_message in e.message:
-                flash("This domain is already in use", "error")
+                flash("Dit domein is al in gebruik", "error")
                 return render_template(
                     "views/organisations/organisation/settings/edit-domains.html",
                     form=form,
@@ -445,7 +445,7 @@ def edit_organisation_go_live_notes(org_id):
 @user_is_platform_admin
 def edit_organisation_can_approve_own_go_live_requests(org_id):
     form = YesNoSettingForm(
-        name="Can this organisation approve its own go live requests?",
+        name="Kan deze organisatie hun eigen go-live verzoeken accorderen?",
         enabled=current_organisation.can_approve_own_go_live_requests,
     )
 
@@ -463,7 +463,7 @@ def edit_organisation_can_approve_own_go_live_requests(org_id):
 @user_is_platform_admin
 def edit_organisation_can_ask_to_join_a_service(org_id):
     form = YesNoSettingForm(
-        name="Can people ask to join services in this organisation?",
+        name="Kunnen mensen vragen aan te sluiten op services van deze organisatie?",
         enabled=current_organisation.can_ask_to_join_a_service,
     )
     permissions = current_organisation.permissions
@@ -546,11 +546,12 @@ def archive_organisation(org_id):
             else:
                 raise e
 
-        flash(f"‘{current_organisation.name}’ was deleted", "default_with_tick")
+        flash(f"‘{current_organisation.name}’ is verwijderd", "default_with_tick")
         return redirect(url_for(".your_services"))
 
     flash(
-        f"Are you sure you want to delete ‘{current_organisation.name}’? There’s no way to undo this.",
+        f"Weet u zeker dat u ‘{current_organisation.name}’ wilt verwijderen? Er is "
+        "geen manier om dit ongedaan te maken.",
         "delete",
     )
     return organisation_settings(org_id)

@@ -14,7 +14,7 @@ from notifications_utils.url_safe_token import check_token
 
 from app import user_api_client
 from app.main import main
-from app.main.forms import (
+from app.main.overrides_nl.forms import (
     ChangeEmailForm,
     ChangeMobileNumberForm,
     ChangeNameForm,

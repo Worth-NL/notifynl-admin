@@ -10,7 +10,7 @@ from app import (
 )
 from app.extensions import zendesk_client
 from app.main import main
-from app.main.forms import (
+from app.main.overrides_nl.forms import (
     BrandingRequestForm,
     ChooseEmailBrandingForm,
     ChooseLetterBrandingForm,
