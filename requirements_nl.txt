@@ -100,7 +100,7 @@ mistune==0.8.4
     # via notifications-utils
 notifications-python-client==10.0.0
     # via -r requirements_nl.in
-notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@02eb2655d064aee09adc4ad3c68c663b1826ed75
+notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@b4d1c6afdc36d0ff63bc6c0a1984f78e3b6c0d43
     # via -r requirements_nl.in
 openpyxl==3.1.5
     # via pyexcel-xlsx

@@ -100,7 +100,7 @@ govuk-bank-holidays==0.17
     # via
     #   -r requirements_nl.txt
     #   notifications-utils
-govuk-frontend-jinja @ git+https://github.com/Worth-NL/LandRegistry-frontend-jinja@1b6aac36e67ddf3a64c9a467fbb6b0fede43669e
+govuk-frontend-jinja @ git+https://github.com/Worth-NL/LandRegistry-frontend-jinja@0d6796c785db6db67ed3cf375df2dc3bc318c267
     # via -r requirements_nl.txt
 greenlet==3.2.4
     # via
@@ -163,7 +163,7 @@ moto==5.1.0
     # via -r requirements_nl_test.in
 notifications-python-client==10.0.0
     # via -r requirements_nl.txt
-notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@02eb2655d064aee09adc4ad3c68c663b1826ed75
+notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@b4d1c6afdc36d0ff63bc6c0a1984f78e3b6c0d43
     # via -r requirements_nl.txt
 openpyxl==3.1.5
     # via
