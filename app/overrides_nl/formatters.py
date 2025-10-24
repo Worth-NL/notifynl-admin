@@ -271,7 +271,7 @@ def format_pennies_as_currency(pennies: int | float, long: bool) -> str:
     pennies = decimal.Decimal(str(pennies))
     if pennies >= 100:
         pennies = round(pennies)
-        return f"£{pennies // 100:,}.{pennies % 100:02}"
+        return f"€{pennies // 100:,}.{pennies % 100:02}"
     elif long:
         return f"{pennies} cent"
 
