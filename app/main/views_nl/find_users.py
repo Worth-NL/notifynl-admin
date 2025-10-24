@@ -5,7 +5,7 @@ from notifications_python_client.errors import HTTPError
 from app import user_api_client
 from app.event_handlers import Events
 from app.main import main
-from app.main.forms import AuthTypeForm
+from app.main.overrides_nl.forms import AuthTypeForm
 from app.models.user import User
 from app.utils.user import user_is_platform_admin
 

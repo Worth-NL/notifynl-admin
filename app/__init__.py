@@ -38,7 +38,7 @@ from werkzeug.exceptions import HTTPException as WerkzeugHTTPException
 from werkzeug.exceptions import abort
 from werkzeug.local import LocalProxy
 
-from app.formatters import format_phone_number_human_readable
+from app.overrides_nl.formatters import format_phone_number_human_readable
 
 # must be declared before rest of app is imported to satisfy circular import
 # ruff: noqa: E402
@@ -49,7 +49,43 @@ from app.commands import setup_commands
 from app.config import Config, configs
 from app.event_handlers import Events
 from app.extensions import antivirus_client, redis_client, zendesk_client  # noqa
-from app.formatters import (
+from app.models.organisation import Organisation
+from app.models.service import Service
+from app.models.user import AnonymousUser, User
+from app.notify_client import InviteTokenError
+from app.notify_client.api_key_api_client import api_key_api_client  # noqa
+from app.notify_client.billing_api_client import billing_api_client  # noqa
+from app.notify_client.complaint_api_client import complaint_api_client  # noqa
+from app.notify_client.contact_list_api_client import contact_list_api_client  # noqa
+from app.notify_client.email_branding_client import email_branding_client  # noqa
+from app.notify_client.events_api_client import events_api_client  # noqa
+from app.notify_client.inbound_number_client import inbound_number_client  # noqa
+from app.notify_client.invite_api_client import invite_api_client  # noqa
+from app.notify_client.job_api_client import job_api_client  # noqa
+from app.notify_client.letter_attachment_client import letter_attachment_client  # noqa
+from app.notify_client.letter_branding_client import letter_branding_client  # noqa
+from app.notify_client.letter_jobs_client import letter_jobs_client  # noqa
+from app.notify_client.letter_rate_api_client import letter_rate_api_client  # noqa
+from app.notify_client.notification_api_client import notification_api_client  # noqa
+from app.notify_client.org_invite_api_client import org_invite_api_client  # noqa
+from app.notify_client.organisations_api_client import organisations_client  # noqa
+from app.notify_client.performance_dashboard_api_client import (
+    performance_dashboard_api_client,  # noqa
+)
+from app.notify_client.platform_admin_api_client import admin_api_client  # noqa
+from app.notify_client.protected_sender_id_api_client import protected_sender_id_api_client  # noqa
+from app.notify_client.provider_client import provider_client  # noqa
+from app.notify_client.report_request_api_client import report_request_api_client  # noqa
+from app.notify_client.service_api_client import service_api_client  # noqa
+from app.notify_client.sms_rate_client import sms_rate_api_client  # noqa
+from app.notify_client.status_api_client import status_api_client  # noqa
+from app.notify_client.template_folder_api_client import template_folder_api_client  # noqa
+from app.notify_client.template_statistics_api_client import template_statistics_client  # noqa
+from app.notify_client.unsubscribe_api_client import unsubscribe_api_client  # noqa
+from app.notify_client.upload_api_client import upload_api_client  # noqa
+from app.notify_client.user_api_client import user_api_client  # noqa
+from app.notify_session import NotifyAdminSessionInterface
+from app.overrides_nl.formatters import (
     convert_to_boolean,
     extract_path_from_url,
     format_auth_type,
@@ -92,42 +128,6 @@ from app.formatters import (
     sentence_case,
     valid_phone_number,
 )
-from app.models.organisation import Organisation
-from app.models.service import Service
-from app.models.user import AnonymousUser, User
-from app.notify_client import InviteTokenError
-from app.notify_client.api_key_api_client import api_key_api_client  # noqa
-from app.notify_client.billing_api_client import billing_api_client  # noqa
-from app.notify_client.complaint_api_client import complaint_api_client  # noqa
-from app.notify_client.contact_list_api_client import contact_list_api_client  # noqa
-from app.notify_client.email_branding_client import email_branding_client  # noqa
-from app.notify_client.events_api_client import events_api_client  # noqa
-from app.notify_client.inbound_number_client import inbound_number_client  # noqa
-from app.notify_client.invite_api_client import invite_api_client  # noqa
-from app.notify_client.job_api_client import job_api_client  # noqa
-from app.notify_client.letter_attachment_client import letter_attachment_client  # noqa
-from app.notify_client.letter_branding_client import letter_branding_client  # noqa
-from app.notify_client.letter_jobs_client import letter_jobs_client  # noqa
-from app.notify_client.letter_rate_api_client import letter_rate_api_client  # noqa
-from app.notify_client.notification_api_client import notification_api_client  # noqa
-from app.notify_client.org_invite_api_client import org_invite_api_client  # noqa
-from app.notify_client.organisations_api_client import organisations_client  # noqa
-from app.notify_client.performance_dashboard_api_client import (
-    performance_dashboard_api_client,  # noqa
-)
-from app.notify_client.platform_admin_api_client import admin_api_client  # noqa
-from app.notify_client.protected_sender_id_api_client import protected_sender_id_api_client  # noqa
-from app.notify_client.provider_client import provider_client  # noqa
-from app.notify_client.report_request_api_client import report_request_api_client  # noqa
-from app.notify_client.service_api_client import service_api_client  # noqa
-from app.notify_client.sms_rate_client import sms_rate_api_client  # noqa
-from app.notify_client.status_api_client import status_api_client  # noqa
-from app.notify_client.template_folder_api_client import template_folder_api_client  # noqa
-from app.notify_client.template_statistics_api_client import template_statistics_client  # noqa
-from app.notify_client.unsubscribe_api_client import unsubscribe_api_client  # noqa
-from app.notify_client.upload_api_client import upload_api_client  # noqa
-from app.notify_client.user_api_client import user_api_client  # noqa
-from app.notify_session import NotifyAdminSessionInterface
 from app.overrides_nl.navigation import (
     CaseworkNavigation,
     HeaderNavigation,

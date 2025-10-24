@@ -2,7 +2,7 @@ from flask import flash, redirect, render_template, request, url_for
 
 from app import current_service, format_date_numeric, service_api_client, unsubscribe_api_client
 from app.main import main
-from app.main.forms import ProcessUnsubscribeRequestForm
+from app.main.overrides_nl.forms import ProcessUnsubscribeRequestForm
 from app.models.spreadsheet import Spreadsheet
 from app.utils import hide_from_search_engines
 from app.utils.user import user_has_permissions

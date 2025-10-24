@@ -61,16 +61,7 @@ from app.constants import (
     SIGN_IN_METHOD_TEXT_OR_EMAIL,
     LetterLanguageOptions,
 )
-from app.formatters import (
-    format_auth_type,
-    format_date_human,
-    format_thousands,
-    get_human_day,
-    guess_name_from_email_address,
-    message_count_noun,
-    sentence_case,
-)
-from app.main.validators import (
+from app.main.overrides_nl.validators import (
     CannotContainURLsOrLinks,
     CharactersNotAllowed,
     CommonlyUsedPassword,
@@ -100,6 +91,15 @@ from app.models.branding import (
 )
 from app.models.feedback import PROBLEM_TICKET_TYPE, QUESTION_TICKET_TYPE
 from app.models.organisation import Organisation
+from app.overrides_nl.formatters import (
+    format_auth_type,
+    format_date_human,
+    format_thousands,
+    get_human_day,
+    guess_name_from_email_address,
+    message_count_noun,
+    sentence_case,
+)
 from app.utils import branding
 from app.utils.govuk_frontend_field import (
     GovukFrontendWidgetMixin,
@@ -2174,7 +2174,7 @@ class EmailBrandingLogoUpload(StripWhitespaceForm):
     EXPECTED_LOGO_FORMAT = "png"
 
     logo = VirusScannedFileField(
-        "Uploa een logo",
+        "Upload een logo",
         validators=[
             DataRequired(message="U moet een logo toevoegen om verder te kunnen"),
             FileSize(max_size=2 * 1024 * 1024, message="Het bestand mag niet groter zijn dan 2MB"),

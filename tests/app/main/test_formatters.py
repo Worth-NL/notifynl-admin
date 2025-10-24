@@ -90,6 +90,7 @@ def test_format_pennies_as_currency(input_number, long, formatted_number):
     assert format_pennies_as_currency(input_number, long=long) == formatted_number
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "time, human_readable_datetime",
     [

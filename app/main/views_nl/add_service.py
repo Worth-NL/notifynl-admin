@@ -4,7 +4,7 @@ from notifications_python_client.errors import HTTPError
 
 from app import service_api_client
 from app.main import main
-from app.main.forms import CreateNhsServiceForm, CreateServiceForm
+from app.main.overrides_nl.forms import CreateNhsServiceForm, CreateServiceForm
 from app.models.organisation import Organisation
 from app.models.service import Service
 from app.utils.user import user_is_gov_user, user_is_logged_in

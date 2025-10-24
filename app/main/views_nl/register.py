@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from flask import abort, redirect, render_template, session, url_for
 
 from app.main import main
-from app.main.forms import (
+from app.main.overrides_nl.forms import (
     RegisterUserForm,
     RegisterUserFromInviteForm,
     RegisterUserFromOrgInviteForm,

@@ -2,7 +2,7 @@ from flask import redirect, render_template, request, session, url_for
 
 from app import user_api_client
 from app.main import main
-from app.main.forms import TextNotReceivedForm
+from app.main.overrides_nl.forms import TextNotReceivedForm
 from app.models.user import User
 from app.utils.login import (
     redirect_to_sign_in,

@@ -6,7 +6,7 @@ from notifications_python_client.errors import HTTPError
 from app import letter_branding_client, logo_client
 from app.event_handlers import Events
 from app.main import main
-from app.main.forms import (
+from app.main.overrides_nl.forms import (
     AdminEditLetterBrandingForm,
     AdminEditLetterBrandingSVGUploadForm,
     SearchByNameForm,

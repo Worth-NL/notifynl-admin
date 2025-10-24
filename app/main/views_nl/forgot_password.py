@@ -3,7 +3,7 @@ from notifications_python_client.errors import HTTPError
 
 from app import user_api_client
 from app.main import main
-from app.main.forms import ForgotPasswordForm
+from app.main.overrides_nl.forms import ForgotPasswordForm
 
 
 @main.route("/forgot-password", methods=["GET", "POST"])

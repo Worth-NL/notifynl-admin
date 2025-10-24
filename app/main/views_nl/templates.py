@@ -39,7 +39,7 @@ from app import (
 from app.constants import QR_CODE_TOO_LONG, LetterLanguageOptions
 from app.formatters import character_count, message_count
 from app.main import main, no_cookie
-from app.main.forms import (
+from app.main.overrides_nl.forms import (
     CopyTemplateForm,
     EmailTemplateForm,
     FieldWithNoneOption,
