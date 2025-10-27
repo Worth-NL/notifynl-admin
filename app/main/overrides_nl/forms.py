@@ -342,7 +342,7 @@ class SMSCode(GovukTextInputField):
     validators = [
         NotifyDataRequired(thing="uw sms-code"),
         Regexp(regex=r"^\d+$", message="Alleen cijfers"),
-        Length(min=5, max=5, thing="beveiligingscode", unit="digits"),
+        Length(min=5, max=5, thing="beveiligingscode", unit="cijfers"),
     ]
 
     def process_formdata(self, valuelist):
