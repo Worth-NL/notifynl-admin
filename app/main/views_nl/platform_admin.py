@@ -318,9 +318,9 @@ def get_dvla_billing_report():
             "postage",
             "DVLA cost threshold",
             "sheets",
-            "rate (£)",
+            "rate (€)",
             "letters",
-            "cost (£)",
+            "cost (€)",
         ]
         try:
             result = billing_api_client.get_data_for_dvla_billing_report(start_date, end_date)
