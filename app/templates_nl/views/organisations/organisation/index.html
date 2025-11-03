@@ -40,7 +40,7 @@
         {{ big_number(
           total_sms_cost,
           'besteed',
-          currency="£",
+          currency="€",
           **big_number_kwargs
         ) }}
       </div>
@@ -51,7 +51,7 @@
         {{ big_number(
           total_letter_cost,
           'besteed',
-          currency="£",
+          currency="€",
           **big_number_kwargs
         ) }}
       </div>
@@ -89,7 +89,7 @@
             {{ big_number(
               service.sms_cost,
               'besteed aan sms-berichten',
-              currency="£",
+              currency="€",
               smallest=True
             ) }}
           {% else %}
@@ -104,7 +104,7 @@
           {{ big_number(
             service.letter_cost,
             'besteed aan brieven',
-            currency="£",
+            currency="€",
             smallest=True
           ) }}
         </div>
