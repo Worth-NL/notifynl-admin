@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Admin",
+      "type": "debugpy",
+      "request": "launch",
+      "envFile": ".env",
+      "module": "flask",
+      "args": [
+        "run",
+        "--port",
+        "6012",
+        "--debug"
+      ],
+      "autoStartBrowser": true,
+      "consoleName": "Admin"
+    }
+  ]
+}
