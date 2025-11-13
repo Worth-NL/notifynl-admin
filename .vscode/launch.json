@@ -5,7 +5,7 @@
       "name": "Admin",
       "type": "debugpy",
       "request": "launch",
-      "envFile": ".env",
+      "envFile": "${workspaceFolder}/.env",
       "module": "flask",
       "args": [
         "run",
