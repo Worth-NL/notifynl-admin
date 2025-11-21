@@ -15,8 +15,7 @@ from flask_login import current_user
 from notifications_python_client.errors import HTTPError
 from notifications_utils import SMS_CHAR_COUNT_LIMIT
 from notifications_utils.insensitive_dict import InsensitiveDict, InsensitiveSet
-from notifications_utils.recipient_validation.notifynl.postal_address import PostalAddress
-from notifications_utils.recipient_validation.postal_address import address_lines_1_to_7_keys
+from notifications_utils.recipient_validation.notifynl.postal_address import PostalAddress, address_lines_1_to_7_keys
 from notifications_utils.recipients import RecipientCSV, first_column_headings
 from notifications_utils.sanitise_text import SanitiseASCII
 from xlrd.biffh import XLRDError
@@ -40,12 +39,7 @@ from app.main.overrides_nl.forms import (
 )
 from app.models.contact_list import ContactList, ContactListsAlphabetical
 from app.models.user import Users
-from app.s3_client.s3_csv_client import (
-    get_csv_metadata,
-    s3download,
-    s3upload,
-    set_metadata_on_csv_upload,
-)
+from app.s3_client.s3_csv_client import get_csv_metadata, s3download, s3upload, set_metadata_on_csv_upload
 from app.utils import PermanentRedirect, should_skip_template_page, unicode_truncate
 from app.utils.csv import Spreadsheet, get_errors_for_csv
 from app.utils.user import user_has_permissions
