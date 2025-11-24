@@ -24,7 +24,7 @@
   {{ page_header(page_title) }}
 
   {# de blauwe badges worden alleen getoond voor sms en e-mail #}
-  {% if message_type != "letter" %}
+  {% if message_type != "letter" and message_type != "messagebox" %}
 
     {{ ajax_block(
       partials,

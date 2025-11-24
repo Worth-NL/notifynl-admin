@@ -148,7 +148,7 @@ def valid_phone_number(phone_number):
 
 
 def format_notification_type(notification_type):
-    return {"email": "E-mail", "sms": "SMS", "letter": "Brief"}[notification_type]
+    return {"email": "E-mail", "sms": "SMS", "letter": "Brief", "messagebox": "Berichtenbox"}[notification_type]
 
 
 def format_notification_status(status, template_type):
@@ -191,6 +191,35 @@ def format_notification_status(status, template_type):
             "returned-letter": "",
             "cancelled": "",
             "validation-failed": "Validatie gefaald",
+        },
+        "messagebox": {
+            "failed": "",
+            "technical-failure": "Technische fout",
+            "temporary-failure": "",
+            "permanent-failure": "Permanente fout",
+            "delivered": "",
+            "received": "",
+            "accepted": "",
+            "sending": "",
+            "created": "",
+            "sent": "",
+            "pending-virus-check": "",
+            "virus-scan-failed": "Virus gedetecteerd",
+            "returned-letter": "",
+            "cancelled": "",
+            "validation-failed": "Validatie gefaald",
+            "TechnischProbleem": "Technisch probleem bij verwerken",
+            "NietActiefOfGeabonneerd": "Geen actieve berichtenbox of geen abonnement",
+            "BerichtTypeNietOndersteund": "Bericht type bestaat niet of is niet actief",
+            "AanmaakDatumLigtTeVerInHetVerleden": "Aanmaakdatum te ver in het verleden",
+            "PublicatieDatumLigtTeVerInDeToekomst": "Publicatiedatum te ver in de toekomst",
+            "BerichtBestaatAl": "Een bericht met hetzelfde berichtID is reeds aangeboden",
+            "BijlageTeGroot": "De omvang van de persoonlijke bijlage(n) in het bericht is te groot",
+            "OinInCPAKomtNietOvereenMetOinInBericht": "OIN uit CPA komt niet overeen met OID in het bericht",
+            "XmlValidatieTegenXsdValtNegatiefUit": "Bericht xml valideert niet tegen XSD",
+            "ValidatieBerichtType": "Niet gelukt om bericht type te valideren",
+            "ValidatieGebruiker": "Niet gelukt om de burger te valideren",
+            "StoreMessage": "Niet gelukt om bericht op te slaan",
         },
     }[template_type].get(status, status)
 
@@ -368,11 +397,14 @@ def message_count_noun(count, message_type):
     if message_type == "international_sms":
         return "internationaal SMS-bericht" if singular else "internationale SMS-berichten"
 
-    if message_type == "email":
+    if message_type == "e-mail":
         return "e-mail" if singular else "e-mails"
 
-    if message_type == "letter":
+    if message_type == "brief":
         return "brief" if singular else "brieven"
+
+    if message_type == "messagebox":
+        return "berichtenbox bericht" if singular else "berichtenbox berichten"
 
     if message_type and message_type.endswith("request"):
         return message_type if singular else message_type + "s"

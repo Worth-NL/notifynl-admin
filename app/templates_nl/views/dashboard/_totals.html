@@ -38,5 +38,17 @@
         smaller=True,
       ) }}
     </div>
+     <div id="total-messagebox" class="govuk-grid-column-one-third">
+      {{ big_number_with_status(
+        statistics['messagebox']['requested'],
+        statistics['messagebox']['requested']|message_count_label('messagebox', suffix='verstuurd'),
+        statistics['messagebox']['failed'],
+        statistics['messagebox']['failed_percentage'],
+        statistics['messagebox']['show_warning'],
+        failure_link=url_for("main.view_notifications", service_id=service_id, message_type='messagebox', status='failed'),
+        link=url_for("main.view_notifications", service_id=service_id, message_type='messagebox', status=''),
+        smaller=True,
+      ) }}
+    </div>
   </div>
 </div>

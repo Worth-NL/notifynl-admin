@@ -122,6 +122,7 @@ def post_report_request_and_redirect(current_service, report_type, message_type,
 
 
 @main.route("/services/<uuid:service_id>/notifications", methods=["GET", "POST"])
+@main.route("/services/<uuid:service_id>/notifications/messagebox", methods=["GET", "POST"])
 @main.route("/services/<uuid:service_id>/notifications/<template_type:message_type>", methods=["GET", "POST"])
 @user_has_permissions()
 def view_notifications(service_id, message_type=None):
@@ -192,6 +193,7 @@ def view_notifications(service_id, message_type=None):
             "email": ["email address"],
             "sms": ["phone number"],
             "letter": ["postal address", "file name"],
+            "messagebox": [],
             # We say recipient here because combining all 3 types, plus
             # reference gets too long for the hint text
             None: ["recipient"],
@@ -338,7 +340,7 @@ def _get_notifications_dashboard_partials_data(service_id, message_type):
 def get_status_filters(service, message_type, statistics, search_query):
     if message_type is None:
         stats = {
-            key: sum(statistics[message_type][key] for message_type in {"email", "sms", "letter"})
+            key: sum(statistics[message_type][key] for message_type in {"email", "sms", "letter", "messagebox"})
             for key in {"requested", "delivered", "failed"}
         }
     else:
@@ -512,7 +514,7 @@ def aggregate_notifications_stats(template_statistics):
     template_statistics = filter_out_cancelled_stats(template_statistics)
     notifications = {
         template_type: dict.fromkeys(("requested", "delivered", "failed"), 0)
-        for template_type in ["sms", "email", "letter"]
+        for template_type in ["sms", "email", "letter", "messagebox"]
     }
     for stat in template_statistics:
         notifications[stat["template_type"]]["requested"] += stat["count"]
@@ -582,8 +584,12 @@ def get_annual_usage_breakdown(usage, free_sms_fragment_limit):
     letters_sent = sum(row["notifications_sent"] for row in letters)
     letters_cost = sum(row["cost"] for row in letters)
 
+    messagebox = get_usage_breakdown_by_type(usage, "messagebox")
+    messagebox_sent = sum(row["notifications_sent"] for row in messagebox)
+
     return {
         "emails_sent": emails_sent,
+        "messagebox_sent": messagebox_sent,
         "sms_free_allowance": sms_free_allowance,
         "sms_sent": sms_chargeable_units,
         "sms_allowance_remaining": max(0, (sms_free_allowance - sms_chargeable_units)),

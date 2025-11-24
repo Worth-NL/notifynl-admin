@@ -25,7 +25,7 @@ FAILURE_STATUSES = [
 ]
 REQUESTED_STATUSES = SENDING_STATUSES + DELIVERED_STATUSES + FAILURE_STATUSES
 
-NOTIFICATION_TYPES = ["sms", "email", "letter"]
+NOTIFICATION_TYPES = ["sms", "email", "letter", "messagebox"]
 
 SEVEN_DAYS_TTL = int(timedelta(days=7).total_seconds())
 
