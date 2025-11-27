@@ -184,7 +184,7 @@ class DevNL(Config):
     SESSION_COOKIE_SECURE = False
     SESSION_PROTECTION = None
 
-    S3_BUCKET_CSV_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-notifications-csv-upload"
+    S3_BUCKET_CSV_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-csv-upload"
     S3_BUCKET_CONTACT_LIST_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-contact-list"
     S3_BUCKET_LOGO_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-public-logos-tools"
     S3_BUCKET_MOU = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-mou"
@@ -212,7 +212,7 @@ class DevNL(Config):
 class TestNL(Config):
     NOTIFY_ENVIRONMENT = "test"
 
-    S3_BUCKET_CSV_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-notifications-csv-upload"
+    S3_BUCKET_CSV_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-csv-upload"
     S3_BUCKET_CONTACT_LIST_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-contact-list"
     S3_BUCKET_LOGO_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-public-logos-tools"
     S3_BUCKET_MOU = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-mou"
@@ -225,7 +225,7 @@ class TestNL(Config):
 class AccNL(Config):
     NOTIFY_ENVIRONMENT = "acceptance"
 
-    S3_BUCKET_CSV_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-notifications-csv-upload"
+    S3_BUCKET_CSV_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-csv-upload"
     S3_BUCKET_CONTACT_LIST_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-contact-list"
     S3_BUCKET_LOGO_UPLOAD = f"{NL_PREFIX}-acc-public-logos-tools"
     S3_BUCKET_MOU = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-mou"
@@ -238,7 +238,7 @@ class AccNL(Config):
 class ProdNL(Config):
     NOTIFY_ENVIRONMENT = "production"
 
-    S3_BUCKET_CSV_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-notifications-csv-upload"
+    S3_BUCKET_CSV_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-csv-upload"
     S3_BUCKET_CONTACT_LIST_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-contact-list"
     S3_BUCKET_LOGO_UPLOAD = f"{NL_PREFIX}-prod-public-logos-tools"
     S3_BUCKET_MOU = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-mou"
