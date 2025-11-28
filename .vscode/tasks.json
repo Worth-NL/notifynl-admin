@@ -1,0 +1,84 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Generate Admin version file",
+            "type": "shell",
+            "command": "make generate-version-file",
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "close": true
+            }
+        },
+        {
+            "label": "Install Admin Python requirements",
+            "type": "shell",
+            "command": "uv pip install -r requirements_nl_test.txt",
+            "dependsOn": ["Generate Admin version file"],
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "close": true
+            },
+            "options": {
+                "env": {
+                    "UV_LINK_MODE": "copy"
+                }
+            }
+        },
+        {
+            "label": "Install Admin local notifynl-utils",
+            "type": "shell",
+            "command": "uv pip uninstall notifynl-utils && uv pip install -e ../notifynl-utils",
+            "dependsOn": ["Install Admin Python requirements"],
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "close": true
+            },
+            "options": {
+                "env": {
+                    "UV_LINK_MODE": "copy"
+                }
+            }
+        },
+        {
+            "label": "Install Admin local LandRegistry-frontend-jinja",
+            "type": "shell",
+            "command": "uv pip uninstall govuk-frontend-jinja && uv pip install -e ../LandRegistry-frontend-jinja",
+            "dependsOn": ["Install Admin local notifynl-utils"],
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "close": true
+            },
+            "options": {
+                "env": {
+                    "UV_LINK_MODE": "copy"
+                }
+            }
+        },
+        {
+            "label": "NPM Admin install",
+            "type": "shell",
+            "command": "npm ci",
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "close": true
+            }
+        },
+        {
+            "label": "NPM Admin build",
+            "type": "shell",
+            "command": "npm run build",
+            "dependsOn": ["NPM Admin install"],
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "close": true
+            }
+        }
+    ]
+}

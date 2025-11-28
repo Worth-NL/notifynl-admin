@@ -14,7 +14,26 @@
         "--debug"
       ],
       "autoStartBrowser": true,
-      "consoleName": "Admin"
+      "consoleName": "Admin",
+      "preLaunchTask": "Install Admin local LandRegistry-frontend-jinja"
+    },
+    {
+      "name": "Admin watch",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "watch"],
+      "preLaunchTask": "NPM Admin build"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Notify Admin",
+      "configurations": [
+        "Admin",
+        "Admin watch"
+      ],
+      "stopAll": true
     }
   ]
 }
