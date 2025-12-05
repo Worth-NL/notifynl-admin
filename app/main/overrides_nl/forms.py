@@ -1698,14 +1698,10 @@ class SupportType(StripWhitespaceForm):
 
 class SupportRedirect(StripWhitespaceForm):
     who = GovukRadiosField(
-        "Waar hebt u hulp bij nodig?",
+        "Waar heeft u hulp bij nodig?",
         choices=[
-            (
-                "public-sector",
-                "Ik werk in de publieke sector en wil e-mail en/of SMS'jes en/of brieven versturen "
-                "namens mijn organisatie",
-            ),
-            ("public", "Ik ben een burger met een vraag voor de overheid"),
+            ("public-sector", "Ik werk voor een overheidsorganisatie en ik wil emails, sms of brieven sturen"),
+            ("public", "Ik ben een inwoner van Nederland met een vraag voor de overheid"),
         ],
     )
 
