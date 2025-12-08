@@ -1306,12 +1306,15 @@ class CreateServiceForm(StripWhitespaceForm):
             Length(max=255, thing="dienstnaam"),
         ],
     )
-    organisation_type = OrganisationTypeField("Wie beheert deze dienst?")
+    organisation_type = OrganisationTypeField(
+        "Wie is er verantwoordelijk voor deze dienst?",
+        include_only={Organisation.TYPE_CENTRAL, Organisation.TYPE_LOCAL, Organisation.TYPE_OTHER},
+    )
 
 
 class CreateNhsServiceForm(CreateServiceForm):
     organisation_type = OrganisationTypeField(
-        "Wie beheert deze dienst?",
+        "Wie is er verantwoordelijk voor deze dienst?",
         # Todo nl: dit lijkt overbodig zonder NHS
         include_only={"nhs_central", "nhs_local", "nhs_gp"},
     )
