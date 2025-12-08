@@ -1113,7 +1113,7 @@ class TwoFactorForm(StripWhitespaceForm):
         self.validate_code_func = validate_code_func
         super().__init__(*args, **kwargs)
 
-    sms_code = SMSCode("SMS-code")
+    sms_code = SMSCode("SMS bericht code")
 
     def validate(self, *args, **kwargs):
         if not self.sms_code.validate(self):
