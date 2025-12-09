@@ -1728,15 +1728,15 @@ class Triage(StripWhitespaceForm):
 
 class EstimateUsageForm(StripWhitespaceForm):
     volume_email = GovukIntegerField(
-        "Hoeveel E-mails verwacht u te zullen verzenden in het komend jaar?",
+        "Hoeveel e-mails verwacht je komend jaar te versturen?",
         things="het aantal e-mails",
     )
     volume_sms = GovukIntegerField(
-        "Hoeveel SMSjes verwacht u te zullen verzenden in het komend jaar?",
+        "Hoeveel SMS berichten verwacht je komend jaar te versturen?",
         things="het aantal SMSjes",
     )
     volume_letter = GovukIntegerField(
-        "Hoeveel brieven verwacht u te zullen verzenden in het komend jaar?",
+        "Hoeveel brieven verwacht je komend jaar te versturen?",
         things="het aantal brieven",
     )
 
