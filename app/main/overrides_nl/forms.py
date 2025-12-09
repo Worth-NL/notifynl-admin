@@ -1676,11 +1676,11 @@ class CreateKeyForm(StripWhitespaceForm):
         super().__init__(*args, **kwargs)
 
     key_name = GovukTextInputField(
-        "Naam voor deze sleutel", validators=[NotifyDataRequired(thing="een naam voor deze API sleutel")]
+        "Naam voor deze API sleutel", validators=[NotifyDataRequired(thing="een naam voor deze API sleutel")]
     )
 
     key_type = GovukRadiosField(
-        "Type sleutel",
+        "Soort API sleutel",
         thing="een type API sleutel",
     )
 
