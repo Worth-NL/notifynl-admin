@@ -15,7 +15,7 @@ from flask_wtf import FlaskForm as Form
 from flask_wtf.file import FileAllowed, FileSize
 from flask_wtf.file import FileField as FileField_wtf
 from markupsafe import Markup
-from notifications_utils.countries.data import Postage
+from notifications_utils.countries_nl import Postage
 from notifications_utils.formatters import strip_all_whitespace
 from notifications_utils.insensitive_dict import InsensitiveDict, InsensitiveSet
 from notifications_utils.recipient_validation.email_address import validate_email_address
@@ -1559,7 +1559,8 @@ class LetterUploadPostageForm(StripWhitespaceForm):
     def __init__(self, *args, postage_zone, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if postage_zone != Postage.UK:
+        # TODO verify that there is a first class or different mail categories
+        if postage_zone != Postage.NL:
             self.postage.choices = [(postage_zone, "")]
             self.postage.data = postage_zone
 
