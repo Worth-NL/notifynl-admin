@@ -70,9 +70,9 @@ def api_keys(service_id):
 def create_api_key(service_id):
     form = CreateKeyForm(current_service.api_keys)
     form.key_type.choices = [
-        (APIKey.TYPE_NORMAL, "Live – sends to anyone"),
-        (APIKey.TYPE_TEAM, "Team and guest list – limits who you can send to"),
-        (APIKey.TYPE_TEST, "Test – pretends to send messages"),
+        (APIKey.TYPE_NORMAL, "Live - verstuurt naar iedereen"),
+        (APIKey.TYPE_TEAM, "Team en gasten lijst - beperkt naar wie je kunt sturen"),
+        (APIKey.TYPE_TEST, "Test - simuleert het versturen van berichten"),
     ]
     # preserve order of items extended by starting with empty dicts
     form.key_type.param_extensions = {"items": [{}, {}]}
@@ -81,15 +81,13 @@ def create_api_key(service_id):
             "disabled": True,
             "hint": {
                 "html": Markup(
-                    "Niet beschikbaar omdat uw dienst zich in "
-                    '<a class="govuk-link govuk-link--no-visited-state" href="/features/trial-mode">trial</a> bevindt'
+                    "Niet beschikbaar omdat uw dienst in "
+                    '<a class="govuk-link govuk-link--no-visited-state" href="/features/trial-mode">test modus</a> is'
                 )
             },
         }
     if current_service.has_permission("letter"):
-        form.key_type.param_extensions["items"][1]["hint"] = {
-            "text": "Kan niet worden gebruikt om brieven te versturen"
-        }
+        form.key_type.param_extensions["items"][1]["hint"] = {"text": "Kan niet worden gebruikt om brieven te sturen"}
     if form.validate_on_submit():
         if current_service.trial_mode and form.key_type.data == APIKey.TYPE_NORMAL:
             abort(400)

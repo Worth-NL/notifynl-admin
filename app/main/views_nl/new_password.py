@@ -27,13 +27,15 @@ def new_password(token):
             current_app.config["EMAIL_EXPIRY_SECONDS"],
         )
     except SignatureExpired:
-        flash("The link in the email we sent you has expired. Enter your email address to resend.")
+        flash(
+            "De link in het e-mailbericht dat we je hebben gestuurd is verlopen. We hebben je een nieuwe link gestuurd."
+        )
         return redirect(url_for(".forgot_password"))
 
     token = Token(token_data)
     user = User.from_email_address(token.email)
     if user.password_changed_more_recently_than(token.created_at):
-        flash("The link in the email has already been used")
+        flash("De link in het e-mailbericht dat we je hebben gestuurd is al gebruikt.")
         return redirect(url_for("main.index"))
 
     if request.method == "GET":
