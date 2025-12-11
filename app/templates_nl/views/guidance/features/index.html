@@ -32,17 +32,17 @@
   {{ govukInsetText({"html": insetHtml}) }}
 {% endif %}
 
-<h2 class="heading-medium">Onbeperkt gratis e-mails</h2>
+<h2 class="heading-medium">E-mail berichten versturen</h2>
 <ul class="govuk-list govuk-list--bullet">
   <li><a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_send_files_by_email') }}">Bestanden per e-mail versturen</a></li>
   <li><a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_email_branding') }}">E-mailbranding toevoegen</a></li>
   <li><a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_reply_to_email_address') }}">Een reply-to e-mailadres kiezen</a></li>
 </ul>
 
-<h2 class="heading-medium">Sms-berichten verzenden en ontvangen</h2>
+<h2 class="heading-medium">Sms-berichten verzenden</h2>
 <ul class="govuk-list govuk-list--bullet">
-  <li><a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_pricing_text_messages') }}">Duizenden gratis sms-berichten versturen</a></li>
-  <li><a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_receive_text_messages') }}">Sms-berichten ontvangen</a></li>
+  <li><a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_pricing_text_messages') }}">Sms-berichten versturen</a></li>
+  {# <li><a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_receive_text_messages') }}">Sms-berichten ontvangen</a></li> #}
   <li><a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_pricing_text_messages', _anchor='international-numbers') }}">Sms-berichten naar internationale nummers versturen</a></li>
   <li><a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_text_message_sender') }}">Ontvangers vertellen van wie uw berichten zijn</a></li>
 </ul>
@@ -70,8 +70,8 @@
 </ul>
 <p class="govuk-body">Bekijk de meest recente <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.performance') }}">prestatiegegevens</a>.</p>
 
-<h2 class="heading-medium" id="support">24 uur per dag online ondersteuning</h2>
-<p class="govuk-body">NotifyNL biedt 24/7 ondersteuning bij noodgevallen.</p>
+<h2 class="heading-medium" id="support">Online ondersteuning</h2>
+{# <p class="govuk-body">NotifyNL biedt 24/7 ondersteuning bij noodgevallen.</p> #}
 <p class="govuk-body"><a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.support') }}">Neem contact op met het NotifyNL-team</a>.</p>
 
 {% endblock %}

@@ -32,14 +32,14 @@ class Organisation(JSONModel):
     )
 
     TYPE_LABELS = {
-        TYPE_CENTRAL: "Central government",
-        TYPE_LOCAL: "Local government",
+        TYPE_CENTRAL: "Centrale overheid",
+        TYPE_LOCAL: "Lokale overheid",
         TYPE_NHS_CENTRAL: "NHS – central government agency or public body",
         TYPE_NHS_LOCAL: "NHS Trust or Integrated Care Board",
         TYPE_NHS_GP: "GP surgery",
         TYPE_EMERGENCY_SERVICE: "Emergency service",
         TYPE_SCHOOL_OR_COLLEGE: "School or college",
-        TYPE_OTHER: "Other",
+        TYPE_OTHER: "Anders",
     }
 
     id: Any
