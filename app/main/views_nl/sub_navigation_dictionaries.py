@@ -16,10 +16,10 @@ def features_nav():
                     "name": "Beveiliging",
                     "link": "main.guidance_security",
                 },
-                {
-                    "name": "Prestaties",
-                    "link": "main.performance",
-                },
+                # {
+                #     "name": "Prestaties",
+                #     "link": "main.performance",
+                # },
             ],
         },
         {

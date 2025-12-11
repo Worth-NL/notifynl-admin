@@ -25,17 +25,17 @@ Gebruik
       <h2 class='heading-small'>E-mails</h2>
       <div class="keyline-block">
         {{ big_number(emails_sent, 'verzonden', **big_number_kwargs) }}
-        {{ big_number("Onbeperkt", 'gratis tegoed', **big_number_kwargs) }}
+        {# {{ big_number("Onbeperkt", 'gratis tegoed', **big_number_kwargs) }} #}
       </div>
     </div>
     <div class='govuk-grid-column-one-third'>
       <h2 class='heading-small'>Sms-berichten</h2>
       <div class="keyline-block">
         {{ big_number(sms_sent, 'verzonden', **big_number_kwargs) }}
-        {{ big_number(sms_free_allowance, 'gratis tegoed', **big_number_kwargs) }}
+        {# {{ big_number(sms_free_allowance, 'gratis tegoed', **big_number_kwargs) }}
         {% if sms_free_allowance > 0 %}
         {{ big_number(sms_allowance_remaining, 'gratis tegoed resterend', **big_number_kwargs) }}
-        {% endif %}
+        {% endif %} #}
         {% for row in sms_breakdown %}
         {% if row.charged_units > 0 %}
         {{ big_number(
@@ -132,7 +132,7 @@ Gebruik
   {% endif %}
 </div>
 
-<div class="govuk-grid-row">
+{# <div class="govuk-grid-row">
   <div class="govuk-grid-column-one-third">
     <p class="align-with-heading-copy">
       Boekjaar eindigt op 31 maart
@@ -145,6 +145,6 @@ Gebruik
         href="{{ url_for('main.guidance_pricing_text_messages') }}">tarieven</a>.
     </p>
   </div>
-</div>
+</div> #}
 
 {% endblock %}

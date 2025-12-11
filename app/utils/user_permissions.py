@@ -14,11 +14,11 @@ all_ui_permissions = set(permission_mappings.keys())
 all_db_permissions = set(chain(*permission_mappings.values()))
 
 permission_options = (
-    ("view_activity", "See dashboard"),
-    ("send_messages", "Send messages"),
-    ("manage_templates", "Add and edit templates"),
-    ("manage_service", "Manage settings, team and usage"),
-    ("manage_api_keys", "Manage API integration"),
+    ("view_activity", "Bekijk dashboard"),
+    ("send_messages", "Berichten verzenden"),
+    ("manage_templates", "Beheer sjablonen"),
+    ("manage_service", "Beheer instellingen, team en verbruik"),
+    ("manage_api_keys", "Beheer API integratie"),
 )
 
 organisation_user_permission_names = {PERMISSION_CAN_MAKE_SERVICES_LIVE}

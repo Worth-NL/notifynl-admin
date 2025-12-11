@@ -39,7 +39,7 @@ export default [
       // copy images, error pages and govuk-frontend static assets
       copy({
         targets: [
-          { src: paths.src + 'error_pages/**/*', dest: paths.dist + 'error_pages/' },
+          { src: paths.src + 'error_pages_nl/**/*', dest: paths.dist + 'error_pages/' },
           { src: govukFrontendAssetPaths.images, dest: paths.dist + 'images/' },
           { src: govukFrontendAssetPaths.fonts, dest: paths.dist + 'fonts/' },
           { src: govukFrontendAssetPaths.manifest, dest: paths.dist },

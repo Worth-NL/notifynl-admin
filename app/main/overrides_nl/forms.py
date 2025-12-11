@@ -21,7 +21,7 @@ from notifications_utils.insensitive_dict import InsensitiveDict, InsensitiveSet
 from notifications_utils.recipient_validation.email_address import validate_email_address
 from notifications_utils.recipient_validation.errors import InvalidEmailError, InvalidPhoneError
 from notifications_utils.recipient_validation.notifynl.phone_number import PhoneNumber as PhoneNumberUtils
-from notifications_utils.recipient_validation.notifynl.postal_address import PostalAddress
+from notifications_utils.recipient_validation.postal_address import PostalAddress
 from notifications_utils.safe_string import make_string_safe_for_email_local_part
 from notifications_utils.timezones import local_timezone, utc_string_to_aware_gmt_datetime
 from ordered_set import OrderedSet
@@ -1113,7 +1113,7 @@ class TwoFactorForm(StripWhitespaceForm):
         self.validate_code_func = validate_code_func
         super().__init__(*args, **kwargs)
 
-    sms_code = SMSCode("SMS-code")
+    sms_code = SMSCode("SMS bericht code")
 
     def validate(self, *args, **kwargs):
         if not self.sms_code.validate(self):
@@ -1306,12 +1306,15 @@ class CreateServiceForm(StripWhitespaceForm):
             Length(max=255, thing="dienstnaam"),
         ],
     )
-    organisation_type = OrganisationTypeField("Wie beheert deze dienst?")
+    organisation_type = OrganisationTypeField(
+        "Wie is er verantwoordelijk voor deze dienst?",
+        include_only={Organisation.TYPE_CENTRAL, Organisation.TYPE_LOCAL, Organisation.TYPE_OTHER},
+    )
 
 
 class CreateNhsServiceForm(CreateServiceForm):
     organisation_type = OrganisationTypeField(
-        "Wie beheert deze dienst?",
+        "Wie is er verantwoordelijk voor deze dienst?",
         # Todo nl: dit lijkt overbodig zonder NHS
         include_only={"nhs_central", "nhs_local", "nhs_gp"},
     )
@@ -1674,11 +1677,11 @@ class CreateKeyForm(StripWhitespaceForm):
         super().__init__(*args, **kwargs)
 
     key_name = GovukTextInputField(
-        "Naam voor deze sleutel", validators=[NotifyDataRequired(thing="een naam voor deze API sleutel")]
+        "Naam voor deze API sleutel", validators=[NotifyDataRequired(thing="een naam voor deze API sleutel")]
     )
 
     key_type = GovukRadiosField(
-        "Type sleutel",
+        "Soort API sleutel",
         thing="een type API sleutel",
     )
 
@@ -1699,14 +1702,10 @@ class SupportType(StripWhitespaceForm):
 
 class SupportRedirect(StripWhitespaceForm):
     who = GovukRadiosField(
-        "Waar hebt u hulp bij nodig?",
+        "Waar heeft u hulp bij nodig?",
         choices=[
-            (
-                "public-sector",
-                "Ik werk in de publieke sector en wil e-mail en/of SMS'jes en/of brieven versturen "
-                "namens mijn organisatie",
-            ),
-            ("public", "Ik ben een burger met een vraag voor de overheid"),
+            ("public-sector", "Ik werk voor een overheidsorganisatie en ik wil emails, sms of brieven sturen"),
+            ("public", "Ik ben een inwoner van Nederland met een vraag voor de overheid"),
         ],
     )
 
@@ -1730,15 +1729,15 @@ class Triage(StripWhitespaceForm):
 
 class EstimateUsageForm(StripWhitespaceForm):
     volume_email = GovukIntegerField(
-        "Hoeveel E-mails verwacht u te zullen verzenden in het komend jaar?",
+        "Hoeveel e-mails verwacht je komend jaar te versturen?",
         things="het aantal e-mails",
     )
     volume_sms = GovukIntegerField(
-        "Hoeveel SMSjes verwacht u te zullen verzenden in het komend jaar?",
+        "Hoeveel SMS berichten verwacht je komend jaar te versturen?",
         things="het aantal SMSjes",
     )
     volume_letter = GovukIntegerField(
-        "Hoeveel brieven verwacht u te zullen verzenden in het komend jaar?",
+        "Hoeveel brieven verwacht je komend jaar te versturen?",
         things="het aantal brieven",
     )
 
