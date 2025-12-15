@@ -38,9 +38,10 @@ def _create_service(service_name, organisation_type, form):
 
 def _create_example_template(service_id):
     example_sms_template = service_api_client.create_service_template(
-        name="Example text message template",
+        name="Voorbeeld sms bericht template",
         type_="sms",
-        content="Hey ((name)), I’m trying out Notify. Today is ((day of week)) and my favourite colour is ((colour)).",
+        content="Beste ((naam)), ik probeer NotifyNL uit. Vandaag is ((dag van de week)) \
+            en mijn lievelingskleur is ((kleur)).",
         service_id=service_id,
     )
     return example_sms_template
