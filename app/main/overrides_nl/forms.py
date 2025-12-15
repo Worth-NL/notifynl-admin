@@ -585,7 +585,7 @@ class VirusScannedFileField(FileField_wtf, RequiredValidatorsMixin):
 
 class LoginForm(StripWhitespaceForm):
     email_address = make_email_address_field(gov_user=False, thing="uw e-mailadres")
-    password = GovukPasswordField("Password", validators=[NotifyDataRequired(thing="uw wachtwoord")])
+    password = GovukPasswordField("Wachtwoord", validators=[NotifyDataRequired(thing="uw wachtwoord")])
 
 
 class RegisterUserForm(StripWhitespaceForm):
@@ -598,7 +598,7 @@ class RegisterUserForm(StripWhitespaceForm):
     )
     email_address = make_email_address_field(gov_user=True, thing="uw e-mailadres")
     mobile_number = valid_phone_number(international=True)
-    password = make_password_field(thing="your password")
+    password = make_password_field(thing="uw wachtwoord")
     # always register as sms type
     auth_type = HiddenField("auth_type", default="sms_auth")
 
