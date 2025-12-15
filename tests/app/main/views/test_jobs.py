@@ -369,7 +369,7 @@ def test_should_show_letter_job_with_banner_after_sending_before_1730(
 ):
     mocker.patch(
         "app.models.notification.Notifications._get_items",
-        return_value=create_notifications(template_type="letter", postage="second"),
+        return_value=create_notifications(template_type="letter", postage="netherlands"),
     )
 
     page = client_request.get(
@@ -398,7 +398,7 @@ def test_should_show_letter_job_with_banner_when_there_are_multiple_CSV_rows(
 ):
     mocker.patch(
         "app.models.notification.Notifications._get_items",
-        return_value=create_notifications(template_type="letter", postage="second"),
+        return_value=create_notifications(template_type="letter", postage="netherlands"),
     )
 
     page = client_request.get(
@@ -426,7 +426,7 @@ def test_should_show_letter_job_with_banner_after_sending_after_1730(
 ):
     mocker.patch(
         "app.models.notification.Notifications._get_items",
-        return_value=create_notifications(template_type="letter", postage="second"),
+        return_value=create_notifications(template_type="letter", postage="netherlands"),
     )
 
     page = client_request.get(

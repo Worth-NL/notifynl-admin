@@ -621,7 +621,7 @@ class TestGetDvlaBillingReport:
                 },
                 {
                     "date": "2023-06-01",
-                    "postage": "second",
+                    "postage": "netherlands",
                     "cost_threshold": "sorted",
                     "sheets": 1,
                     "rate": 0.5,
@@ -630,7 +630,7 @@ class TestGetDvlaBillingReport:
                 },
                 {
                     "date": "2023-06-01",
-                    "postage": "second",
+                    "postage": "netherlands",
                     "cost_threshold": "unsorted",
                     "sheets": 3,
                     "rate": 0.75,

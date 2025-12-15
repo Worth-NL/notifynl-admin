@@ -872,7 +872,7 @@ def mock_get_service_email_template_without_placeholders(notify_admin, mocker):
 
 @pytest.fixture(scope="function")
 def mock_get_service_letter_template(notify_admin, mocker):
-    def _get(service_id, template_id, version=None, postage="second"):
+    def _get(service_id, template_id, version=None, postage="netherlands"):
         template = template_json(
             service_id=service_id,
             id_=template_id,
@@ -889,7 +889,7 @@ def mock_get_service_letter_template(notify_admin, mocker):
 
 @pytest.fixture(scope="function")
 def mock_get_service_letter_template_welsh_language(notify_admin, mocker):
-    def _get(service_id, template_id, version=None, postage="second"):
+    def _get(service_id, template_id, version=None, postage="netherlands"):
         template = template_json(
             service_id=service_id,
             id_=template_id,
@@ -909,7 +909,7 @@ def mock_get_service_letter_template_welsh_language(notify_admin, mocker):
 
 @pytest.fixture(scope="function")
 def mock_get_service_letter_template_with_attachment(notify_admin, mocker):
-    def _get(service_id, template_id, version=None, postage="second"):
+    def _get(service_id, template_id, version=None, postage="netherlands"):
         template = template_json(
             service_id=service_id,
             id_=template_id,
@@ -931,7 +931,7 @@ def mock_get_service_letter_template_with_attachment(notify_admin, mocker):
 
 @pytest.fixture(scope="function")
 def mock_get_service_letter_template_with_placeholders(notify_admin, mocker):
-    def _get(service_id, template_id, version=None, postage="second"):
+    def _get(service_id, template_id, version=None, postage="netherlands"):
         template = template_json(
             service_id=service_id,
             id_=template_id,
@@ -948,7 +948,7 @@ def mock_get_service_letter_template_with_placeholders(notify_admin, mocker):
 
 @pytest.fixture(scope="function")
 def mock_get_service_letter_template_with_qr_placeholder(notify_admin, mocker):
-    def _get(service_id, template_id, version=None, postage="second"):
+    def _get(service_id, template_id, version=None, postage="netherlands"):
         template = template_json(
             service_id=service_id,
             id_=template_id,

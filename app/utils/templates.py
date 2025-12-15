@@ -3,7 +3,7 @@ from typing import Any
 
 from flask import current_app, render_template, url_for
 from markupsafe import Markup
-from notifications_utils.countries import Postage
+from notifications_utils.countries_nl import Postage
 from notifications_utils.field import Field
 from notifications_utils.formatters import escape_html, formatted_list, normalise_whitespace
 from notifications_utils.take import Take
@@ -22,9 +22,7 @@ from app.notify_client import cache
 class BaseLetterImageTemplate(BaseLetterTemplate):
     first_page_number = 1
     allowed_postage_types = (
-        Postage.FIRST,
-        Postage.SECOND,
-        Postage.ECONOMY,
+        Postage.NL,
         Postage.EUROPE,
         Postage.REST_OF_WORLD,
     )
@@ -82,9 +80,9 @@ class BaseLetterImageTemplate(BaseLetterTemplate):
     @property
     def postage_description(self):
         return {
-            Postage.FIRST: "first class",
-            Postage.SECOND: "second class",
-            Postage.ECONOMY: "economy",
+            Postage.NL: "national",
+            # Postage.SECOND: "second class",
+            # Postage.ECONOMY: "economy",
             Postage.EUROPE: "international",
             Postage.REST_OF_WORLD: "international",
         }.get(self.postage)
@@ -92,9 +90,9 @@ class BaseLetterImageTemplate(BaseLetterTemplate):
     @property
     def postage_class_value(self):
         return {
-            Postage.FIRST: "letter-postage-first",
-            Postage.SECOND: "letter-postage-second",
-            Postage.ECONOMY: "letter-postage-economy",
+            Postage.NL: "letter-postage-first",
+            # Postage.SECOND: "letter-postage-second",
+            # Postage.ECONOMY: "letter-postage-economy",
             Postage.EUROPE: "letter-postage-international",
             Postage.REST_OF_WORLD: "letter-postage-international",
         }.get(self.postage)

@@ -1534,8 +1534,8 @@ class WelshLetterTemplateForm(BaseTemplateForm, TemplateNameMixin):
 class LetterTemplatePostageForm(StripWhitespaceForm):
     choices = [
         # Todo NL: I dont think we have this or support it
-        ("first", "Prioriteit"),
-        ("second", "Standaard"),
+        ("netherlands", "Prioriteit"),
+        ("europe", "Standaard"),
         # ("economy", "Economy mail"),
     ]
 
