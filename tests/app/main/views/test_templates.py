@@ -1688,6 +1688,7 @@ def test_edit_letter_template_postage_page_404s_if_template_is_not_a_letter(
     assert page.select_one("h1").text.strip() != "Edit postage"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] broken because NL Postal address - see test_templates_nl.py")
 def test_edit_letter_templates_postage_updates_postage(
     client_request,
     service_one,

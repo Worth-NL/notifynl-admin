@@ -1575,11 +1575,11 @@ class LetterUploadPostageForm(StripWhitespaceForm):
         "Kies de frankering voor dit briefsjabloon",
         choices=[
             # Todo NL: I dont think we have this or support it
-            ("first", "Prioriteit"),
-            ("second", "Standaard"),
-            # ("economy", "Economy mail"),
+            ("netherlands", "Netherlands"),
+            ("europe", "Europe"),
+            ("rest-of-world", "International"),
         ],
-        default="second",
+        default="netherlands",
         validators=[DataRequired()],
     )
 

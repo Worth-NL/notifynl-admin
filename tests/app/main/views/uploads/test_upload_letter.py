@@ -514,6 +514,7 @@ def test_post_upload_letter_with_invalid_file(
     assert normalize_spaces(page.select_one("input[type=file]")["data-button-text"]) == "Upload your file again"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] broken because NL Postal address - see test_upload_letter_nl.py")
 def test_post_upload_letter_shows_letter_preview_for_invalid_file(
     client_request,
     fake_uuid,
