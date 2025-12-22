@@ -829,7 +829,7 @@ def mock_get_service_template_with_placeholders_same_as_recipient(notify_admin, 
             id_=template_id,
             name="Two week reminder",
             type_="sms",
-            content="((name)) ((date)) ((PHONENUMBER))",
+            content="((name)) ((date)) ((TELEFOONNUMMER))",
         )
         return {"data": template}
 
