@@ -21,7 +21,7 @@ from notifications_utils.insensitive_dict import InsensitiveDict, InsensitiveSet
 from notifications_utils.recipient_validation.email_address import validate_email_address
 from notifications_utils.recipient_validation.errors import InvalidEmailError, InvalidPhoneError
 from notifications_utils.recipient_validation.notifynl.phone_number import PhoneNumber as PhoneNumberUtils
-from notifications_utils.recipient_validation.postal_address import PostalAddress
+from notifications_utils.recipient_validation.notifynl.postal_address import PostalAddress
 from notifications_utils.safe_string import make_string_safe_for_email_local_part
 from notifications_utils.timezones import local_timezone, utc_string_to_aware_gmt_datetime
 from ordered_set import OrderedSet

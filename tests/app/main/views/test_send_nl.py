@@ -84,13 +84,13 @@ def test_404_for_previewing_a_row_out_of_range(
         (
             create_active_user_with_permissions(),
             "sms",
-            "Use my telefoonnummer",
+            "Zie mijn telefoonnummer",
             partial(url_for, "main.send_one_off_to_myself"),
         ),
         (
             create_active_user_with_permissions(),
             "email",
-            "Use my e-mailadres",
+            "Zie mijn e-mailadres",
             partial(url_for, "main.send_one_off_to_myself"),
         ),
         (create_active_user_with_permissions(), "letter", None, None),
@@ -198,7 +198,7 @@ def test_send_one_off_has_sticky_header_for_letter_on_non_address_placeholders(
         session["placeholders"] = {
             "address line 1": "foo",
             "address line 2": "bar",
-            "address line 3": "",
+            "address line 3": "2552 HN",
             "address line 4": "",
             "address line 5": "",
             "address line 6": "",
@@ -303,7 +303,7 @@ def test_example_spreadsheet(
 ):
     page = client_request.get(".send_messages", service_id=SERVICE_ONE_ID, template_id=fake_uuid)
 
-    assert normalize_spaces(page.select_one("tbody tr").text) == "1 telefoonnummer number name date"
+    assert normalize_spaces(page.select_one("tbody tr").text) == "1 telefoonnummer name date"
     assert page.select_one("input[type=file]").has_attr("accept")
     assert page.select_one("input[type=file]")["accept"] == ".csv,.xlsx,.xls,.ods,.xlsm,.tsv"
 
@@ -362,7 +362,7 @@ def test_send_one_off_has_link_to_use_existing_list(
 
     assert [(link.text, link["href"]) for link in page.select("form a")] == [
         (
-            "Upload a list of phone numbers",
+            "Upload een lijst met telefoonnummers",
             url_for(
                 "main.send_messages",
                 service_id=SERVICE_ONE_ID,
@@ -370,7 +370,7 @@ def test_send_one_off_has_link_to_use_existing_list(
             ),
         ),
         (
-            "Use an emergency list",
+            "Gebruik een noodlijst",
             url_for(
                 "main.choose_from_contact_list",
                 service_id=SERVICE_ONE_ID,
@@ -378,7 +378,7 @@ def test_send_one_off_has_link_to_use_existing_list(
             ),
         ),
         (
-            "Use my phone number",
+            "Zie mijn telefoonnummer",
             url_for(
                 "main.send_one_off_to_myself",
                 service_id=SERVICE_ONE_ID,
@@ -410,7 +410,7 @@ def test_no_link_to_use_existing_list_for_service_without_lists(
     )
     assert [link.text for link in page.select("form a")] == [
         "Upload een lijst met telefoonnummers",
-        "Use my telefoonnummer",
+        "Zie mijn telefoonnummer",
     ]
 
 
@@ -519,7 +519,7 @@ def test_send_one_off_letter_qr_code_placeholder_too_big(
 
     assert (
         normalize_spaces(page.select_one(".govuk-error-message").text)
-        == "Error: Cannot create a usable QR code - the text you entered makes the link too long"
+        == "Error: Kan geen bruikbare QR-code maken - de ingevoerde tekst maakt de link te lang."
     )
 
 
@@ -587,8 +587,8 @@ def test_check_messages_does_not_allow_to_send_letter_longer_than_10_pages(
     mocker.patch(
         "app.main.views_nl.send.s3download",
         return_value="\n".join(
-            ["address_line_1,address_line_2,address_line_3,"]
-            + ["First Last,    123 Street,    SWAA 12"] * number_of_rows
+            ["address_line_1,address_line_2,address_line_3"]
+            + ["First Last 123 Street,1234 HH,Den Haag"] * number_of_rows
         ),
     )
     do_mock_get_page_counts_for_letter(mocker, count=11)

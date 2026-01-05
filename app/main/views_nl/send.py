@@ -15,7 +15,7 @@ from flask_login import current_user
 from notifications_python_client.errors import HTTPError
 from notifications_utils import SMS_CHAR_COUNT_LIMIT
 from notifications_utils.insensitive_dict import InsensitiveDict, InsensitiveSet
-from notifications_utils.recipient_validation.postal_address import PostalAddress, address_lines_1_to_7_keys
+from notifications_utils.recipient_validation.notifynl.postal_address import PostalAddress, address_lines_1_to_7_keys
 from notifications_utils.recipients import RecipientCSV, first_column_headings
 from notifications_utils.sanitise_text import SanitiseASCII
 from xlrd.biffh import XLRDError
@@ -136,11 +136,15 @@ def send_messages(service_id, template_id):
                 )
             )
         except (UnicodeDecodeError, BadZipFile, XLRDError):
-            current_app.logger.warning("Could not read %s", form.file.data.filename, exc_info=True)
-            form.file.errors = ["Notify cannot read this file - try using a different file type"]
+            current_app.logger.warning("Kon %s niet lezen", form.file.data.filename, exc_info=True)
+            form.file.errors = ["Notify kan dit bestand niet lezen - probeer een ander bestandstype te gebruiken."]
         except XLDateError:
-            current_app.logger.warning("Could not parse numbers/dates in %s", form.file.data.filename, exc_info=True)
-            form.file.errors = ["Notify cannot read this file - try saving it as a CSV instead"]
+            current_app.logger.warning(
+                "Het is niet mogelijk om getallen/datums in %s te verwerken.", form.file.data.filename, exc_info=True
+            )
+            form.file.errors = [
+                "Notify kan dit bestand niet lezen - probeer het in plaats daarvan als CSV op te slaan."
+            ]
     elif form.errors:
         # just show the first error, as we don't expect the form to have more
         # than one, since it only has one field
@@ -251,18 +255,18 @@ def set_sender(service_id, template_id):
 def get_sender_context(sender_details, template_type):
     context = {
         "email": {
-            "title": "Where should replies come back to?",
-            "description": "Where should replies come back to?",
+            "title": "Waar moeten antwoorden naartoe worden gestuurd?",
+            "description": "Waar moeten antwoorden naartoe worden gestuurd?",
             "field_name": "email_address",
         },
         "letter": {
-            "title": "Send to one recipient",
-            "description": "What should appear in the top right of the letter?",
+            "title": "Verzenden naar één ontvanger",
+            "description": "Wat moet er rechtsboven in de brief verschijnen?",
             "field_name": "contact_block",
         },
         "sms": {
-            "title": "Who should the message come from?",
-            "description": "Who should the message come from?",
+            "title": "Van wie moet het bericht komen?",
+            "description": "Van wie moet het bericht komen?",
             "field_name": "sms_sender",
         },
     }[template_type]
@@ -489,7 +493,7 @@ def send_one_off_step(service_id, template_id, step_index):  # noqa: C901
         template.values[current_placeholder] = form.placeholder_value.data
         if template.template_type == "letter" and template.has_qr_code_with_too_much_data():
             form.placeholder_value.errors.append(
-                "Cannot create a usable QR code - the text you entered makes the link too long"
+                "Kan geen bruikbare QR-code maken - de ingevoerde tekst maakt de link te lang."
             )
 
         else:
@@ -806,10 +810,10 @@ def fields_to_fill_in(template, prefill_current_user=False):
 
     if template.template_type == "sms":
         session["recipient"] = current_user.mobile_number
-        session["placeholders"]["phone number"] = current_user.mobile_number
+        session["placeholders"]["telefoonnummer"] = current_user.mobile_number
     else:
         session["recipient"] = current_user.email_address
-        session["placeholders"]["email address"] = current_user.email_address
+        session["placeholders"]["e-mailadres"] = current_user.email_address
 
     return InsensitiveSet(template.placeholders)
 
@@ -838,8 +842,8 @@ def all_placeholders_in_session(placeholders):
 
 def get_send_test_page_title(template_type, entering_recipient, name=None):
     if entering_recipient:
-        return f"Send ‘{name}’"
-    return "Personalise this message"
+        return f"Stuur ‘{name}’"
+    return "Personaliseer dit bericht"
 
 
 def _get_set_sender_back_link(service_id, template):
@@ -907,7 +911,7 @@ def get_skip_link(step_index, template):
         and current_user.has_permissions("manage_templates", "manage_service")
     ):
         return (
-            f"Use my {first_column_headings[template.template_type][0]}",
+            f"Zie mijn {first_column_headings[template.template_type][0]}",
             url_for(".send_one_off_to_myself", service_id=current_service.id, template_id=template.id),
         )
 
@@ -1031,7 +1035,7 @@ def send_notification(service_id, template_id):
         )
     except HTTPError as exception:
         current_app.logger.info(
-            'Service %(service_id)s could not send notification: "%(message)s"',
+            'Service %(service_id)s kon geen melding verzenden: "%(message)s"',
             {"service_id": current_service.id, "message": exception.message},
         )
         return render_template(
