@@ -86,7 +86,7 @@ def tour_step(service_id, template_id, step_index):
 
     return render_template(
         "views/send-test.html",
-        page_title="Example text message",
+        page_title="Voorbeeld sms bericht template",
         template=template,
         form=form,
         back_link=back_link,

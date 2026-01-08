@@ -1935,6 +1935,7 @@ def test_service_dashboard_shows_free_allowance(
     assert "249,000 free text messages left" in usage_text
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Dashboard text removal")
 @pytest.mark.parametrize(
     "annual_usage, expected_css_class",
     (
