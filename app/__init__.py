@@ -364,7 +364,7 @@ def useful_headers_after_request(response):
             "object-src 'self';"
             "font-src 'self' {asset_domain} data:;"
             "img-src 'self' {asset_domain}"
-            " *.notifications.service.gov.uk {logo_domain} data:;"
+            " *.notifynl.nl {logo_domain} data:;"
             "style-src 'self' {asset_domain} 'unsafe-inline';"
             "frame-ancestors 'self';"
             "frame-src 'self';".format(
