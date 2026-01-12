@@ -153,17 +153,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: Worth-NL/helm-charts
+          repository: Worth-NL/notifynl-charts-private
           ref: main
           token: ${{ secrets.RELEASE_TOKEN }}
-        name: Checkout Worth-NL/helm-charts
+        name: Checkout Worth-NL/notifynl-charts-private
 
       - uses: bwvolleyball/k8s-toolkit@v1.0.0
         with:
           config: ${{ secrets.K8S_CONFIG }}
-
-      - run: ls
-        name: Where am I?
 
       - name: Deploy new tag
         run: helm upgrade --install notifynl notifynl-full/ -n ${{ vars.NAMESPACE_TEST }} --reuse-values --set apps.admin.image.tag=${{ needs.build.outputs.tag }} --wait --timeout 300s
