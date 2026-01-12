@@ -163,4 +163,4 @@ jobs:
           config: ${{ secrets.K8S_CONFIG }}
 
       - name: Deploy new tag
-        run: helm upgrade --install notifynl -n {{ secrets.K8S_NAMESPACE }} --reuse-values --set apps.admin.image.tag=${{ needs.build.outputs.tag }} --wait --timeout 300s
+        run: helm upgrade --install notifynl notifynl-full/ -n {{ secrets.K8S_NAMESPACE }} --reuse-values --set apps.admin.image.tag=${{ needs.build.outputs.tag }} --wait --timeout 300s
