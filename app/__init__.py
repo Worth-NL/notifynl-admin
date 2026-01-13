@@ -354,20 +354,19 @@ def make_nonce_before_request():
 #  https://www.owasp.org/index.php/List_of_useful_HTTP_headers
 def useful_headers_after_request(response):
     response.headers.add("X-Content-Type-Options", "nosniff")
-    response.headers.add("X-XSS-Protection", "1; mode=block")
     response.headers.add(
         "Content-Security-Policy",
         (
-            "default-src 'self' {asset_domain} 'unsafe-inline';"
+            "default-src 'self' {asset_domain};"
             "script-src 'self' {asset_domain} 'nonce-{csp_nonce}';"
             "connect-src 'self';"
-            "object-src 'self';"
+            "object-src 'none';"
             "font-src 'self' {asset_domain} data:;"
-            "img-src 'self' {asset_domain}"
-            " *.notifynl.nl {logo_domain} data:;"
-            "style-src 'self' {asset_domain} 'unsafe-inline';"
+            "img-src 'self' {asset_domain} *.notifynl.nl {logo_domain} data:;"
+            "style-src 'self' {asset_domain};"
             "frame-ancestors 'self';"
-            "frame-src 'self';".format(
+            "frame-src 'self';"
+            "base-uri 'self'".format(
                 asset_domain=current_app.config["ASSET_DOMAIN"],
                 logo_domain=current_app.config["LOGO_CDN_DOMAIN"],
                 csp_nonce=getattr(request, "csp_nonce", ""),
@@ -389,23 +388,14 @@ def useful_headers_after_request(response):
         response.headers[key] = SanitiseASCII.encode(value)
     response.headers.add("Strict-Transport-Security", "max-age=31536000; preload")
     response.headers.add("Referrer-Policy", "strict-origin-when-cross-origin")
-    response.headers.add(
-        "Cross-Origin-Embedder-Policy",
-        "require-corp {asset_domain};".format(asset_domain=current_app.config["ASSET_DOMAIN"]),
-    )
-    response.headers.add(
-        "Cross-Origin-Opener-Policy",
-        "same-origin {asset_domain};".format(asset_domain=current_app.config["ASSET_DOMAIN"]),
-    )
-    response.headers.add(
-        "Cross-Origin-Resource-Policy",
-        "same-origin {asset_domain};".format(asset_domain=current_app.config["ASSET_DOMAIN"]),
-    )
+    response.headers.add("Cross-Origin-Embedder-Policy", "require-corp")
+    response.headers.add("Cross-Origin-Opener-Policy", "same-origin")
+    response.headers.add("Cross-Origin-Resource-Policy", "same-origin")
     response.headers.add(
         "Permissions-Policy",
         "geolocation=(), microphone=(), camera=(), autoplay=(), payment=(), sync-xhr=()",
     )
-    response.headers.add("Server", "Cloudfront")
+    response.headers.add("Server", "Nginx")
     return response
 
 
