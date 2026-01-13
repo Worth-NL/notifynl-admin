@@ -12,33 +12,31 @@ def test_owasp_useful_headers_set(
     response = client_request.get_response(".index")
 
     assert response.headers["X-Content-Type-Options"] == "nosniff"
-    assert response.headers["X-XSS-Protection"] == "1; mode=block"
     assert response.headers["Content-Security-Policy"] == (
-        "default-src 'self' static.example.com 'unsafe-inline';"
+        "default-src 'self' static.example.com;"
         "script-src 'self' static.example.com 'nonce-TESTs5Vr8v3jgRYLoQuVwA';"
         "connect-src 'self';"
         "object-src 'self';"
         "font-src 'self' static.example.com data:;"
-        "img-src "
-        "'self' static.example.com"
-        " *.notifynl.nl static-logos.test.com data:;"
-        "style-src 'self' static.example.com 'unsafe-inline';"
+        "img-src 'self' static.example.com *.notifynl.nl static-logos.test.com data:;"
+        "style-src 'self' static.example.com;"
         "frame-ancestors 'self';"
         "frame-src 'self';"
+        "base-uri 'self';"
     )
     assert response.headers["Link"] == (
         "<https://static.example.com>; rel=dns-prefetch, <https://static.example.com>; rel=preconnect"
     )
     assert response.headers["Strict-Transport-Security"] == "max-age=31536000; preload"
     assert response.headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
-    assert response.headers["Cross-Origin-Embedder-Policy"] == "require-corp static.example.com;"
-    assert response.headers["Cross-Origin-Opener-Policy"] == "same-origin static.example.com;"
-    assert response.headers["Cross-Origin-Resource-Policy"] == "same-origin static.example.com;"
+    assert response.headers["Cross-Origin-Embedder-Policy"] == "require-corp"
+    assert response.headers["Cross-Origin-Opener-Policy"] == "same-origin"
+    assert response.headers["Cross-Origin-Resource-Policy"] == "same-origin"
     assert (
         response.headers["Permissions-Policy"]
         == "geolocation=(), microphone=(), camera=(), autoplay=(), payment=(), sync-xhr=()"
     )
-    assert response.headers["Server"] == "Cloudfront"
+    assert response.headers["Server"] == "Nginx"
 
 
 def test_headers_non_ascii_characters_are_replaced(
@@ -60,15 +58,14 @@ def test_headers_non_ascii_characters_are_replaced(
     response = client_request.get_response(".index")
 
     assert response.headers["Content-Security-Policy"] == (
-        "default-src 'self' static.example.com 'unsafe-inline';"
+        "default-src 'self' static.example.com;"
         "script-src 'self' static.example.com 'nonce-TESTs5Vr8v3jgRYLoQuVwA';"
         "connect-src 'self';"
         "object-src 'self';"
         "font-src 'self' static.example.com data:;"
-        "img-src"
-        " 'self' static.example.com"
-        " *.notifynl.nl static-logos??.test.com data:;"
-        "style-src 'self' static.example.com 'unsafe-inline';"
+        "img-src 'self' static.example.com *.notifynl.nl static-logos??.test.com data:;"
+        "style-src 'self' static.example.com;"
         "frame-ancestors 'self';"
         "frame-src 'self';"
+        "base-uri 'self';"
     )
