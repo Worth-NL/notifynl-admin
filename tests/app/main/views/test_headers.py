@@ -29,9 +29,9 @@ def test_owasp_useful_headers_set(
     )
     assert response.headers["Strict-Transport-Security"] == "max-age=31536000; preload"
     assert response.headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
-    assert response.headers["Cross-Origin-Embedder-Policy"] == "require-corp"
-    assert response.headers["Cross-Origin-Opener-Policy"] == "same-origin"
-    assert response.headers["Cross-Origin-Resource-Policy"] == "same-origin"
+    assert response.headers["Cross-Origin-Embedder-Policy"] == "require-corp static.example.com;"
+    assert response.headers["Cross-Origin-Opener-Policy"] == "same-origin static.example.com;"
+    assert response.headers["Cross-Origin-Resource-Policy"] == "same-origin static.example.com;"
     assert (
         response.headers["Permissions-Policy"]
         == "geolocation=(), microphone=(), camera=(), autoplay=(), payment=(), sync-xhr=()"

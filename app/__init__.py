@@ -388,9 +388,18 @@ def useful_headers_after_request(response):
         response.headers[key] = SanitiseASCII.encode(value)
     response.headers.add("Strict-Transport-Security", "max-age=31536000; preload")
     response.headers.add("Referrer-Policy", "strict-origin-when-cross-origin")
-    response.headers.add("Cross-Origin-Embedder-Policy", "require-corp")
-    response.headers.add("Cross-Origin-Opener-Policy", "same-origin")
-    response.headers.add("Cross-Origin-Resource-Policy", "same-origin")
+    response.headers.add(
+        "Cross-Origin-Embedder-Policy",
+        "require-corp {asset_domain};".format(asset_domain=current_app.config["ASSET_DOMAIN"]),
+    )
+    response.headers.add(
+        "Cross-Origin-Opener-Policy",
+        "same-origin {asset_domain};".format(asset_domain=current_app.config["ASSET_DOMAIN"]),
+    )
+    response.headers.add(
+        "Cross-Origin-Resource-Policy",
+        "same-origin {asset_domain};".format(asset_domain=current_app.config["ASSET_DOMAIN"]),
+    )
     response.headers.add(
         "Permissions-Policy",
         "geolocation=(), microphone=(), camera=(), autoplay=(), payment=(), sync-xhr=()",
