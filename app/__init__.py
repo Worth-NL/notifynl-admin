@@ -366,7 +366,7 @@ def useful_headers_after_request(response):
             "style-src 'self' {asset_domain};"
             "frame-ancestors 'self';"
             "frame-src 'self';"
-            "base-uri 'self'".format(
+            "base-uri 'self';".format(
                 asset_domain=current_app.config["ASSET_DOMAIN"],
                 logo_domain=current_app.config["LOGO_CDN_DOMAIN"],
                 csp_nonce=getattr(request, "csp_nonce", ""),
