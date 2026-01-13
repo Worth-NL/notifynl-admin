@@ -140,7 +140,7 @@ jobs:
           tags: ${{ env.IMAGE }}:${{ steps.set-tag.outputs.tag }}
           platforms: linux/amd64
           provenance: false
-        name: Docker build and push ${{ env.TAG }}
+        name: Docker build and push ${{ steps.set-tag.outputs.tag }}
 
     outputs:
       tag: ${{ steps.set-tag.outputs.tag }}
