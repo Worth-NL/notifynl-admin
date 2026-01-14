@@ -91,8 +91,6 @@ class BaseLetterImageTemplate(BaseLetterTemplate):
     def postage_class_value(self):
         return {
             Postage.NL: "letter-postage-first",
-            # Postage.SECOND: "letter-postage-second",
-            # Postage.ECONOMY: "letter-postage-economy",
             Postage.EUROPE: "letter-postage-international",
             Postage.REST_OF_WORLD: "letter-postage-international",
         }.get(self.postage)

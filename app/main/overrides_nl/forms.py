@@ -1534,9 +1534,9 @@ class WelshLetterTemplateForm(BaseTemplateForm, TemplateNameMixin):
 class LetterTemplatePostageForm(StripWhitespaceForm):
     choices = [
         # Todo NL: I dont think we have this or support it
-        ("netherlands", "Prioriteit"),
-        ("europe", "Standaard"),
-        # ("economy", "Economy mail"),
+        (Postage.NL, "Nederland"),
+        (Postage.EUROPE, "Europa"),
+        (Postage.REST_OF_WORLD, "Rest van de wereld"),
     ]
 
     postage = GovukRadiosField(
