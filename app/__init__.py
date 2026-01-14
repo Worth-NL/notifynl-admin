@@ -359,11 +359,11 @@ def useful_headers_after_request(response):
         (
             "default-src 'self' {asset_domain};"
             "script-src 'self' {asset_domain} 'nonce-{csp_nonce}';"
-            "connect-src 'self';"
+            "connect-src 'self' {asset_domain};"
             "object-src 'none';"
             "font-src 'self' {asset_domain} data:;"
             "img-src 'self' {asset_domain} *.notifynl.nl {logo_domain} data:;"
-            "style-src 'self' {asset_domain};"
+            "style-src 'self' {asset_domain} 'nonce-{csp_nonce}';"
             "frame-ancestors 'self';"
             "frame-src 'self';"
             "base-uri 'self';".format(
