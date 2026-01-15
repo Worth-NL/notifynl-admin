@@ -12,19 +12,17 @@ def test_owasp_useful_headers_set(
     response = client_request.get_response(".index")
 
     assert response.headers["X-Content-Type-Options"] == "nosniff"
-    assert response.headers["X-XSS-Protection"] == "1; mode=block"
     assert response.headers["Content-Security-Policy"] == (
-        "default-src 'self' static.example.com 'unsafe-inline';"
+        "default-src 'self' static.example.com;"
         "script-src 'self' static.example.com 'nonce-TESTs5Vr8v3jgRYLoQuVwA';"
-        "connect-src 'self';"
-        "object-src 'self';"
+        "connect-src 'self' static.example.com;"
+        "object-src 'none';"
         "font-src 'self' static.example.com data:;"
-        "img-src "
-        "'self' static.example.com"
-        " *.notifications.service.gov.uk static-logos.test.com data:;"
-        "style-src 'self' static.example.com 'unsafe-inline';"
+        "img-src 'self' static.example.com *.notifynl.nl static-logos.test.com data:;"
+        "style-src 'self' static.example.com 'nonce-TESTs5Vr8v3jgRYLoQuVwA';"
         "frame-ancestors 'self';"
         "frame-src 'self';"
+        "base-uri 'self';"
     )
     assert response.headers["Link"] == (
         "<https://static.example.com>; rel=dns-prefetch, <https://static.example.com>; rel=preconnect"
@@ -38,7 +36,7 @@ def test_owasp_useful_headers_set(
         response.headers["Permissions-Policy"]
         == "geolocation=(), microphone=(), camera=(), autoplay=(), payment=(), sync-xhr=()"
     )
-    assert response.headers["Server"] == "Cloudfront"
+    assert response.headers["Server"] == "Nginx"
 
 
 def test_headers_non_ascii_characters_are_replaced(
@@ -60,15 +58,14 @@ def test_headers_non_ascii_characters_are_replaced(
     response = client_request.get_response(".index")
 
     assert response.headers["Content-Security-Policy"] == (
-        "default-src 'self' static.example.com 'unsafe-inline';"
+        "default-src 'self' static.example.com;"
         "script-src 'self' static.example.com 'nonce-TESTs5Vr8v3jgRYLoQuVwA';"
-        "connect-src 'self';"
-        "object-src 'self';"
+        "connect-src 'self' static.example.com;"
+        "object-src 'none';"
         "font-src 'self' static.example.com data:;"
-        "img-src"
-        " 'self' static.example.com"
-        " *.notifications.service.gov.uk static-logos??.test.com data:;"
-        "style-src 'self' static.example.com 'unsafe-inline';"
+        "img-src 'self' static.example.com *.notifynl.nl static-logos??.test.com data:;"
+        "style-src 'self' static.example.com 'nonce-TESTs5Vr8v3jgRYLoQuVwA';"
         "frame-ancestors 'self';"
         "frame-src 'self';"
+        "base-uri 'self';"
     )
