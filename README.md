@@ -1,11 +1,20 @@
 # notifications-admin
 
-GOV.UK Notify admin application - https://www.notifications.service.gov.uk/
+NotifyNL admin application - https://admin.notifynl.nl/
 
  - Register and manage users
  - Create and manage services
  - Send batch emails and SMS by uploading a CSV
  - Show history of notifications
+
+ ## Licence
+
+This project is a fork of GOV.UK Notify.
+
+- Original content derived from GOV.UK Notify is licensed under the MIT License (MIT)
+- Modifications and additional content for the NL fork are licensed under the European Union Public Licence (EUPL) v1.2.
+
+See the LICENSE and NOTICE files for details.
 
 ## Setting up
 
