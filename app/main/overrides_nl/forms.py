@@ -238,7 +238,7 @@ class PhoneNumber(GovukTextInputFieldMixin, TelField):
     input_type = "tel"
 
 
-def valid_phone_number(label="Mobiel nummer", international=False, sms_to_uk_landline=False):
+def valid_phone_number(label="Mobiel telefoonnummer", international=False, sms_to_uk_landline=False):
     if not (sms_to_uk_landline or international):
         return PhoneNumber(
             label,
@@ -251,7 +251,7 @@ def valid_phone_number(label="Mobiel nummer", international=False, sms_to_uk_lan
         return PhoneNumber(
             label,
             validators=[
-                NotifyDataRequired(thing="een mobiel nummer"),
+                NotifyDataRequired(thing="een mobiel telefoonnummer"),
                 ValidPhoneNumber(
                     allow_sms_to_uk_landlines=sms_to_uk_landline,
                     allow_international_sms=international,
@@ -585,7 +585,7 @@ class VirusScannedFileField(FileField_wtf, RequiredValidatorsMixin):
 
 class LoginForm(StripWhitespaceForm):
     email_address = make_email_address_field(gov_user=False, thing="uw e-mailadres")
-    password = GovukPasswordField("Password", validators=[NotifyDataRequired(thing="uw wachtwoord")])
+    password = GovukPasswordField("Wachtwoord", validators=[NotifyDataRequired(thing="uw wachtwoord")])
 
 
 class RegisterUserForm(StripWhitespaceForm):
@@ -598,7 +598,7 @@ class RegisterUserForm(StripWhitespaceForm):
     )
     email_address = make_email_address_field(gov_user=True, thing="uw e-mailadres")
     mobile_number = valid_phone_number(international=True)
-    password = make_password_field(thing="your password")
+    password = make_password_field(thing="uw wachtwoord")
     # always register as sms type
     auth_type = HiddenField("auth_type", default="sms_auth")
 
@@ -621,14 +621,14 @@ class RegisterUserFromInviteForm(RegisterUserForm):
             name=guess_name_from_email_address(invited_user.email_address),
         )
 
-    mobile_number = PhoneNumber("Mobiel nummer", validators=[ValidPhoneNumber(allow_international_sms=True)])
+    mobile_number = PhoneNumber("Mobiel telefoonnummer", validators=[ValidPhoneNumber(allow_international_sms=True)])
     service = HiddenField("service")
     email_address = HiddenField("email_address")
     auth_type = HiddenField("auth_type", validators=[DataRequired()])
 
     def validate_mobile_number(self, field):
         if self.auth_type.data == "sms_auth" and not field.data:
-            raise ValidationError("Voer uw mobiele nummer in")
+            raise ValidationError("Voer uw mobiele telefoonnummer in")
 
 
 class RegisterUserFromOrgInviteForm(StripWhitespaceForm):
@@ -641,9 +641,9 @@ class RegisterUserFromOrgInviteForm(StripWhitespaceForm):
     name = GovukTextInputField("Uw naam (volledig)", validators=[NotifyDataRequired(thing="uw naam")])
 
     mobile_number = PhoneNumber(
-        "Mobiel nummer",
+        "Mobiel telefoonnummer",
         validators=[
-            NotifyDataRequired(thing="uw mobiele nummer"),
+            NotifyDataRequired(thing="uw mobiele telefoonnummer"),
             ValidPhoneNumber(allow_international_sms=True),
         ],
     )

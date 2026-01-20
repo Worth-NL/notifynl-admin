@@ -112,7 +112,7 @@
 
     this.addCancelButton = function(state) {
       let selector = `[value=${state.key}]`;
-      let $cancel = this.makeButton('Cancel', {
+      let $cancel = this.makeButton('Annuleren', {
         'onclick': () => {
 
           // clear existing data
@@ -131,7 +131,7 @@
 
     this.addClearButton = function(state) {
       let selector = 'button[value=add-new-template]';
-      let $clear = this.makeButton('Clear', {
+      let $clear = this.makeButton('Wissen', {
         'onclick': () => {
 
           // uncheck all templates and folders
@@ -197,7 +197,7 @@
     };
 
     this.selectionStatus = {
-      'default': 'Nothing selected',
+      'default': 'Niets geselecteerd',
       'selected': numSelected => {
         const getString = key => {
           if (numSelected[key] === 0) {
@@ -217,7 +217,7 @@
         if (numSelected.folders > 0) {
           results.push(getString('folders'));
         }
-        return results.join(', ') + ' selected';
+        return results.join(', ') + ' geselecteerd';
       },
       'update': numSelected => {
         let message = (numSelected.total > 0) ? this.selectionStatus.selected(numSelected) : this.selectionStatus.default;
@@ -293,9 +293,9 @@
       <div id="nothing_selected">
         <div class="js-stick-at-bottom-when-scrolling">
           <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-right-3 govuk-!-margin-bottom-1" value="add-new-template" ${!this.$singleNotificationChannel ? 'aria-expanded="false"' : ''}>
-            New template
+            Nieuw sjabloon
           </button>
-          <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-1" value="add-new-folder" aria-expanded="false">New folder</button>
+          <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-1" value="add-new-folder" aria-expanded="false">Nieuwe map</button>
           <div class="checkbox-list-selected-counter">
             <span class="checkbox-list-selected-counter__count" aria-hidden="true">
               ${this.selectionStatus.default}
@@ -309,9 +309,9 @@
       <div id="items_selected">
         <div class="js-stick-at-bottom-when-scrolling">
           <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-right-3 govuk-!-margin-bottom-1" value="move-to-existing-folder" aria-expanded="false">
-            Move<span class="govuk-visually-hidden"> selection to folder</span>
+            Verplaats<span class="govuk-visually-hidden"> de selectie naar de map</span>
           </button>
-          <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-1" value="move-to-new-folder" aria-expanded="false">Add to new folder</button>
+          <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-1" value="move-to-new-folder" aria-expanded="false">Toevoegen aan een nieuwe map</button>
           <div class="checkbox-list-selected-counter" aria-hidden="true">
             <span class="checkbox-list-selected-counter__count" aria-hidden="true">
               ${this.selectionStatus.selected(1)}

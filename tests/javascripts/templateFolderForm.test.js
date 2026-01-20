@@ -616,7 +616,7 @@ describe('TemplateFolderForm', () => {
       test("the link has been added with the right text", () => {
 
         expect(clearLink).not.toBeNull();
-        expect(clearLink.textContent.trim()).toEqual('Clear selection');
+        expect(clearLink.textContent.trim()).toEqual('Wissen selection');
 
       });
 
@@ -652,7 +652,7 @@ describe('TemplateFolderForm', () => {
 
       test("the content of the counter should reflect the selection", () => {
 
-        expect(visibleCounterText).toEqual('1 template, 1 folder selected');
+        expect(visibleCounterText).toEqual('1 template, 1 folder geselecteerd');
 
       });
 
@@ -921,7 +921,7 @@ describe('TemplateFolderForm', () => {
         helpers.triggerEvent(templateFolderCheckboxes[1], 'click');
         helpers.triggerEvent(templateFolderCheckboxes[2], 'click');
 
-        expect(visibleCounterText).toEqual('2 templates selected');
+        expect(visibleCounterText).toEqual('2 templates geselecteerd');
 
       });
 
@@ -941,7 +941,7 @@ describe('TemplateFolderForm', () => {
 
         helpers.triggerEvent(templateFolderCheckboxes[0], 'click');
 
-        expect(visibleCounterText).toEqual('1 folder selected');
+        expect(visibleCounterText).toEqual('1 folder geselecteerd');
 
       });
 
@@ -951,7 +951,7 @@ describe('TemplateFolderForm', () => {
 
   describe("When a form is submitted without a selection and page renders with an error-summary", () => {
     beforeEach(() => {
-      const errorSummary = 
+      const errorSummary =
         `<div class="govuk-error-summary" data-module="govuk-error-summary">
             <div role="alert">
               <h2 class="govuk-error-summary__title">
@@ -967,7 +967,7 @@ describe('TemplateFolderForm', () => {
             </div>
           </div>
         `;
-      
+
       // fake page refresh that sets a state of last submitted form
       templateFolderForm.setAttribute('data-prev-state',"add-new-template" );
       // append the error summary to fake an error
@@ -980,7 +980,7 @@ describe('TemplateFolderForm', () => {
     });
     test("region should not be focused", () => {
       // we can't import govuk-frontend in here for it to focus the error summary
-      // as it's an ES Module, but as this module checks for the presence 
+      // as it's an ES Module, but as this module checks for the presence
       // of error summary to determine whether or not to focus the form
       // we can just check whether the form is focussed or not
       expect(document.activeElement).not.toBe(formControls.querySelector('#add_new_template_form'));
