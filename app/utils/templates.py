@@ -90,7 +90,7 @@ class BaseLetterImageTemplate(BaseLetterTemplate):
     @property
     def postage_class_value(self):
         return {
-            Postage.NL: "letter-postage-first",
+            Postage.NL: "letter-postage-national",
             Postage.EUROPE: "letter-postage-international",
             Postage.REST_OF_WORLD: "letter-postage-international",
         }.get(self.postage)
