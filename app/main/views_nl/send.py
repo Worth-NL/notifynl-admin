@@ -15,7 +15,7 @@ from flask_login import current_user
 from notifications_python_client.errors import HTTPError
 from notifications_utils import SMS_CHAR_COUNT_LIMIT
 from notifications_utils.insensitive_dict import InsensitiveDict, InsensitiveSet
-from notifications_utils.recipient_validation.notifynl.postal_address import PostalAddress, address_lines_1_to_7_keys
+from notifications_utils.recipient_validation.notifynl.postal_address import PostalAddress, address_lines_1_to_6_keys
 from notifications_utils.recipients import RecipientCSV, first_column_headings
 from notifications_utils.sanitise_text import SanitiseASCII
 from xlrd.biffh import XLRDError
@@ -44,7 +44,7 @@ from app.utils import PermanentRedirect, should_skip_template_page, unicode_trun
 from app.utils.csv import Spreadsheet, get_errors_for_csv
 from app.utils.user import user_has_permissions
 
-letter_address_columns = [column.replace("_", " ") for column in address_lines_1_to_7_keys]
+letter_address_columns = [column.replace("_", " ") for column in address_lines_1_to_6_keys]
 
 
 def get_example_csv_fields(column_headers, use_example_as_example, submitted_fields):
@@ -76,9 +76,11 @@ def get_example_csv_rows(template, use_example_as_example=True, submitted_fields
 
 
 def get_example_letter_address(key):
-    return {"address line 1": "A. Name", "address line 2": "123 Example Street", "address line 3": "XM4 5HQ"}.get(
-        key, ""
-    )
+    return {
+        "address line 1": "A. Naam",
+        "address line 2": "123 Voorbeeldstraat",
+        "address line 3": "1234 AB Plaats",
+    }.get(key, "")
 
 
 @main.route("/services/<uuid:service_id>/send/<uuid:template_id>/csv", methods=["GET", "POST"])
@@ -371,7 +373,7 @@ def send_one_off_letter_address(service_id, template_id):
         if all_placeholders_in_session(placeholders):
             return get_notification_check_endpoint(service_id, template)
 
-        first_non_address_placeholder_index = len(address_lines_1_to_7_keys)
+        first_non_address_placeholder_index = len(address_lines_1_to_6_keys)
 
         return redirect(
             url_for(
@@ -454,7 +456,7 @@ def send_one_off_step(service_id, template_id, step_index):  # noqa: C901
 
     # if we're in a letter, we should show address block rather than "address line #" or "postcode"
     if template.template_type == "letter":
-        if step_index < len(address_lines_1_to_7_keys):
+        if step_index < len(address_lines_1_to_6_keys):
             return redirect(
                 url_for(
                     ".send_one_off_letter_address",

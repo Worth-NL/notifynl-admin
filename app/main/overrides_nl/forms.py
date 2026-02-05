@@ -1462,8 +1462,8 @@ class LetterAddressForm(StripWhitespaceForm):
         if not address.has_valid_last_line:
             if self.allow_international_letters:
                 raise ValidationError(
-                    "De laatste regel van een adres moet ofwel de naam van een land "
-                    "ofwel een geldige postcode met plaatsnaam zijn"
+                    "De laatste regel van een adres moet op de naam van een buitenlands land bevatten"
+                    "óf een geldige postcode met plaatsnaam."
                 )
             if address.international:
                 raise ValidationError("U hebt geen toestemming om brieven te sturen naar andere landen")

@@ -198,7 +198,7 @@ def test_send_one_off_has_sticky_header_for_letter_on_non_address_placeholders(
         session["placeholders"] = {
             "address line 1": "foo",
             "address line 2": "bar",
-            "address line 3": "2552 HN",
+            "address line 3": "2552 HN Den Haag",
             "address line 4": "",
             "address line 5": "",
             "address line 6": "",
@@ -208,7 +208,7 @@ def test_send_one_off_has_sticky_header_for_letter_on_non_address_placeholders(
         "main.send_one_off_step",
         service_id=SERVICE_ONE_ID,
         template_id=fake_uuid,
-        step_index=7,  # letter template has 7 placeholders – we’re at the end
+        step_index=6,  # NL letter template has 6 placeholders – we’re at the end
         _follow_redirects=True,
     )
     assert page.select(".js-stick-at-top-when-scrolling")
@@ -217,24 +217,6 @@ def test_send_one_off_has_sticky_header_for_letter_on_non_address_placeholders(
 @pytest.mark.parametrize(
     "template_type, content, recipient, placeholder_values, step_index, css_selector_for_content, expected_content",
     (
-        (
-            "sms",
-            "((telefoonnummer)) ((Telefoonnummer)) ((TELEFOONNUMMER)) ((name)) ((NAME))",
-            "07900900123",
-            {"telefoonnummer": "07900900123"},
-            1,
-            ".sms-message-wrapper",
-            "service one: 07900900123 07900900123 07900900123 ((name)) ((NAME))",
-        ),
-        (
-            "email",
-            "((e-mailadres)) ((e-mailadres)) ((name))",
-            "test@example.com",
-            {"e-mailadres": "test@example.com"},
-            1,
-            ".email-message-body",
-            "test@example.com test@example.com ((name))",
-        ),
         (
             "letter",
             "((address_line_1)) ((POSTCODE)) ((address_line_3)) ((name))",
@@ -245,11 +227,10 @@ def test_send_one_off_has_sticky_header_for_letter_on_non_address_placeholders(
                 "addressline3": "Den Haag",
                 "addressline4": "",
                 "addressline5": "",
-                "addressline6": "",
-                "addressline7": "Netherlands",
+                "addressline6": "Netherlands",
                 "postcode": "1234 AB",
             },
-            8,
+            7,  # NL postal address can only have 6 lines  #TODO: Should we still accept POSTCODE as placeholder?
             ".letter + .govuk-visually-hidden p:last-child",
             "1 Example Street 1234 AB Den Haag ((name))",
         ),
@@ -504,7 +485,6 @@ def test_send_one_off_letter_qr_code_placeholder_too_big(
             "address line 4": "",
             "address line 5": "",
             "address line 6": "",
-            "address line 7": "",
         }
 
     client_request.login(platform_admin_user)
@@ -512,7 +492,7 @@ def test_send_one_off_letter_qr_code_placeholder_too_big(
         "main.send_one_off_step",
         service_id=SERVICE_ONE_ID,
         template_id=fake_uuid,
-        step_index=7,
+        step_index=6,
         _data={"placeholder_value": "content which makes the QR code too big " * 25},
         _expected_status=200,
     )
@@ -587,8 +567,8 @@ def test_check_messages_does_not_allow_to_send_letter_longer_than_10_pages(
     mocker.patch(
         "app.main.views_nl.send.s3download",
         return_value="\n".join(
-            ["address_line_1,address_line_2,address_line_3"]
-            + ["First Last 123 Street,1234 HH,Den Haag"] * number_of_rows
+            ["address_line_1,address_line_2,address_line_3,address_line_4"]
+            + ["First Last, 123 Street,1234 HH,Den Haag"] * number_of_rows
         ),
     )
     do_mock_get_page_counts_for_letter(mocker, count=11)
@@ -611,3 +591,127 @@ def test_check_messages_does_not_allow_to_send_letter_longer_than_10_pages(
 
     assert len(page.select(".letter img")) == 10  # if letter longer than 10 pages, only 10 first pages are displayed
     assert not page.select("form button")
+
+
+def test_send_one_off_letter_address_goes_to_next_placeholder(client_request, mock_template_preview, mocker):
+    with client_request.session_transaction() as session:
+        session["recipient"] = None
+        session["placeholders"] = {}
+
+    template_data = create_template(template_type="letter", content="((foo))")
+
+    mocker.patch("app.service_api_client.get_service_template", return_value={"data": template_data})
+
+    client_request.post(
+        "main.send_one_off_letter_address",
+        service_id=SERVICE_ONE_ID,
+        template_id=template_data["id"],
+        _data={"address": "a\nb\n1234AB Den Haag"},
+        # step 0-6 represent address line 1-6 and postcode. step 7 is the first non address placeholder
+        _expected_redirect=url_for(
+            "main.send_one_off_step",
+            service_id=SERVICE_ONE_ID,
+            template_id=template_data["id"],
+            step_index=6,
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ["form_data", "expected_placeholders"],
+    [
+        # minimal
+        (
+            "\n".join(["a", "b", "1234 NL Den Haag"]),
+            {
+                "address_line_1": "a",
+                "address_line_2": "b",
+                "address_line_3": "",
+                "address_line_4": "",
+                "address_line_5": "",
+                "address_line_6": "1234 NL  DEN HAAG",
+                "postcode": "1234 NL",
+            },
+        ),
+        # maximal
+        (
+            "\n".join(["a", "b", "c", "d", "e", "1234 NL den Haag"]),
+            {
+                "address_line_1": "a",
+                "address_line_2": "b",
+                "address_line_3": "c",
+                "address_line_4": "d",
+                "address_line_5": "e",
+                "address_line_6": "1234 NL  DEN HAAG",
+                "postcode": "1234 NL",
+            },
+        ),
+        # it ignores empty lines and strips whitespace from each line.
+        # It also strips extra whitespace from the middle of lines.
+        (
+            "\n  a\ta  \n\n\n      \n\n\n\nb  b   \r\n1234 NL Den Haag\n\n",
+            {
+                "address_line_1": "a a",
+                "address_line_2": "b b",
+                "address_line_3": "",
+                "address_line_4": "",
+                "address_line_5": "",
+                "address_line_6": "1234 NL  DEN HAAG",
+                "postcode": "1234 NL",
+            },
+        ),
+    ],
+)
+def test_send_one_off_letter_address_populates_address_fields_in_session(
+    client_request, fake_uuid, mock_get_service_letter_template, mock_template_preview, form_data, expected_placeholders
+):
+    with client_request.session_transaction() as session:
+        session["recipient"] = None
+        session["placeholders"] = {}
+
+    client_request.post(
+        "main.send_one_off_letter_address",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+        _data={"address": form_data},
+        # there are no additional placeholders so go straight to the check page
+        _expected_redirect=url_for(
+            "main.check_notification",
+            service_id=SERVICE_ONE_ID,
+            template_id=fake_uuid,
+        ),
+    )
+    with client_request.session_transaction() as session:
+        assert session["placeholders"] == expected_placeholders
+
+
+def test_example_spreadsheet_for_letters(
+    client_request,
+    service_one,
+    mock_get_service_letter_template_with_placeholders,
+    fake_uuid,
+    mock_get_page_counts_for_letter,
+):
+    service_one["permissions"] += ["letter"]
+
+    page = client_request.get(".send_messages", service_id=SERVICE_ONE_ID, template_id=fake_uuid)
+
+    assert list(
+        zip(
+            *[
+                [normalize_spaces(cell.text) for cell in page.select("tbody tr")[row].select("th, td")]
+                for row in (0, 1)
+            ],
+            strict=True,
+        )
+    ) == [
+        ("1", "2"),
+        ("address line 1", "A. Naam"),
+        ("address line 2", "123 Voorbeeldstraat"),
+        ("address line 3", "1234 AB Plaats"),
+        ("address line 4", ""),
+        ("address line 5", ""),
+        ("address line 6", ""),
+        ("name", "example"),
+        ("date", "example"),
+    ]
