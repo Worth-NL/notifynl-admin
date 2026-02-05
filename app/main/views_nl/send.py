@@ -1076,7 +1076,8 @@ def get_spreadsheet_column_headings_from_template(template):
     column_headings = []
 
     if template.template_type == "letter":
-        # We want to avoid showing `address line 7` for now
+        # uk: We want to avoid showing `address line 7` for now
+        # nl: do We want to avoid showing `address line 6` for now?
         recipient_columns = letter_address_columns
     else:
         recipient_columns = first_column_headings[template.template_type]

@@ -567,8 +567,8 @@ def test_check_messages_does_not_allow_to_send_letter_longer_than_10_pages(
     mocker.patch(
         "app.main.views_nl.send.s3download",
         return_value="\n".join(
-            ["address_line_1,address_line_2,address_line_3,address_line_4"]
-            + ["First Last, 123 Street,1234 HH,Den Haag"] * number_of_rows
+            ["address_line_1,address_line_2,address_line_3"]
+            + ["First Last, 123 Street,1234 HH Den Haag"] * number_of_rows
         ),
     )
     do_mock_get_page_counts_for_letter(mocker, count=11)
@@ -587,7 +587,7 @@ def test_check_messages_does_not_allow_to_send_letter_longer_than_10_pages(
         upload_id=fake_uuid,
         _test_page_title=False,
     )
-    # assert page.select_one("h1", {"data-error-type": "letter-too-long"})
+    assert page.select_one("h1", {"data-error-type": "letter-too-long"})
 
     assert len(page.select(".letter img")) == 10  # if letter longer than 10 pages, only 10 first pages are displayed
     assert not page.select("form button")
