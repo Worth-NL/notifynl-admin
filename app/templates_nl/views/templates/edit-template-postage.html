@@ -37,17 +37,15 @@
 
   <div class="bottom-gutter-3-2">
     {% call mapping_table(
-      caption='Estimated delivery times for letters',
-      field_headings=['Postage', 'Estimated delivery time'],
+      caption='Geschatte levertijden voor brieven',
+      field_headings=['Porto', 'Geschatte levertijd'],
       field_headings_visible=True,
       caption_visible=False
     ) %}
       {% for column_heading, description in [
-        ('First class', '1 to 2 days'),
-        ('Second class', '2 to 3 days'),
-        ('Economy mail', 'Up to 8 days'),
-        ('International (Europe)', '3 to 5 days'),
-        ('International (rest of the world)', '6 to 7 days'),
+        ('Netherlands', '1 tot 2 dagen'),
+        ('Internationaal (Europa)', '3 tot 5 dagen'),
+        ('Internationaal (Europa) (rest van de werld)', '6 tot 7 dagen'),
         ] %}
         {% call row() %}
           {{ text_field(column_heading) }}

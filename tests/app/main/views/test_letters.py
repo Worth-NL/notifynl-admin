@@ -49,7 +49,7 @@ def test_letters_lets_in_without_permission(
     assert api_user_active["permissions"] == {}
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue - now on test_letters_nl.py")
 @pytest.mark.parametrize(
     "permissions, choices",
     [

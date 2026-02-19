@@ -343,7 +343,7 @@ def template_json(
         "reply_to_text": reply_to_text,
         "is_precompiled_letter": is_precompiled_letter,
         "folder": folder,
-        "postage": postage,
+        "postage": postage if postage is not None else ("netherlands" if type_ == "letter" else None),
         "letter_attachment": letter_attachment,
         "letter_languages": letter_languages or "english" if type_ == "letter" else None,
         "letter_welsh_subject": letter_welsh_subject,
@@ -353,7 +353,13 @@ def template_json(
     if content is None:
         template["content"] = "template content"
     if subject is None and type_ != "sms":
-        template["subject"] = "template subject"
+        # For letter templates, subject is actually the postal address
+        if type_ == "letter":
+            template["subject"] = (
+                "address line 1\naddress line 2\naddress line 3\nNetherlands"  # ← Valid address with country
+            )
+        else:
+            template["subject"] = "template subject"
     if subject is not None:
         template["subject"] = subject
     if redact_personalisation is not None:
@@ -541,7 +547,7 @@ def notification_json(  # noqa: C901
         status = "delivered"
     links = {}
     if template_type == "letter":
-        postage = postage or "second"
+        postage = postage or "netherlands"
 
     if with_links:
         links = {

@@ -256,7 +256,7 @@ def test_notification_page_shows_page_for_letter_notification(
 ):
     count_of_pages = 3
 
-    notification = create_notification(notification_status="created", template_type="letter", postage="second")
+    notification = create_notification(notification_status="created", template_type="letter", postage="netherlands")
     mocker.patch("app.notification_api_client.get_notification", return_value=notification)
     mock_page_count = do_mock_get_page_counts_for_letter(mocker, count=count_of_pages)
 
@@ -363,7 +363,7 @@ def test_notification_page_shows_page_for_letter_sent_with_test_key(
         notification_status="created",
         template_type="letter",
         is_precompiled_letter=is_precompiled_letter,
-        postage="second",
+        postage="netherlands",
         key_type="test",
         sent_one_off=False,
     )

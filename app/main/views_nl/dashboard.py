@@ -666,7 +666,7 @@ def get_monthly_usage_breakdown(year, monthly_usage):
 
 
 def get_monthly_usage_breakdown_for_letters(monthly_letters):
-    postage_order = {"first class": 0, "second class": 1, "economy mail": 2, "international": 3}
+    postage_order = {"Nederland": 0, "Europa": 1, "Rest van de wereld": 2}
 
     group_key = lambda row: (postage_order[get_monthly_usage_postage_description(row)], row["rate"])  # noqa: E731
 
@@ -689,11 +689,11 @@ def get_monthly_usage_breakdown_for_letters(monthly_letters):
 
 
 def get_monthly_usage_postage_description(row):
-    if row["postage"] in ("first", "second"):
-        return f"{row['postage']} class"
-    elif row["postage"] == "economy":
-        return "economy mail"
-    return "international"
+    if row["postage"] == "netherlands":
+        return "Nederland"
+    if row["postage"] == "europe":
+        return "Europa"
+    return "Rest van de wereld"
 
 
 def requested_and_current_financial_year(request):

@@ -66,7 +66,9 @@ html.rhc-theme {
     .nl-hide-demo,
     .nl-hide,
     .govuk-footer__licence-logo,
-    .govuk-footer__copyright-logo {
+    .govuk-footer__copyright-logo,
+    .letter-postage,
+    .govuk-button.change-language {
         display: none;
     }
 
@@ -149,6 +151,13 @@ html.rhc-theme {
         :visited {
             color: var(--utrecht-link-visited-color);
         }
+
+    }
+
+    .template-list-item-without-ancestors .template-list-folder:before,
+    .template-list-item-without-ancestors .template-list-template:before {
+        bottom: 0;
+        z-index: -1
     }
 
     a.govuk-link.govuk-link--inverse {
@@ -416,6 +425,10 @@ html.rhc-theme {
             color: initial;
 
         }
+    }
+
+    .govuk-tag {
+        max-width: 200px;
     }
 }
 

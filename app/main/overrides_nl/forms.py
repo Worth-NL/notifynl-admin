@@ -15,13 +15,13 @@ from flask_wtf import FlaskForm as Form
 from flask_wtf.file import FileAllowed, FileSize
 from flask_wtf.file import FileField as FileField_wtf
 from markupsafe import Markup
-from notifications_utils.countries.data import Postage
+from notifications_utils.countries_nl import Postage
 from notifications_utils.formatters import strip_all_whitespace
 from notifications_utils.insensitive_dict import InsensitiveDict, InsensitiveSet
 from notifications_utils.recipient_validation.email_address import validate_email_address
 from notifications_utils.recipient_validation.errors import InvalidEmailError, InvalidPhoneError
 from notifications_utils.recipient_validation.notifynl.phone_number import PhoneNumber as PhoneNumberUtils
-from notifications_utils.recipient_validation.postal_address import PostalAddress
+from notifications_utils.recipient_validation.notifynl.postal_address import PostalAddress
 from notifications_utils.safe_string import make_string_safe_for_email_local_part
 from notifications_utils.timezones import local_timezone, utc_string_to_aware_gmt_datetime
 from ordered_set import OrderedSet
@@ -1462,8 +1462,8 @@ class LetterAddressForm(StripWhitespaceForm):
         if not address.has_valid_last_line:
             if self.allow_international_letters:
                 raise ValidationError(
-                    "De laatste regel van een adres moet ofwel de naam van een land "
-                    "ofwel een geldige postcode met plaatsnaam zijn"
+                    "De laatste regel van een adres moet op de naam van een buitenlands land bevatten"
+                    "óf een geldige postcode met plaatsnaam."
                 )
             if address.international:
                 raise ValidationError("U hebt geen toestemming om brieven te sturen naar andere landen")
@@ -1534,9 +1534,9 @@ class WelshLetterTemplateForm(BaseTemplateForm, TemplateNameMixin):
 class LetterTemplatePostageForm(StripWhitespaceForm):
     choices = [
         # Todo NL: I dont think we have this or support it
-        ("first", "Prioriteit"),
-        ("second", "Standaard"),
-        # ("economy", "Economy mail"),
+        (Postage.NL, "Nederland"),
+        (Postage.EUROPE, "Europa"),
+        (Postage.REST_OF_WORLD, "Rest van de wereld"),
     ]
 
     postage = GovukRadiosField(
@@ -1562,7 +1562,8 @@ class LetterUploadPostageForm(StripWhitespaceForm):
     def __init__(self, *args, postage_zone, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if postage_zone != Postage.UK:
+        # TODO verify that there is a first class or different mail categories
+        if postage_zone != Postage.NL:
             self.postage.choices = [(postage_zone, "")]
             self.postage.data = postage_zone
 
@@ -1574,11 +1575,11 @@ class LetterUploadPostageForm(StripWhitespaceForm):
         "Kies de frankering voor dit briefsjabloon",
         choices=[
             # Todo NL: I dont think we have this or support it
-            ("first", "Prioriteit"),
-            ("second", "Standaard"),
-            # ("economy", "Economy mail"),
+            ("netherlands", "Netherlands"),
+            ("europe", "Europe"),
+            ("rest-of-world", "International"),
         ],
-        default="second",
+        default="netherlands",
         validators=[DataRequired()],
     )
 
