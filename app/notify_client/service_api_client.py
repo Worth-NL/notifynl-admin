@@ -38,6 +38,7 @@ class ServiceAPIClient(NotifyAdminAPIClient):
         international_sms_message_limit,
         sms_message_limit,
         letter_message_limit,
+        messagebox_message_limit,
         restricted,
         user_id,
     ):
@@ -52,6 +53,7 @@ class ServiceAPIClient(NotifyAdminAPIClient):
             "international_sms_message_limit": international_sms_message_limit,
             "sms_message_limit": sms_message_limit,
             "letter_message_limit": letter_message_limit,
+            "messagebox_message_limit": messagebox_message_limit,
             "user_id": user_id,
             "restricted": restricted,
         }
