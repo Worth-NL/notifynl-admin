@@ -388,10 +388,10 @@ def recipient_count_label(count, template_type):
     singular = count == 1
 
     if template_type == "sms":
-        return "phone number" if singular else "phone numbers"
+        return "telefoonnummer" if singular else "telefoonnummers"
 
     if template_type == "international_sms":
-        return "internationaal phone number" if singular else "internationale phone numbers"
+        return "internationaal telefoonnummer" if singular else "internationale telefoonnummers"
 
     if template_type == "email":
         return "e-mailadres" if singular else "e-mailadressen"
