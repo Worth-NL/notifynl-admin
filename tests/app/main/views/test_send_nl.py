@@ -59,7 +59,7 @@ def test_404_for_previewing_a_row_out_of_range(
     mocker.patch(
         "app.main.views_nl.send.s3download",
         return_value="""
-        telefoonnummer,name,col1,col2,col3
+        phone number,name,col1,col2,col3
         07700900001, A,   foo,  foo,  foo
         07700900002, B,   foo,  foo,  foo
         07700900003, C,   foo,  foo,  foo
@@ -84,13 +84,13 @@ def test_404_for_previewing_a_row_out_of_range(
         (
             create_active_user_with_permissions(),
             "sms",
-            "Zie mijn telefoonnummer",
+            "Zie mijn phone number",
             partial(url_for, "main.send_one_off_to_myself"),
         ),
         (
             create_active_user_with_permissions(),
             "email",
-            "Zie mijn e-mailadres",
+            "Zie mijn email address",
             partial(url_for, "main.send_one_off_to_myself"),
         ),
         (create_active_user_with_permissions(), "letter", None, None),
@@ -144,16 +144,16 @@ def test_send_one_off_has_skip_link(
         (
             0,
             {},
-            "telefoonnummer",
+            "phone number",
         ),
         (
             1,
-            {"telefoonnummer": "07900900123"},
+            {"phone number": "07900900123"},
             "one",
         ),
         (
             2,
-            {"telefoonnummer": "07900900123", "one": "one"},
+            {"phone number": "07900900123", "one": "one"},
             "two",
         ),
     ],
@@ -284,7 +284,7 @@ def test_example_spreadsheet(
 ):
     page = client_request.get(".send_messages", service_id=SERVICE_ONE_ID, template_id=fake_uuid)
 
-    assert normalize_spaces(page.select_one("tbody tr").text) == "1 telefoonnummer name date"
+    assert normalize_spaces(page.select_one("tbody tr").text) == "1 phone number name date"
     assert page.select_one("input[type=file]").has_attr("accept")
     assert page.select_one("input[type=file]")["accept"] == ".csv,.xlsx,.xls,.ods,.xlsm,.tsv"
 
@@ -318,7 +318,7 @@ def test_send_one_off_offers_link_to_upload(
 
     assert back_link.text.strip() == "Back"
 
-    assert link.text.strip() == "Upload een lijst met telefoonnummers"
+    assert link.text.strip() == "Upload een lijst met phone numbers"
     assert link["href"] == url_for(
         "main.send_messages",
         service_id=SERVICE_ONE_ID,
@@ -343,7 +343,7 @@ def test_send_one_off_has_link_to_use_existing_list(
 
     assert [(link.text, link["href"]) for link in page.select("form a")] == [
         (
-            "Upload een lijst met telefoonnummers",
+            "Upload een lijst met phone numbers",
             url_for(
                 "main.send_messages",
                 service_id=SERVICE_ONE_ID,
@@ -359,7 +359,7 @@ def test_send_one_off_has_link_to_use_existing_list(
             ),
         ),
         (
-            "Zie mijn telefoonnummer",
+            "Zie mijn phone number",
             url_for(
                 "main.send_one_off_to_myself",
                 service_id=SERVICE_ONE_ID,
@@ -390,8 +390,8 @@ def test_no_link_to_use_existing_list_for_service_without_lists(
         _follow_redirects=True,
     )
     assert [link.text for link in page.select("form a")] == [
-        "Upload een lijst met telefoonnummers",
-        "Zie mijn telefoonnummer",
+        "Upload een lijst met phone numbers",
+        "Zie mijn phone number",
     ]
 
 
@@ -413,7 +413,7 @@ def test_send_one_off_redirects_to_end_if_step_out_of_bounds(
 
     with client_request.session_transaction() as session:
         session["recipient"] = "07900900123"
-        session["placeholders"] = {"name": "foo", "telefoonnummer": "07900900123"}
+        session["placeholders"] = {"name": "foo", "phone number": "07900900123"}
 
     client_request.get(
         "main.send_one_off_step",
@@ -452,7 +452,7 @@ def test_send_one_off_email_to_self_without_placeholders_redirects_to_check_page
 
     with client_request.session_transaction() as session:
         session["recipient"] = "foo@bar.com"
-        session["placeholders"] = {"e-mailadres": "foo@bar.com"}
+        session["placeholders"] = {"email address": "foo@bar.com"}
 
     page = client_request.get(
         "main.send_one_off_step",
@@ -514,7 +514,7 @@ def test_send_one_off_sms_message_puts_submitted_data_in_session(
 ):
     with client_request.session_transaction() as session:
         session["recipient"] = "07700 900762"
-        session["placeholders"] = {"telefoonnummer": "07700 900762"}
+        session["placeholders"] = {"phone number": "07700 900762"}
 
     client_request.post(
         "main.send_one_off_step",
@@ -532,7 +532,7 @@ def test_send_one_off_sms_message_puts_submitted_data_in_session(
 
     with client_request.session_transaction() as session:
         assert session["recipient"] == "07700 900762"
-        assert session["placeholders"] == {"telefoonnummer": "07700 900762", "name": "Jo"}
+        assert session["placeholders"] == {"phone number": "07700 900762", "name": "Jo"}
 
 
 def test_download_example_csv(
@@ -547,7 +547,7 @@ def test_download_example_csv(
         template_id=fake_uuid,
         follow_redirects=True,
     )
-    assert response.get_data(as_text=True) == "telefoonnummer,name,date\r\n07700 900321,example,example\r\n"
+    assert response.get_data(as_text=True) == "phone number,name,date\r\n07700 900321,example,example\r\n"
     assert "text/csv" in response.headers["Content-Type"]
 
 
