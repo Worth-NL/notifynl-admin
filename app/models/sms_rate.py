@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from app.formatters import format_pennies_as_currency
 from app.models import JSONModel
 from app.notify_client.sms_rate_client import sms_rate_api_client
+from app.overrides_nl.formatters import format_pennies_as_currency
 
 
 class SMSRate(JSONModel):

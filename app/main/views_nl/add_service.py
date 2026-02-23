@@ -19,6 +19,7 @@ def _create_service(service_name, organisation_type, form):
             international_sms_message_limit=current_app.config["DEFAULT_SERVICE_INTERNATIONAL_SMS_LIMIT"],
             sms_message_limit=current_app.config["DEFAULT_SERVICE_LIMIT"],
             letter_message_limit=current_app.config["DEFAULT_SERVICE_LIMIT"],
+            messagebox_message_limit=current_app.config["DEFAULT_SERVICE_LIMIT"],
             restricted=True,
             user_id=session["user_id"],
         )

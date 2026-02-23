@@ -275,7 +275,7 @@ def format_pennies_as_currency(pennies: int | float, long: bool) -> str:
     elif long:
         return f"{pennies} cent"
 
-    return f"{pennies}p"
+    return f"{pennies} cent"
 
 
 def format_list_items(items, format_string, *args, **kwargs):

@@ -72,6 +72,7 @@ def test_client_creates_service_with_correct_data(
         international_sms_message_limit=1,
         sms_message_limit=1,
         letter_message_limit=1,
+        messagebox_message_limit=1,
         restricted=True,
         user_id=fake_uuid,
     )
@@ -89,6 +90,7 @@ def test_client_creates_service_with_correct_data(
             "international_sms_message_limit": 1,
             "sms_message_limit": 1,
             "letter_message_limit": 1,
+            "messagebox_message_limit": 1,
             "restricted": True,
             "user_id": fake_uuid,
         },
