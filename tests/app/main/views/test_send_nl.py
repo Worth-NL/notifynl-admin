@@ -318,7 +318,7 @@ def test_send_one_off_offers_link_to_upload(
 
     assert back_link.text.strip() == "Back"
 
-    assert link.text.strip() == "Upload een lijst met phone numbers"
+    assert link.text.strip() == "Upload een lijst met telefoonnummers"
     assert link["href"] == url_for(
         "main.send_messages",
         service_id=SERVICE_ONE_ID,
@@ -343,7 +343,7 @@ def test_send_one_off_has_link_to_use_existing_list(
 
     assert [(link.text, link["href"]) for link in page.select("form a")] == [
         (
-            "Upload een lijst met phone numbers",
+            "Upload een lijst met telefoonnummers",
             url_for(
                 "main.send_messages",
                 service_id=SERVICE_ONE_ID,
@@ -390,8 +390,8 @@ def test_no_link_to_use_existing_list_for_service_without_lists(
         _follow_redirects=True,
     )
     assert [link.text for link in page.select("form a")] == [
-        "Upload een lijst met phone numbers",
-        "Zie mijn phone number",
+        "Upload een lijst met telefoonnummers",
+        "Zie mijn telefoonnummer",
     ]
 
 
