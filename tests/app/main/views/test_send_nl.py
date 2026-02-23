@@ -391,7 +391,7 @@ def test_no_link_to_use_existing_list_for_service_without_lists(
     )
     assert [link.text for link in page.select("form a")] == [
         "Upload een lijst met telefoonnummers",
-        "Zie mijn telefoonnummer",
+        "Zie mijn phone number",
     ]
 
 
