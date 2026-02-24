@@ -49,7 +49,7 @@ class EmailBranding(Branding):
     @classmethod
     def from_id(cls, id):
         if id is None:
-            return cls.with_default_values(name="GOV.UK", brand_type="govuk")
+            return cls.with_default_values(name="Rijkshuisstijl", brand_type="rijkshuisstijl")
         return cls(email_branding_client.get_email_branding(id)["email_branding"])
 
     @classmethod
@@ -67,7 +67,7 @@ class EmailBranding(Branding):
     ):
         name = email_branding_client.get_email_branding_name_for_alt_text(alt_text)
         if brand_type == "both":
-            name = f"GOV.UK and {name}"
+            name = f"Rijkshuisstijl and {name}"
 
         new_email_branding = email_branding_client.create_email_branding(
             name=name,
