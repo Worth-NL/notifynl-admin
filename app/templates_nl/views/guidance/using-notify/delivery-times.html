@@ -32,7 +32,7 @@
 
   <h2 id="letters" class="heading-medium">Letters</h2>
   <p class="govuk-body">Brieven worden om 17:30 uur gedrukt en de volgende werkdag (maandag tot en met vrijdag met uitzondering van feestdagen) verzonden.</p>
-  <p class="govuk-body">Estimated delivery times are based on the date a letter is dispatched.</p>
+  <p class="govuk-body">De geschatte levertijden zijn gebaseerd op de datum waarop een brief wordt verzonden..</p>
 
 <div class="govuk-inset-text">
     <p class="govuk-body">
@@ -48,11 +48,9 @@
       caption_visible=False
     ) %}
       {% for column_heading, description in [
-        ('Eerste klas', '1 tot 2 dagen (maandag tot zaterdag)'),
-        ('Tweede klas', '3 tot 4 werkdagen'),
-        ('Economy Mail', 'Maximaal 6 werkdagen'),
-        ('Internationaal (Europa)', '3 tot 5 werkdagen'),
-        ('Internationaal (rest van de wereld)', '6 tot 7 werkdagen'),
+        ('Netherlands', '1 tot 2 dagen'),
+        ('Internationaal (Europa)', '3 tot 5 dagen'),
+        ('Internationaal (Europa) (rest van de werld)', '6 tot 7 dagen'),
         ] %}
         {% call row() %}
           {{ text_field(column_heading) }}

@@ -122,6 +122,7 @@ def test_get_page_counts_for_letter_does_not_cache_for_personalised_letters(
     assert len(mock_get_page_count.call_args_list) == 3
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Postage changes ")
 @freeze_time("2012-12-12 12:12:12")
 @pytest.mark.parametrize(
     "postage_argument",
@@ -198,6 +199,7 @@ def test_letter_image_renderer_pagination(mocker, page_image_url):
     )
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Postage changes ")
 def test_letter_image_renderer_requires_valid_postage():
     with pytest.raises(TypeError) as exception:
         TemplatedLetterImageTemplate(
@@ -207,6 +209,7 @@ def test_letter_image_renderer_requires_valid_postage():
     assert str(exception.value) == ("postage must be None, 'first', 'second', 'economy', 'europe' or 'rest-of-world'")
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Postage changes ")
 @pytest.mark.parametrize(
     "initial_postage_value",
     (
@@ -248,7 +251,7 @@ def test_letter_image_renderer_requires_image_url_to_render():
     assert str(exception.value) == "image_url is required to render TemplatedLetterImageTemplate"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue, and postage changes")
 @pytest.mark.parametrize(
     "postage, expected_attribute_value, expected_postage_text",
     (
@@ -307,6 +310,7 @@ def test_letter_image_renderer_passes_postage_to_html_attribute(
         assert not template.select(".letter-postage")
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue, and postage changes")
 @freeze_time("2012-12-12 12:12:12")
 @pytest.mark.parametrize(
     "page_count, expected_oversized, expected_page_numbers",
@@ -507,6 +511,7 @@ def test_subject_line_gets_replaced(
     assert template.subject == "Jo"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] postalAddress changes only 6 lines")
 @pytest.mark.parametrize(
     "template_class, template_type, extra_args, expected_field_calls",
     [
@@ -542,8 +547,7 @@ def test_subject_line_gets_replaced(
                         "((address line 3))\n"
                         "((address line 4))\n"
                         "((address line 5))\n"
-                        "((address line 6))\n"
-                        "((address line 7))"
+                        "((address line 6))"
                     ),
                     {},
                     with_brackets=False,

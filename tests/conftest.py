@@ -829,7 +829,7 @@ def mock_get_service_template_with_placeholders_same_as_recipient(notify_admin, 
             id_=template_id,
             name="Two week reminder",
             type_="sms",
-            content="((name)) ((date)) ((PHONENUMBER))",
+            content="((name)) ((date)) ((PHONE NUMBER))",
         )
         return {"data": template}
 
@@ -872,7 +872,7 @@ def mock_get_service_email_template_without_placeholders(notify_admin, mocker):
 
 @pytest.fixture(scope="function")
 def mock_get_service_letter_template(notify_admin, mocker):
-    def _get(service_id, template_id, version=None, postage="second"):
+    def _get(service_id, template_id, version=None, postage="netherlands"):
         template = template_json(
             service_id=service_id,
             id_=template_id,
@@ -889,7 +889,7 @@ def mock_get_service_letter_template(notify_admin, mocker):
 
 @pytest.fixture(scope="function")
 def mock_get_service_letter_template_welsh_language(notify_admin, mocker):
-    def _get(service_id, template_id, version=None, postage="second"):
+    def _get(service_id, template_id, version=None, postage="netherlands"):
         template = template_json(
             service_id=service_id,
             id_=template_id,
@@ -909,7 +909,7 @@ def mock_get_service_letter_template_welsh_language(notify_admin, mocker):
 
 @pytest.fixture(scope="function")
 def mock_get_service_letter_template_with_attachment(notify_admin, mocker):
-    def _get(service_id, template_id, version=None, postage="second"):
+    def _get(service_id, template_id, version=None, postage="netherlands"):
         template = template_json(
             service_id=service_id,
             id_=template_id,
@@ -931,7 +931,7 @@ def mock_get_service_letter_template_with_attachment(notify_admin, mocker):
 
 @pytest.fixture(scope="function")
 def mock_get_service_letter_template_with_placeholders(notify_admin, mocker):
-    def _get(service_id, template_id, version=None, postage="second"):
+    def _get(service_id, template_id, version=None, postage="netherlands"):
         template = template_json(
             service_id=service_id,
             id_=template_id,
@@ -948,7 +948,7 @@ def mock_get_service_letter_template_with_placeholders(notify_admin, mocker):
 
 @pytest.fixture(scope="function")
 def mock_get_service_letter_template_with_qr_placeholder(notify_admin, mocker):
-    def _get(service_id, template_id, version=None, postage="second"):
+    def _get(service_id, template_id, version=None, postage="netherlands"):
         template = template_json(
             service_id=service_id,
             id_=template_id,
@@ -1792,7 +1792,7 @@ def mock_get_uploaded_letters(notify_admin, mocker):
                 "notification_type": "letter",
                 "personalisation": {},
                 "phone_prefix": None,
-                "postage": "second",
+                "postage": "nethernlands",
                 "rate_multiplier": None,
                 "reference": "dvla-reference",
                 "reply_to_text": None,
@@ -1834,7 +1834,7 @@ def mock_get_uploaded_letters(notify_admin, mocker):
                 "notification_type": "letter",
                 "personalisation": {},
                 "phone_prefix": None,
-                "postage": "second",
+                "postage": "netherlands",
                 "rate_multiplier": None,
                 "reference": "dvla-reference",
                 "reply_to_text": None,
@@ -2473,7 +2473,7 @@ def mock_get_monthly_usage_for_service(notify_admin, mocker):
                 "rate": 0.31,
                 "chargeable_units": 10,
                 "notifications_sent": 10,
-                "postage": "second",
+                "postage": "netherlands",
                 "charged_units": 10,
                 "free_allowance_used": 0,
                 "cost": 3.1,

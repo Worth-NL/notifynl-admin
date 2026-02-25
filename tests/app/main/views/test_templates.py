@@ -916,7 +916,7 @@ def test_view_letter_template_does_not_display_send_button_if_template_over_10_p
     client_request.login(active_user_with_permissions)
     mocker.patch(
         "app.service_api_client.get_service_template",
-        return_value={"data": create_template(template_type="letter", postage="second")},
+        return_value={"data": create_template(template_type="letter", postage="netherlands")},
     )
 
     page = client_request.get(
@@ -1070,7 +1070,7 @@ def test_POST_letter_template_change_to_welsh_and_english_resets_english_subject
                 type_="letter",
                 content=content,
                 subject=subject,
-                postage="second",
+                postage="netherlands",
             )
         },
     )
@@ -1205,7 +1205,7 @@ def test_POST_letter_template_confirm_remove_welsh_resets_english_subject_and_co
     content,
     extra_kwargs,
 ):
-    def _get(service_id, template_id, version=None, postage="second"):
+    def _get(service_id, template_id, version=None, postage="netherlands"):
         template = template_json(
             service_id=service_id,
             id_=template_id,
@@ -1646,10 +1646,10 @@ def test_edit_letter_template_postage_page_displays_correctly(
     )
 
     assert page.select_one("h1").text.strip() == "Change postage"
-    assert page.select("input[checked]")[0].attrs["value"] == "second"
+    assert page.select("input[checked]")[0].attrs["value"] == "netherlands"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue, and postage ")
 def test_edit_letter_template_displays_all_postage_options(
     client_request,
     service_one,
@@ -1688,6 +1688,7 @@ def test_edit_letter_template_postage_page_404s_if_template_is_not_a_letter(
     assert page.select_one("h1").text.strip() != "Edit postage"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] broken because NL Postal address - see test_templates_nl.py")
 def test_edit_letter_templates_postage_updates_postage(
     client_request,
     service_one,

@@ -10,6 +10,7 @@ def test_renders(client_request, mocker, query_args):
     assert response.get_data(as_text=True) == "rendered"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] dutchification of email template, see test_email_preview_nl/")
 def test_displays_govuk_branding_by_default(client_request):
     page = client_request.get("main.email_template", _test_page_title=False)
 
@@ -26,11 +27,13 @@ def test_displays_govuk_branding_by_default(client_request):
         {"branding_style": ""},
     ],
 )
+@pytest.mark.skip(reason="[NOTIFYNL] dutchification of email template, see test_email_preview_nl/")
 def test_displays_govuk_branding(client_request, params):
     page = client_request.get("main.email_template", **params, _test_page_title=False)
     assert page.select_one("a")["href"] == "https://www.gov.uk"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] dutchification of email template, see test_email_preview_nl/")
 def test_displays_both_branding(client_request, mock_get_email_branding_with_both_brand_type):
     page = client_request.get("main.email_template", branding_style="1", _test_page_title=False)
 
