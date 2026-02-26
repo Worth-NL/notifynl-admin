@@ -4,7 +4,7 @@ import pytest
 def test_displays_govuk_branding_by_default(client_request):
     page = client_request.get("main.email_template", _test_page_title=False)
 
-    assert page.select_one("a")["href"] == "https://www.rijksoverheid.nl/"
+    assert page.select_one("a")["href"] == "https://admin.notifynl.nl"
 
 
 @pytest.mark.parametrize(
@@ -19,7 +19,7 @@ def test_displays_govuk_branding_by_default(client_request):
 )
 def test_displays_govuk_branding(client_request, params):
     page = client_request.get("main.email_template", **params, _test_page_title=False)
-    assert page.select_one("a")["href"] == "https://www.rijksoverheid.nl/"
+    assert page.select_one("a")["href"] == "https://admin.notifynl.nl"
 
 
 def test_displays_both_branding(client_request, mock_get_email_branding_with_both_brand_type):
