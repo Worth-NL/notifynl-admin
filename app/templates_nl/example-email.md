@@ -28,4 +28,4 @@ Wilt u geen overheidslogo gebruiken? U kunt ook uw eigen huisstijl toevoegen in 
 
 ---
 
-Probeer het zelf op [https://www.admin.notifyNL.nl](https://admin.notifyNL.nl)
+Probeer het zelf op [https://admin.notifynl.nl](https://admin.notifynl.nl)

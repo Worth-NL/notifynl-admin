@@ -9,6 +9,7 @@ from tests import organisation_json
 from tests.conftest import create_email_branding
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] govuk brandings were deleted")
 @pytest.mark.parametrize(
     "function, org_type, expected_options",
     [
@@ -34,6 +35,7 @@ def test_get_choices_service_not_assigned_to_org(
     assert list(options) == expected_options
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] govuk brandings were deleted")
 @pytest.mark.parametrize(
     "org_type, branding_id, expected_options",
     [
