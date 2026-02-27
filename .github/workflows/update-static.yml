@@ -64,3 +64,17 @@ jobs:
 
       - name: Upload static files
         run: make upload-static-nl-${{ inputs.environment }}
+
+      - name: Invalidate CloudFront cache
+        if: ${{ inputs.environment == 'prod' }}
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DIST_ID }} \
+            --paths "/*"
+
+      - name: Invalidate CloudFront cache (test)
+        if: ${{ inputs.environment == 'test' }}
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DIST_ID_TEST }} \
+            --paths "/*"
