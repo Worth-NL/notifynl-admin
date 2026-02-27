@@ -174,6 +174,7 @@ jobs:
         run: helm upgrade --install notifynl notifynl-full/ -n ${{ vars.NAMESPACE_TEST }} --reuse-values --set apps.admin.image.tag=${{ needs.build.outputs.tag }} --wait --timeout 300s
 
   detect-static-changes:
+    needs: build
     runs-on: ubuntu-latest
     outputs:
       static_changed: ${{ steps.filter.outputs.static }}
@@ -186,3 +187,10 @@ jobs:
           filters: |
             static:
               - 'app/assets/**'
+  upload-static:
+    needs: detect-static-changes
+    if: needs.detect-static-changes.outputs.static_changed == 'true'
+    uses: ./.github/workflows/update-static.yml
+    with:
+      environment: test
+    secrets: inherit
