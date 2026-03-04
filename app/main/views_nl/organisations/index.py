@@ -155,7 +155,7 @@ def organisation_dashboard(org_id):
         _search_form=SearchByNameForm() if len(services) > 7 else None,
         **{
             f"total_{key}": sum(service[key] for service in services)
-            for key in ("emails_sent", "sms_cost", "letter_cost")
+            for key in ("emails_sent", "sms_cost", "letter_cost", "sms_billable_units", "letters_sent")
         },
         download_link=url_for(".download_organisation_usage_report", org_id=org_id, selected_year=year),
     )
