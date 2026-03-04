@@ -31,7 +31,7 @@
     <li><a class="govuk-link govuk-link--no-visited-state" href="#long-text-messages">sms-berichten verstuurt die langer zijn dan 160 tekens</a></li>
     <li>bepaalde <a class="govuk-link govuk-link--no-visited-state" href="#symbols">tekens en symbolen gebruikt</a></li>
     <li><a class="govuk-link govuk-link--no-visited-state" href="#accents">accents en geaccentueerde letters gebruikt</a></li>
-    <li>sms-berichten naar <a class="govuk-link govuk-link--no-visited-state" href="#international-numbers">internationale nummers verstuurt</a></li>
+    {# <li>sms-berichten naar <a class="govuk-link govuk-link--no-visited-state" href="#international-numbers">internationale nummers verstuurt</a></li> #}
   </ul>
 
   <p class="govuk-body">Het ontvangen van <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_receive_text_messages') }}">sms-berichten kost u niets</a>.</p>
@@ -163,7 +163,7 @@
     {% endcall %}
   </div>
 
-  <h3 class="heading-small" id="international-numbers">Sms-berichten naar internationale nummers sturen</h3>
+  {# <h3 class="heading-small" id="international-numbers">Sms-berichten naar internationale nummers sturen</h3>
   <p class="govuk-body">Het kan meer kosten om sms-berichten naar internationale nummers te sturen dan naar lokale, afhankelijk van het land.</p>
   {% set smsIntRates %}
     {{ live_search(target_selector='#international-pricing .table-row', show=True, form=_search_form, label='Zoeken op landnaam of code') }}
@@ -199,5 +199,5 @@
   {{ govukDetails({
     "summaryText": "Internationale tarieven voor sms-berichten",
     "html": smsIntRates
-  }) }}
+  }) }} #}
 {% endblock %}
