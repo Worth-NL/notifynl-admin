@@ -35,31 +35,25 @@
       <p class="govuk-body">Brieven worden vóór 17:30 uur gedrukt en de eerstvolgende werkdag (maandag t/m vrijdag) verzonden.</p>
       <p class="govuk-body">De geschatte levertijden zijn gebaseerd op de datum waarop een brief wordt verzonden.</p>
 
-  <div class="bottom-gutter-3-2">
-    {% call mapping_table(
-      caption='Geschatte levertijden voor brieven',
-      field_headings=['Porto', 'Geschatte levertijd'],
-      field_headings_visible=True,
-      caption_visible=False
-    ) %}
-      {% for column_heading, description in [
-        ('Netherlands', '1 tot 2 dagen'),
-        ('Internationaal (Europa)', '3 tot 5 dagen'),
-        ('Internationaal (Europa) (rest van de werld)', '6 tot 7 dagen'),
-        ] %}
-        {% call row() %}
-          {{ text_field(column_heading) }}
-          {{ text_field(description) }}
+      <div class="bottom-gutter-3-2">
+        {% call mapping_table(
+          caption='Geschatte levertijden voor brieven',
+          field_headings=['Porto', 'Geschatte levertijd'],
+          field_headings_visible=True,
+          caption_visible=False
+        ) %}
+          {% for column_heading, description in [
+            ('Netherlands', '1 tot 2 dagen'),
+            ('Internationaal (Europa)', '3 tot 5 dagen'),
+            ('Internationaal (Europa) (rest van de werld)', '6 tot 7 dagen'),
+            ] %}
+            {% call row() %}
+              {{ text_field(column_heading) }}
+              {{ text_field(description) }}
+            {% endcall %}
+          {% endfor %}
         {% endcall %}
-      {% endfor %}
-    {% endcall %}
-  </div>
-      <p class="govuk-body">
-        Royal Mail bezorgt van maandag tot en met zaterdag, met uitzondering van officiële feestdagen.
-      </p>
-      <p class="govuk-body">
-        Bekijk een lijst met <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_pricing_letters') }}">posttarieven</a>.
-      </p>
+      </div>
     </div>
   </div>
 
