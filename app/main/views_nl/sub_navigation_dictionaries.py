@@ -55,10 +55,10 @@ def pricing_nav():
                 #     "name": "Hoe u kunt betalen",
                 #     "link": "main.guidance_how_to_pay",
                 # },
-                {
-                    "name": "Factureringsgegevens",
-                    "link": "main.guidance_billing_details",
-                },
+                # {
+                #     "name": "Factureringsgegevens",
+                #     "link": "main.guidance_billing_details",
+                # },
             ],
         },
         {
