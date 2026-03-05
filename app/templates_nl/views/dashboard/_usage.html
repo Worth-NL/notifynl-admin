@@ -15,14 +15,11 @@
   </div>
   <div class='govuk-grid-column-one-third'>
     <div class="keyline-block">
-      {% if sms_cost %}
       {{  big_number(
           sms_sent,
           'sms verzonden',
           **big_number_kwargs
       ) }}
-
-      {% endif %}
     </div>
   </div>
   <div class='govuk-grid-column-one-third'>
