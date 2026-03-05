@@ -32,14 +32,14 @@
 
     {{ ajax_block(partials, updates_url, 'template-statistics') }}
 
-    {# {% if current_user.has_permissions('manage_service') %}
+    {% if current_user.has_permissions('manage_service') %}
       <h2 class='heading-medium'>Dit jaar</h2>
       {{ ajax_block(partials, updates_url, 'usage') }}
       {{ show_more(
         url_for(".usage", service_id=current_service['id']),
         'Bekijk gebruik'
       ) }}
-    {% endif %} #}
+    {% endif %}
 
   </div>
 

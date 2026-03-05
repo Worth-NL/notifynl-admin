@@ -6,30 +6,31 @@
 <div class='govuk-grid-row ajax-block-container'>
   <div class='govuk-grid-column-one-third'>
     <div class="keyline-block">
-      {#{{ big_number("Onbeperkt", 'gratis e-mail tegoed', **big_number_kwargs) }}#}
+      {{  big_number(
+          emails_sent,
+          'e-mail verzonden',
+          **big_number_kwargs
+      ) }}
     </div>
   </div>
   <div class='govuk-grid-column-one-third'>
     <div class="keyline-block">
       {% if sms_cost %}
-      {{ big_number(
-      sms_cost,
-      'uitgegeven aan sms-berichten',
-      currency="€",
-      **big_number_kwargs
+      {{  big_number(
+          sms_sent,
+          'sms verzonden',
+          **big_number_kwargs
       ) }}
-      {#{% else %}
-      {{ big_number(sms_allowance_remaining, 'gratis sms-berichten over', **big_number_kwargs) }}#}
+
       {% endif %}
     </div>
   </div>
   <div class='govuk-grid-column-one-third'>
     <div class="keyline-block">
-      {{ big_number(
-      letter_cost,
-      'uitgegeven aan brieven',
-      currency="€",
-      **big_number_kwargs
+      {{  big_number(
+          letter_sent,
+          'brieven verzonden',
+          **big_number_kwargs
       ) }}
     </div>
   </div>
