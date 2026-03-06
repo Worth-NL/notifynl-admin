@@ -218,7 +218,7 @@ def template_usage(service_id):
     year, current_financial_year = requested_and_current_financial_year(request)
     stats = template_statistics_client.get_monthly_template_usage_for_service(service_id, year)
 
-    stats = sorted(stats, key=lambda x: (x["count"]), reverse=True)
+    stats = sorted(stats, key=lambda x: x["count"], reverse=True)
 
     def get_monthly_template_stats(month_name, stats):
         return {
@@ -666,7 +666,7 @@ def get_monthly_usage_breakdown(year, monthly_usage):
 
 
 def get_monthly_usage_breakdown_for_letters(monthly_letters):
-    postage_order = {"first class": 0, "second class": 1, "economy mail": 2, "international": 3}
+    postage_order = {"netherlands": 0, "international": 1}
 
     group_key = lambda row: (postage_order[get_monthly_usage_postage_description(row)], row["rate"])  # noqa: E731
 
@@ -689,10 +689,8 @@ def get_monthly_usage_breakdown_for_letters(monthly_letters):
 
 
 def get_monthly_usage_postage_description(row):
-    if row["postage"] in ("first", "second"):
+    if row["postage"] in ("netherlands"):
         return f"{row['postage']} class"
-    elif row["postage"] == "economy":
-        return "economy mail"
     return "international"
 
 

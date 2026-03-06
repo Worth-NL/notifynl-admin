@@ -30,10 +30,10 @@
      <li>C5-enveloppen met venster voor het adres</li>
   </ul>
 
-<p class="govuk-body">Brieven mogen maximaal 10 pagina’s bevatten (5 vellen papier, dubbelzijdig bedrukt).</p>
+  <p class="govuk-body">Brieven mogen maximaal 10 pagina’s bevatten (5 vellen papier, dubbelzijdig bedrukt).</p>
 
-<p class="govuk-body">Prijzen zijn exclusief BTW.</p>
-  <div>
+  <p class="govuk-body">Prijzen zijn exclusief BTW.</p>
+  {# <div>
     {% call mapping_table(
       caption='Prijzen voor brieven',
       field_headings=['Aantal vellen'] + letter_rates.post_classes.values()|list,
@@ -49,7 +49,7 @@
         {% endcall %}
       {% endfor %}
     {% endcall %}
-  </div>
+  </div> #}
 
 <p class="govuk-body">Zie <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_delivery_times', _anchor='letters') }}">levertijden</a>.</p>
 
