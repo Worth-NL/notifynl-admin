@@ -168,6 +168,9 @@
       status=status,
       align='right'
     ) %}
+      <span class="govuk-visually-hidden">
+        {{notification.status}}
+      </span>
       {% if displayed_on_single_line %}<span class="align-with-message-body">{% endif %}
       {% if notification.status|format_notification_status_as_url(notification.notification_type) %}
         <a class="govuk-link govuk-link--{% if status == 'error' %}destructive{% else %}no-visited-state{% endif %}" href="{{ notification.status|format_notification_status_as_url(notification.notification_type) }}">

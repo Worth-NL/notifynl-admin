@@ -90,30 +90,20 @@
                     {{ item.month }}
                 {% endcall %}
                 {% call field(align='left') %}
-                  {# {{ big_number(item.sms_cost + item.letter_cost,currency="€", smallest=True) }} #}
                   <ul class="govuk-list">
-                    {# {% if item.sms_free_allowance_used %}
-                      <li class="tabular-numbers">
-                          {{ item.sms_free_allowance_used|format_thousands }} gratis {{ item.sms_free_count|message_count_label('sms', suffix='') }}
-                      </li>
-                    {% endif %} #}
                     {% for sms in item.sms_breakdown %}
                       <li class="tabular-numbers">
-                        {{ sms.charged_units|message_count("sms") }}
-                        {# {{ sms.charged_units|message_count("sms") }} à
-                        {{- ' {:.2f}p'.format(sms.rate * 100) }} #}
+                        {{ sms.notifications_sent|message_count("sms") }}
                       </li>
                     {% endfor %}
                     {% for letter in item.letter_breakdown %}
                         {% if letter.sent %}
                           <li class="tabular-numbers">
                             {{ letter.sent|format_thousands }} {{ letter.postage_description }} {{ letter.sent|message_count_label('brief', suffix='') }}
-                            {# {{ letter.sent|format_thousands }} {{ letter.postage_description }} {{ letter.sent|message_count_label('brief', suffix='') }} à
-                            {{ letter.rate | format_pounds_as_currency }} #}
                           </li>
                         {% endif %}
                     {% endfor %}
-                    {% if not (item.sms_free_allowance_used or item.sms_cost or item.letter_breakdown) %}
+                    {% if not (item.sms_breakdown or item.letter_breakdown) %}
                         <li aria-hidden="true">–</li>
                     {% endif %}
                   </ul>
