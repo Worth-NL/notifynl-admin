@@ -51,14 +51,14 @@ def pricing_nav():
                     "name": "Brieven",
                     "link": "main.guidance_pricing_letters",
                 },
-                {
-                    "name": "Hoe u kunt betalen",
-                    "link": "main.guidance_how_to_pay",
-                },
-                {
-                    "name": "Factureringsgegevens",
-                    "link": "main.guidance_billing_details",
-                },
+                # {
+                #     "name": "Hoe u kunt betalen",
+                #     "link": "main.guidance_how_to_pay",
+                # },
+                # {
+                #     "name": "Factureringsgegevens",
+                #     "link": "main.guidance_billing_details",
+                # },
             ],
         },
         {

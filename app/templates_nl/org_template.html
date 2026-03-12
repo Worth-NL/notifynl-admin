@@ -9,7 +9,7 @@
 {% block main %}
   <div class="govuk-width-container">
     <div class="navigation-service">
-      <div class="navigation-service__container">
+      <div class="navigation-service__container govuk-!-margin-top-1">
         {% if current_user.platform_admin %}
           <a href="{{ url_for('main.organisations') }}" class="govuk-link govuk-link--no-visited-state govuk-link--no-underline navigation-organisation-link">Organisaties</a>
         {% endif %}

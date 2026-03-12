@@ -860,25 +860,6 @@
         {
           "key": {
             "classes": "notify-summary-list__key notify-summary-list__key--35-100",
-            "text": "Vrije sms-bundel"
-          },
-          "value": {
-            "text": "{} per jaar".format(current_service.free_sms_fragment_limit|format_thousands)
-          },
-          "actions": {
-            "items": [
-              {
-                "href": url_for('main.set_free_sms_allowance', service_id=current_service.id),
-                "text": "Wijzigen",
-                "visuallyHiddenText": "vrije sms-bundel",
-                "classes": "govuk-link--no-visited-state"
-              }
-            ]
-          }
-        },
-        {
-          "key": {
-            "classes": "notify-summary-list__key notify-summary-list__key--35-100",
             "text": "E-mailopmaak"
           },
           "value": {

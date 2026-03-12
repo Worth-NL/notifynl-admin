@@ -563,6 +563,7 @@ def test_organisation_services_shows_live_services_and_usage_with_count_of_1(
     assert normalize_spaces(usage_rows[5].text) == "£0.00 spent on letters"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] new letters_sent param to avoid showing pricing, see test_organisations_nl.py")
 @pytest.mark.parametrize(
     "service_usage, expected_css_class",
     (
@@ -658,6 +659,7 @@ def test_organisation_services_filters_by_financial_year(
     assert normalize_spaces(page.select_one(".pill-item--selected").text) == (expected_selected)
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] new letters_sent param to avoid showing pricing, see test_organisations_nl.py")
 @freeze_time("2020-02-20 20:20")
 def test_organisation_services_shows_search_bar(
     client_request,
@@ -705,6 +707,7 @@ def test_organisation_services_shows_search_bar(
     ]
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] new letters_sent param to avoid showing pricing, see test_organisations_nl.py")
 @freeze_time("2020-02-20 20:20")
 def test_organisation_services_hides_search_bar_for_7_or_fewer_services(
     client_request,
