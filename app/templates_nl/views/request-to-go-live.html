@@ -88,12 +88,12 @@
             }
           )%}
         {% endif %}
-        <h2 class="govuk-heading-m">Your service</h2>
+        <h2 class="govuk-heading-m">Jouw service</h2>
         {{ govukTaskList({
           "idPrefix": "request-to-go-live-service",
           "items": task_list_items
         }) }}
-        <h2 class="govuk-heading-m">Your organisation</h2>
+        <h2 class="govuk-heading-m">Jouw organisatie</h2>
         {# show task-list if agreement not accepted or #}
         {# the current user signed the org-level agreement #}
         {# this is because for other services in that org that want to go live #}
