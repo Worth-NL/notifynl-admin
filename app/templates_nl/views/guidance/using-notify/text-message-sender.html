@@ -15,7 +15,7 @@
 
   <p class="govuk-body">De afzender-ID van een sms-bericht vertelt uw gebruikers van wie het bericht afkomstig is.</p>
 
-  <p class="govuk-body">Om de afzender-ID van sms-berichten te wijzigen vanaf de standaard ‘GOVUK’:</p>
+  <p class="govuk-body">Om de afzender-ID van sms-berichten te wijzigen vanaf de standaard:</p>
 
   <ol class="govuk-list govuk-list--number">
     <li>Ga naar de sectie <b class="govuk-!-font-weight-bold">Instellingen sms-berichten</b> op de {{ service_link(current_service, 'main.service_settings', 'instellingen') }} pagina.</li>
@@ -23,6 +23,6 @@
     <li>Selecteer <b class="govuk-!-font-weight-bold">Wijzigen</b> of <b class="govuk-!-font-weight-bold">Afzender-ID sms-bericht toevoegen</b>.</li>
   </ol>
 
-  <p class="govuk-body">Als u <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_receive_text_messages') }}">sms-berichten wilt ontvangen</a>, is uw afzender-ID een 11-cijferig telefoonnummer.</p>
+  {# <p class="govuk-body">Als u <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_receive_text_messages') }}">sms-berichten wilt ontvangen</a>, is uw afzender-ID een 11-cijferig telefoonnummer.</p> #}
 
 {% endblock %}
