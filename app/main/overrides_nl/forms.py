@@ -1935,7 +1935,9 @@ class ServiceSwitchChannelForm(OnOffSettingForm):
 
 class ServiceEmailSenderForm(StripWhitespaceForm):
     BAD_EMAIL_LOCAL_PARTS = {
-        "noreply",
+        # [NOTIFYNL] noreply must be available for Den Haag
+        # TODO: remove if this is confirmed to be a standard need
+        # "noreply",
         "no.reply",
         "info",
         "support",
