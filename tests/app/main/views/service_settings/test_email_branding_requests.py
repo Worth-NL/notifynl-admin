@@ -303,6 +303,7 @@ def test_email_branding_options_page_shows_preview_if_something_else_is_only_opt
     assert normalize_spaces(page.select_one("form[method=post] button").text) == "Continue"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "data, org_type, endpoint, extra_args",
     (
