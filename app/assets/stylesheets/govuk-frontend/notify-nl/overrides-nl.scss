@@ -281,6 +281,10 @@ html.rhc-theme {
         }
     }
 
+    .banner-tour .heading-large {
+        margin-top: 0;
+    }
+
     .big-number-with-status {
         .govuk-link.govuk-link--inverse.big-number-link {
             background: var(--rhc-color-lichtblauw-100);
@@ -408,6 +412,7 @@ html.rhc-theme {
 }
 
 .rhc-theme {
+
     a,
     button,
     .pill-item {

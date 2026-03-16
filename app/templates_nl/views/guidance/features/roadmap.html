@@ -10,62 +10,8 @@
 {% endblock %}
 
 {% block content_column_content %}
-
   <h1 class="heading-large">Roadmap</h1>
-
-  {{ content_metadata(
-    data={
-      "Last updated": "22 July 2025",
-      "Next review due": "22 September 2025"
-    }
-  ) }}
-
-  <p class="govuk-body">The NotifyNL roadmap shows what we’re working on and some of the <a class="govuk-link govuk-link--no-visited-state" href="#things-we-have-done">things we’ve done</a>.</p>
-  <p class="govuk-body">The roadmap is only a guide. It does not cover everything we do, and some things may change.</p>
-  <p class="govuk-body">You can <a class="govuk-link govuk-link--no-visited-state" href="{{url_for('main.support')}}">contact us</a> if you have any questions about the roadmap, want to get involved in user research or have suggestions for new features.</p>
-
-  <h2 class="heading-medium" id="things-we-are-working-on">Things we’re working on now</h2>
-
-  <ul class="govuk-list govuk-list--bullet">
-    <li>Improve how we measure our performance</li>
-    <li>Improve the way we find problems so we can fix them sooner</li>
-    <li>Make sure NotifyNL does not slow down when services send a lot of messages</li>
-    <li>Make it easier to start using NotifyNL</li>
-    <li>Let website users send files by email</li>
-    <li>Let high volume services download a report of the messages they’ve sent</li>
-    <li>Review <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_security') }}">our security</a> in line with the Cyber Assessment Framework</li>
-    <li>Update our internal monitoring and alerting tools</li>
-    <li>Review our process for identifying text message fraud</li>
-    <li>Improve how we manage our rate limits and capacity</li>
-    <li>Give services more control over the way NotifyNL handles personalised content</li>
-  </ul>
-
-  <h2 class="heading-medium" id="things-we-will-do-later">Things we’ll do later</h2>
-
-  <ul class="govuk-list govuk-list--bullet">
-
-    <li>Make it easier to understand how text message pricing works</li>
-    <li>Improve the billing and payment process</li>
-    <li>Make it easier for services to see the usage data they need</li>
-    <li>Let services add and edit message templates via the API</li>
-    <li>Explore ways to simplify the relationship between organisations and their services</li>
-    <li>Let more organisations approve their own services (public <a class="govuk-link govuk-link--no-visited-state" href="https://www.gov.uk/service-manual/agile-delivery/how-the-beta-phase-works">beta</a>)</li>
-  </ul>
-
-  <h2 class="heading-medium" id="things-we-have-done">Things we’ve done</h2>
-
-  <ul class="govuk-list govuk-list--bullet">
-    <li>Explored ways to help services write better messages</li>
-    <li>Added ‘economy mail’ to the list of postage options</li>
-    <li>Let users join an existing service</li>
-    <li>Improved our front-end code to meet <a class="govuk-link govuk-link--no-visited-state" href="https://www.w3.org/TR/WCAG22/">WCAG 2.2</a> targets for accessibility</li>
-    <li>Added API callbacks for undelivered letters, allowing users to receive an automatic update when a letter is returned</li>
-    <li>Met NCSC guidelines for NHS services by making sure they use a consistent <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_text_message_sender') }}">text message sender ID</a></li>
-    <li>Moved our design components to version 5 of the <a class="govuk-link govuk-link--no-visited-state" href="https://design-system.service.gov.uk/components/">GOV.UK Design System</a></li>
-    <li>Let recipients ask to unsubscribe from emails in one click</li>
-    <li>Let services manage <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_unsubscribe_links') }}">unsubscribe requests</a></li>
-    <li>Added JPG and PNG to the list of file formats a service can send by email</li>
-    <li>Made it harder to send letters to addresses that do not exist</li>
-  </ul>
-
+  <p class="govuk-body">De <a class="govuk-link govuk-link--no-visited-state" target="_blank" href="https://github.com/orgs/Worth-NL/projects/32/views/1">NotifyNL-roadmap</a> laat zien waar we aan werken en een aantal dingen die we hebben gedaan.</p>
+  <p class="govuk-body"> Het stappenplan is slechts een leidraad. Het omvat niet alles wat we doen, en sommige dingen kunnen veranderen.</p>
+  <p class="govuk-body">U kunt <a class="govuk-link govuk-link--no-visited-state" href="{{url_for('main.support')}}">contact</a> met ons opnemen als u vragen heeft over de roadmap, mee wilt doen aan gebruikersonderzoek of suggesties heeft voor nieuwe functionaliteiten.</p>
 {% endblock %}

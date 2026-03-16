@@ -2469,7 +2469,7 @@ class EmailBrandingChooseLogoForm(StripWhitespaceForm):
         "single_identity": {
             "label": "Maak een overheids logo",
             "image": {
-                "path": "images/branding/single_identity.png",
+                "path": "images/branding_nl/single_identity.png",
                 "alt_text": "Een voorbeeld van een e-mail met een overheids identiteits logo,"
                 " met een vaantje van de rijsoverheid",
                 "dimensions": {"width": 606, "height": 404},
