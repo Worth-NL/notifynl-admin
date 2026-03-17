@@ -15,7 +15,7 @@ from tests.conftest import create_email_branding
             "central",
             [
                 ("rijkshuisstijl", "Rijkshuisstijl"),
-                ("rijkshuisstijl_en_org", "Rijkshuisstijl and Test Organisation"),
+                ("rijkshuisstijl_en_org", "Rijkshuisstijl en Test Organisation"),
                 ("organisation", "Test Organisation"),
             ],
         ),
