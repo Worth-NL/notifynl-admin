@@ -94,7 +94,7 @@ class Config:
         "sort_code": "01-23-45",
         "IBAN": "GB33BUKB20201555555555",
         "swift": "ABCDEF12",
-        "notify_billing_email_address": "generic@digital.cabinet-office.gov.uk",
+        "notify_billing_email_address": "generic@rijksoverheid.nl",
     }
 
     EMAIL_BRANDING_MIN_LOGO_HEIGHT_PX = 108

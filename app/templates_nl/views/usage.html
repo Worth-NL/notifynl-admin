@@ -99,7 +99,7 @@
                     {% for letter in item.letter_breakdown %}
                         {% if letter.sent %}
                           <li class="tabular-numbers">
-                            {{ letter.sent|format_thousands }} {{ letter.postage_description }} {{ letter.sent|message_count_label('brief', suffix='') }}
+                            {{ letter.sent|format_thousands }} {{ letter.postage_description }} {{ letter.sent|message_count_label('letters', suffix='') }}
                           </li>
                         {% endif %}
                     {% endfor %}

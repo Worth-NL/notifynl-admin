@@ -2469,7 +2469,7 @@ class EmailBrandingChooseLogoForm(StripWhitespaceForm):
         "single_identity": {
             "label": "Maak een overheids logo",
             "image": {
-                "path": "images/branding/single_identity.png",
+                "path": "images/branding_nl/single_identity.png",
                 "alt_text": "Een voorbeeld van een e-mail met een overheids identiteits logo,"
                 " met een vaantje van de rijsoverheid",
                 "dimensions": {"width": 606, "height": 404},
@@ -2478,7 +2478,7 @@ class EmailBrandingChooseLogoForm(StripWhitespaceForm):
         "org": {
             "label": "Upload een logo",
             "image": {
-                "path": "images/branding/org.png",
+                "path": "images/branding_nl/org.png",
                 "alt_text": (
                     "Een voorbeeld van een e-mail met de heading ‘uw logo’ in blauwe tekst op een witte achtergrond"
                 ),
@@ -2499,7 +2499,7 @@ class EmailBrandingChooseBanner(OrderableFieldsForm):
         "org_banner": {
             "label": "Ja",
             "image": {
-                "path": "images/branding/org_banner.png",
+                "path": "images/branding_nl/org_banner.png",
                 "alt_text": "Een voorbeeld van een e-mail met een logo op een blauwe banner.",
                 "dimensions": {"width": 606, "height": 404},
             },
@@ -2507,7 +2507,7 @@ class EmailBrandingChooseBanner(OrderableFieldsForm):
         "org": {
             "label": "Nee",
             "image": {
-                "path": "images/branding/org.png",
+                "path": "images/branding_nl/org.png",
                 "alt_text": "Een voorbeeld van een logo op een lege achtergrond.",
                 "dimensions": {"width": 606, "height": 404},
             },
