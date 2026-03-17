@@ -98,6 +98,7 @@ def test_get_email_choices_service_assigned_to_org(
     assert list(options) == expected_options
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] govuk brandings were deleted")
 @pytest.mark.parametrize(
     "org_type, expected_options",
     [
@@ -139,6 +140,7 @@ def test_get_email_choices_org_has_default_branding(
     assert list(options) == expected_options
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] govuk brandings were deleted")
 @pytest.mark.parametrize(
     "branding_name, expected_options",
     [
@@ -188,6 +190,7 @@ def test_get_email_choices_branding_name_in_use(
     assert list(options) == expected_options
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] govuk brandings were deleted")
 @pytest.mark.parametrize(
     "branding_pool, expected_options",
     (

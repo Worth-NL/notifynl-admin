@@ -12,7 +12,7 @@ def get_email_choices(service):
             service.email_branding.name_like(f"Rijkshuisstijl en {service.organisation.name}")
             or service.email_branding_pool.contains_name(f"Rijkshuisstijl en {service.organisation.name}")
         ):
-            yield ("rijkshuisstijl_en_org", f"Rijkshuisstijl and {service.organisation.name}")
+            yield ("rijkshuisstijl_en_org", f"Rijkshuisstijl en {service.organisation.name}")
 
     if service.is_nhs and not service.email_branding.is_nhs:
         yield (EmailBranding.NHS_ID, "NHS")
