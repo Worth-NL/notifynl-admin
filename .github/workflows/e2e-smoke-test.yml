@@ -14,6 +14,7 @@ on:
 
 env:
   CYPRESS_BASE_URL: ${{ github.event.inputs.environment == 'prod' && 'https://admin.notifynl.nl/' || 'https://admin.test.notifynl.nl/' }}
+
 jobs:
   cypress-run:
     name: Smoke test for (${{ github.event.inputs.environment }}) environment
