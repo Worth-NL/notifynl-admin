@@ -107,6 +107,7 @@ jobs:
           badge-title: PYTEST
 
   build:
+    if: github.event.pull_request.draft == 'false'
     runs-on: ubuntu-latest
     needs: test
 
@@ -148,6 +149,7 @@ jobs:
       tag: ${{ steps.set-tag.outputs.tag }}
 
   deploy:
+    if: github.event.pull_request.draft == 'false'
     runs-on: ubuntu-latest
     needs: build
     environment:
@@ -174,6 +176,7 @@ jobs:
         run: helm upgrade --install notifynl notifynl-full/ -n ${{ vars.NAMESPACE_TEST }} --reuse-values --set apps.admin.image.tag=${{ needs.build.outputs.tag }} --wait --timeout 300s
 
   detect-static-changes:
+    if: github.event.pull_request.draft == 'false'
     needs: build
     runs-on: ubuntu-latest
     outputs:
@@ -187,15 +190,18 @@ jobs:
           filters: |
             static:
               - 'app/assets/**'
+
   upload-static:
     needs: detect-static-changes
-    if: needs.detect-static-changes.outputs.static_changed == 'true'
+    if: github.event.pull_request.draft == 'false' && needs.detect-static-changes.outputs.static_changed == 'true'
     uses: ./.github/workflows/update-static.yml
     with:
       environment: test
     secrets: inherit
+
   smoke-test:
     needs: deploy
+    if: github.event.pull_request.draft == 'false'
     uses: ./.github/workflows/e2e-smoke-test.yml
     with:
       environment: test
