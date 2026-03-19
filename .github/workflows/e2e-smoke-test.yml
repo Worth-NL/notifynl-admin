@@ -11,6 +11,12 @@ on:
         options:
           - test
           - prod
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Target environment to test'
+        required: true
+        type: string
 
 env:
   CYPRESS_BASE_URL: ${{ github.event.inputs.environment == 'prod' && 'https://admin.notifynl.nl/' || 'https://admin.test.notifynl.nl/' }}
@@ -29,5 +35,3 @@ jobs:
         with:
           browser: chrome
           spec: cypress/e2e/smoke.cy.js
-        env:
-          CYPRESS_BASE_URL: ${{ env.CYPRESS_BASE_URL }}
