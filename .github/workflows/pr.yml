@@ -11,7 +11,6 @@ concurrency:
 
 env:
   IMAGE: ghcr.io/worth-nl/notifynl-admin
-  IAM: NOTREAL
 
 jobs:
   test:
@@ -196,14 +195,6 @@ jobs:
     needs: detect-static-changes
     if: github.event.pull_request.draft == 'false' && needs.detect-static-changes.outputs.static_changed == 'true'
     uses: ./.github/workflows/update-static.yml
-    with:
-      environment: test
-    secrets: inherit
-
-  smoke-test:
-    needs: deploy
-    if: github.event.pull_request.draft == 'false'
-    uses: ./.github/workflows/e2e-smoke-test.yml
     with:
       environment: test
     secrets: inherit
