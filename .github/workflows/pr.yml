@@ -11,6 +11,7 @@ concurrency:
 
 env:
   IMAGE: ghcr.io/worth-nl/notifynl-admin
+  IAM: NOTREAL
 
 jobs:
   test:
