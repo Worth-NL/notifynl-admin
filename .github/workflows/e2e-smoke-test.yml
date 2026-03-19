@@ -14,17 +14,22 @@ on:
   workflow_call:
     inputs:
       environment:
-        description: 'Target environment to test'
+        default: 'test'
         required: true
         type: string
 
 env:
-  CYPRESS_BASE_URL: ${{ github.event.inputs.environment == 'prod' && 'https://admin.notifynl.nl/' || 'https://admin.test.notifynl.nl/' }}
+  CYPRESS_BASE_URL: ${{ inputs.environment == 'prod' && 'https://admin.notifynl.nl/' || 'https://admin.test.notifynl.nl/' }}
 
 jobs:
   cypress-run:
-    name: Smoke test for (${{ github.event.inputs.environment }}) environment
+    name: Smoke test for (${{ inputs.environment }}) environment
     runs-on: ubuntu-24.04
+    container:
+      # Cypress Docker image from https://hub.docker.com/r/cypress/included
+      # with Cypress globally pre-installed
+      image: cypress/included:latest
+      options: --user 1001
 
     steps:
       - name: Checkout
@@ -35,3 +40,5 @@ jobs:
         with:
           browser: chrome
           spec: cypress/e2e/smoke.cy.js
+        env:
+          CYPRESS_INSTALL_BINARY: 0
