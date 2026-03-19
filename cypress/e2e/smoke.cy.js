@@ -1,4 +1,4 @@
-// cypress/e2e/smoke.cy.js
+
 describe('Smoke test', () => {
   it('site is up and returns a page', () => {
     cy.visit('/')
