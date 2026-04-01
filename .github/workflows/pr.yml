@@ -159,7 +159,9 @@ jobs:
   build:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    needs: unit-test
+    needs:
+      - unit-test
+      - docker-test
 
     permissions:
       contents: read
@@ -227,7 +229,9 @@ jobs:
 
   detect-static-changes:
     if: github.event.pull_request.draft == false
-    needs: unit-test
+    needs:
+      - unit-test
+      - docker-test
     runs-on: ubuntu-latest
     outputs:
       static_changed: ${{ steps.filter.outputs.static }}
