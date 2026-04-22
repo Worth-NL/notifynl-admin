@@ -23,7 +23,7 @@
       "request": "launch",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "watch"],
-      "preLaunchTask": "NPM Admin build"
+      "preLaunchTask": "NPM Admin install"
     }
   ],
   "compounds": [
