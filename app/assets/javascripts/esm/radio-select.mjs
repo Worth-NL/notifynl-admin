@@ -55,7 +55,7 @@ class RadioSelect {
     this.selectedTime = this.timesByDay[this.selectedDay.value][0];
 
 
-    this.$module.innerHTML = this.getInitialHTML({
+    const html = this.getInitialHTML({
       'componentLabel': this.$module.previousElementSibling.textContent.trim(),
       'componentName': this.componentName,
       'selectedTime': this.selectedTime,
@@ -63,6 +63,7 @@ class RadioSelect {
       'times': this.timesByDay
     });
 
+    this.$module.setHTML(html);
     this.$module.closest('fieldset').replaceWith(this.$module);
 
     this.form = this.$module.closest('form');
@@ -170,7 +171,7 @@ class RadioSelect {
 
   handleTimeSelection(event) {
     if (!event.target.classList.contains('radio-select__time')) return;
-    
+
     // Uncheck any other selected radios, as they don't share a name attribute
     this.$module.querySelectorAll('.radio-select__time:checked').forEach(radio => {
       if (radio !== event.target) {
@@ -281,7 +282,7 @@ class RadioSelect {
     isExpanded = this.$module.querySelector('.radio-select__expander').getAttribute('aria-expanded') === 'true';
 
     if (targetIsSelectedDayAndTimeField) {
-      if (isExpanded) { 
+      if (isExpanded) {
         this.toggleExpandingSection();
       }
     } else { // target element is the radio for a time
