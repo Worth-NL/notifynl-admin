@@ -14,13 +14,13 @@ describe('Focus banner', () => {
         <p>The file uploaded needs to be a PNG</p>
       </div>`;
 
-    (new FocusBanner());
+    new FocusBanner();
 
     const bannerEl = document.querySelector('.banner-dangerous');
 
     expect(document.activeElement).toBe(bannerEl);
 
-    $(bannerEl).trigger('blur');
+    bannerEl.blur();
 
     expect(bannerEl.hasAttribute('tabindex')).toBe(false);
 
@@ -36,7 +36,7 @@ describe('Focus banner', () => {
 
       const ajaxBlockContainer = document.querySelector('.ajax-block-container');
 
-      (new FocusBanner());
+      new FocusBanner();
 
       // simulate a content update event
       ajaxBlockContainer.innerHTML = `
@@ -44,13 +44,14 @@ describe('Focus banner', () => {
           <h2>This is a problem with your upload</h2>
           <p>The file uploaded needs to be a PNG</p>
         </div>`;
-      $(document).trigger('updateContent.onafterupdate', ajaxBlockContainer);
+      const event = new CustomEvent("updateContent.onafterupdate", { detail: {el: [ajaxBlockContainer]}});
+      document.dispatchEvent(event);
 
       const bannerEl = document.querySelector('.banner-dangerous');
 
       expect(document.activeElement).toBe(bannerEl);
 
-      $(bannerEl).trigger('blur');
+      bannerEl.blur();
 
       expect(bannerEl.hasAttribute('tabindex')).toBe(false);
 

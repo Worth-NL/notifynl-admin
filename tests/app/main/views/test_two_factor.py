@@ -1,8 +1,11 @@
+import logging
 from unittest.mock import PropertyMock
 
 import pytest
+from cryptography.fernet import Fernet
 from flask import url_for
 
+from app.utils.login import encrypt_new_password
 from tests.app.test_event_handlers import event_dict
 from tests.conftest import (
     SERVICE_ONE_ID,
@@ -20,7 +23,7 @@ def mock_email_validated_recently(mocker):
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize("request_url", ["two_factor_email_sent", "revalidate_email_sent"])
 @pytest.mark.parametrize("redirect_url", [None, f"/services/{SERVICE_ONE_ID}/templates"])
-@pytest.mark.parametrize("email_resent, page_title", [(None, "Check your email"), (True, "Email resent")])
+@pytest.mark.parametrize("email_resent, page_title", [(None, "Check your inbox"), (True, "Email resent")])
 def test_two_factor_email_sent_page(client_request, email_resent, page_title, redirect_url, request_url):
     client_request.logout()
     page = client_request.get(
@@ -202,7 +205,7 @@ def test_two_factor_sms_should_set_password_when_new_password_exists_in_session(
         session["user_details"] = {
             "id": api_user_active["id"],
             "email": api_user_active["email_address"],
-            "password": "changedpassword",
+            "new_password": encrypt_new_password("changedpassword"),
         }
 
     client_request.post(
@@ -215,6 +218,70 @@ def test_two_factor_sms_should_set_password_when_new_password_exists_in_session(
         api_user_active["id"],
         "changedpassword",
     )
+
+
+@pytest.mark.parametrize("new_password", ["just-a-string", b"bytes-string"])
+def test_two_factor_sms_should_return_error_if_new_password_not_encrypted(
+    client_request,
+    api_user_active,
+    mock_update_user_password,
+    mock_email_validated_recently,
+    caplog,
+    new_password,
+):
+    client_request.logout()
+
+    with client_request.session_transaction() as session:
+        session["user_details"] = {
+            "id": api_user_active["id"],
+            "email": api_user_active["email_address"],
+            "new_password": new_password,
+        }
+    with caplog.at_level(logging.WARNING):
+        page = client_request.post(
+            "main.two_factor_sms",
+            _data={"sms_code": "12345"},
+            _follow_redirects=True,
+        )
+
+    assert "Error during new password decryption for user id 6ce466d0-fd6a-11e5-82f5-e0accb9d11a6" in caplog.messages
+
+    assert page.select_one("h1").string == "Sign in"
+    assert page.select_one(".banner-dangerous").text.strip() == (
+        "There was a problem with your password. Please try again."
+    )
+
+    mock_update_user_password.assert_not_called()
+
+
+def test_two_factor_sms_should_return_error_if_new_password_encrypted_with_wrong_key(
+    client_request, api_user_active, mock_update_user_password, mock_email_validated_recently, caplog
+):
+    client_request.logout()
+
+    wrong_key_fernet = Fernet(Fernet.generate_key())
+
+    with client_request.session_transaction() as session:
+        session["user_details"] = {
+            "id": api_user_active["id"],
+            "email": api_user_active["email_address"],
+            "new_password": wrong_key_fernet.encrypt(b"changedpassword"),
+        }
+    with caplog.at_level(logging.WARNING):
+        page = client_request.post(
+            "main.two_factor_sms",
+            _data={"sms_code": "12345"},
+            _follow_redirects=True,
+        )
+
+    assert "Error during new password decryption for user id 6ce466d0-fd6a-11e5-82f5-e0accb9d11a6" in caplog.messages
+
+    assert page.select_one("h1").string == "Sign in"
+    assert page.select_one(".banner-dangerous").text.strip() == (
+        "There was a problem with your password. Please try again."
+    )
+
+    mock_update_user_password.assert_not_called()
 
 
 def test_two_factor_sms_returns_error_when_user_is_locked(
@@ -342,7 +409,7 @@ def test_valid_two_factor_email_link_shows_interstitial(
     assert "action" not in form
     assert form["method"] == "post"
     assert form["id"] == expected_form_id
-    assert page.select_one("main script").string.strip() == (f'document.getElementById("{expected_form_id}").submit();')
+    assert page.select_one("main script").string.strip() == f'document.getElementById("{expected_form_id}").submit();'
 
     assert mock_check_code.called is False
 

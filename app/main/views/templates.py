@@ -19,6 +19,7 @@ from flask import (
 from flask_login import current_user
 from notifications_python_client.errors import HTTPError
 from notifications_utils import SMS_CHAR_COUNT_LIMIT
+from notifications_utils.formatters import formatted_list
 from notifications_utils.pdf import pdf_page_count
 from notifications_utils.s3 import s3download
 from notifications_utils.template import Template
@@ -57,7 +58,7 @@ from app.main.forms import (
 )
 from app.main.views.send import get_sender_details
 from app.models.service import Service
-from app.models.template_list import TemplateList, UserTemplateList, UserTemplateLists
+from app.models.template_list import InterruptibleUserTemplateList, InterruptibleUserTemplateLists, TemplateList
 from app.s3_client.s3_letter_upload_client import (
     backup_original_letter_to_s3,
     get_attachment_pdf_and_metadata,
@@ -73,13 +74,17 @@ from app.utils.letters import (
     get_letter_validation_error,
 )
 from app.utils.pagination import generate_optional_previous_and_next_dicts, get_page_from_request
-from app.utils.templates import TemplatedLetterImageTemplate, get_template
+from app.utils.templates import TemplateChange, TemplatedLetterImageTemplate, get_template
 from app.utils.user import user_has_permissions
 
 
-def get_template_form(template_type: Literal["email", "sms", "letter"], language: Literal["welsh"] | None = None):
+def get_template_form(
+    template_type: Literal["email", "sms", "letter"],
+    email_file_filenames=None,
+    language: Literal["welsh"] | None = None,
+):
     if template_type == "email":
-        return EmailTemplateForm
+        return partial(EmailTemplateForm, email_file_filenames=email_file_filenames)
     elif template_type == "sms":
         return SMSTemplateForm
     else:
@@ -130,6 +135,7 @@ def view_template(service_id, template_id):
         template=template,
         user_has_template_permission=user_has_template_permission,
         content_count_message=content_count_message,
+        extra_spacing_around_flash_messages=False,
     )
 
 
@@ -148,11 +154,13 @@ def choose_template(service_id, template_type="all", template_folder_id=None):
     user_has_template_folder_permission = current_user.has_template_folder_permission(
         template_folder, service=current_service
     )
-    template_list = UserTemplateList(
+    template_list = InterruptibleUserTemplateList(
         service=current_service, template_type=template_type, template_folder_id=template_folder_id, user=current_user
     )
 
-    all_template_folders = UserTemplateList(service=current_service, user=current_user).all_template_folders
+    all_template_folders = InterruptibleUserTemplateList(
+        service=current_service, user=current_user
+    ).all_template_folders
     option_hints = {template_folder_id: "current folder"}
     templates_and_folders_form = TemplateAndFoldersSelectionForm(
         all_template_folders=all_template_folders,
@@ -198,7 +206,7 @@ def choose_template(service_id, template_type="all", template_folder_id=None):
         template_type=template_type,
         _search_form=SearchTemplatesForm(current_service.api_keys),
         form=templates_and_folders_form,
-        move_to_children=templates_and_folders_form.move_to.children(),
+        move_to_children=templates_and_folders_form.move_to.children,
         user_has_template_folder_permission=user_has_template_folder_permission,
         option_hints=option_hints,
         error_summary_enabled=True,
@@ -412,7 +420,7 @@ def choose_template_to_copy(
 
         return render_template(
             "views/templates/copy.html",
-            services_templates_and_folders=UserTemplateList(
+            services_templates_and_folders=InterruptibleUserTemplateList(
                 service=service, template_folder_id=from_folder, user=current_user
             ),
             template_folder_path=service.get_template_folder_path(from_folder),
@@ -424,7 +432,7 @@ def choose_template_to_copy(
     else:
         return render_template(
             "views/templates/copy.html",
-            services_templates_and_folders=UserTemplateLists(current_user),
+            services_templates_and_folders=InterruptibleUserTemplateLists(current_user),
             _search_form=SearchTemplatesForm(current_service.api_keys),
             to_folder_id=to_folder_id,
         )
@@ -716,7 +724,7 @@ def abort_for_unauthorised_bilingual_letters_or_invalid_options(language: str | 
 @main.route("/services/<uuid:service_id>/templates/<uuid:template_id>/edit", methods=["GET", "POST"])
 @main.route("/services/<uuid:service_id>/templates/<uuid:template_id>/edit/<string:language>", methods=["GET", "POST"])
 @user_has_permissions("manage_templates")
-def edit_service_template(service_id, template_id, language=None):
+def edit_service_template(service_id, template_id, language=None):  # noqa
     template = current_service.get_template_with_user_permission_or_403(template_id, current_user)
 
     if template.template_type not in current_service.available_template_types:
@@ -732,27 +740,34 @@ def edit_service_template(service_id, template_id, language=None):
 
     abort_for_unauthorised_bilingual_letters_or_invalid_options(language, template)
 
-    form = get_template_form(template.template_type, language=language)(**template._template)
+    form = get_template_form(
+        template.template_type,
+        email_file_filenames=getattr(template, "filenames", None),
+        language=language,
+    )(**template._template)
 
     if form.validate_on_submit():
         new_template = get_template(
             template._template | form.new_template_data,
             current_service,
         )
-        template_change = template.compare_to(new_template)
-
-        if template_change.placeholders_added and not request.form.get("confirm") and current_service.api_keys:
+        template_change = TemplateChange(template, new_template, service_has_api_keys=current_service.api_keys)
+        if template_change.is_breaking_change and not request.form.get("confirm"):
             return render_template(
                 "views/templates/breaking-change.html",
                 template_change=template_change,
                 new_template=new_template,
                 form=form,
             )
+
+        update_data = form.new_template_data
+        if template_change.email_files_removed:
+            update_data["archive_email_file_ids"] = [file.id for file in template_change.email_files_removed]
         try:
             service_api_client.update_service_template(
                 service_id=service_id,
                 template_id=template_id,
-                **form.new_template_data,
+                **update_data,
             )
         except HTTPError as e:
             if e.status_code == 400:
@@ -770,6 +785,13 @@ def edit_service_template(service_id, template_id, language=None):
             editing_english_content_in_bilingual_letter = (
                 template.template_type == "letter" and template.welsh_page_count and language != "welsh"
             )
+            if template_change.email_files_removed:
+                multiple_files_removed = len(template_change.email_filenames_removed) > 1
+                flash(
+                    f"{formatted_list(template_change.email_filenames_removed)} "
+                    f"{'have' if multiple_files_removed else 'has'} been removed",
+                    "default_with_tick",
+                )
             return redirect(
                 url_for(
                     "main.view_template",
@@ -792,6 +814,7 @@ def edit_service_template(service_id, template_id, language=None):
         letter_languages=template.get_raw("letter_languages"),
         language_options=LetterLanguageOptions,
         back_link=url_for("main.view_template", service_id=current_service.id, template_id=template.id),
+        error_summary_enabled=True,
     )
 
 
@@ -1181,7 +1204,11 @@ def _process_letter_attachment_form(service_id, template, form, upload_id):
         # handles malformed files nicely - is this done yet?
         attachment_page_count = pdf_page_count(BytesIO(pdf_file_bytes))
     except PdfReadError:
-        current_app.logger.info("Invalid PDF uploaded for service_id: %s", service_id)
+        current_app.logger.info(
+            "Invalid PDF uploaded for service %s",
+            service_id,
+            extra={"service_id": service_id, "upload_id": upload_id},
+        )
         raise LetterAttachmentFormError(
             title="There’s a problem with your file",
             detail="Notify cannot read this PDF - save a new copy and try again",
@@ -1258,7 +1285,11 @@ def _process_letter_attachment_form(service_id, template, form, upload_id):
 def _copy_letter_attachment(from_template: Template, to_template: dict):
     letter_attachment_data: dict = from_template.get_raw("letter_attachment")
     if not letter_attachment_data:
-        current_app.logger.warning("No letter attachment found when copying template %s", from_template.id)
+        current_app.logger.warning(
+            "No letter attachment found when copying template %s",
+            from_template.id,
+            extra={"template_id": from_template.id},
+        )
         abort(400)
 
     letter_attachment = s3download(

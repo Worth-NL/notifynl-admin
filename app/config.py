@@ -6,8 +6,10 @@ class Config:
     ADMIN_CLIENT_SECRET = os.environ.get("ADMIN_CLIENT_SECRET")
     API_HOST_NAME = os.environ.get("API_HOST_NAME")
     SECRET_KEY = os.environ.get("SECRET_KEY")
+    TOKEN_SECRET_KEY = os.environ.get("TOKEN_SECRET_KEY")
     DANGEROUS_SALT = os.environ.get("DANGEROUS_SALT")
     ZENDESK_API_KEY = os.environ.get("ZENDESK_API_KEY")
+    NEW_PASSWORD_ENCRYPTION_KEY = os.environ.get("NEW_PASSWORD_ENCRYPTION_KEY")
 
     # if we're not on cloudfoundry, we can get to this app from localhost. but on cloudfoundry its different
     ADMIN_BASE_URL = os.environ.get("ADMIN_BASE_URL", "http://localhost:6012")
@@ -18,6 +20,8 @@ class Config:
     # Logging
     DEBUG = False
     NOTIFY_REQUEST_LOG_LEVEL = os.getenv("NOTIFY_REQUEST_LOG_LEVEL", "INFO")
+
+    NOTIFY_EVENTLET_STATS = os.getenv("NOTIFY_EVENTLET_STATS", "0") == "1"
 
     ADMIN_CLIENT_USER_NAME = "notify-admin"
 
@@ -78,6 +82,7 @@ class Config:
     S3_BUCKET_REPORT_REQUESTS_DOWNLOAD = os.environ.get(
         "S3_BUCKET_REPORT_REQUESTS_DOWNLOAD", "local-report-requests-download"
     )
+    S3_BUCKET_TEMPLATE_EMAIL_FILES = os.environ.get("S3_BUCKET_TEMPLATE_EMAIL_FILES", "local-template-email-files")
     LOGO_CDN_DOMAIN = os.environ.get("LOGO_CDN_DOMAIN", "static-logos.notify.tools")
     ANTIVIRUS_ENABLED = True
 
@@ -116,12 +121,17 @@ class Development(Config):
     S3_BUCKET_PRECOMPILED_ORIGINALS_BACKUP_LETTERS = "development-letters-precompiled-originals-backup"
     S3_BUCKET_LETTER_ATTACHMENTS = "development-letter-attachments"
     S3_BUCKET_REPORT_REQUESTS_DOWNLOAD = "development-report-requests-download"
+    S3_BUCKET_TEMPLATE_EMAIL_FILES = "development-template-email-files"
 
     LOGO_CDN_DOMAIN = "static-logos.notify.tools"
 
     ADMIN_CLIENT_SECRET = "dev-notify-secret-key"
     DANGEROUS_SALT = "dev-notify-salt"
     SECRET_KEY = "dev-notify-secret-key"
+    # Fernet key must be 32 url-safe base64-encoded bytes:
+    NEW_PASSWORD_ENCRYPTION_KEY = "vGUd-3kOibOKqJVMIdfLPOXB4OmSbzRRHr8832ItpzM="
+
+    TOKEN_SECRET_KEY = "5YNWU0e_pN5ZyaSZvBd5uZb_sZlrVDFeOjiea6dq4zQ="
     API_HOST_NAME = os.environ.get("API_HOST_NAME", "http://localhost:6011")
     ANTIVIRUS_API_HOST = os.environ.get("ANTIVIRUS_API_HOST", "http://localhost:6016")
     ANTIVIRUS_API_KEY = "test-key"
@@ -145,6 +155,7 @@ class Test(Development):
     S3_BUCKET_PRECOMPILED_ORIGINALS_BACKUP_LETTERS = "test-letters-precompiled-originals-backup"
     S3_BUCKET_LETTER_ATTACHMENTS = "test-letter-attachments"
     S3_BUCKET_REPORT_REQUESTS_DOWNLOAD = "test-report-requests-download"
+    S3_BUCKET_TEMPLATE_EMAIL_FILES = "test-template-email-files"
     LOGO_CDN_DOMAIN = "static-logos.test.com"
     NOTIFY_ENVIRONMENT = "test"
     API_HOST_NAME = "http://you-forgot-to-mock-an-api-call-to"
@@ -152,6 +163,8 @@ class Test(Development):
     ANTIVIRUS_API_HOST = "https://test-antivirus"
     ANTIVIRUS_API_KEY = "test-antivirus-secret"
     ANTIVIRUS_ENABLED = True
+    REDIS_ENABLED = False
+    ZENDESK_API_KEY = "test"
 
     ASSET_DOMAIN = "static.example.com"
     ASSET_PATH = "https://static.example.com/"

@@ -1,6 +1,6 @@
 import uuid
 from io import BytesIO
-from unittest.mock import ANY
+from unittest.mock import ANY, PropertyMock
 
 import pytest
 from flask import url_for
@@ -22,8 +22,14 @@ def test_upload_contact_list_page(client_request):
     assert page.select_one("form input")["type"] == "file"
     assert page.select_one("form input")["accept"] == ".csv,.xlsx,.xls,.ods,.xlsm,.tsv"
 
-    assert normalize_spaces(page.select(".spreadsheet")[0].text) == "Example A 1 email address 2 test@example.gov.uk"
-    assert normalize_spaces(page.select(".spreadsheet")[1].text) == "Example A 1 phone number 2 07700 900123"
+    assert (
+        normalize_spaces(page.select(".spreadsheet")[0].text)
+        == "Example list of staff email addresses A 1 email address 2 test@example.gov.uk"
+    )
+    assert (
+        normalize_spaces(page.select(".spreadsheet")[1].text)
+        == "Example list of staff phone numbers A 1 phone number 2 07700 900123"
+    )
 
 
 @pytest.mark.parametrize(
@@ -182,7 +188,7 @@ def test_upload_csv_file_shows_error_banner(
     )
     mock_upload.assert_called_once_with(
         SERVICE_ONE_ID,
-        {"data": "", "file_name": "invalid.csv"},
+        "",
         ANY,
         bucket="test-contact-list",
     )
@@ -224,9 +230,14 @@ def test_upload_csv_file_shows_error_banner_for_too_many_rows(
     mocker.patch("app.models.contact_list.s3upload", return_value=fake_uuid)
     mocker.patch("app.models.contact_list.set_metadata_on_csv_upload")
     mocker.patch(
-        "app.models.contact_list.s3download", return_value="\n".join(["phone number"] + (["07700900986"] * 100_001))
+        "app.models.contact_list.s3download", return_value="\n".join(["phone number"] + (["07700900986"] * 4_567))
     )
     mocker.patch("app.models.contact_list.get_csv_metadata", return_value={"original_file_name": "invalid.csv"})
+    mocker.patch(
+        "app.main.views.uploads.RecipientCSV.max_rows",
+        new_callable=PropertyMock,
+        return_value=1_234,
+    )
 
     page = client_request.post(
         "main.upload_contact_list",
@@ -236,7 +247,7 @@ def test_upload_csv_file_shows_error_banner_for_too_many_rows(
     )
 
     assert normalize_spaces(page.select_one(".banner-dangerous").text) == (
-        "Your file has too many rows Notify can store files up to 100,000 rows in size. Your file has 100,001 rows."
+        "Your file has too many rows Notify can store files up to 1,234 rows in size. Your file has 4,567 rows."
     )
     assert len(page.select("tbody tr")) == 50
     assert normalize_spaces(page.select_one(".table-show-more-link").text) == "Only showing the first 50 rows"
@@ -448,9 +459,11 @@ def test_view_contact_list(
     )
     assert normalize_spaces(page.select_one("h1").text) == "EmergencyContactList.xls"
     assert normalize_spaces(page.select("main p")[0].text) == "Uploaded by Test User on 3 March at 12:12pm."
-    assert normalize_spaces(page.select("main p")[1].text) == (expected_empty_message)
+    assert normalize_spaces(page.select("main p")[1].text) == expected_empty_message
     assert normalize_spaces(page.select_one("main h2").text) == "51 saved email addresses"
-    assert page.select_one(".js-stick-at-bottom-when-scrolling a[download]")["href"] == url_for(
+    download_link = page.select_one(".js-stick-at-bottom-when-scrolling .page-footer-right-aligned-link-without-button")
+    assert normalize_spaces(download_link.text) == "Download this contact list (CSV)"
+    assert download_link["href"] == url_for(
         "main.download_contact_list",
         service_id=SERVICE_ONE_ID,
         contact_list_id=fake_uuid,
@@ -509,10 +522,10 @@ def test_view_jobs_for_contact_list(
         "Template Status",
         "Template Y Sending tomorrow at 11:09pm 1 text message waiting to send",
         "Template Z Sending tomorrow at 11:09am 1 text message waiting to send",
-        "Template A Sent today at 4:51pm 1 sending 0 delivered 0 failed",
-        "Template B Sent today at 4:51pm 1 sending 0 delivered 0 failed",
-        "Template C Sent today at 4:51pm 1 sending 0 delivered 0 failed",
-        "Template D Sent today at 4:51pm 1 sending 0 delivered 0 failed",
+        "Template A Sent today at 4:51pm 1 delivering 0 delivered 0 failed",
+        "Template B Sent today at 4:51pm 1 delivering 0 delivered 0 failed",
+        "Template C Sent today at 4:51pm 1 delivering 0 delivered 0 failed",
+        "Template D Sent today at 4:51pm 1 delivering 0 delivered 0 failed",
     ]
     assert page.select_one("table a")["href"] == url_for(
         "main.view_job",

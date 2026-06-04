@@ -30,6 +30,7 @@ from app.notify_client.service_api_client import service_api_client
 from app.notify_client.template_folder_api_client import template_folder_api_client
 from app.utils import get_default_sms_sender
 from app.utils.templates import get_template as get_template_as_rich_object
+from app.utils.user import is_gov_user
 
 
 class Service(JSONModel):
@@ -37,6 +38,7 @@ class Service(JSONModel):
     billing_contact_email_addresses: str
     billing_contact_names: str
     billing_reference: str
+    confirmed_email_sender_name: Any
     confirmed_unique: bool
     contact_link: str
     count_as_live: bool
@@ -100,6 +102,16 @@ class Service(JSONModel):
             return billing_details
         else:
             return None
+
+    @property
+    def contact_details_type(self):
+        if not self.contact_link:
+            return None
+        if self.contact_link.startswith(("http:", "https:")):
+            return "url"
+        elif "@" in self.contact_link:
+            return "email_address"
+        return "phone_number"
 
     def update(self, **kwargs):
         return service_api_client.update_service(self.id, **kwargs)
@@ -181,6 +193,13 @@ class Service(JSONModel):
     def active_users_with_permission(self, permission):
         return tuple(user for user in self.active_users if user.has_permission_for_service(self.id, permission))
 
+    def active_gov_users_with_permission(self, permission):
+        return tuple(
+            user
+            for user in self.active_users
+            if (user.has_permission_for_service(self.id, permission) and is_gov_user(user.email_address))
+        )
+
     @cached_property
     def team_members(self):
         return self.invited_users + self.active_users
@@ -190,7 +209,7 @@ class Service(JSONModel):
 
     @cached_property
     def has_team_members_with_manage_service_permission(self):
-        return len(self.team_members_with_permission("manage_service")) > 1
+        return len(self.active_gov_users_with_permission("manage_service")) > 1
 
     def cancel_invite(self, invited_user_id):
         if str(invited_user_id) not in {user.id for user in self.invited_users}:
@@ -237,9 +256,15 @@ class Service(JSONModel):
 
         return template_folder
 
-    def get_template_with_user_permission_or_403(self, template_id, user, **kwargs):
+    def get_template_with_user_permission_or_403(self, template_id, user, must_be_of_type=None, **kwargs):
         template = self.get_template(template_id, **kwargs)
         self.get_template_folder_with_user_permission_or_403(template.get_raw("folder"), user)
+
+        if must_be_of_type not in {None} | set(self.TEMPLATE_TYPES):
+            raise ValueError(f"{must_be_of_type} is not a valid template type")
+
+        if must_be_of_type and template.template_type != must_be_of_type:
+            abort(404)
 
         return template
 
@@ -283,9 +308,10 @@ class Service(JSONModel):
 
     @property
     def intending_to_send_email(self):
-        if self.volume_email is None:
-            return self.has_email_templates
-        return self.volume_email > 0
+        if self.has_email_templates:
+            return True
+        else:
+            return self.volume_email is not None and self.volume_email > 0
 
     @property
     def intending_to_send_sms(self):
@@ -311,6 +337,10 @@ class Service(JSONModel):
 
     def get_email_reply_to_address(self, id):
         return service_api_client.get_reply_to_email_address(self.id, id)
+
+    @property
+    def needs_to_confirm_email_sender_name(self):
+        return self.intending_to_send_email and not self.confirmed_email_sender_name
 
     @property
     def needs_to_add_email_reply_to_address(self):
@@ -412,6 +442,7 @@ class Service(JSONModel):
                 any(self.volumes_by_channel.values()),
                 self.has_team_members_with_manage_service_permission,
                 self.has_templates,
+                not self.needs_to_confirm_email_sender_name,
                 not self.needs_to_add_email_reply_to_address,
                 not self.needs_to_change_sms_sender,
                 self.confirmed_unique,
@@ -519,8 +550,12 @@ class Service(JSONModel):
         )
 
     @cached_property
+    def all_template_folders_by_id(self):
+        return {folder["id"]: folder for folder in self.all_template_folders}
+
+    @cached_property
     def all_template_folder_ids(self):
-        return {folder["id"] for folder in self.all_template_folders}
+        return self.all_template_folders_by_id.keys()
 
     def get_template_folder(self, folder_id):
         if folder_id is None:
@@ -529,7 +564,10 @@ class Service(JSONModel):
                 "name": "Templates",
                 "parent_id": None,
             }
-        return self._get_by_id(self.all_template_folders, folder_id)
+        try:
+            return self.all_template_folders_by_id[str(folder_id)]
+        except KeyError:
+            abort(404)
 
     def get_template_folder_path(self, template_folder_id):
         folder = self.get_template_folder(template_folder_id)
@@ -614,7 +652,13 @@ class Service(JSONModel):
         return self.get_message_limit(notification_type) - self.sent_today(notification_type)
 
     def sent_today(self, notification_type):
-        return service_api_client.get_notification_count(self.id, notification_type=notification_type)
+        if not hasattr(self, "_sent_today"):
+            self._sent_today = {}
+        if notification_type not in self._sent_today:
+            self._sent_today[notification_type] = service_api_client.get_notification_count(
+                self.id, notification_type=notification_type
+            )
+        return self._sent_today[notification_type]
 
     @property
     def sign_in_method(self) -> str:

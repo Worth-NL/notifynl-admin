@@ -1,22 +1,27 @@
 import copy
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import Mock
 
 import pytest
 from flask import url_for
 from flask_login import current_user
+from notifications_python_client.errors import HTTPError
 
 import app
 from app.constants import SERVICE_JOIN_REQUEST_APPROVED, SERVICE_JOIN_REQUEST_REJECTED
 from app.formatters import format_date_short
 from app.utils.user import is_gov_user
-from app.utils.user_permissions import permission_mappings, translate_permissions_from_ui_to_db
-from tests import organisation_json
+from app.utils.user_permissions import (
+    permission_mappings,
+    translate_permissions_from_ui_to_db,
+)
+from tests import organisation_json, service_json
 from tests.conftest import (
     ORGANISATION_ID,
     ORGANISATION_TWO_ID,
     SERVICE_ONE_ID,
+    SERVICE_TWO_ID,
     USER_ONE_ID,
     create_active_user_empty_permissions,
     create_active_user_manage_template_permissions,
@@ -37,18 +42,18 @@ from tests.conftest import (
             create_active_user_with_permissions(),
             (
                 "Test User (you) "
+                "Can Manage settings, team and usage "
                 "Can See dashboard "
                 "Can Send messages "
                 "Can Add and edit templates "
-                "Can Manage settings, team and usage "
                 "Can Manage API integration"
             ),
             (
                 "ZZZZZZZZ zzzzzzz@example.gov.uk "
+                "Cannot Manage settings, team and usage "
                 "Can See dashboard "
                 "Cannot Send messages "
                 "Cannot Add and edit templates "
-                "Cannot Manage settings, team and usage "
                 "Cannot Manage API integration "
                 "Change details for ZZZZZZZZ zzzzzzz@example.gov.uk"
             ),
@@ -57,18 +62,18 @@ from tests.conftest import (
             create_active_user_empty_permissions(),
             (
                 "Test User With Empty Permissions (you) "
+                "Cannot Manage settings, team and usage "
                 "Cannot See dashboard "
                 "Cannot Send messages "
                 "Cannot Add and edit templates "
-                "Cannot Manage settings, team and usage "
                 "Cannot Manage API integration"
             ),
             (
                 "ZZZZZZZZ zzzzzzz@example.gov.uk "
+                "Cannot Manage settings, team and usage "
                 "Can See dashboard "
                 "Cannot Send messages "
                 "Cannot Add and edit templates "
-                "Cannot Manage settings, team and usage "
                 "Cannot Manage API integration"
             ),
         ),
@@ -76,18 +81,18 @@ from tests.conftest import (
             create_active_user_view_permissions(),
             (
                 "Test User With Permissions (you) "
+                "Cannot Manage settings, team and usage "
                 "Can See dashboard "
                 "Cannot Send messages "
                 "Cannot Add and edit templates "
-                "Cannot Manage settings, team and usage "
                 "Cannot Manage API integration"
             ),
             (
                 "ZZZZZZZZ zzzzzzz@example.gov.uk "
+                "Cannot Manage settings, team and usage "
                 "Can See dashboard "
                 "Cannot Send messages "
                 "Cannot Add and edit templates "
-                "Cannot Manage settings, team and usage "
                 "Cannot Manage API integration"
             ),
         ),
@@ -95,18 +100,18 @@ from tests.conftest import (
             create_active_user_manage_template_permissions(),
             (
                 "Test User With Permissions (you) "
+                "Cannot Manage settings, team and usage "
                 "Can See dashboard "
                 "Cannot Send messages "
                 "Can Add and edit templates "
-                "Cannot Manage settings, team and usage "
                 "Cannot Manage API integration"
             ),
             (
                 "ZZZZZZZZ zzzzzzz@example.gov.uk "
+                "Cannot Manage settings, team and usage "
                 "Can See dashboard "
                 "Cannot Send messages "
                 "Cannot Add and edit templates "
-                "Cannot Manage settings, team and usage "
                 "Cannot Manage API integration"
             ),
         ),
@@ -114,18 +119,18 @@ from tests.conftest import (
             create_active_user_manage_template_permissions(),
             (
                 "Test User With Permissions (you) "
+                "Cannot Manage settings, team and usage "
                 "Can See dashboard "
                 "Cannot Send messages "
                 "Can Add and edit templates "
-                "Cannot Manage settings, team and usage "
                 "Cannot Manage API integration"
             ),
             (
                 "ZZZZZZZZ zzzzzzz@example.gov.uk "
+                "Cannot Manage settings, team and usage "
                 "Can See dashboard "
                 "Cannot Send messages "
                 "Cannot Add and edit templates "
-                "Cannot Manage settings, team and usage "
                 "Cannot Manage API integration"
             ),
         ),
@@ -143,14 +148,23 @@ def test_should_show_overview_page(
     active_user_view_permissions,
 ):
     current_user = user
+
     other_user = copy.deepcopy(active_user_view_permissions)
     other_user["email_address"] = "zzzzzzz@example.gov.uk"
     other_user["name"] = "ZZZZZZZZ"
     other_user["id"] = "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz"
 
+    existing_user = copy.deepcopy(active_user_view_permissions)
+    # This should be further down the alphabet than all the invited users,
+    # who have email addresses which look like user_0@testnotify.gov.uk.
+    # This forces Python to do more sorting.
+    existing_user["email_address"] = "user_z@testnotify.gov.uk"
+    existing_user["id"] = uuid.uuid4()
+
     mock_get_users = mocker.patch(
         "app.models.user.Users._get_items",
         return_value=[
+            existing_user,
             current_user,
             other_user,
         ],
@@ -161,9 +175,101 @@ def test_should_show_overview_page(
 
     assert normalize_spaces(page.select_one("h1").text) == "Team members"
     assert normalize_spaces(page.select(".user-list-item")[0].text) == expected_self_text
-    # [1:5] are invited users
-    assert normalize_spaces(page.select(".user-list-item")[6].text) == expected_coworker_text
+    # [1:6] are invited users
+    assert normalize_spaces(page.select(".user-list-item")[7].text) == expected_coworker_text
     mock_get_users.assert_called_once_with(SERVICE_ONE_ID)
+
+
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+@pytest.mark.parametrize(
+    "current_user_email, other_user_emails, expected_banner_text",
+    [
+        pytest.param(
+            "test@example.gov.uk",
+            [],
+            "You need to add a team member from your organisation.",
+        ),
+        pytest.param(
+            "test@example.gov.uk",
+            ["test@example.com"],
+            "You need to add a team member from your organisation.",
+        ),
+        pytest.param(
+            "test@example.gov.uk",
+            ["test2@example.gov.uk"],
+            None,
+        ),
+        pytest.param(
+            "test@example.com",
+            [],
+            "You need to add at least two team members from a public sector organisation.",
+        ),
+        pytest.param(
+            "test@example.com",
+            ["test2@example.com"],
+            "You need to add at least two team members from a public sector organisation.",
+        ),
+        pytest.param(
+            "test@example.com",
+            ["test@example.gov.uk"],
+            "You need to add a team member from a public sector organisation.",
+        ),
+        pytest.param(
+            "test@example.com",
+            ["test@example.gov.uk", "test2@school.com"],
+            None,
+        ),
+    ],
+)
+def test_manage_users_shows_add_team_member_banner(
+    client_request,
+    mocker,
+    mock_get_invites_for_service,
+    mock_get_template_folders,
+    service_one,
+    expected_banner_text,
+    current_user_email,
+    other_user_emails,
+):
+    current_user = create_user(
+        id=uuid.uuid4(),
+        email_address=current_user_email,
+        services=[SERVICE_ONE_ID],
+        permissions={SERVICE_ONE_ID: ["manage_service"]},
+    )
+
+    users = [current_user]
+
+    for email in other_user_emails:
+        other_user = create_user(
+            id=uuid.uuid4(),
+            email_address=email,
+            services=[SERVICE_ONE_ID],
+            permissions={SERVICE_ONE_ID: ["manage_service"]},
+        )
+        users.append(other_user)
+
+    mocker.patch(
+        "app.models.user.Users._get_items",
+        return_value=users,
+    )
+
+    mocker.patch(
+        "app.utils.user.organisations_client.get_domains",
+        return_value=["example.gov.uk", "school.com"],
+    )
+
+    client_request.login(current_user)
+    page = client_request.get("main.manage_users", service_id=SERVICE_ONE_ID)
+
+    if expected_banner_text:
+        assert "Finish setting up your team" in page.text
+        assert expected_banner_text in page.text
+        assert "Give them the ‘manage settings, team and usage’ permission." in page.text
+        assert "You must have at least 2 team members with the ‘manage settings’ permission." not in page.text
+    else:
+        assert "Finish setting up your team" not in page.text
+        assert "You must have at least 2 team members with the ‘manage settings’ permission." in page.text
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -230,7 +336,10 @@ def test_should_show_live_search_if_more_than_7_users(
 ):
     mocker.patch("app.user_api_client.get_user", return_value=active_user_with_permissions)
     mocker.patch("app.models.user.InvitedUsers._get_items", return_value=[])
-    mocker.patch("app.models.user.Users._get_items", return_value=[active_user_with_permissions] * number_of_users)
+    mocker.patch(
+        "app.models.user.Users._get_items",
+        return_value=[active_user_with_permissions] * number_of_users,
+    )
 
     page = client_request.get("main.manage_users", service_id=SERVICE_ONE_ID)
 
@@ -282,20 +391,116 @@ def test_should_show_caseworker_on_overview_page(
     assert normalize_spaces(page.select_one("h1").text) == "Team members"
     assert normalize_spaces(page.select(".user-list-item")[0].text) == (
         "Test User With Permissions (you) "
+        "Cannot Manage settings, team and usage "
         "Can See dashboard "
         "Cannot Send messages "
         "Cannot Add and edit templates "
-        "Cannot Manage settings, team and usage "
         "Cannot Manage API integration"
     )
     # [1:5] are invited users
     assert normalize_spaces(page.select(".user-list-item")[6].text) == (
         "Test User zzzzzzz@example.gov.uk "
+        "Cannot Manage settings, team and usage "
         "Cannot See dashboard "
         "Can Send messages "
         "Cannot Add and edit templates "
-        "Cannot Manage settings, team and usage "
         "Cannot Manage API integration"
+    )
+
+
+def test_manage_settings_user_can_see_download_users_link(
+    client_request,
+    mocked_get_service_data,
+    mock_get_users_by_service,
+    mock_get_invites_for_service,
+    mock_get_template_folders,
+):
+    page = client_request.get("main.manage_users", service_id=SERVICE_ONE_ID)
+    download_link = page.select_one(".js-stick-at-bottom-when-scrolling .govuk-button-group .govuk-link")
+
+    assert normalize_spaces(download_link) == "Download list of team members (CSV)"
+    assert download_link["href"] == url_for(
+        "main.manage_users_download",
+        service_id=SERVICE_ONE_ID,
+    )
+
+
+def test_view_only_user_cannot_see_download_users_link(
+    client_request,
+    mocked_get_service_data,
+    mock_get_users_by_service,
+    mock_get_invites_for_service,
+    mock_get_template_folders,
+    active_user_view_permissions,
+):
+    client_request.login(active_user_view_permissions)
+    page = client_request.get("main.manage_users", service_id=SERVICE_ONE_ID)
+
+    assert not page.select_one(".js-stick-at-bottom-when-scrolling")
+    assert not page.select_one(".govuk-button-group")
+
+
+def test_org_user_can_see_download_users_link(
+    client_request,
+    mocked_get_service_data,
+    mock_get_users_by_service,
+    mock_get_invites_for_service,
+    mock_get_template_folders,
+    active_user_view_permissions,
+):
+    active_user_view_permissions["organisations"] = [ORGANISATION_ID]
+    client_request.login(active_user_view_permissions)
+    service = service_json(
+        name="SERVICE WITH ORG",
+        id_=SERVICE_TWO_ID,
+        users=[],
+        organisation_id=ORGANISATION_ID,
+    )
+    mocked_get_service_data[service["id"]] = service
+    page = client_request.get("main.manage_users", service_id=SERVICE_TWO_ID)
+
+    sticky_footer = page.select_one(".js-stick-at-bottom-when-scrolling")
+    download_link = sticky_footer.select_one("a.page-footer-link")
+    assert normalize_spaces(download_link) == "Download list of team members (CSV)"
+    assert download_link["href"] == url_for(
+        "main.manage_users_download",
+        service_id=SERVICE_TWO_ID,
+    )
+    # Org user can’t see invite button
+    assert not sticky_footer.select(".govuk-button")
+
+
+def test_download_csv_of_users(
+    client_request,
+    mocker,
+    mock_get_invites_for_service,
+    service_one,
+    active_user_view_permissions,
+    active_caseworking_user,
+):
+    mocker.patch(
+        "app.models.user.Users._get_items",
+        return_value=[active_user_view_permissions, active_caseworking_user],
+    )
+
+    response = client_request.get_response("main.manage_users_download", service_id=SERVICE_ONE_ID)
+
+    assert response.get_data(as_text=True) == (
+        'Email address,Name,"Manage settings, team and usage",See dashboard,Send messages,Add and edit templates,Manage API integration,Sign in method\r\n'  # noqa: E501
+        "caseworker@example.gov.uk,Test User,No,No,Yes,No,No,Text message code\r\n"
+        "test@user.gov.uk,Test User With Permissions,No,Yes,No,No,No,Text message code\r\n"
+        "user_0@testnotify.gov.uk,(invited),Yes,Yes,Yes,No,Yes,Text message code\r\n"
+        "user_1@testnotify.gov.uk,(invited),Yes,Yes,Yes,No,Yes,Text message code\r\n"
+        "user_2@testnotify.gov.uk,(invited),Yes,Yes,Yes,No,Yes,Text message code\r\n"
+        "user_3@testnotify.gov.uk,(invited),Yes,Yes,Yes,No,Yes,Text message code\r\n"
+        "user_4@testnotify.gov.uk,(invited),Yes,Yes,Yes,No,Yes,Text message code\r\n"
+    )
+
+    client_request.login(active_user_view_permissions)
+    client_request.get_response(
+        "main.manage_users_download",
+        service_id=SERVICE_ONE_ID,
+        _expected_status=403,
     )
 
 
@@ -351,10 +556,10 @@ def test_service_without_caseworking_doesnt_show_admin_vs_caseworker(
 
     for idx in range(len(permission_checkboxes)):
         assert permission_checkboxes[idx]["name"] == "permissions_field"
-    assert permission_checkboxes[0]["value"] == "view_activity"
-    assert permission_checkboxes[1]["value"] == "send_messages"
-    assert permission_checkboxes[2]["value"] == "manage_templates"
-    assert permission_checkboxes[3]["value"] == "manage_service"
+    assert permission_checkboxes[0]["value"] == "manage_service"
+    assert permission_checkboxes[1]["value"] == "view_activity"
+    assert permission_checkboxes[2]["value"] == "send_messages"
+    assert permission_checkboxes[3]["value"] == "manage_templates"
     assert permission_checkboxes[4]["value"] == "manage_api_keys"
 
 
@@ -481,10 +686,10 @@ def test_user_with_no_mobile_number_cant_be_set_to_sms_auth(
             "main.edit_user_permissions",
             {"user_id": sample_uuid()},
             [
+                ("manage_service", True),
                 ("view_activity", True),
                 ("send_messages", True),
                 ("manage_templates", True),
-                ("manage_service", True),
                 ("manage_api_keys", True),
             ],
         ),
@@ -492,10 +697,10 @@ def test_user_with_no_mobile_number_cant_be_set_to_sms_auth(
             "main.invite_user",
             {},
             [
+                ("manage_service", False),
                 ("view_activity", False),
                 ("send_messages", False),
                 ("manage_templates", False),
-                ("manage_service", False),
                 ("manage_api_keys", False),
             ],
         ),
@@ -622,7 +827,10 @@ def test_edit_user_permissions(
         ),
     )
     mock_set_user_permissions.assert_called_with(
-        fake_uuid, SERVICE_ONE_ID, permissions=permissions_sent_to_api, folder_permissions=[]
+        fake_uuid,
+        SERVICE_ONE_ID,
+        permissions=permissions_sent_to_api,
+        folder_permissions=[],
     )
 
 
@@ -636,9 +844,24 @@ def test_edit_user_folder_permissions(
     fake_uuid,
 ):
     mock_get_template_folders.return_value = [
-        {"id": "folder-id-1", "name": "folder_one", "parent_id": None, "users_with_permission": []},
-        {"id": "folder-id-2", "name": "folder_one", "parent_id": None, "users_with_permission": []},
-        {"id": "folder-id-3", "name": "folder_one", "parent_id": "folder-id-1", "users_with_permission": []},
+        {
+            "id": "folder-id-1",
+            "name": "folder_one",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
+        {
+            "id": "folder-id-2",
+            "name": "folder_one",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
+        {
+            "id": "folder-id-3",
+            "name": "folder_one",
+            "parent_id": "folder-id-1",
+            "users_with_permission": [],
+        },
     ]
 
     page = client_request.get(
@@ -664,7 +887,10 @@ def test_edit_user_folder_permissions(
         ),
     )
     mock_set_user_permissions.assert_called_with(
-        fake_uuid, SERVICE_ONE_ID, permissions=set(), folder_permissions=["folder-id-1", "folder-id-3"]
+        fake_uuid,
+        SERVICE_ONE_ID,
+        permissions=set(),
+        folder_permissions=["folder-id-1", "folder-id-3"],
     )
 
 
@@ -682,9 +908,24 @@ def test_cant_edit_user_folder_permissions_for_platform_admin_users(
     service_one["permissions"] = ["edit_folder_permissions"]
     mocker.patch("app.user_api_client.get_user", return_value=platform_admin_user)
     mock_get_template_folders.return_value = [
-        {"id": "folder-id-1", "name": "folder_one", "parent_id": None, "users_with_permission": []},
-        {"id": "folder-id-2", "name": "folder_one", "parent_id": None, "users_with_permission": []},
-        {"id": "folder-id-3", "name": "folder_one", "parent_id": "folder-id-1", "users_with_permission": []},
+        {
+            "id": "folder-id-1",
+            "name": "folder_one",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
+        {
+            "id": "folder-id-2",
+            "name": "folder_one",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
+        {
+            "id": "folder-id-3",
+            "name": "folder_one",
+            "parent_id": "folder-id-1",
+            "users_with_permission": [],
+        },
     ]
     page = client_request.get(
         "main.edit_user_permissions",
@@ -735,6 +976,119 @@ def test_cant_edit_non_member_user_permissions(
         _expected_status=404,
     )
     assert mock_set_user_permissions.called is False
+
+
+@pytest.mark.parametrize(
+    "user_is_gov_user, expected_error_msg",
+    [
+        (
+            True,
+            (
+                "You cannot change this team member’s permissions "
+                "Your service needs at least 2 team members: "
+                "from your organisation "
+                "with the ‘manage settings, team and usage’ permission "
+                "Add new team members or update the permissions for your team, then try again."
+            ),
+        ),
+        (
+            False,
+            (
+                "You cannot change this team member’s permissions "
+                "Your service needs at least 2 team members: "
+                "from a public sector organisation "
+                "with the ‘manage settings, team and usage’ permission "
+                "Add new team members or update the permissions for your team, then try again."
+            ),
+        ),
+    ],
+)
+def test_edit_user_permissions_when_api_gives_error_that_permissions_cannot_be_changed(
+    client_request,
+    active_user_with_permissions,
+    mock_get_users_by_service,
+    mock_get_template_folders,
+    mock_get_organisations,
+    service_one,
+    api_nongov_user_active,
+    user_is_gov_user,
+    expected_error_msg,
+    mocker,
+):
+    mocker.patch(
+        "app.models.user.User.set_permissions",
+        side_effect=HTTPError(
+            response=mocker.Mock(
+                status_code=400,
+                json={
+                    "result": "error",
+                    "message": "Cannot change user permissions - service would have too few users with manage_settings",
+                },
+            ),
+            message="Cannot change user permissions - service would have too few users with manage_settings",
+        ),
+    )
+
+    if not user_is_gov_user:
+        client_request.login(api_nongov_user_active)
+
+    page = client_request.post(
+        "main.edit_user_permissions",
+        service_id=service_one["id"],
+        user_id=active_user_with_permissions["id"],
+        _data={
+            "email_address": "test@example.com",
+            "manage_service": "y",
+        },
+        _follow_redirects=True,
+    )
+
+    assert normalize_spaces(page.select_one(".banner-dangerous").text) == expected_error_msg
+
+
+def test_edit_user_permissions_when_user_is_platform_admin_and_api_gives_error_that_permissions_cannot_be_changed(
+    client_request,
+    active_user_with_permissions,
+    mock_get_users_by_service,
+    mock_get_template_folders,
+    service_one,
+    platform_admin_user,
+    mocker,
+):
+    mocker.patch(
+        "app.models.user.User.set_permissions",
+        side_effect=HTTPError(
+            response=mocker.Mock(
+                status_code=400,
+                json={
+                    "result": "error",
+                    "message": "Cannot change user permissions - service would have too few users with manage_settings",
+                },
+            ),
+            message="Cannot change user permissions - service would have too few users with manage_settings",
+        ),
+    )
+
+    client_request.login(platform_admin_user)
+
+    page = client_request.post(
+        "main.edit_user_permissions",
+        service_id=service_one["id"],
+        user_id=active_user_with_permissions["id"],
+        _data={
+            "email_address": "test@example.com",
+            "manage_service": "y",
+        },
+        _follow_redirects=True,
+    )
+
+    assert normalize_spaces(page.select_one(".banner-dangerous").text) == (
+        "You cannot change this team member’s permissions "
+        "A service needs at least 2 team members: "
+        "from a public sector organisation "
+        "with the ‘manage settings, team and usage’ permission "
+        "Ask the user to add new team members or update the permissions for their team."
+    )
 
 
 def test_edit_user_permissions_including_authentication_with_email_auth_service(
@@ -875,7 +1229,6 @@ def test_should_show_page_for_inviting_user(
     )
 
     assert "Invite a team member" in page.select_one("h1").text.strip()
-    assert not page.select_one("div.checkboxes-nested")
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -1028,9 +1381,24 @@ def test_should_show_folder_permission_form_if_service_has_folder_permissions_en
     client_request, mock_get_template_folders, service_one
 ):
     mock_get_template_folders.return_value = [
-        {"id": "folder-id-1", "name": "folder_one", "parent_id": None, "users_with_permission": []},
-        {"id": "folder-id-2", "name": "folder_two", "parent_id": None, "users_with_permission": []},
-        {"id": "folder-id-3", "name": "folder_three", "parent_id": "folder-id-1", "users_with_permission": []},
+        {
+            "id": "folder-id-1",
+            "name": "folder_one",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
+        {
+            "id": "folder-id-2",
+            "name": "folder_two",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
+        {
+            "id": "folder-id-3",
+            "name": "folder_three",
+            "parent_id": "folder-id-1",
+            "users_with_permission": [],
+        },
     ]
     page = client_request.get(
         "main.invite_user",
@@ -1043,7 +1411,10 @@ def test_should_show_folder_permission_form_if_service_has_folder_permissions_en
     assert len(folder_checkboxes) == 3
 
 
-@pytest.mark.parametrize("email_address, gov_user", [("test@example.gov.uk", True), ("test@example.com", False)])
+@pytest.mark.parametrize(
+    "email_address, gov_user",
+    [("test@example.gov.uk", True), ("test@example.com", False)],
+)
 @pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_invite_user(
     client_request,
@@ -1080,10 +1451,21 @@ def test_invite_user(
     flash_banner = page.select_one("div.banner-default-with-tick").get_text().strip()
     assert flash_banner == f"Invite sent to {email_address}"
 
-    expected_permissions = {"manage_api_keys", "manage_service", "manage_templates", "send_messages", "view_activity"}
+    expected_permissions = {
+        "manage_api_keys",
+        "manage_service",
+        "manage_templates",
+        "send_messages",
+        "view_activity",
+    }
 
     app.invite_api_client.create_invite.assert_called_once_with(
-        sample_invite["from_user"], sample_invite["service"], email_address, expected_permissions, "sms_auth", []
+        sample_invite["from_user"],
+        sample_invite["service"],
+        email_address,
+        expected_permissions,
+        "sms_auth",
+        [],
     )
 
 
@@ -1129,7 +1511,10 @@ def test_invite_user_when_email_address_is_prefilled(
 
 
 @pytest.mark.parametrize("auth_type", [("sms_auth"), "email_auth"])
-@pytest.mark.parametrize("email_address, gov_user", [("test@example.gov.uk", True), ("test@example.com", False)])
+@pytest.mark.parametrize(
+    "email_address, gov_user",
+    [("test@example.gov.uk", True), ("test@example.com", False)],
+)
 @pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_invite_user_with_email_auth_service(
     client_request,
@@ -1173,10 +1558,21 @@ def test_invite_user_with_email_auth_service(
     flash_banner = page.select_one("div.banner-default-with-tick").get_text().strip()
     assert flash_banner == "Invite sent to test@example.gov.uk"
 
-    expected_permissions = {"manage_api_keys", "manage_service", "manage_templates", "send_messages", "view_activity"}
+    expected_permissions = {
+        "manage_api_keys",
+        "manage_service",
+        "manage_templates",
+        "send_messages",
+        "view_activity",
+    }
 
     app.invite_api_client.create_invite.assert_called_once_with(
-        sample_invite["from_user"], sample_invite["service"], email_address, expected_permissions, auth_type, []
+        sample_invite["from_user"],
+        sample_invite["service"],
+        email_address,
+        expected_permissions,
+        auth_type,
+        [],
     )
 
 
@@ -1231,10 +1627,10 @@ def test_cancel_invited_user_doesnt_work_if_user_not_invited_to_this_service(
             "pending",
             (
                 "invited_user@test.gov.uk (invited) "
+                "Can Manage settings, team and usage "
                 "Can See dashboard "
                 "Can Send messages "
                 "Cannot Add and edit templates "
-                "Can Manage settings, team and usage "
                 "Can Manage API integration "
                 "Cancel invitation for invited_user@test.gov.uk"
             ),
@@ -1244,10 +1640,10 @@ def test_cancel_invited_user_doesnt_work_if_user_not_invited_to_this_service(
             (
                 "invited_user@test.gov.uk (cancelled invite) "
                 # all permissions are greyed out
+                "Cannot Manage settings, team and usage "
                 "Cannot See dashboard "
                 "Cannot Send messages "
                 "Cannot Add and edit templates "
-                "Cannot Manage settings, team and usage "
                 "Cannot Manage API integration"
             ),
         ),
@@ -1351,9 +1747,24 @@ def test_manage_user_page_shows_how_many_folders_user_can_view(
 ):
     service_one["permissions"] = ["edit_folder_permissions"]
     mock_get_template_folders.return_value = [
-        {"id": "folder-id-1", "name": "f1", "parent_id": None, "users_with_permission": []},
-        {"id": "folder-id-2", "name": "f2", "parent_id": None, "users_with_permission": []},
-        {"id": "folder-id-3", "name": "f3", "parent_id": None, "users_with_permission": []},
+        {
+            "id": "folder-id-1",
+            "name": "f1",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
+        {
+            "id": "folder-id-2",
+            "name": "f2",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
+        {
+            "id": "folder-id-3",
+            "name": "f3",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
     ]
     for i in range(folders_user_can_see):
         mock_get_template_folders.return_value[i]["users_with_permission"].append(api_user_active["id"])
@@ -1390,7 +1801,12 @@ def test_manage_user_page_doesnt_show_folder_hint_if_service_cant_edit_folder_pe
 ):
     service_one["permissions"] = []
     mock_get_template_folders.return_value = [
-        {"id": "folder-id-1", "name": "f1", "parent_id": None, "users_with_permission": [api_user_active["id"]]},
+        {
+            "id": "folder-id-1",
+            "name": "f1",
+            "parent_id": None,
+            "users_with_permission": [api_user_active["id"]],
+        },
     ]
 
     page = client_request.get("main.manage_users", service_id=service_one["id"])
@@ -1400,7 +1816,12 @@ def test_manage_user_page_doesnt_show_folder_hint_if_service_cant_edit_folder_pe
 
 
 def test_remove_user_from_service(
-    client_request, active_user_with_permissions, api_user_active, service_one, mock_remove_user_from_service, mocker
+    client_request,
+    active_user_with_permissions,
+    api_user_active,
+    service_one,
+    mock_remove_user_from_service,
+    mocker,
 ):
     mock_event_handler = mocker.patch("app.main.views_nl.manage_users.Events.remove_user_from_service")
 
@@ -1417,6 +1838,102 @@ def test_remove_user_from_service(
         removed_by_id=api_user_active["id"],
         service_id=service_one["id"],
     )
+
+
+@pytest.mark.parametrize(
+    "user_is_gov_user, expected_error_msg",
+    [
+        (True, "Your service needs at least 2 team members: from your organisation"),
+        (
+            False,
+            "Your service needs at least 2 team members: from a public sector organisation",
+        ),
+    ],
+)
+def test_remove_user_from_service_when_user_api_gives_error_x(
+    client_request,
+    active_user_with_permissions,
+    service_one,
+    mock_get_organisations,
+    api_nongov_user_active,
+    mock_get_invites_for_service,
+    mock_get_template_folders,
+    user_is_gov_user,
+    expected_error_msg,
+    mocker,
+):
+    mocker.patch(
+        "app.models.user.Users._get_items",
+        return_value=[active_user_with_permissions, api_nongov_user_active],
+    )
+    mocker.patch(
+        "app.service_api_client.remove_user_from_service",
+        side_effect=HTTPError(
+            response=mocker.Mock(
+                status_code=400,
+                json={
+                    "result": "error",
+                    "message": "User cannot be removed from the service",
+                },
+            ),
+            message="User cannot be removed from the service",
+        ),
+    )
+    mock_event_handler = mocker.patch("app.main.views.manage_users.Events.remove_user_from_service")
+
+    if not user_is_gov_user:
+        client_request.login(api_nongov_user_active)
+
+    page = client_request.post(
+        "main.remove_user_from_service",
+        service_id=service_one["id"],
+        user_id=active_user_with_permissions["id"],
+        _follow_redirects=True,
+    )
+    error_message = normalize_spaces(page.select_one(".banner-dangerous").text)
+
+    assert error_message.startswith("You cannot remove this team member")
+    assert expected_error_msg in error_message
+    assert not mock_event_handler.called
+
+
+def test_remove_user_from_service_when_user_api_gives_error_for_platform_admin_user(
+    client_request,
+    active_user_with_permissions,
+    platform_admin_user,
+    service_one,
+    mock_get_users_by_service,
+    mock_get_invites_for_service,
+    mock_get_template_folders,
+    mocker,
+):
+    mocker.patch(
+        "app.service_api_client.remove_user_from_service",
+        side_effect=HTTPError(
+            response=mocker.Mock(
+                status_code=400,
+                json={
+                    "result": "error",
+                    "message": "User cannot be removed from the service",
+                },
+            ),
+            message="User cannot be removed from the service",
+        ),
+    )
+    mock_event_handler = mocker.patch("app.main.views.manage_users.Events.remove_user_from_service")
+
+    client_request.login(platform_admin_user)
+    page = client_request.post(
+        "main.remove_user_from_service",
+        service_id=service_one["id"],
+        user_id=active_user_with_permissions["id"],
+        _follow_redirects=True,
+    )
+
+    assert (
+        "You cannot remove this team member A service needs at least 2 team members: from a public sector organisation"
+    ) in normalize_spaces(page.select_one(".banner-dangerous").text)
+    assert not mock_event_handler.called
 
 
 def test_can_invite_user_as_platform_admin(
@@ -1441,7 +1958,11 @@ def test_can_invite_user_as_platform_admin(
 
 @pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_edit_user_email_page(
-    client_request, active_user_with_permissions, service_one, mock_get_users_by_service, mocker
+    client_request,
+    active_user_with_permissions,
+    service_one,
+    mock_get_users_by_service,
+    mocker,
 ):
     user = active_user_with_permissions
     mocker.patch("app.user_api_client.get_user", return_value=user)
@@ -1643,10 +2164,16 @@ def test_confirm_edit_user_email_changes_user_email(
     # We want active_user_with_permissions (the current user) to update the email address for api_user_active
     # By default both users would have the same id, so we change the id of api_user_active
     api_user_active["id"] = str(uuid.uuid4())
-    mocker.patch("app.models.user.Users._get_items", return_value=[api_user_active, active_user_with_permissions])
+    mocker.patch(
+        "app.models.user.Users._get_items",
+        return_value=[api_user_active, active_user_with_permissions],
+    )
     # get_user gets called twice - first to check if current user can see the page, then to see if the team member
     # whose email address we're changing belongs to the service
-    mocker.patch("app.user_api_client.get_user", side_effect=[active_user_with_permissions, api_user_active])
+    mocker.patch(
+        "app.user_api_client.get_user",
+        side_effect=[active_user_with_permissions, api_user_active],
+    )
     mock_event_handler = mocker.patch("app.main.views_nl.manage_users.Events.update_user_email")
 
     new_email = "new_email@gov.uk"
@@ -1665,7 +2192,9 @@ def test_confirm_edit_user_email_changes_user_email(
     )
 
     mock_update_user_attribute.assert_called_once_with(
-        api_user_active["id"], email_address=new_email, updated_by=active_user_with_permissions["id"]
+        api_user_active["id"],
+        email_address=new_email,
+        updated_by=active_user_with_permissions["id"],
     )
     mock_event_handler.assert_called_once_with(
         user_id=api_user_active["id"],
@@ -1713,16 +2242,25 @@ def test_edit_user_permissions_page_displays_redacted_mobile_number_and_change_l
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_edit_user_permissions_with_delete_query_shows_banner(
-    client_request, active_user_with_permissions, mock_get_users_by_service, mock_get_template_folders, service_one
+    client_request,
+    active_user_with_permissions,
+    mock_get_users_by_service,
+    mock_get_template_folders,
+    service_one,
 ):
     page = client_request.get(
-        "main.edit_user_permissions", service_id=service_one["id"], user_id=active_user_with_permissions["id"], delete=1
+        "main.edit_user_permissions",
+        service_id=service_one["id"],
+        user_id=active_user_with_permissions["id"],
+        delete=1,
     )
 
     banner = page.select_one("div.banner-dangerous")
     assert banner.contents[0].strip() == "Are you sure you want to remove Test User?"
     assert banner.form.attrs["action"] == url_for(
-        "main.remove_user_from_service", service_id=service_one["id"], user_id=active_user_with_permissions["id"]
+        "main.remove_user_from_service",
+        service_id=service_one["id"],
+        user_id=active_user_with_permissions["id"],
     )
 
 
@@ -1829,16 +2367,27 @@ def test_confirm_edit_user_mobile_number_page_redirects_if_session_empty(
 
 
 def test_confirm_edit_user_mobile_number_changes_user_mobile_number(
-    client_request, active_user_with_permissions, api_user_active, service_one, mocker, mock_update_user_attribute
+    client_request,
+    active_user_with_permissions,
+    api_user_active,
+    service_one,
+    mocker,
+    mock_update_user_attribute,
 ):
     # We want active_user_with_permissions (the current user) to update the mobile number for api_user_active
     # By default both users would have the same id, so we change the id of api_user_active
     api_user_active["id"] = str(uuid.uuid4())
 
-    mocker.patch("app.models.user.Users._get_items", return_value=[api_user_active, active_user_with_permissions])
+    mocker.patch(
+        "app.models.user.Users._get_items",
+        return_value=[api_user_active, active_user_with_permissions],
+    )
     # get_user gets called twice - first to check if current user can see the page, then to see if the team member
     # whose mobile number we're changing belongs to the service
-    mocker.patch("app.user_api_client.get_user", side_effect=[active_user_with_permissions, api_user_active])
+    mocker.patch(
+        "app.user_api_client.get_user",
+        side_effect=[active_user_with_permissions, api_user_active],
+    )
     mock_event_handler = mocker.patch("app.main.views_nl.manage_users.Events.update_user_mobile_number")
 
     new_number = "07554080636"
@@ -1856,7 +2405,9 @@ def test_confirm_edit_user_mobile_number_changes_user_mobile_number(
         ),
     )
     mock_update_user_attribute.assert_called_once_with(
-        api_user_active["id"], mobile_number=new_number, updated_by=active_user_with_permissions["id"]
+        api_user_active["id"],
+        mobile_number=new_number,
+        updated_by=active_user_with_permissions["id"],
     )
     mock_event_handler.assert_called_once_with(
         user_id=api_user_active["id"],
@@ -1890,11 +2441,15 @@ def service_join_request_get_data(request_id, status, mock_requester, status_cha
             "email_address": mock_requester.get("email_address"),
         },
         "service_id": SERVICE_ONE_ID,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(UTC),
         "status": status,
-        "status_changed_at": datetime.utcnow(),
+        "status_changed_at": datetime.now(UTC),
         "status_changed_by": (
-            {"id": status_changed_by.get("id"), "name": status_changed_by.get("name"), "belongs_to_service": []}
+            {
+                "id": status_changed_by.get("id"),
+                "name": status_changed_by.get("name"),
+                "belongs_to_service": [],
+            }
             if status_changed_by
             else None
         ),
@@ -1910,7 +2465,11 @@ def mock_get_service_join_request_status_data(mocker, mock_requester, mock_servi
     def _get(request_id, service_id):
         mock_contacted_service_users = [mock_service_user["id"], sample_uuid()]
         return service_join_request_get_data(
-            request_id, status, mock_requester, mock_service_user, mock_contacted_service_users
+            request_id,
+            status,
+            mock_requester,
+            mock_service_user,
+            mock_contacted_service_users,
         )
 
     return mocker.patch("app.service_api_client.get_service_join_request", side_effect=_get)
@@ -1924,7 +2483,11 @@ def mock_get_service_join_request_not_logged_in_user(mocker):
     def _get(request_id, service_id):
         mock_contacted_service_users = [mock_service_user["id"]]
         return service_join_request_get_data(
-            request_id, SERVICE_JOIN_REQUEST_REJECTED, mock_requester, mock_service_user, mock_contacted_service_users
+            request_id,
+            SERVICE_JOIN_REQUEST_REJECTED,
+            mock_requester,
+            mock_service_user,
+            mock_contacted_service_users,
         )
 
     return mocker.patch("app.service_api_client.get_service_join_request", side_effect=_get)
@@ -1980,9 +2543,8 @@ def test_service_join_request_pending(
     )
     assert f"{mock_requester['name']} wants to join your service" in page.text.strip()
     assert f"{mock_requester['name']} wants to join your service" in page.select_one("h1").text.strip()
-    assert (
-        f"Do you want to let {mock_requester['name']} join ‘{service_one['name']}’?"
-        in page.select_one("legend").text.strip()
+    assert f"Do you want to let {mock_requester['name']} join ‘{service_one['name']}’?" in normalize_spaces(
+        page.select_one(".govuk-hint").text
     )
 
     radio_buttons = page.select("input[name=join_service_approve_request]")
@@ -2036,7 +2598,7 @@ def test_service_join_request_approved(
     assert f"{mock_requester['name']} has already joined your service" in page.text.strip()
     assert f"{mock_requester['name']} has already joined your service" in page.select_one("h1").text.strip()
 
-    today_date = format_date_short(datetime.utcnow())
+    today_date = format_date_short(datetime.now(UTC))
     assert f"{mock_service_user['name']} approved this request on {today_date}" in page.select_one("p").text.strip()
 
 
@@ -2083,7 +2645,7 @@ def test_service_join_request_rejected(
     assert f"{mock_requester['name']} join your service" in page.text.strip()
     assert f"{mock_requester['name']} join your service" in page.select_one("h1").text.strip()
 
-    today_date = format_date_short(datetime.utcnow())
+    today_date = format_date_short(datetime.now(UTC))
     assert (
         f"{mock_service_user['name']} already refused this request on {today_date}" in page.select_one("p").text.strip()
     )
@@ -2269,7 +2831,13 @@ def test_service_join_request_shows_rejected_message_on_reject(
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "mock_requester, mock_service_user, status",
-    [(create_active_user_empty_permissions(True), create_active_user_with_permissions(True), "pending")],
+    [
+        (
+            create_active_user_empty_permissions(True),
+            create_active_user_with_permissions(True),
+            "pending",
+        )
+    ],
 )
 def test_service_join_request_choose_permissions(
     client_request,
@@ -2285,8 +2853,18 @@ def test_service_join_request_choose_permissions(
     request_id = sample_uuid()
 
     mock_get_template_folders.return_value = [
-        {"id": "folder-id-1", "name": "f1", "parent_id": None, "users_with_permission": []},
-        {"id": "folder-id-2", "name": "f2", "parent_id": None, "users_with_permission": []},
+        {
+            "id": "folder-id-1",
+            "name": "f1",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
+        {
+            "id": "folder-id-2",
+            "name": "f2",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
     ]
 
     service_one["organisation"] = ORGANISATION_ID
@@ -2306,10 +2884,10 @@ def test_service_join_request_choose_permissions(
     assert f"{mock_requester['email_address']}" in page.select_one("p").text.strip()
 
     permission_checkboxes = page.select("input[name='permissions_field']")
-    assert permission_checkboxes[0]["value"] == "view_activity"
-    assert permission_checkboxes[1]["value"] == "send_messages"
-    assert permission_checkboxes[2]["value"] == "manage_templates"
-    assert permission_checkboxes[3]["value"] == "manage_service"
+    assert permission_checkboxes[0]["value"] == "manage_service"
+    assert permission_checkboxes[1]["value"] == "view_activity"
+    assert permission_checkboxes[2]["value"] == "send_messages"
+    assert permission_checkboxes[3]["value"] == "manage_templates"
     assert permission_checkboxes[4]["value"] == "manage_api_keys"
 
     folder_checkboxes = page.select("input[name='folder_permissions']")
@@ -2427,7 +3005,13 @@ def test_join_a_service_user_with_no_mobile_number_cant_be_set_to_sms_auth(
 
 @pytest.mark.parametrize(
     "mock_requester, mock_service_user, status",
-    [(create_active_user_empty_permissions(True), create_active_user_with_permissions(True), "pending")],
+    [
+        (
+            create_active_user_empty_permissions(True),
+            create_active_user_with_permissions(True),
+            "pending",
+        )
+    ],
 )
 def test_service_join_request_choose_permissions_on_save(
     client_request,
@@ -2445,8 +3029,18 @@ def test_service_join_request_choose_permissions_on_save(
     selected_permissions = ["send_messages", "view_activity", "manage_service"]
 
     mock_get_template_folders.return_value = [
-        {"id": "folder-id-1", "name": "f1", "parent_id": None, "users_with_permission": []},
-        {"id": "folder-id-2", "name": "f2", "parent_id": None, "users_with_permission": []},
+        {
+            "id": "folder-id-1",
+            "name": "f1",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
+        {
+            "id": "folder-id-2",
+            "name": "f2",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
     ]
 
     mock_update_service_join_requests = mocker.patch(
@@ -2464,7 +3058,10 @@ def test_service_join_request_choose_permissions_on_save(
         "main.service_join_request_choose_permissions",
         service_id=SERVICE_ONE_ID,
         request_id=request_id,
-        _data={"permissions_field": selected_permissions, "folder_permissions": ["folder-id-1", "folder-id-2"]},
+        _data={
+            "permissions_field": selected_permissions,
+            "folder_permissions": ["folder-id-1", "folder-id-2"],
+        },
         _expected_status=302,
         _expected_redirect=url_for("main.manage_users", service_id=SERVICE_ONE_ID),
     )
@@ -2490,7 +3087,12 @@ def test_service_join_request_choose_permissions_on_save(
             "pending",
             "email_auth",
         ),
-        (create_active_user_empty_permissions(True), create_active_user_with_permissions(True), "pending", "sms_auth"),
+        (
+            create_active_user_empty_permissions(True),
+            create_active_user_with_permissions(True),
+            "pending",
+            "sms_auth",
+        ),
     ],
 )
 def test_service_join_request_choose_auth_type_on_save(
@@ -2522,7 +3124,11 @@ def test_service_join_request_choose_auth_type_on_save(
         "main.service_join_request_choose_permissions",
         service_id=SERVICE_ONE_ID,
         request_id=request_id,
-        _data={"permissions_field": selected_permissions, "folder_permissions": [], "login_authentication": auth_type},
+        _data={
+            "permissions_field": selected_permissions,
+            "folder_permissions": [],
+            "login_authentication": auth_type,
+        },
         _expected_status=302,
         _expected_redirect=url_for("main.manage_users", service_id=SERVICE_ONE_ID),
     )
@@ -2542,7 +3148,13 @@ def test_service_join_request_choose_auth_type_on_save(
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "mock_requester, mock_service_user, status",
-    [(create_active_user_empty_permissions(True), create_active_user_with_permissions(True), "pending")],
+    [
+        (
+            create_active_user_empty_permissions(True),
+            create_active_user_with_permissions(True),
+            "pending",
+        )
+    ],
 )
 def test_service_join_request_refused(
     client_request,
@@ -2673,7 +3285,11 @@ def test_service_join_request_approved_flash_message(
         "main.service_join_request_choose_permissions",
         service_id=SERVICE_ONE_ID,
         request_id=request_id,
-        _data={"permissions_field": ["send_messages"], "folder_permissions": [], "login_authentication": "email_auth"},
+        _data={
+            "permissions_field": ["send_messages"],
+            "folder_permissions": [],
+            "login_authentication": "email_auth",
+        },
         _follow_redirects=True,
     )
 
@@ -2686,7 +3302,9 @@ def test_service_join_request_approved_flash_message(
     [
         (
             create_service_one_user(
-                id=sample_uuid(), name="Test User With Empty Permissions", auth_type="webauthn_auth"
+                id=sample_uuid(),
+                name="Test User With Empty Permissions",
+                auth_type="webauthn_auth",
             ),
             create_active_user_with_permissions(True),
             "pending",
@@ -2718,8 +3336,18 @@ def test_join_request_does_not_update_auth_type_for_webauthn_users(
     mocker.patch("app.models.user.User.from_id", return_value=mock_user_instance)
 
     mock_get_template_folders.return_value = [
-        {"id": "folder-id-1", "name": "f1", "parent_id": None, "users_with_permission": []},
-        {"id": "folder-id-2", "name": "f2", "parent_id": None, "users_with_permission": []},
+        {
+            "id": "folder-id-1",
+            "name": "f1",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
+        {
+            "id": "folder-id-2",
+            "name": "f2",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
     ]
 
     mock_update_service_join_requests = mocker.patch(
@@ -2768,7 +3396,11 @@ def test_join_request_does_not_update_auth_type_for_webauthn_users(
     "mock_requester, mock_service_user, status",
     [
         (
-            create_service_one_user(id=sample_uuid(), name="Test User With Empty Permissions", auth_type="sms_auth"),
+            create_service_one_user(
+                id=sample_uuid(),
+                name="Test User With Empty Permissions",
+                auth_type="sms_auth",
+            ),
             create_active_user_with_permissions(True),
             "pending",
         )
@@ -2799,8 +3431,18 @@ def test_join_request_updates_auth_type_for_non_webauthn_users(
     mocker.patch("app.models.user.User.from_id", return_value=mock_user_instance)
 
     mock_get_template_folders.return_value = [
-        {"id": "folder-id-1", "name": "f1", "parent_id": None, "users_with_permission": []},
-        {"id": "folder-id-2", "name": "f2", "parent_id": None, "users_with_permission": []},
+        {
+            "id": "folder-id-1",
+            "name": "f1",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
+        {
+            "id": "folder-id-2",
+            "name": "f2",
+            "parent_id": None,
+            "users_with_permission": [],
+        },
     ]
 
     mock_update_service_join_requests = mocker.patch(

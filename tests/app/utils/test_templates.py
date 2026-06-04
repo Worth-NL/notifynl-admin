@@ -1,4 +1,6 @@
+from datetime import date
 from unittest import mock
+from uuid import UUID
 
 import pytest
 from bs4 import BeautifulSoup
@@ -8,8 +10,9 @@ from notifications_utils.template import SubjectMixin, Template
 from ordered_set import OrderedSet
 
 from app import load_service_before_request
-from app.utils.templates import EmailPreviewTemplate, TemplatedLetterImageTemplate, get_sample_template
-from tests import template_json
+from app.models.template_email_file import TemplateEmailFile
+from app.utils.templates import EmailPreviewTemplate, TemplateChange, TemplatedLetterImageTemplate, get_sample_template
+from tests import ConcreteTemplate, template_json
 from tests.conftest import SERVICE_ONE_ID, do_mock_get_page_counts_for_letter
 
 
@@ -398,7 +401,7 @@ def test_letter_image_renderer(
                 Markup("<span class='placeholder-no-brackets'>address line 7</span>"),
             ],
             contact_block="10 Downing Street",
-            date="12 December 2012",
+            date=date(2012, 12, 12),
             subject="Subject",
             message="<p>Content</p>",
             show_postage=expected_show_postage,
@@ -501,6 +504,7 @@ def test_subject_line_gets_replaced(
     template_class,
     template_type,
     extra_args,
+    fake_uuid,
 ):
     template = template_class(
         {"service": SERVICE_ONE_ID, "content": "", "template_type": template_type, "subject": "((name))"},
@@ -569,6 +573,7 @@ def test_templates_handle_html_and_redacting(
     template_type,
     extra_args,
     expected_field_calls,
+    fake_uuid,
 ):
     assert str(
         template_class(
@@ -1032,7 +1037,7 @@ def test_unsubscribe_link_is_rendered():
     expected_content = (
         '<hr style="border: 0; height: 1px; background: #B1B4B6; Margin: 30px 0 30px 0;">'
         '<p style="Margin: 0 0 20px 0; font-size: 19px; line-height: 25px; color: #0B0C0C;">'
-        '<a style="word-wrap: break-word; color: #1D70B8;" href="https://www.example.com">'
+        '<a style="word-wrap: break-word; color: #1D70B8;" href="http://localhost/unsubscribe/example">'
         "Unsubscribe from these emails"
         "</a>"
         "</p>\n"
@@ -1041,9 +1046,13 @@ def test_unsubscribe_link_is_rendered():
     assert expected_content in (
         str(
             EmailPreviewTemplate(
-                {"content": "Hello world", "subject": "subject", "template_type": "email"},
+                {
+                    "content": "Hello world",
+                    "subject": "subject",
+                    "template_type": "email",
+                    "has_unsubscribe_link": True,
+                },
                 {},
-                unsubscribe_link="https://www.example.com",
             )
         )
     )
@@ -1101,3 +1110,320 @@ def test_email_preview_template_doesnt_error_on_empty_subject(
 
     assert subject_field.text.strip() == expected_subject
     assert subject_field["class"] == expected_classes
+
+
+@pytest.mark.parametrize(
+    "old_template, new_template, should_differ",
+    [
+        (ConcreteTemplate({"content": "((1)) ((2)) ((3))"}), ConcreteTemplate({"content": "((1)) ((2)) ((3))"}), False),
+        (ConcreteTemplate({"content": "((1)) ((2)) ((3))"}), ConcreteTemplate({"content": "((3)) ((2)) ((1))"}), False),
+        (
+            ConcreteTemplate({"content": "((1)) ((2)) ((3))"}),
+            ConcreteTemplate({"content": "((1)) ((1)) ((2)) ((2)) ((3)) ((3))"}),
+            False,
+        ),
+        (ConcreteTemplate({"content": "((1))"}), ConcreteTemplate({"content": "((1)) ((2))"}), True),
+        (ConcreteTemplate({"content": "((1)) ((2))"}), ConcreteTemplate({"content": "((1))"}), True),
+        (ConcreteTemplate({"content": "((a)) ((b))"}), ConcreteTemplate({"content": "((A)) (( B_ ))"}), False),
+    ],
+)
+@pytest.mark.parametrize("service_has_api_keys", (True, False))
+def test_checking_for_difference_between_templates(old_template, new_template, service_has_api_keys, should_differ):
+    assert (
+        TemplateChange(
+            old_template,
+            new_template,
+            service_has_api_keys=service_has_api_keys,
+        ).has_different_placeholders
+        is should_differ
+    )
+
+
+@pytest.mark.parametrize(
+    "old_template, new_template, placeholders_added, is_breaking_change",
+    [
+        (
+            ConcreteTemplate({"content": "((1)) ((2)) ((3))"}),
+            ConcreteTemplate({"content": "((1)) ((2)) ((3))"}),
+            set(),
+            False,
+        ),
+        (
+            ConcreteTemplate({"content": "((1)) ((2)) ((3))"}),
+            ConcreteTemplate({"content": "((1)) ((1)) ((2)) ((2)) ((3)) ((3))"}),
+            set(),
+            False,
+        ),
+        (ConcreteTemplate({"content": "((1)) ((2)) ((3))"}), ConcreteTemplate({"content": "((1))"}), set(), False),
+        (ConcreteTemplate({"content": "((1))"}), ConcreteTemplate({"content": "((1)) ((2)) ((3))"}), {"2", "3"}, True),
+        (ConcreteTemplate({"content": "((a))"}), ConcreteTemplate({"content": "((A)) ((B)) ((C))"}), {"B", "C"}, True),
+    ],
+)
+def test_TemplateChange_placeholders_added(old_template, new_template, placeholders_added, is_breaking_change):
+    template_change = TemplateChange(old_template, new_template, service_has_api_keys=True)
+    assert template_change.placeholders_added == placeholders_added
+    assert template_change.is_breaking_change is is_breaking_change
+
+
+@pytest.mark.parametrize(
+    "service_has_api_keys, is_breaking_change",
+    (
+        (True, True),
+        (False, False),
+    ),
+)
+def test_TemplateChange_placeholders_added_not_breaking_change_without_api_keys(
+    service_has_api_keys, is_breaking_change
+):
+    assert (
+        TemplateChange(
+            ConcreteTemplate({"content": "((1))"}),
+            ConcreteTemplate({"content": "((1)) ((2)) ((3))"}),
+            service_has_api_keys=service_has_api_keys,
+        ).is_breaking_change
+        is is_breaking_change
+    )
+
+
+@pytest.mark.parametrize(
+    "old_template, new_template, placeholders_removed",
+    [
+        (ConcreteTemplate({"content": "((1)) ((2)) ((3))"}), ConcreteTemplate({"content": "((1)) ((2)) ((3))"}), set()),
+        (
+            ConcreteTemplate({"content": "((1)) ((2)) ((3))"}),
+            ConcreteTemplate({"content": "((1)) ((1)) ((2)) ((2)) ((3)) ((3))"}),
+            set(),
+        ),
+        (ConcreteTemplate({"content": "((1))"}), ConcreteTemplate({"content": "((1)) ((2)) ((3))"}), set()),
+        (ConcreteTemplate({"content": "((1)) ((2)) ((3))"}), ConcreteTemplate({"content": "((1))"}), {"2", "3"}),
+        (ConcreteTemplate({"content": "((a)) ((b)) ((c))"}), ConcreteTemplate({"content": "((A))"}), {"b", "c"}),
+    ],
+)
+@pytest.mark.parametrize("service_has_api_keys", (True, False))
+def test_TemplateChange_placeholders_removed(old_template, new_template, placeholders_removed, service_has_api_keys):
+    assert (
+        TemplateChange(
+            old_template,
+            new_template,
+            service_has_api_keys=service_has_api_keys,
+        ).placeholders_removed
+        == placeholders_removed
+    )
+
+
+@pytest.mark.parametrize(
+    "old_template, new_template, email_files_removed, is_breaking_change",
+    [
+        # no change
+        (
+            EmailPreviewTemplate(
+                {
+                    "id": str(UUID(int=1, version=4)),
+                    "content": "((1.pdf)) ((2)) ((3))",
+                    "subject": "Henlo",
+                    "template_type": "email",
+                    "email_files": [
+                        {
+                            "filename": "1.pdf",
+                            "retention_period": 26,
+                            "id": str(UUID(int=1, version=4)),
+                            "link_text": None,
+                        }
+                    ],
+                }
+            ),
+            EmailPreviewTemplate(
+                {
+                    "id": str(UUID(int=1, version=4)),
+                    "content": "((1.pdf)) ((2)) ((3))",
+                    "subject": "Henlo",
+                    "template_type": "email",
+                    "email_files": [
+                        {
+                            "filename": "1.pdf",
+                            "retention_period": 26,
+                            "id": str(UUID(int=1, version=4)),
+                            "link_text": None,
+                        }
+                    ],
+                }
+            ),
+            set(),
+            False,
+        ),
+        # 2.pdf gets removed
+        (
+            EmailPreviewTemplate(
+                {
+                    "id": str(UUID(int=1, version=4)),
+                    "content": "((1)) ((2.pdf)) ((3))",
+                    "subject": "Henlo",
+                    "template_type": "email",
+                    "email_files": [
+                        {
+                            "filename": "2.pdf",
+                            "retention_period": 26,
+                            "id": str(UUID(int=1, version=4)),
+                            "link_text": None,
+                        }
+                    ],
+                }
+            ),
+            EmailPreviewTemplate(
+                {
+                    "id": str(UUID(int=1, version=4)),
+                    "content": "((1)) ((3))",
+                    "subject": "Henlo",
+                    "template_type": "email",
+                    "email_files": [
+                        {
+                            "filename": "2.pdf",
+                            "retention_period": 26,
+                            "id": str(UUID(int=1, version=4)),
+                            "link_text": None,
+                        }
+                    ],
+                }
+            ),
+            {"2.pdf"},
+            True,
+        ),
+        # 2.pdf and 3.pdf get removed, 4.pdf gets added
+        (
+            EmailPreviewTemplate(
+                {
+                    "id": str(UUID(int=1, version=4)),
+                    "content": "((1)) ((2.pdf)) ((3.pdf))",
+                    "subject": "Henlo",
+                    "template_type": "email",
+                    "email_files": [
+                        {
+                            "filename": "2.pdf",
+                            "retention_period": 26,
+                            "id": str(UUID(int=1, version=4)),
+                            "link_text": None,
+                        },
+                        {
+                            "filename": "3.PDF",  # Case doesn’t match placeholder
+                            "retention_period": 26,
+                            "id": str(UUID(int=2, version=4)),
+                            "link_text": None,
+                        },
+                    ],
+                }
+            ),
+            EmailPreviewTemplate(
+                {
+                    "id": str(UUID(int=1, version=4)),
+                    "content": "((1)) ((4.pdf))",
+                    "subject": "Henlo",
+                    "template_type": "email",
+                    "email_files": [
+                        {
+                            "filename": "2.pdf",
+                            "retention_period": 26,
+                            "id": str(UUID(int=1, version=4)),
+                            "link_text": None,
+                        },
+                        {
+                            "filename": "3.pdf",
+                            "retention_period": 26,
+                            "id": str(UUID(int=2, version=4)),
+                            "link_text": None,
+                        },
+                    ],
+                }
+            ),
+            {"2.pdf", "3.pdf"},
+            True,
+        ),
+    ],
+)
+@pytest.mark.parametrize("service_has_api_keys", (True, False))
+def test_TemplateChange_email_files_removed(
+    old_template, new_template, email_files_removed, service_has_api_keys, is_breaking_change
+):
+    template_change = TemplateChange(old_template, new_template, service_has_api_keys=service_has_api_keys)
+    assert template_change.email_filenames_removed == email_files_removed
+    assert template_change.is_breaking_change is is_breaking_change
+
+
+@pytest.mark.parametrize("service_has_api_keys", (True, False))
+def test_TemplateChange_email_files_and_placeholders_removed(service_has_api_keys, fake_uuid):
+    email_file_data = {"filename": "2.pdf", "retention_period": 26, "id": fake_uuid, "link_text": None}
+    old_template = EmailPreviewTemplate(
+        {
+            "id": fake_uuid,
+            "content": "((1)) ((2.pdf)) ((3))",
+            "subject": "Henlo",
+            "template_type": "email",
+            "email_files": [email_file_data],
+        }
+    )
+    new_template = EmailPreviewTemplate(
+        {
+            "id": fake_uuid,
+            "content": "((1))",
+            "subject": "Henlo",
+            "template_type": "email",
+            "email_files": [email_file_data],
+        }
+    )
+    template_change = TemplateChange(old_template, new_template, service_has_api_keys=service_has_api_keys)
+    assert template_change.email_files_removed == {TemplateEmailFile(email_file_data)}
+    assert template_change.email_filenames_removed == {"2.pdf"}
+    assert template_change.is_breaking_change is True
+
+    assert template_change.placeholders_removed == {"3"}
+
+
+def test_TemplateChange_ordering_of_placeholders_is_preserved():
+    before = ConcreteTemplate({"content": "((dog)) ((cat)) ((rat))"})
+    after = ConcreteTemplate({"content": "((platypus)) ((echidna)) ((quokka))"})
+    change = TemplateChange(before, after, service_has_api_keys=True)
+    assert change.placeholders_removed == ["dog", "cat", "rat"] == before.placeholders
+    assert change.placeholders_added == ["platypus", "echidna", "quokka"] == after.placeholders
+
+
+@pytest.mark.parametrize(
+    "content, email_files, subject, expected_all_placeholders, expected_placeholders",
+    [
+        (
+            "((one)) ((example.pdf)) ((two)) ((three))",
+            [
+                {
+                    "id": str(UUID(int=1, version=4)),
+                    "filename": "example.pdf",
+                    "link_text": None,
+                    "retention_period": 90,
+                    "validate_users_email": False,
+                },
+            ],
+            "Your ((thing)) is due soon",
+            OrderedSet(["thing", "one", "example.pdf", "two", "three"]),
+            OrderedSet(["thing", "one", "two", "three"]),
+        ),
+        (
+            "((one)) ((two)) ((three))",
+            [],
+            "Your ((thing)) is due soon",
+            OrderedSet(["thing", "one", "two", "three"]),
+            OrderedSet(["thing", "one", "two", "three"]),
+        ),
+    ],
+)
+def test_template_placeholders_attribute_is_correctly_ordered_set_for_email_templates(
+    client_request, fake_uuid, mocker, content, email_files, subject, expected_all_placeholders, expected_placeholders
+):
+    template = EmailPreviewTemplate(
+        {
+            "content": content,
+            "subject": subject,
+            "template_type": "email",
+            "email_files": email_files,
+            "id": fake_uuid,
+        },
+    )
+
+    assert template.all_placeholders == expected_all_placeholders
+    assert template.placeholders == expected_placeholders

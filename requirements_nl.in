@@ -1,19 +1,27 @@
-ago==0.0.95
-humanize==4.4.0
-Flask-WTF==1.2.1
-Flask-Login==0.6.3
-Pillow==10.3.0
-pyexcel==0.7.1
-pyexcel-io==0.6.7
-pyexcel-xls==0.7.0
-pyexcel-xlsx==0.6.1
-pyexcel-ods3==0.6.1
-notifications-python-client==10.0.0
-fido2~=1.1
-notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@101.1.15
-govuk-frontend-jinja @ git+https://github.com/Worth-NL/LandRegistry-frontend-jinja@20260119.4
-prometheus-client==0.15.0
-git+https://github.com/alphagov/gds_metrics_python.git@6f1840a57b6fb1ee40b7e84f2f18ec229de8aa72
-sentry-sdk[flask]==1.45.1
 
-cryptography>=44.0.0
+
+
+ago~=0.1
+humanize~=4.4
+Flask-WTF~=1.2
+Flask-Login~=0.6
+
+Pillow~=12.1
+
+openpyxl~=3.1
+pyexcel~=0.7
+pyexcel-io~=0.6
+pyexcel-xls~=0.7
+pyexcel-odsr~=0.6
+
+notifications-python-client~=10.0
+fido2~=1.1
+
+git+https://github.com/alphagov/gds_metrics_python.git@6f1840a57b6fb1ee40b7e84f2f18ec229de8aa72
+
+# Run `make bump-utils` to update to the latest version
+notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@101.1.15
+
+govuk-frontend-jinja @ git+https://github.com/Worth-NL/LandRegistry-frontend-jinja@20260119.4
+
+sentry-sdk[flask]==1.45.1

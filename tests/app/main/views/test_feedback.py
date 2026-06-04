@@ -3,21 +3,18 @@ from functools import partial
 from unittest.mock import ANY, PropertyMock
 
 import pytest
-import pytz
 from flask import url_for
 from freezegun import freeze_time
 from notifications_utils.clients.zendesk.zendesk_client import (
     NotifySupportTicket,
     NotifySupportTicketComment,
+    NotifyTicketType,
     ZendeskError,
 )
 
+from app.constants import ZendeskTopicId
 from app.main.views_nl.feedback import ZENDESK_USER_LOGGED_OUT_NOTE, in_business_hours
-from app.models.feedback import (
-    GENERAL_TICKET_TYPE,
-    PROBLEM_TICKET_TYPE,
-    QUESTION_TICKET_TYPE,
-)
+from app.models.feedback import PROBLEM_TICKET_TYPE, QUESTION_TICKET_TYPE
 from tests.conftest import SERVICE_ONE_ID, normalize_spaces, set_config_values
 
 
@@ -34,9 +31,9 @@ def test_get_support_index_page(
     assert "action" not in page.select_one("form")
     assert normalize_spaces(page.select_one("h1").text) == "Support"
     assert normalize_spaces(page.select_one("form label[for=support_type-0]").text) == "Report a problem"
-    assert page.select_one("form input#support_type-0")["value"] == "report-problem"
+    assert page.select_one("form input#support_type-0")["value"] == PROBLEM_TICKET_TYPE
     assert normalize_spaces(page.select_one("form label[for=support_type-1]").text) == "Ask a question or give feedback"
-    assert page.select_one("form input#support_type-1")["value"] == "ask-question-give-feedback"
+    assert page.select_one("form input#support_type-1")["value"] == QUESTION_TICKET_TYPE
     assert normalize_spaces(page.select_one("form button").text) == "Continue"
 
 
@@ -59,31 +56,36 @@ def test_get_support_index_page_when_signed_out(
     assert normalize_spaces(page.select_one("form button").text) == "Continue"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
-@pytest.mark.parametrize(
-    "support_type, expected_h1",
-    [
-        (PROBLEM_TICKET_TYPE, "Report a problem"),
-        (QUESTION_TICKET_TYPE, "Ask a question or give feedback"),
-    ],
-)
-def test_choose_support_type(
-    client_request, mock_get_non_empty_organisations_and_services_for_user, mocker, support_type, expected_h1
+def test_choose_question_support_type_shows_feedback_form(
+    client_request, mock_get_non_empty_organisations_and_services_for_user, mocker
 ):
-    mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=True)
+    mocker.patch("app.main.views.feedback.in_business_hours", return_value=True)
     page = client_request.post(
         "main.support",
-        _data={"support_type": support_type},
+        _data={"support_type": QUESTION_TICKET_TYPE},
         _follow_redirects=True,
     )
-    assert page.select_one("h1").string.strip() == expected_h1
+    assert page.select_one("h1").string.strip() == "Ask a question or give feedback"
     assert not page.select_one("input[name=name]")
     assert not page.select_one("input[name=email_address]")
     assert page.select_one("form").find("p").text.strip() == "We’ll reply to test@user.gov.uk"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+def test_choose_problem_support_type_shows_problem_type_form(
+    client_request, mock_get_non_empty_organisations_and_services_for_user, mocker
+):
+    mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=True)
+    page = client_request.post(
+        "main.support",
+        _data={"support_type": PROBLEM_TICKET_TYPE},
+        _follow_redirects=True,
+    )
+    assert page.select_one("h1").string.strip() == "Report a problem"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support")
+    assert page.select("form input[type=radio]")[0]["value"] == "sending-messages"
+    assert page.select("form input[type=radio]")[1]["value"] == "something-else"
+
+
 def test_get_support_as_someone_in_the_public_sector(
     client_request,
     mocker,
@@ -95,11 +97,12 @@ def test_get_support_as_someone_in_the_public_sector(
         _data={"who": "public-sector"},
         _follow_redirects=True,
     )
-    assert normalize_spaces(page.select("h1")) == "Contact GOV.UK Notify support"
-    assert page.select_one("form textarea[name=feedback]")
-    assert page.select_one("form input[name=name]")
-    assert page.select_one("form input[name=email_address]")
-    assert page.select_one("form button")
+    assert normalize_spaces(page.select("h1")) == "What do you want to do?"
+    assert normalize_spaces(page.select_one("form label[for=support_type-0]").text) == "Report a problem"
+    assert page.select_one("form input#support_type-0")["value"] == PROBLEM_TICKET_TYPE
+    assert normalize_spaces(page.select_one("form label[for=support_type-1]").text) == "Ask a question or give feedback"
+    assert page.select_one("form input#support_type-1")["value"] == QUESTION_TICKET_TYPE
+    assert normalize_spaces(page.select_one("form button").text) == "Continue"
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -119,6 +122,490 @@ def test_get_support_as_member_of_public(
     assert not page.select("form button")
 
 
+def test_get_support_what_do_you_want_to_do_page(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_what_do_you_want_to_do")
+    assert normalize_spaces(page.select("h1")) == "What do you want to do?"
+    assert normalize_spaces(page.select_one("form label[for=support_type-0]").text) == "Report a problem"
+    assert page.select_one("form input#support_type-0")["value"] == PROBLEM_TICKET_TYPE
+    assert normalize_spaces(page.select_one("form label[for=support_type-1]").text) == "Ask a question or give feedback"
+    assert page.select_one("form input#support_type-1")["value"] == QUESTION_TICKET_TYPE
+    assert normalize_spaces(page.select_one("form button").text) == "Continue"
+
+
+@pytest.mark.parametrize(
+    "form_option, redirect_endpoint, redirect_kwargs",
+    [
+        (PROBLEM_TICKET_TYPE, "main.support_problem", {}),
+        (QUESTION_TICKET_TYPE, "main.feedback", {"ticket_type": QUESTION_TICKET_TYPE}),
+    ],
+)
+def test_support_what_do_you_want_to_do_page_redirects(client_request, form_option, redirect_endpoint, redirect_kwargs):
+    client_request.logout()
+    client_request.post(
+        "main.support_what_do_you_want_to_do",
+        _data={"support_type": form_option},
+        _expected_redirect=url_for(redirect_endpoint, **redirect_kwargs),
+    )
+
+
+def test_support_problem_when_user_is_logged_in(client_request):
+    page = client_request.get("main.support_problem")
+    assert page.select_one("h1").string.strip() == "Report a problem"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support")
+
+    radios = page.select("form input[type=radio]")
+    assert len(radios) == 2
+    assert radios[0]["value"] == "sending-messages"
+    assert radios[1]["value"] == "something-else"
+
+
+def test_support_problem_when_user_is_logged_out(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_problem")
+    assert page.select_one("h1").string.strip() == "Report a problem"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support_what_do_you_want_to_do")
+
+    radios = page.select("form input[type=radio]")
+    assert len(radios) == 3
+    assert radios[0]["value"] == "signing-in"
+    assert radios[1]["value"] == "sending-messages"
+    assert radios[2]["value"] == "something-else"
+
+
+@pytest.mark.parametrize(
+    "form_option, logged_in, redirect_endpoint, redirect_kwargs",
+    [
+        ("signing-in", False, "main.support_cannot_sign_in", {}),
+        ("sending-messages", True, "main.support_what_happened", {}),
+        ("sending-messages", False, "main.support_what_happened", {}),
+        (
+            "something-else",
+            True,
+            "main.feedback",
+            {"ticket_type": PROBLEM_TICKET_TYPE, "severe": "no", "category": "something-else"},
+        ),
+        (
+            "something-else",
+            False,
+            "main.feedback",
+            {"ticket_type": PROBLEM_TICKET_TYPE, "severe": "no", "category": "something-else"},
+        ),
+    ],
+)
+def test_post_support_problem_redirects(client_request, form_option, logged_in, redirect_endpoint, redirect_kwargs):
+    if not logged_in:
+        client_request.logout()
+
+    client_request.post(
+        "main.support_problem",
+        _data={"problem_type": form_option},
+        _expected_redirect=url_for(redirect_endpoint, **redirect_kwargs),
+    )
+
+
+def test_support_cannot_sign_in(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_cannot_sign_in")
+    assert page.select_one("h1").string.strip() == "Tell us why you cannot sign in"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support_problem")
+
+    radios = page.select("form input[type=radio]")
+    assert len(radios) == 5
+    assert radios[0]["value"] == "no-code"
+    assert radios[1]["value"] == "mobile-number-changed"
+    assert radios[2]["value"] == "no-email-link"
+    assert radios[3]["value"] == "email-address-changed"
+    assert radios[4]["value"] == "something-else"
+
+
+@pytest.mark.parametrize(
+    "form_option, redirect_endpoint, redirect_kwargs",
+    [
+        ("no-code", "main.support_no_security_code", {}),
+        ("mobile-number-changed", "main.support_mobile_number_changed", {}),
+        ("no-email-link", "main.support_no_email_link", {}),
+        ("email-address-changed", "main.support_email_address_changed", {}),
+        (
+            "something-else",
+            "main.feedback",
+            {"ticket_type": PROBLEM_TICKET_TYPE, "severe": "no", "category": "cannot-sign-in"},
+        ),
+    ],
+)
+def test_support_cannot_sign_in_redirects(client_request, form_option, redirect_endpoint, redirect_kwargs):
+    client_request.logout()
+
+    client_request.post(
+        "main.support_cannot_sign_in",
+        _data={"sign_in_issue": form_option},
+        _expected_redirect=url_for(redirect_endpoint, **redirect_kwargs),
+    )
+
+
+def test_support_no_security_code(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_no_security_code")
+    assert normalize_spaces(page.select_one("h1").text) == "If you did not receive a security code"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support_cannot_sign_in")
+    assert page.select_one(f'a[href="{url_for("main.support_no_security_code_account_details")}"]')
+
+
+def test_support_mobile_number_changed(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_mobile_number_changed")
+    assert normalize_spaces(page.select_one("h1").text) == "If your mobile number has changed"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support_cannot_sign_in")
+    assert page.select_one(f'a[href="{url_for("main.support_mobile_number_changed_account_details")}"]')
+
+
+def test_support_no_email_link(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_no_email_link")
+    assert normalize_spaces(page.select_one("h1").text) == "If you did not receive an email link"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support_cannot_sign_in")
+    assert page.select_one(f'a[href="{url_for("main.support_no_email_link_account_details")}"]')
+
+
+def test_support_email_address_changed(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_email_address_changed")
+    assert normalize_spaces(page.select_one("h1").text) == "If your email address has changed"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support_cannot_sign_in")
+    assert page.select_one(f'a[href="{url_for("main.support_email_address_changed_account_details")}"]')
+
+
+def test_support_no_security_code_account_details_shows_form(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_no_security_code_account_details")
+    assert normalize_spaces(page.select_one("h1").text) == "Enter your account details"
+
+    form_labels = page.select("form label")
+    assert len(form_labels) == 3
+    assert normalize_spaces(form_labels[0].text) == "Name"
+    assert normalize_spaces(form_labels[1].text) == "Email address"
+    assert normalize_spaces(form_labels[2].text) == "Mobile number"
+    assert normalize_spaces(page.select_one("form button").text) == "Send"
+
+
+def test_support_no_security_code_account_details_form_requires_all_fields(client_request):
+    client_request.logout()
+    page = client_request.post(
+        "main.support_no_security_code_account_details",
+        _data={"name": "", "email_address": "", "mobile_number": ""},
+        _expected_status=200,
+    )
+    assert normalize_spaces(page.select_one("#name-error").text) == "Error: Enter your name"
+    assert normalize_spaces(page.select_one("#email_address-error").text) == "Error: Enter your email address"
+    assert normalize_spaces(page.select_one("#mobile_number-error").text) == "Error: Enter your mobile number"
+
+
+def test_support_no_security_code_account_details_submits_zendesk_ticket(client_request, mocker):
+    mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
+    mocker.patch(
+        "app.main.views.feedback.zendesk_client.send_ticket_to_zendesk",
+        autospec=True,
+    )
+
+    client_request.logout()
+    page = client_request.post(
+        "main.support_no_security_code_account_details",
+        _data={"name": "User", "email_address": "test@gov.uk", "mobile_number": "07000000000"},
+        _follow_redirects=True,
+    )
+    assert normalize_spaces(page.select_one("h1").text) == "Thanks for contacting us"
+    mock_create_ticket.assert_called_once_with(
+        ANY,
+        subject="[env: test] Security code not received",
+        message=ANY,
+        ticket_type="incident",
+        user_name="User",
+        user_email="test@gov.uk",
+        notify_ticket_type=None,
+        requester_sees_message_content=False,
+        custom_topics=[
+            {"id": ZendeskTopicId.topic_1, "value": "notify_topic_accessing"},
+            {"id": ZendeskTopicId.accessing_notify_1, "value": "notify_accessing_account"},
+        ],
+    )
+    ticket_message = mock_create_ticket.call_args[0][0].message
+    assert ticket_message.startswith("The user did not receive a security code")
+    assert "Mobile number: 07000000000" in ticket_message
+
+
+def test_support_mobile_number_changed_account_details_shows_form(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_mobile_number_changed_account_details")
+    assert normalize_spaces(page.select_one("h1").text) == "Enter your account details"
+
+    form_labels = page.select("form label")
+    assert len(form_labels) == 4
+    assert normalize_spaces(form_labels[0].text) == "Name"
+    assert normalize_spaces(form_labels[1].text) == "Email address"
+    assert normalize_spaces(form_labels[2].text) == "Old mobile number"
+    assert normalize_spaces(form_labels[3].text) == "New mobile number"
+    assert normalize_spaces(page.select_one("form button").text) == "Send"
+
+
+def test_support_mobile_number_changed_account_details_form_requires_all_fields(client_request):
+    client_request.logout()
+    page = client_request.post(
+        "main.support_mobile_number_changed_account_details",
+        _data={"name": "", "email_address": "", "old_mobile_number": "", "new_mobile_number": ""},
+        _expected_status=200,
+    )
+    assert normalize_spaces(page.select_one("#name-error").text) == "Error: Enter your name"
+    assert normalize_spaces(page.select_one("#email_address-error").text) == "Error: Enter your email address"
+    assert normalize_spaces(page.select_one("#old_mobile_number-error").text) == "Error: Enter your old mobile number"
+    assert normalize_spaces(page.select_one("#new_mobile_number-error").text) == "Error: Enter your new mobile number"
+
+
+def test_support_mobile_number_changed_account_details_submits_zendesk_ticket(client_request, mocker):
+    mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
+    mocker.patch(
+        "app.main.views.feedback.zendesk_client.send_ticket_to_zendesk",
+        autospec=True,
+    )
+
+    client_request.logout()
+    page = client_request.post(
+        "main.support_mobile_number_changed_account_details",
+        _data={
+            "name": "User",
+            "email_address": "test@gov.uk",
+            "old_mobile_number": "07000000000",
+            "new_mobile_number": "07000000001",
+        },
+        _follow_redirects=True,
+    )
+    assert normalize_spaces(page.select_one("h1").text) == "Thanks for contacting us"
+    mock_create_ticket.assert_called_once_with(
+        ANY,
+        subject="[env: test] Mobile number has changed",
+        message=ANY,
+        ticket_type="incident",
+        user_name="User",
+        user_email="test@gov.uk",
+        notify_ticket_type=NotifyTicketType.NON_TECHNICAL,
+        requester_sees_message_content=False,
+        custom_topics=[
+            {"id": ZendeskTopicId.topic_1, "value": "notify_topic_accessing"},
+            {"id": ZendeskTopicId.accessing_notify_1, "value": "notify_accessing_account"},
+            {"id": ZendeskTopicId.topic_2, "value": "notify_topic_accessing_2"},
+            {"id": ZendeskTopicId.accessing_notify_2, "value": "notify_accessing_service_2"},
+        ],
+    )
+    ticket_message = mock_create_ticket.call_args[0][0].message
+    assert ticket_message.startswith("The user’s mobile number has changed")
+    assert "Old mobile number: 07000000000\n\nNew mobile number: 07000000001" in ticket_message
+
+
+def test_support_no_email_link_account_details_shows_form(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_no_email_link_account_details")
+    assert normalize_spaces(page.select_one("h1").text) == "Enter your account details"
+
+    form_labels = page.select("form label")
+    assert len(form_labels) == 2
+    assert normalize_spaces(form_labels[0].text) == "Name"
+    assert normalize_spaces(form_labels[1].text) == "Email address"
+    assert normalize_spaces(page.select_one("form button").text) == "Send"
+
+
+def test_support_no_email_link_account_details_form_requires_all_fields(client_request):
+    client_request.logout()
+    page = client_request.post(
+        "main.support_no_email_link_account_details",
+        _data={"name": "", "email_address": ""},
+        _expected_status=200,
+    )
+    assert normalize_spaces(page.select_one("#name-error").text) == "Error: Enter your name"
+    assert normalize_spaces(page.select_one("#email_address-error").text) == "Error: Enter your email address"
+
+
+def test_support_no_email_link_account_details_submits_zendesk_ticket(client_request, mocker):
+    mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
+    mocker.patch(
+        "app.main.views.feedback.zendesk_client.send_ticket_to_zendesk",
+        autospec=True,
+    )
+
+    client_request.logout()
+    page = client_request.post(
+        "main.support_no_email_link_account_details",
+        _data={"name": "User", "email_address": "test@gov.uk"},
+        _follow_redirects=True,
+    )
+    assert normalize_spaces(page.select_one("h1").text) == "Thanks for contacting us"
+    mock_create_ticket.assert_called_once_with(
+        ANY,
+        subject="[env: test] Email link not received",
+        message=ANY,
+        ticket_type="incident",
+        user_name="User",
+        user_email="test@gov.uk",
+        notify_ticket_type=None,
+        requester_sees_message_content=False,
+        custom_topics=[
+            {"id": ZendeskTopicId.topic_1, "value": "notify_topic_accessing"},
+            {"id": ZendeskTopicId.accessing_notify_1, "value": "notify_accessing_account"},
+        ],
+    )
+    ticket_message = mock_create_ticket.call_args[0][0].message
+    assert ticket_message.startswith("The user did not receive an email link")
+    assert "Email address: test@gov.uk" in ticket_message
+
+
+def test_support_email_address_changed_account_details_shows_form(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_email_address_changed_account_details")
+    assert normalize_spaces(page.select_one("h1").text) == "Enter your account details"
+
+    form_labels = page.select("form label")
+    assert len(form_labels) == 3
+    assert normalize_spaces(form_labels[0].text) == "Name"
+    assert normalize_spaces(form_labels[1].text) == "Old email address"
+    assert normalize_spaces(form_labels[2].text) == "New email address"
+    assert normalize_spaces(page.select_one("form button").text) == "Send"
+
+
+def test_support_email_address_changed_account_details_form_requires_all_fields(client_request):
+    client_request.logout()
+    page = client_request.post(
+        "main.support_email_address_changed_account_details",
+        _data={"name": "", "old_email_address": "", "new_email_address": ""},
+        _expected_status=200,
+    )
+    assert normalize_spaces(page.select_one("#name-error").text) == "Error: Enter your name"
+    assert normalize_spaces(page.select_one("#old_email_address-error").text) == "Error: Enter your old email address"
+    assert normalize_spaces(page.select_one("#new_email_address-error").text) == "Error: Enter your new email address"
+
+
+def test_support_email_address_account_details_submits_zendesk_ticket(client_request, mocker):
+    mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
+    mocker.patch(
+        "app.main.views.feedback.zendesk_client.send_ticket_to_zendesk",
+        autospec=True,
+    )
+
+    client_request.logout()
+    page = client_request.post(
+        "main.support_email_address_changed_account_details",
+        _data={
+            "name": "User",
+            "old_email_address": "old_address@gov.uk",
+            "new_email_address": "new_address@gov.uk",
+        },
+        _follow_redirects=True,
+    )
+    assert normalize_spaces(page.select_one("h1").text) == "Thanks for contacting us"
+    mock_create_ticket.assert_called_once_with(
+        ANY,
+        subject="[env: test] Email address has changed",
+        message=ANY,
+        ticket_type="incident",
+        user_name="User",
+        user_email="new_address@gov.uk",
+        notify_ticket_type=NotifyTicketType.NON_TECHNICAL,
+        requester_sees_message_content=False,
+        custom_topics=[
+            {"id": ZendeskTopicId.topic_1, "value": "notify_topic_accessing"},
+            {"id": ZendeskTopicId.accessing_notify_1, "value": "notify_accessing_account"},
+            {"id": ZendeskTopicId.topic_2, "value": "notify_topic_accessing_2"},
+            {"id": ZendeskTopicId.accessing_notify_2, "value": "notify_accessing_service_2"},
+        ],
+    )
+    ticket_message = mock_create_ticket.call_args[0][0].message
+    assert ticket_message.startswith("The user’s email address has changed")
+    assert "Old email address: old_address@gov.uk\n\nNew email address: new_address@gov.uk" in ticket_message
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    [
+        "support_no_security_code",
+        "support_mobile_number_changed",
+        "support_no_email_link",
+        "support_email_address_changed",
+        "support_no_security_code_account_details",
+        "support_mobile_number_changed_account_details",
+        "support_no_email_link_account_details",
+        "support_email_address_changed_account_details",
+    ],
+)
+def test_support_sign_in_problem_pages_redirect_if_user_is_logged_in(client_request, endpoint):
+    client_request.get(f"main.{endpoint}", _expected_redirect=url_for("main.support_problem"))
+
+
+@pytest.mark.parametrize("user_logged_in", [True, False])
+def test_get_support_what_happened_page(client_request, user_logged_in):
+    if not user_logged_in:
+        client_request.logout()
+
+    page = client_request.get("main.support_what_happened")
+    assert page.select_one("h1").string.strip() == "What happened?"
+    assert page.select("form input[type=radio]")[0]["value"] == "technical-difficulties"
+    assert page.select("form input[type=radio]")[1]["value"] == "api-500-response"
+    assert page.select("form input[type=radio]")[2]["value"] == "something-else"
+
+
+@pytest.mark.parametrize("user_logged_in", [True, False])
+def test_support_what_happened_when_something_else_selected(client_request, user_logged_in):
+    if not user_logged_in:
+        client_request.logout()
+
+    client_request.post(
+        "main.support_what_happened",
+        _data={"what_happened": "something-else"},
+        _expected_redirect=url_for(
+            "main.feedback", ticket_type=PROBLEM_TICKET_TYPE, severe="no", category="problem-sending"
+        ),
+    )
+
+
+@pytest.mark.parametrize("error_selected", ["technical-difficulties", "api-500-response"])
+@pytest.mark.parametrize(
+    "has_live_services, severe, category",
+    [
+        (True, "yes", "tech-error-live-services"),
+        (False, "no", "tech-error-no-live-services"),
+    ],
+)
+def test_support_what_happened_when_an_error_is_selected_and_user_logged_in(
+    client_request,
+    error_selected,
+    has_live_services,
+    severe,
+    category,
+    mocker,
+):
+    mocker.patch(
+        "app.models.user.User.live_services",
+        new_callable=PropertyMock,
+        return_value=[{}, {}] if has_live_services else [],
+    )
+    client_request.post(
+        "main.support_what_happened",
+        _data={"what_happened": error_selected},
+        _expected_redirect=url_for("main.feedback", ticket_type=PROBLEM_TICKET_TYPE, severe=severe, category=category),
+    )
+
+
+@pytest.mark.parametrize("error_selected", ["technical-difficulties", "api-500-response"])
+def test_support_what_happened_when_an_error_is_selected_and_user_logged_out(
+    client_request,
+    error_selected,
+):
+    client_request.logout()
+    client_request.post(
+        "main.support_what_happened",
+        _data={"what_happened": error_selected},
+        _expected_redirect=url_for(
+            "main.feedback", ticket_type=PROBLEM_TICKET_TYPE, severe="yes", category="tech-error-signed-out"
+        ),
+    )
+
+
 @pytest.mark.parametrize(
     "ticket_type, expected_status_code", [(PROBLEM_TICKET_TYPE, 200), (QUESTION_TICKET_TYPE, 200), ("gripe", 404)]
 )
@@ -127,6 +614,7 @@ def test_get_feedback_page(client_request, mocker, ticket_type, expected_status_
     client_request.logout()
     client_request.get(
         "main.feedback",
+        severe="no",
         ticket_type=ticket_type,
         _expected_status=expected_status_code,
     )
@@ -151,17 +639,17 @@ def test_passed_non_logged_in_user_details_through_flow(client_request, mocker):
 
     client_request.post(
         "main.feedback",
-        ticket_type=GENERAL_TICKET_TYPE,
+        ticket_type=QUESTION_TICKET_TYPE,
         _data=data,
         _expected_redirect=url_for(
             "main.thanks",
-            out_of_hours_emergency=False,
+            emergency_ticket=False,
         ),
     )
 
     mock_create_ticket.assert_called_once_with(
         ANY,
-        subject="[env: test] General Notify Support",
+        subject="[env: test] Question or feedback",
         message="blah\n",
         ticket_type="question",
         p1=False,
@@ -172,6 +660,7 @@ def test_passed_non_logged_in_user_details_through_flow(client_request, mocker):
         org_type=None,
         service_id=None,
         user_created_at=None,
+        custom_topics=None,
     )
     mock_send_ticket_to_zendesk.assert_called_once()
     mock_update_ticket_with_internal_note.assert_called_once_with(
@@ -191,11 +680,11 @@ def test_does_not_add_internal_note_to_tickets_created_by_suspended_users(client
 
     client_request.post(
         "main.feedback",
-        ticket_type=GENERAL_TICKET_TYPE,
+        ticket_type=QUESTION_TICKET_TYPE,
         _data={"feedback": "blah", "name": "Anne Example", "email_address": "anne@example.com"},
         _expected_redirect=url_for(
             "main.thanks",
-            out_of_hours_emergency=False,
+            emergency_ticket=False,
         ),
     )
     assert not mock_update_ticket_with_internal_note.called
@@ -213,11 +702,11 @@ def test_does_not_add_internal_note_to_ticket_if_error_creating_ticket(client_re
     with pytest.raises(ZendeskError):
         client_request.post(
             "main.feedback",
-            ticket_type=GENERAL_TICKET_TYPE,
+            ticket_type=QUESTION_TICKET_TYPE,
             _data={"feedback": "blah", "name": "Anne Example", "email_address": "anne@example.com"},
             _expected_redirect=url_for(
                 "main.thanks",
-                out_of_hours_emergency=False,
+                emergency_ticket=False,
             ),
         )
     assert not mock_update_ticket_with_internal_note.called
@@ -230,8 +719,8 @@ def test_does_not_add_internal_note_to_ticket_if_error_creating_ticket(client_re
 @pytest.mark.parametrize(
     "ticket_type, zendesk_ticket_type, expected_subject",
     [
-        (PROBLEM_TICKET_TYPE, "incident", "[env: test] Reported Problem"),
-        (QUESTION_TICKET_TYPE, "question", "[env: test] Question/Feedback"),
+        (PROBLEM_TICKET_TYPE, "incident", "[env: test] Problem"),
+        (QUESTION_TICKET_TYPE, "question", "[env: test] Question or feedback"),
     ],
 )
 def test_passes_user_details_through_flow(
@@ -255,11 +744,12 @@ def test_passes_user_details_through_flow(
     client_request.post(
         "main.feedback",
         ticket_type=ticket_type,
+        severe="no",
         _data=data,
         _expected_status=302,
         _expected_redirect=url_for(
             "main.thanks",
-            out_of_hours_emergency=False,
+            emergency_ticket=False,
         ),
     )
     mock_create_ticket.assert_called_once_with(
@@ -274,7 +764,8 @@ def test_passes_user_details_through_flow(
         org_id=None,
         org_type="central",
         service_id=SERVICE_ONE_ID,
-        user_created_at=datetime.datetime(2018, 11, 7, 8, 34, 54, 857402).replace(tzinfo=pytz.utc),
+        user_created_at=datetime.datetime(2018, 11, 7, 8, 34, 54, 857402).replace(tzinfo=datetime.UTC),
+        custom_topics=None,
     )
 
     assert mock_create_ticket.call_args[1]["message"] == "\n".join(
@@ -316,18 +807,18 @@ def test_zendesk_subject_doesnt_show_env_flag_on_prod(
     ):
         client_request.post(
             "main.feedback",
-            ticket_type=GENERAL_TICKET_TYPE,
+            ticket_type=QUESTION_TICKET_TYPE,
             _data={"feedback": "blah"},
             _expected_status=302,
             _expected_redirect=url_for(
                 "main.thanks",
-                out_of_hours_emergency=False,
+                emergency_ticket=False,
             ),
         )
 
     mock_create_ticket.assert_called_once_with(
         ANY,
-        subject="General Notify Support",
+        subject="Question or feedback",
         message=ANY,
         ticket_type="question",
         p1=False,
@@ -337,18 +828,97 @@ def test_zendesk_subject_doesnt_show_env_flag_on_prod(
         org_id=None,
         org_type="central",
         service_id=SERVICE_ONE_ID,
-        user_created_at=datetime.datetime(2018, 11, 7, 8, 34, 54, 857402).replace(tzinfo=pytz.utc),
+        user_created_at=datetime.datetime(2018, 11, 7, 8, 34, 54, 857402).replace(tzinfo=datetime.UTC),
+        custom_topics=None,
     )
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
-    "data",
+    "ticket_type, category, expected_subject, notify_ticket_type, topics",
     [
-        {"feedback": "blah", "name": "Fred"},
-        {"feedback": "blah"},
+        (QUESTION_TICKET_TYPE, None, "Question or feedback", None, None),
+        (PROBLEM_TICKET_TYPE, "something-else", "Problem", None, None),
+        (PROBLEM_TICKET_TYPE, "problem-sending", "Problem sending messages", None, None),
+        (
+            PROBLEM_TICKET_TYPE,
+            "tech-error-live-services",
+            "Urgent - Technical error (live service)",
+            NotifyTicketType.TECHNICAL,
+            None,
+        ),
+        (
+            PROBLEM_TICKET_TYPE,
+            "tech-error-no-live-services",
+            "Technical error (no live services)",
+            NotifyTicketType.TECHNICAL,
+            None,
+        ),
+        (
+            PROBLEM_TICKET_TYPE,
+            "tech-error-signed-out",
+            "Technical error (user not signed in)",
+            NotifyTicketType.TECHNICAL,
+            None,
+        ),
+        (
+            PROBLEM_TICKET_TYPE,
+            "cannot-sign-in",
+            "Cannot sign in",
+            None,
+            [
+                {"id": ZendeskTopicId.topic_1, "value": "notify_topic_accessing"},
+                {"id": ZendeskTopicId.accessing_notify_1, "value": "notify_accessing_account"},
+            ],
+        ),
     ],
 )
+def test_zendesk_subject_and_ticket_type_reflect_journey_taken_to_support_form(
+    notify_admin,
+    client_request,
+    mock_get_non_empty_organisations_and_services_for_user,
+    ticket_type,
+    category,
+    expected_subject,
+    notify_ticket_type,
+    topics,
+    mocker,
+):
+    mocker.patch("app.main.views.feedback.in_business_hours", return_value=True)
+    mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
+    mocker.patch(
+        "app.main.views.feedback.zendesk_client.send_ticket_to_zendesk",
+        autospec=True,
+    )
+    client_request.post(
+        "main.feedback",
+        ticket_type=ticket_type,
+        severe="no",
+        category=category,
+        _data={"feedback": "blah"},
+        _expected_status=302,
+        _expected_redirect=url_for(
+            "main.thanks",
+            emergency_ticket=False,
+        ),
+    )
+    mock_create_ticket.assert_called_once_with(
+        ANY,
+        subject=f"[env: test] {expected_subject}",
+        message=ANY,
+        ticket_type=ANY,
+        p1=False,
+        user_name="Test User",
+        user_email="test@user.gov.uk",
+        notify_ticket_type=notify_ticket_type,
+        org_id=None,
+        org_type="central",
+        service_id=SERVICE_ONE_ID,
+        user_created_at=datetime.datetime(2018, 11, 7, 8, 34, 54, 857402).replace(tzinfo=datetime.UTC),
+        custom_topics=topics,
+    )
+
+
 @pytest.mark.parametrize(
     "ticket_type",
     [
@@ -358,15 +928,45 @@ def test_zendesk_subject_doesnt_show_env_flag_on_prod(
 )
 def test_email_address_required_for_problems_and_questions(
     client_request,
-    mocker,
-    data,
     ticket_type,
+    mocker,
 ):
     mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=True)
     mocker.patch("app.main.views_nl.feedback.zendesk_client")
     client_request.logout()
-    page = client_request.post("main.feedback", ticket_type=ticket_type, _data=data, _expected_status=200)
-    assert normalize_spaces(page.select_one(".govuk-error-message").text) == "Error: Enter your email address"
+    page = client_request.post(
+        "main.feedback",
+        ticket_type=ticket_type,
+        severe="no",
+        _data={"feedback": "blah", "name": "Fred"},
+        _expected_status=200,
+    )
+    assert normalize_spaces(page.select_one("#email_address-error").text) == "Error: Enter your email address"
+
+
+@pytest.mark.parametrize(
+    "ticket_type",
+    [
+        PROBLEM_TICKET_TYPE,
+        QUESTION_TICKET_TYPE,
+    ],
+)
+def test_name_required_for_problems_and_questions(
+    client_request,
+    ticket_type,
+    mocker,
+):
+    mocker.patch("app.main.views.feedback.in_business_hours", return_value=True)
+    mocker.patch("app.main.views.feedback.zendesk_client")
+    client_request.logout()
+    page = client_request.post(
+        "main.feedback",
+        ticket_type=ticket_type,
+        severe="no",
+        _data={"feedback": "blah", "email_address": "me@gov.uk"},
+        _expected_status=200,
+    )
+    assert normalize_spaces(page.select_one("#name-error").text) == "Error: Enter your name"
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -381,6 +981,7 @@ def test_email_address_must_be_valid_if_provided_to_support_form(
     page = client_request.post(
         "main.feedback",
         ticket_type=ticket_type,
+        severe="no",
         _data={
             "feedback": "blah",
             "email_address": "not valid",
@@ -389,26 +990,34 @@ def test_email_address_must_be_valid_if_provided_to_support_form(
     )
 
     assert (
-        normalize_spaces(page.select_one(".govuk-error-message").text)
+        normalize_spaces(page.select_one("#email_address-error").text)
         == "Error: Enter your email address in the correct format, like name@example.gov.uk"
     )
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
-    "ticket_type, severe, is_in_business_hours, is_out_of_hours_emergency",
+    "ticket_type, severe, is_in_business_hours, logged_in, is_emergency_ticket",
     [
-        # business hours, never an emergency
-        (PROBLEM_TICKET_TYPE, "yes", True, False),
-        (QUESTION_TICKET_TYPE, "yes", True, False),
-        (PROBLEM_TICKET_TYPE, "no", True, False),
-        (QUESTION_TICKET_TYPE, "no", True, False),
-        # out of hours, if the user says it’s not an emergency
-        (PROBLEM_TICKET_TYPE, "no", False, False),
-        (QUESTION_TICKET_TYPE, "no", False, False),
-        # out of hours, only problems can be emergencies
-        (PROBLEM_TICKET_TYPE, "yes", False, True),
-        (QUESTION_TICKET_TYPE, "yes", False, False),
+        # question tickets are never emergencies
+        (QUESTION_TICKET_TYPE, "yes", True, True, False),
+        (QUESTION_TICKET_TYPE, "yes", True, False, False),
+        (QUESTION_TICKET_TYPE, "yes", False, True, False),
+        (QUESTION_TICKET_TYPE, "yes", False, False, False),
+        (QUESTION_TICKET_TYPE, "no", True, True, False),
+        (QUESTION_TICKET_TYPE, "no", True, False, False),
+        (QUESTION_TICKET_TYPE, "no", False, True, False),
+        (QUESTION_TICKET_TYPE, "no", False, False, False),
+        # problem tickets if the user says it is not an emergency
+        (PROBLEM_TICKET_TYPE, "no", True, True, False),
+        (PROBLEM_TICKET_TYPE, "no", True, False, False),
+        (PROBLEM_TICKET_TYPE, "no", False, True, False),
+        (PROBLEM_TICKET_TYPE, "no", False, False, False),
+        # problem tickets, reported as emergencies, except for if a logged out user gets in touch out of hours -
+        # this would redirect instead of showing the support form
+        (PROBLEM_TICKET_TYPE, "yes", True, True, True),
+        (PROBLEM_TICKET_TYPE, "yes", True, False, False),
+        (PROBLEM_TICKET_TYPE, "yes", False, True, True),
     ],
 )
 def test_urgency(
@@ -418,7 +1027,8 @@ def test_urgency(
     ticket_type,
     severe,
     is_in_business_hours,
-    is_out_of_hours_emergency,
+    logged_in,
+    is_emergency_ticket,
 ):
     mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=is_in_business_hours)
 
@@ -427,21 +1037,22 @@ def test_urgency(
         "app.main.views_nl.feedback.zendesk_client.send_ticket_to_zendesk",
         autospec=True,
     )
+    mocker.patch("app.main.views.feedback.zendesk_client.update_ticket", autospec=True)
 
     client_request.post(
         "main.feedback",
         ticket_type=ticket_type,
         severe=severe,
-        _data={"feedback": "blah", "email_address": "test@example.com"},
+        _data={"feedback": "blah", "name": "test user", "email_address": "test@example.com"},
         _expected_status=302,
         _expected_redirect=url_for(
             "main.thanks",
-            out_of_hours_emergency=is_out_of_hours_emergency,
+            emergency_ticket=is_emergency_ticket,
         ),
     )
-    assert mock_ticket.call_args[1]["p1"] == is_out_of_hours_emergency
+    assert mock_ticket.call_args[1]["p1"] == is_emergency_ticket
 
-    if is_out_of_hours_emergency:
+    if is_emergency_ticket:
         assert "See runbook for help resolving" in mock_ticket.call_args[1]["message"]
     else:
         assert "See runbook for help resolving" not in mock_ticket.call_args[1]["message"]
@@ -450,18 +1061,36 @@ def test_urgency(
 ids, params = zip(
     *[
         (
-            "non-logged in users always have to triage",
+            "non-logged in users always have to triage out of hours",
             (
-                GENERAL_TICKET_TYPE,
+                PROBLEM_TICKET_TYPE,
                 False,
                 False,
                 True,
                 302,
-                partial(url_for, "main.triage", ticket_type=GENERAL_TICKET_TYPE),
+                partial(url_for, "main.support_problem"),
+            ),
+        ),
+        (
+            "non-logged in users always have to triage in hours",
+            (
+                PROBLEM_TICKET_TYPE,
+                True,
+                False,
+                True,
+                302,
+                partial(url_for, "main.support_problem"),
             ),
         ),
         ("trial services are never high priority", (PROBLEM_TICKET_TYPE, False, True, False, 200, no_redirect())),
-        ("we can triage in hours", (PROBLEM_TICKET_TYPE, True, True, True, 200, no_redirect())),
+        (
+            "problems in hours for live services need triage",
+            (PROBLEM_TICKET_TYPE, True, True, True, 302, partial(url_for, "main.support_problem")),
+        ),
+        (
+            "problems in hours for trial services do not need triage",
+            (PROBLEM_TICKET_TYPE, True, True, False, 200, no_redirect()),
+        ),
         ("only problems are high priority", (QUESTION_TICKET_TYPE, False, True, True, 200, no_redirect())),
         (
             "should triage out of hours",
@@ -471,7 +1100,7 @@ ids, params = zip(
                 True,
                 True,
                 302,
-                partial(url_for, "main.triage", ticket_type=PROBLEM_TICKET_TYPE),
+                partial(url_for, "main.support_problem"),
             ),
         ),
     ],
@@ -484,7 +1113,7 @@ ids, params = zip(
     params,
     ids=ids,
 )
-def test_redirects_to_triage(
+def test_redirects_to_report_a_problem_page(
     client_request,
     mocker,
     ticket_type,
@@ -511,24 +1140,6 @@ def test_redirects_to_triage(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
-@pytest.mark.parametrize(
-    "ticket_type",
-    [
-        PROBLEM_TICKET_TYPE,
-        GENERAL_TICKET_TYPE,
-    ],
-)
-def test_options_on_triage_page(
-    client_request,
-    ticket_type,
-):
-    page = client_request.get("main.triage", ticket_type=ticket_type)
-    assert normalize_spaces(page.select_one("h1").text) == "Did you get one of the following errors?"
-    assert page.select("form input[type=radio]")[0]["value"] == "yes"
-    assert page.select("form input[type=radio]")[1]["value"] == "no"
-
-
 def test_doesnt_lose_message_if_post_across_closing(
     client_request,
     mocker,
@@ -541,7 +1152,7 @@ def test_doesnt_lose_message_if_post_across_closing(
         ticket_type=PROBLEM_TICKET_TYPE,
         _data={"feedback": "foo"},
         _expected_status=302,
-        _expected_redirect=url_for(".triage", ticket_type=PROBLEM_TICKET_TYPE),
+        _expected_redirect=url_for(".support_problem"),
     )
     with client_request.session_transaction() as session:
         assert session["feedback_message"] == "foo"
@@ -578,50 +1189,37 @@ def test_in_business_hours(when, is_in_business_hours):
 
 
 @pytest.mark.parametrize(
-    "ticket_type",
-    (
-        GENERAL_TICKET_TYPE,
-        PROBLEM_TICKET_TYPE,
-    ),
-)
-@pytest.mark.parametrize(
-    "choice, expected_redirect_param",
-    [
-        ("yes", "yes"),
-        ("no", "no"),
-    ],
-)
-def test_triage_redirects_to_correct_url(
-    client_request,
-    ticket_type,
-    choice,
-    expected_redirect_param,
-):
-    client_request.post(
-        "main.triage",
-        ticket_type=ticket_type,
-        _data={"severe": choice},
-        _expected_status=302,
-        _expected_redirect=url_for(
-            "main.feedback",
-            ticket_type=ticket_type,
-            severe=expected_redirect_param,
-        ),
-    )
-
-
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
-@pytest.mark.parametrize(
-    "extra_args, expected_back_link, expected_page_title",
+    "extra_args, ticket_type, expected_back_link",
     [
         (
             {"severe": "yes"},
-            partial(url_for, "main.triage", ticket_type=PROBLEM_TICKET_TYPE),
-            "Tell us about the emergency",
+            PROBLEM_TICKET_TYPE,
+            partial(url_for, "main.support"),
         ),
-        ({"severe": "no"}, partial(url_for, "main.triage", ticket_type=PROBLEM_TICKET_TYPE), "Report a problem"),
-        ({"severe": "foo"}, partial(url_for, "main.support"), "Report a problem"),  # hacking the URL
-        ({}, partial(url_for, "main.support"), "Report a problem"),
+        ({"severe": "no"}, PROBLEM_TICKET_TYPE, partial(url_for, "main.support")),
+        ({"severe": "foo"}, QUESTION_TICKET_TYPE, partial(url_for, "main.support")),  # hacking the URL
+        ({}, QUESTION_TICKET_TYPE, partial(url_for, "main.support")),
+        ({"severe": "no", "category": "something-else"}, PROBLEM_TICKET_TYPE, partial(url_for, "main.support_problem")),
+        (
+            {"severe": "no", "category": "problem-sending"},
+            PROBLEM_TICKET_TYPE,
+            partial(url_for, "main.support_what_happened"),
+        ),
+        (
+            {"severe": "yes", "category": "tech-error-live-services"},
+            PROBLEM_TICKET_TYPE,
+            partial(url_for, "main.support_what_happened"),
+        ),
+        (
+            {"severe": "no", "category": "tech-error-no-live-services"},
+            PROBLEM_TICKET_TYPE,
+            partial(url_for, "main.support_what_happened"),
+        ),
+        (
+            {"severe": "no", "category": "tech-error-signed-out"},
+            PROBLEM_TICKET_TYPE,
+            partial(url_for, "main.support_what_happened"),
+        ),
     ],
 )
 def test_back_link_from_form(
@@ -629,13 +1227,18 @@ def test_back_link_from_form(
     mock_get_non_empty_organisations_and_services_for_user,
     mocker,
     extra_args,
+    ticket_type,
     expected_back_link,
-    expected_page_title,
 ):
     mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=True)
-    page = client_request.get("main.feedback", ticket_type=PROBLEM_TICKET_TYPE, **extra_args)
+    page = client_request.get("main.feedback", ticket_type=ticket_type, **extra_args)
     assert page.select_one(".govuk-back-link")["href"] == expected_back_link()
-    assert normalize_spaces(page.select_one("h1").text) == expected_page_title
+    h1 = normalize_spaces(page.select_one("h1").text)
+
+    if ticket_type == PROBLEM_TICKET_TYPE:
+        assert h1 == "Describe the problem"
+    else:
+        assert h1 == "Ask a question or give feedback"
 
 
 @pytest.mark.parametrize(
@@ -660,18 +1263,18 @@ def test_back_link_from_form(
             False,
             "",
             302,
-            partial(url_for, "main.triage", ticket_type=PROBLEM_TICKET_TYPE),
+            partial(url_for, "main.support_problem"),
             302,
-            partial(url_for, "main.triage", ticket_type=PROBLEM_TICKET_TYPE),
+            partial(url_for, "main.support_problem"),
         ),
         # User hasn’t answered the triage question
         (
             False,
             None,
             302,
-            partial(url_for, "main.triage", ticket_type=PROBLEM_TICKET_TYPE),
+            partial(url_for, "main.support_problem"),
             302,
-            partial(url_for, "main.triage", ticket_type=PROBLEM_TICKET_TYPE),
+            partial(url_for, "main.support_problem"),
         ),
         # Escalation is needed for non-logged-in users
         (
@@ -716,62 +1319,6 @@ def test_should_be_shown_the_bat_email(
     )
 
 
-@pytest.mark.parametrize(
-    (
-        "severe,"
-        "expected_status_code, expected_redirect,"
-        "expected_status_code_when_logged_in, expected_redirect_when_logged_in"
-    ),
-    [
-        # User hasn’t answered the triage question
-        (
-            None,
-            302,
-            partial(url_for, "main.triage", ticket_type=GENERAL_TICKET_TYPE),
-            302,
-            partial(url_for, "main.triage", ticket_type=GENERAL_TICKET_TYPE),
-        ),
-        # Escalation is needed for non-logged-in users
-        (
-            "yes",
-            302,
-            partial(url_for, "main.bat_phone"),
-            200,
-            no_redirect(),
-        ),
-    ],
-)
-def test_should_be_shown_the_bat_email_for_general_questions(
-    client_request,
-    active_user_with_permissions,
-    mocker,
-    mock_get_non_empty_organisations_and_services_for_user,
-    severe,
-    expected_status_code,
-    expected_redirect,
-    expected_status_code_when_logged_in,
-    expected_redirect_when_logged_in,
-):
-    mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=False)
-
-    feedback_page = url_for("main.feedback", ticket_type=GENERAL_TICKET_TYPE, severe=severe)
-
-    client_request.logout()
-    client_request.get_url(
-        feedback_page,
-        _expected_status=expected_status_code,
-        _expected_redirect=expected_redirect(),
-    )
-
-    # logged in users should never be redirected to the bat email page
-    client_request.login(active_user_with_permissions)
-    client_request.get_url(
-        feedback_page,
-        _expected_status=expected_status_code_when_logged_in,
-        _expected_redirect=expected_redirect_when_logged_in(),
-    )
-
-
 def test_bat_email_page(
     client_request,
     active_user_with_permissions,
@@ -787,7 +1334,10 @@ def test_bat_email_page(
     page_links = page.select("main a")
     form_link = next(
         filter(
-            lambda link: link["href"] == url_for("main.feedback", ticket_type=PROBLEM_TICKET_TYPE, severe="no"),
+            lambda link: (
+                link["href"]
+                == url_for("main.feedback", ticket_type=PROBLEM_TICKET_TYPE, category="problem-sending", severe="no")
+            ),
             page_links,
         ),
         None,
@@ -795,12 +1345,15 @@ def test_bat_email_page(
     assert form_link is not None
 
     client_request.login(active_user_with_permissions)
-    client_request.get(bat_phone_page, _expected_redirect=url_for("main.feedback", ticket_type=PROBLEM_TICKET_TYPE))
+    client_request.get(
+        bat_phone_page,
+        _expected_redirect=url_for("main.feedback", ticket_type=PROBLEM_TICKET_TYPE),
+    )
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
-    "out_of_hours_emergency, out_of_hours, message",
+    "emergency_ticket, out_of_hours, message",
     (
         # Out of hours emergencies trump everything else
         (
@@ -826,13 +1379,13 @@ def test_bat_email_page(
 def test_thanks(
     client_request,
     mocker,
-    out_of_hours_emergency,
+    emergency_ticket,
     out_of_hours,
     message,
 ):
     mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=(not out_of_hours))
     page = client_request.get(
         "main.thanks",
-        out_of_hours_emergency=out_of_hours_emergency,
+        emergency_ticket=emergency_ticket,
     )
     assert normalize_spaces(page.select_one("main").find("p").text) == message

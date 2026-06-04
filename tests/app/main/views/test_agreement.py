@@ -196,7 +196,7 @@ def test_show_accept_agreement_page(
     ]
 
     assert normalize_spaces(page.select_one("label[for=version]").text) == (
-        "Which version of the agreement do you want to accept?"
+        "Enter the version number of the agreement you want to accept"
     )
 
     assert normalize_spaces(page.select_one("#version-hint").text) == (
@@ -334,9 +334,7 @@ def test_accept_agreement_page_validates(
         _data=data,
         _expected_status=200,
     )
-    assert [
-        normalize_spaces(error.text) for error in page.select(".govuk-error-message, .error-message")
-    ] == expected_errors
+    assert [normalize_spaces(error.text) for error in page.select(".govuk-error-message")] == expected_errors
 
 
 @pytest.mark.parametrize(
@@ -452,7 +450,10 @@ def test_show_confirm_agreement_page(
             agreement_signed_on_behalf_of_email_address=email,
         ),
     )
-    page = client_request.get("main.service_confirm_agreement", service_id=SERVICE_ONE_ID)
+    page = client_request.get("main.service_confirm_agreement", service_id=SERVICE_ONE_ID, _test_page_title=False)
+    assert normalize_spaces(page.select_one("title").text).startswith(
+        "Confirm that you accept the agreement – Accept our data processing and financial agreement"
+    )
     assert normalize_spaces(page.select_one("main p").text) == expected_paragraph
 
 

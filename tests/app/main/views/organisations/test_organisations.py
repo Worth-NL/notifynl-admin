@@ -3,6 +3,7 @@ from flask import url_for
 from freezegun import freeze_time
 from notifications_python_client.errors import HTTPError
 
+from app.constants import PERMISSION_CAN_MAKE_SERVICES_LIVE
 from tests import find_element_by_tag_and_partial_text, organisation_json, service_json
 from tests.app.main.views.test_agreement import MockS3Object
 from tests.conftest import (
@@ -12,9 +13,54 @@ from tests.conftest import (
     create_active_user_with_permissions,
     create_email_branding,
     create_platform_admin_user,
+    create_user,
     normalize_spaces,
+    sample_uuid,
 )
 from tests.utils import RedisClientMock
+
+
+def test_organisation_left_hand_nav_for_platform_admin_users(
+    platform_admin_user,
+    mock_get_organisation,
+    client_request,
+    mocker,
+):
+    mocker.patch("app.organisations_client.get_services_and_usage", return_value={"services": [], "updated_at": None})
+
+    client_request.login(platform_admin_user)
+
+    page = client_request.get("main.organisation_dashboard", org_id=ORGANISATION_ID)
+    nav_items = [item.text.strip() for item in page.select("nav.navigation a")]
+    assert nav_items == ["Usage", "Team members", "Settings", "Trial mode services", "Billing"]
+
+
+@pytest.mark.parametrize(
+    "user_org_permissions, expected_nav_items",
+    [
+        ([], ["Usage", "Team members"]),
+        ([PERMISSION_CAN_MAKE_SERVICES_LIVE], ["Usage", "Team members", "Trial mode services"]),
+    ],
+)
+def test_organisation_left_hand_nav_for_org_users(
+    mock_get_organisation,
+    client_request,
+    user_org_permissions,
+    expected_nav_items,
+    mocker,
+):
+    mocker.patch("app.organisations_client.get_services_and_usage", return_value={"services": [], "updated_at": None})
+
+    org_user = create_user(
+        id=sample_uuid(),
+        organisations=[ORGANISATION_ID],
+        organisation_permissions={ORGANISATION_ID: user_org_permissions},
+    )
+    client_request.login(org_user)
+
+    page = client_request.get("main.organisation_dashboard", org_id=ORGANISATION_ID)
+    nav_items = [item.text.strip() for item in page.select("nav.navigation a")]
+    assert nav_items == expected_nav_items
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -47,8 +93,8 @@ def test_organisation_page_shows_all_organisations(client_request, platform_admi
     ]
 
     archived = page.select_one(".table-field-status-default.heading-medium")
-    assert normalize_spaces(archived.text) == "- archived"
-    assert normalize_spaces(archived.parent.text) == "Test 2 - archived 2 live services"
+    assert normalize_spaces(archived.text) == "– archived"
+    assert normalize_spaces(archived.parent.text) == "Test 2 – archived 2 live services"
 
     assert normalize_spaces(page.select_one("a.govuk-button--secondary").text) == "New organisation"
     get_organisations.assert_called_once_with()
@@ -140,9 +186,9 @@ def test_create_new_organisation_validates(
         _expected_status=200,
     )
     assert [(normalize_spaces(error.text)) for error in page.select(".govuk-error-message")] == [
-        ("Error: Enter an organisation name"),
-        ("Error: Select a type of organisation"),
-        ("Error: Select yes if the organisation is a Crown body"),
+        "Error: Enter an organisation name",
+        "Error: Select a type of organisation",
+        "Error: Select yes if the organisation is a Crown body",
     ]
     assert mock_create_organisation.called is False
 
@@ -233,11 +279,15 @@ def test_gps_can_create_own_organisations(
         ".add_organisation_from_gp_service",
         service_id=SERVICE_ONE_ID,
         _expected_status=expected_status,
+        _test_page_title=False,
     )
 
     if expected_status == 403:
         return
 
+    assert normalize_spaces(page.select_one("title")).startswith(
+        "Is your GP surgery called ‘service one’? – Accept our data processing and financial agreement"
+    )
     assert page.select_one("input[type=text]")["name"] == "name"
     assert normalize_spaces(page.select_one("label[for=name]").text) == "What’s your GP surgery called?"
 
@@ -278,14 +328,16 @@ def test_nhs_local_can_create_own_organisations(
         ".add_organisation_from_nhs_local_service",
         service_id=SERVICE_ONE_ID,
         _expected_status=expected_status,
+        _test_page_title=False,
     )
 
     if expected_status == 403:
         return
 
-    assert normalize_spaces(page.select_one("main p").text) == (
-        "Which NHS Trust or Integrated Care Board do you work for?"
+    assert normalize_spaces(page.select_one("title").text).startswith(
+        "Which NHS Trust or Integrated Care Board do you work for? – Accept our data processing and financial agreement"
     )
+    assert normalize_spaces(page.select_one("h1").text) == "Which NHS Trust or Integrated Care Board do you work for?"
     assert page.select_one("[data-notify-module=live-search]")["data-targets"] == ".govuk-radios__item"
     assert [
         (normalize_spaces(radio.select_one("label").text), radio.select_one("input")["value"])
@@ -407,15 +459,14 @@ def test_validation_of_gps_creating_organisations(
     expected_error,
 ):
     service_one["organisation_type"] = "nhs_gp"
-    expected_page_header = "Accept our data processing and financial agreement"
     page = client_request.post(
         ".add_organisation_from_gp_service",
         service_id=SERVICE_ONE_ID,
         _data=data,
         _expected_status=200,
     )
-    assert expected_error in page.select_one(".govuk-error-message, .error-message").text
-    assert normalize_spaces(page.select_one("h1[id=page-header]").text) == expected_page_header
+    assert expected_error in page.select_one(".govuk-error-message").text
+    assert normalize_spaces(page.select_one("h1").text) == f"Is your GP surgery called ‘{service_one['name']}’?"
     assert normalize_spaces(page.select_one("label[for=same_as_service_name-0]")) == "Yes"
     assert normalize_spaces(page.select_one("label[for=same_as_service_name-1]")) == "No"
 
@@ -576,19 +627,19 @@ def test_organisation_services_shows_live_services_and_usage_with_count_of_1(
             ".big-number-smallest",
         ),
         (
-            {"emails_sent": 0, "sms_cost": 999_999, "letter_cost": 0},
+            {"emails_sent": 0, "sms_cost": 99_999, "letter_cost": 0},
             ".big-number-smaller",
         ),
         (
-            {"emails_sent": 0, "sms_cost": 1_000_000, "letter_cost": 0},
+            {"emails_sent": 0, "sms_cost": 100_000, "letter_cost": 0},
             ".big-number-smallest",
         ),
         (
-            {"emails_sent": 0, "sms_cost": 0, "letter_cost": 999_999},
+            {"emails_sent": 0, "sms_cost": 0, "letter_cost": 99_999},
             ".big-number-smaller",
         ),
         (
-            {"emails_sent": 0, "sms_cost": 0, "letter_cost": 1_000_000},
+            {"emails_sent": 0, "sms_cost": 0, "letter_cost": 100_000},
             ".big-number-smallest",
         ),
     ),
@@ -775,7 +826,7 @@ def test_organisation_services_links_to_downloadable_report(
     client_request.login(active_user_with_permissions)
     page = client_request.get(".organisation_dashboard", org_id=ORGANISATION_ID)
 
-    link_to_report = page.select_one("a[download]")
+    link_to_report = page.select_one(".js-stick-at-bottom-when-scrolling a")
     assert normalize_spaces(link_to_report.text) == "Download this report (CSV)"
     assert link_to_report.attrs["href"] == url_for(
         ".download_organisation_usage_report", org_id=ORGANISATION_ID, selected_year=2021
@@ -860,11 +911,43 @@ def test_organisation_trial_mode_services_shows_all_non_live_services(
     assert services[1].find("a")["href"] == url_for("main.service_dashboard", service_id="3")
 
 
-def test_organisation_trial_mode_services_doesnt_work_if_not_platform_admin(
+def test_organisation_trial_mode_services_is_visible_to_platform_admin(
+    platform_admin_user,
     client_request,
     mock_get_organisation,
+    mock_get_organisation_services,
 ):
-    client_request.get(".organisation_trial_mode_services", org_id=ORGANISATION_ID, _expected_status=403)
+    client_request.login(platform_admin_user)
+    client_request.get(".organisation_trial_mode_services", org_id=ORGANISATION_ID, _test_page_title=False)
+
+
+@pytest.mark.parametrize(
+    "user_org_permissions, expected_status_code",
+    [
+        ([], 403),
+        ([PERMISSION_CAN_MAKE_SERVICES_LIVE], 200),
+    ],
+)
+def test_organisation_trial_mode_services_page_when_viewing_as_org_user(
+    client_request,
+    mock_get_organisation,
+    mock_get_organisation_services,
+    user_org_permissions,
+    expected_status_code,
+):
+    org_user = create_user(
+        id=sample_uuid(),
+        organisations=[ORGANISATION_ID],
+        organisation_permissions={ORGANISATION_ID: user_org_permissions},
+    )
+
+    client_request.login(org_user)
+    client_request.get(
+        ".organisation_trial_mode_services",
+        org_id=ORGANISATION_ID,
+        _test_page_title=False,
+        _expected_status=expected_status_code,
+    )
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -1755,7 +1838,7 @@ def test_update_organisation_domains_with_more_than_just_domain(
         _expected_status=200,
     )
 
-    assert normalize_spaces(page.select_one(".govuk-error-summary__title").text) == ("There is a problem")
+    assert normalize_spaces(page.select_one(".govuk-error-summary__title").text) == "There is a problem"
 
     error_summary_links = page.select(".govuk-error-summary__list a")
 
@@ -1805,7 +1888,7 @@ def test_update_organisation_domains_nhs_domains(
         _expected_status=200,
     )
 
-    assert normalize_spaces(page.select_one(".govuk-error-summary__title").text) == ("There is a problem")
+    assert normalize_spaces(page.select_one(".govuk-error-summary__title").text) == "There is a problem"
 
     if domain == "NHS.NET":  # NHS.NET fails by being nhs.net (lowercased) so is announced as such
         failed_domain = domain.lower()
@@ -1968,8 +2051,7 @@ def test_view_edit_organisation_notes(
         "main.edit_organisation_notes",
         org_id=organisation_one["id"],
     )
-    assert page.select_one("h1").text == "Edit organisation notes"
-    assert page.select_one(".govuk-label").text.strip() == "Notes"
+    assert normalize_spaces(page.select_one("h1").text) == "Edit organisation notes"
     assert page.select_one("textarea").attrs["name"] == "notes"
 
 
@@ -2259,7 +2341,7 @@ def test_view_edit_organisation_billing_details(
     )
     assert page.select_one("h1").text == "Edit organisation billing details"
 
-    assert [label.text.strip() for label in page.select("label.govuk-label") + page.select("label.form-label")] == [
+    assert [label.text.strip() for label in page.select("label.govuk-label")] == [
         "Contact names",
         "Contact email addresses",
         "Reference",
@@ -2477,7 +2559,7 @@ def test_download_organisation_agreement(
     if expected_file_served:
         assert response.get_data() == b"foo"
         assert response.headers["Content-Type"] == "application/pdf"
-        assert response.headers["Content-Disposition"] == (f'attachment; filename="{expected_file_served}"')
+        assert response.headers["Content-Disposition"] == f'attachment; filename="{expected_file_served}"'
         mock_get_s3_object.assert_called_once_with("test-mou", expected_file_fetched)
     else:
         assert not expected_file_fetched

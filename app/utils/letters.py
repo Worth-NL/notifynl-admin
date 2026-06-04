@@ -1,6 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
-import pytz
 from dateutil import parser
 from flask import url_for
 from notifications_utils.formatters import unescaped_formatted_list
@@ -8,16 +7,13 @@ from notifications_utils.letter_timings import letter_can_be_cancelled
 from notifications_utils.recipient_validation.postal_address import PostalAddress
 from notifications_utils.template import BaseLetterTemplate
 from notifications_utils.timezones import (
-    convert_bst_to_utc,
-    convert_utc_to_bst,
+    local_timezone,
     utc_string_to_aware_gmt_datetime,
 )
 
 
 def printing_today_or_tomorrow(created_at):
-    print_cutoff = convert_bst_to_utc(convert_utc_to_bst(datetime.utcnow()).replace(hour=17, minute=30)).replace(
-        tzinfo=pytz.utc
-    )
+    print_cutoff = datetime.now(local_timezone).replace(hour=17, minute=30)
     created_at = utc_string_to_aware_gmt_datetime(created_at)
 
     if created_at < print_cutoff:
@@ -28,7 +24,7 @@ def printing_today_or_tomorrow(created_at):
 
 def get_letter_printing_statement(status, created_at, long_form=True):
     if isinstance(created_at, datetime):
-        created_at = created_at.astimezone(pytz.utc).isoformat()
+        created_at = created_at.astimezone(UTC).isoformat()
     created_at_dt = parser.parse(created_at).replace(tzinfo=None)
     if letter_can_be_cancelled(status, created_at_dt):
         decription = "Printing starts" if long_form else "Printing"
@@ -170,6 +166,13 @@ LETTER_VALIDATION_MESSAGES = {
         "title": "There is a problem",
         "detail": "Enter a real address.",
         "summary": "Validation failed because this is not a real address.",
+    },
+    "invalid-address-line-1-or-2": {
+        "title": "There’s a problem with the address for this letter",
+        "detail": "The first 2 lines must both include at least one alphanumeric character.",
+        "summary": (
+            "Validation failed because there is not an alphanumeric character in lines 1 and 2 of the address."
+        ),
     },
 }
 

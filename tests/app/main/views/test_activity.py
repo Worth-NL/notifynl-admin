@@ -235,6 +235,28 @@ def test_can_show_notifications_if_data_retention_not_available(
     assert page.select_one("h1").text.strip() == "Messages"
 
 
+def test_view_notifications_interruptible(
+    client_request,
+    mock_get_notifications_with_previous_next,
+    mock_get_service_statistics,
+    mock_get_service_data_retention,
+    mock_has_no_jobs,
+    mock_get_no_api_keys,
+    mock_get_notifications_count_for_service,
+    mocker,
+):
+    mock_interruptible = mocker.patch("app.utils.interruptible_io._interruptible")
+
+    client_request.get(
+        "main.view_notifications",
+        service_id=SERVICE_ONE_ID,
+    )
+
+    # assert this view calls _interruptible in the expected way at least once. this may need
+    # updating if class names, inheritance or the view structure changes.
+    assert mocker.call("InterruptibleNotifications") in mock_interruptible.mock_calls
+
+
 @pytest.mark.parametrize(
     "user, query_parameters, notifications_count,expected_download_link",
     [
@@ -384,7 +406,7 @@ def test_view_notifications_calls_report_request_method_with_expected_args(
         ),
     ],
 )
-@mock.patch("app.main.views_nl.dashboard.REPORT_REQUEST_MAX_NOTIFICATIONS", 900001)
+@mock.patch("app.main.views.dashboard.REPORT_REQUEST_MAX_NOTIFICATIONS", 900001)
 def test_report_request_notifications_link(
     client_request,
     mocker,

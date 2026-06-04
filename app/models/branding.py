@@ -1,6 +1,7 @@
 from datetime import datetime
+from inspect import get_annotations
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 from flask import current_app
 from flask_login import current_user
@@ -14,8 +15,16 @@ from app.notify_client.organisations_api_client import organisations_client
 from app.notify_client.user_api_client import user_api_client
 
 
+class BrandingSerializedType(TypedDict):
+    id: str
+    name: str
+    created_by: Any
+    created_at: datetime
+    updated_at: datetime
+
+
 class Branding(JSONModel):
-    id: Any
+    id: str
     name: str
     created_by: Any
     created_at: datetime
@@ -28,12 +37,12 @@ class Branding(JSONModel):
 
     @classmethod
     def with_default_values(cls, **kwargs):
-        return cls(dict.fromkeys(cls.__annotations__) | kwargs)
+        return cls(dict.fromkeys(get_annotations(cls)) | kwargs)
 
     def name_like(self, name):
         return make_string_safe(name, whitespace="") == make_string_safe(self.name, whitespace="")
 
-    def serialize(self):
+    def serialize(self) -> BrandingSerializedType:
         return self._dict.copy()
 
 

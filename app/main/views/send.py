@@ -1,6 +1,5 @@
 import itertools
 from string import ascii_uppercase
-from zipfile import BadZipFile
 
 from flask import (
     abort,
@@ -17,9 +16,6 @@ from notifications_utils import SMS_CHAR_COUNT_LIMIT
 from notifications_utils.insensitive_dict import InsensitiveDict, InsensitiveSet
 from notifications_utils.recipient_validation.postal_address import PostalAddress, address_lines_1_to_7_keys
 from notifications_utils.recipients import RecipientCSV, first_column_headings
-from notifications_utils.sanitise_text import SanitiseASCII
-from xlrd.biffh import XLRDError
-from xlrd.xldate import XLDateError
 
 from app import (
     current_service,
@@ -37,7 +33,7 @@ from app.main.forms import (
     SetSenderForm,
     get_placeholder_form_instance,
 )
-from app.models.contact_list import ContactList, ContactListsAlphabetical
+from app.models.contact_list import ContactList, ContactLists
 from app.models.user import Users
 from app.s3_client.s3_csv_client import (
     get_csv_metadata,
@@ -45,7 +41,7 @@ from app.s3_client.s3_csv_client import (
     s3upload,
     set_metadata_on_csv_upload,
 )
-from app.utils import PermanentRedirect, should_skip_template_page, unicode_truncate
+from app.utils import PermanentRedirect, should_skip_template_page
 from app.utils.csv import Spreadsheet, get_errors_for_csv
 from app.utils.user import user_has_permissions
 
@@ -120,37 +116,24 @@ def send_messages(service_id, template_id):
 
     form = CsvUploadForm()
     if form.validate_on_submit():
-        try:
-            current_app.logger.info(
-                "User %(user_id)s uploaded %(filename)s",
-                {"user_id": current_user.id, "filename": form.file.data.filename},
+        upload_id = s3upload(service_id, form.as_csv_data, current_app.config["AWS_REGION"])
+
+        extra = {"file_name": form.file.data.filename, "upload_id": upload_id}
+        current_app.logger.info(
+            "%(file_name)s persisted in S3 as %(upload_id)s",
+            extra,
+            extra=extra,
+        )
+
+        set_metadata_on_csv_upload(service_id, upload_id, original_file_name=form.safe_filename)
+        return redirect(
+            url_for(
+                ".check_messages",
+                service_id=service_id,
+                upload_id=upload_id,
+                template_id=template.id,
             )
-            upload_id = s3upload(service_id, Spreadsheet.from_file_form(form).as_dict, current_app.config["AWS_REGION"])
-            current_app.logger.info(
-                "%(filename)s persisted in S3 as %(upload_id)s",
-                {"filename": form.file.data.filename, "upload_id": upload_id},
-            )
-            file_name_metadata = unicode_truncate(SanitiseASCII.encode(form.file.data.filename), 1600)
-            set_metadata_on_csv_upload(service_id, upload_id, original_file_name=file_name_metadata)
-            return redirect(
-                url_for(
-                    ".check_messages",
-                    service_id=service_id,
-                    upload_id=upload_id,
-                    template_id=template.id,
-                )
-            )
-        except (UnicodeDecodeError, BadZipFile, XLRDError):
-            current_app.logger.warning("Could not read %s", form.file.data.filename, exc_info=True)
-            form.file.errors = ["Notify cannot read this file - try using a different file type"]
-        except XLDateError:
-            current_app.logger.warning("Could not parse numbers/dates in %s", form.file.data.filename, exc_info=True)
-            form.file.errors = ["Notify cannot read this file - try saving it as a CSV instead"]
-    elif form.errors:
-        # just show the first error, as we don't expect the form to have more
-        # than one, since it only has one field
-        first_field_errors = list(form.errors.values())[0]
-        form.file.errors.append(first_field_errors[0])
+        )
 
     column_headings = get_spreadsheet_column_headings_from_template(template)
 
@@ -160,7 +143,6 @@ def send_messages(service_id, template_id):
         column_headings=list(ascii_uppercase[: len(column_headings)]),
         example=[column_headings, get_example_csv_rows(template)],
         form=form,
-        allowed_file_extensions=Spreadsheet.ALLOWED_FILE_EXTENSIONS,
         error_summary_enabled=True,
     )
 
@@ -176,7 +158,7 @@ def get_example_csv(service_id, template_id):
         200,
         {
             "Content-Type": "text/csv; charset=utf-8",
-            "Content-Disposition": f'inline; filename="{template.name}.csv"',
+            "Content-Disposition": f'attachment; filename="{template.name}.csv"',
         },
     )
 
@@ -184,7 +166,6 @@ def get_example_csv(service_id, template_id):
 def _should_show_set_sender_page(service_id, template) -> bool:
     if template.template_type == "letter":
         return False
-
     sender_details = get_sender_details(service_id, template.template_type)
 
     if len(sender_details) <= 1:
@@ -417,7 +398,6 @@ def send_one_off_step(service_id, template_id, step_index):  # noqa: C901
     # If step_index is 0, the message was not sent from the inbound SMS flow, which starts at step_index 1.
     if step_index == 0:
         session.pop("from_inbound_sms_details", None)
-
     template = current_service.get_template_with_user_permission_or_403(
         template_id,
         current_user,
@@ -429,7 +409,6 @@ def send_one_off_step(service_id, template_id, step_index):  # noqa: C901
             filetype="png",
         ),
     )
-
     if template.template_type == "email":
         template.reply_to = get_email_reply_to_address_from_session()
     elif template.template_type == "sms":
@@ -481,7 +460,6 @@ def send_one_off_step(service_id, template_id, step_index):  # noqa: C901
     )
 
     template.values = template_values
-
     if form.validate_on_submit():
         # if it's the first input (phone/email), we store against `recipient` as well, for easier extraction.
         # Only if it's not a letter.
@@ -560,7 +538,7 @@ def choose_from_contact_list(service_id, template_id):
     template = current_service.get_template_with_user_permission_or_403(template_id, current_user)
     return render_template(
         "views/send-contact-list.html",
-        contact_lists=ContactListsAlphabetical(
+        contact_lists=ContactLists(
             current_service.id,
             template_type=template.template_type,
         ),
@@ -1035,9 +1013,11 @@ def send_notification(service_id, template_id):
             sender_id=session.get("sender_id", None),
         )
     except HTTPError as exception:
+        extra = {"service_id": current_service.id, "error_message": exception.message}
         current_app.logger.info(
-            'Service %(service_id)s could not send notification: "%(message)s"',
-            {"service_id": current_service.id, "message": exception.message},
+            "Service %(service_id)s could not send notification: %(error_message)r",
+            extra,
+            extra=extra,
         )
         return render_template(
             "views/notifications/check.html",
