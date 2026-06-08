@@ -1,6 +1,6 @@
-FROM --platform=linux/amd64 python:3.11-slim-bookworm AS base
+FROM --platform=linux/amd64 python:3.13-slim-bookworm AS base
 
-COPY --from=ghcr.io/astral-sh/uv:0.5.30 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11.8 /uv /uvx /bin/
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
@@ -20,13 +20,14 @@ WORKDIR /home/vcap/app
 
 ##### Frontend Build Image ###################################################
 ARG NOTIFY_ENVIRONMENT=development
-ARG NODE_VERSION=20
 
-FROM ghcr.io/alphagov/notify/unit-tests-image:python311-node20 AS frontend_build
+FROM --platform=linux/amd64 node:24-bookworm-slim AS frontend_build
+
+SHELL ["/bin/bash", "-c"]
 
 WORKDIR /usr/frontend
 COPY app app
-COPY package-lock.json package.json rollup.config.mjs ./
+COPY package-lock.json package.json rollup.config.mjs .npmrc ./
 
 RUN npm ci --no-audit \
     && npm run build
@@ -107,7 +108,7 @@ COPY --from=python_build --chown=notify:notify /opt/venv /opt/venv
 RUN mkdir -p app
 
 # Install dev/test requirements
-COPY --chown=notify:notify Makefile requirements_nl_test.txt package-lock.json package.json rollup.config.mjs ./
+COPY --chown=notify:notify Makefile requirements_nl_test.txt package-lock.json package.json rollup.config.mjs .npmrc ./
 RUN make bootstrap-nl
 
 COPY --chown=notify:notify . .

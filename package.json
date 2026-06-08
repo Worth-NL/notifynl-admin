@@ -33,7 +33,7 @@
     "textarea-caret-ts": "4.1.1"
   },
   "devDependencies": {
-    "@eslint/js": "10.2.0",
+    "@eslint/js": "10.0.1",
     "@rijkshuisstijl-community/design-tokens": "^2.0.0",
     "@rollup/plugin-commonjs": "29.0.2",
     "@rollup/plugin-node-resolve": "16.0.3",
