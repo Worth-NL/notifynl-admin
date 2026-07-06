@@ -16,16 +16,16 @@
     {% else %}
       action="{{ request.url | extract_path_from_url }}"
     {% endif %}
-    class="{% if field.errors and show_errors %}form-group-error{% endif %}"
+    class="{% if field.errors and show_errors %}govuk-form-group--error{% endif %}"
     data-notify-module="file-upload"
   >
     <label class="file-upload-label" for="{{ field.name }}">
       {{ field.label.text }}
       {% if hint %}
-        <span class="form-hint">{{ hint }}</span>
+        <span class="govuk-hint">{{ hint }}</span>
       {% endif %}
       {% if field.errors and show_errors %}
-        <span class="error-message">{{ field.errors[0] }}</span>
+        <span class="govuk-error-message">{{ field.errors[0] }}</span>
       {% endif %}
     </label>
     {{ field(**{

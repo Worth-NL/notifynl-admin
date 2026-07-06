@@ -61,7 +61,7 @@ def format_time_24h(date):
 def get_human_day(time, date_prefix="", include_day_of_week=False):
     #  Add 1 minute to transform 00:00 into ‘midnight today’ instead of ‘midnight tomorrow’
     date = (utc_string_to_aware_gmt_datetime(time) - timedelta(minutes=1)).date()
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     if date == (now + timedelta(days=1)).date():
         return "morgen"
@@ -79,8 +79,8 @@ def get_human_day(time, date_prefix="", include_day_of_week=False):
 
 def format_time(date):
     return {"0:00": "Middernacht", "12:00": "Middag"}.get(
-        utc_string_to_aware_gmt_datetime(date).strftime("%-I:%M%p"),
-        utc_string_to_aware_gmt_datetime(date).strftime("%-I:%M%p"),
+        utc_string_to_aware_gmt_datetime(date).strftime("%H:%M"),
+        utc_string_to_aware_gmt_datetime(date).strftime("%H:%M"),
     ).lower()
 
 

@@ -20,7 +20,7 @@ fido2~=1.1
 git+https://github.com/alphagov/gds_metrics_python.git@6f1840a57b6fb1ee40b7e84f2f18ec229de8aa72
 
 # Run `make bump-utils` to update to the latest version
-notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@101.1.15
+notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@101.1.18
 
 govuk-frontend-jinja @ git+https://github.com/Worth-NL/LandRegistry-frontend-jinja@20260119.4
 
