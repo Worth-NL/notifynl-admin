@@ -100,10 +100,12 @@ mistune==0.8.4
     # via notifications-utils
 notifications-python-client==10.0.0
     # via -r requirements_nl.in
-notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@7f8ffc39e633ae8be78576f71750c142eabd2011
+notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@2f7e9ed7baa124c1df73d360df9c61a4f56cf1e4
     # via -r requirements_nl.in
 openpyxl==3.1.5
     # via pyexcel-xlsx
+opentelemetry-api==1.43.0
+    # via notifications-utils
 ordered-set==4.1.0
     # via notifications-utils
 packaging==25.0
@@ -137,7 +139,7 @@ pyexcel-xlsx==0.6.1
     # via -r requirements_nl.in
 pyjwt==2.10.1
     # via notifications-python-client
-pypdf==6.0.0
+pypdf==6.9.2
     # via notifications-utils
 python-dateutil==2.9.0.post0
     # via
@@ -170,9 +172,12 @@ statsd==4.0.1
     # via notifications-utils
 texttable==1.7.0
     # via pyexcel
-urllib3==2.5.0
+typing-extensions==4.16.0
+    # via opentelemetry-api
+urllib3==2.7.0
     # via
     #   botocore
+    #   notifications-utils
     #   requests
     #   sentry-sdk
 werkzeug==3.1.3
