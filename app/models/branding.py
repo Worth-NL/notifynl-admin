@@ -43,6 +43,8 @@ class EmailBranding(Branding):
     alt_text: str
     text: str
     brand_type: str
+    height: int
+    alignment: str
 
     NHS_ID = "a7dc4e56-660b-4db7-8cff-12c37b12b5ea"
 
@@ -64,6 +66,8 @@ class EmailBranding(Branding):
         alt_text,
         colour,
         brand_type,
+        height=None,
+        alignment=None,
     ):
         name = email_branding_client.get_email_branding_name_for_alt_text(alt_text)
         if brand_type == "both":
@@ -77,6 +81,8 @@ class EmailBranding(Branding):
             logo=logo,
             colour=colour,
             brand_type=brand_type,
+            height=height,
+            alignment=alignment,
         )
         return cls(new_email_branding)
 

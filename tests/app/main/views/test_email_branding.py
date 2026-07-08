@@ -280,6 +280,8 @@ def test_create_new_email_branding_without_logo(
         text=data["text"],
         colour=data["colour"],
         brand_type=data["brand_type"],
+        height=None,
+        alignment="left",
         created_by_id=fake_uuid,
     )
     assert mock_save_temporary.call_args_list == []
@@ -446,6 +448,8 @@ def test_create_new_email_branding_when_branding_saved(
         text=data["text"],
         colour=data["colour"],
         brand_type=data["brand_type"],
+        height=None,
+        alignment="left",
         created_by_id=fake_uuid,
     )
 
@@ -550,6 +554,8 @@ def test_update_existing_branding(
         text=data["text"],
         colour=data["colour"],
         brand_type=data["brand_type"],
+        height=None,
+        alignment="left",
         updated_by_id=data["updated_by_id"],
     )
     assert mock_create_update_email_branding_event.call_args_list == [
@@ -605,6 +611,8 @@ def test_update_existing_branding_does_not_reupload_logo_if_unchanged(
         text=data["text"],
         colour=data["colour"],
         brand_type=data["brand_type"],
+        height=None,
+        alignment="left",
         updated_by_id=data["updated_by_id"],
     )
     assert not mock_save_permanent.called

@@ -44,6 +44,8 @@
       'label': {'text': 'Voer alt-tekst in voor uw logo'},
       'hint': {'text': 'Bijvoorbeeld, ' + (current_service.organisation_name if current_service.organisation_id else 'Ministerie van Onderwijs')}
     }) }}
+    {{ form.height }}
+    {{ form.alignment }}
     {{ page_footer('Opslaan') }}
   {% endcall %}
 

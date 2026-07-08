@@ -2796,7 +2796,9 @@ def mock_get_email_branding_without_brand_text(notify_admin, mocker, fake_uuid):
 
 @pytest.fixture(scope="function")
 def mock_create_email_branding(notify_admin, mocker, fake_uuid):
-    def _create_email_branding(logo, name, alt_text, text, colour, brand_type, created_by_id):
+    def _create_email_branding(
+        logo, name, alt_text, text, colour, brand_type, created_by_id, height=None, alignment=None
+    ):
         return create_email_branding(
             fake_uuid,
             {
@@ -2805,6 +2807,8 @@ def mock_create_email_branding(notify_admin, mocker, fake_uuid):
                 "text": text,
                 "colour": colour,
                 "brand_type": brand_type,
+                "height": height,
+                "alignment": alignment,
                 "created_by_id": created_by_id,
             },
         )["email_branding"]
@@ -2840,7 +2844,9 @@ def mock_get_email_branding_name_for_alt_text(notify_admin, mocker):
 
 @pytest.fixture(scope="function")
 def mock_update_email_branding(notify_admin, mocker):
-    def _update_email_branding(branding_id, logo, name, alt_text, text, colour, brand_type, updated_by_id):
+    def _update_email_branding(
+        branding_id, logo, name, alt_text, text, colour, brand_type, updated_by_id, height=None, alignment=None
+    ):
         return
 
     return mocker.patch("app.email_branding_client.update_email_branding", side_effect=_update_email_branding)
