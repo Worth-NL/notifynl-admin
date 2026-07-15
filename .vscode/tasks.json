@@ -47,7 +47,7 @@
             "label": "Install Admin Python requirements",
             "type": "shell",
             "command": "uv pip install -r requirements_nl_test.txt",
-            "dependsOn": ["Generate Admin version file"],
+            "dependsOn": ["Generate Admin version file","Generate Admin Python requirements_nl_test.in"],
             "problemMatcher": [],
             "presentation": {
                 "showReuseMessage": false,
@@ -67,7 +67,7 @@
             "problemMatcher": [],
             "presentation": {
                 "showReuseMessage": false,
-                "close": true
+                // "close": true
             },
             "options": {
                 "env": {
