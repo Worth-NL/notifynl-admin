@@ -26,7 +26,6 @@
   "license": "MIT",
   "homepage": "https://github.com/alphagov/notifications-admin#readme",
   "dependencies": {
-    "cbor2": "2.3.0",
     "govuk-frontend": "6.1.0",
     "jquery": "3.5.0",
     "morphdom": "2.6.1",

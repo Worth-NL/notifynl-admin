@@ -1,8 +1,9 @@
 import base64
+import json
 from unittest.mock import ANY, Mock, PropertyMock
 
 import pytest
-from fido2 import cbor
+from fido2.utils import websafe_decode, websafe_encode
 from flask import url_for
 
 from app.models.webauthn_credential import RegistrationError, WebAuthnCredential
@@ -14,16 +15,26 @@ def webauthn_authentication_post_data(fake_uuid, webauthn_credential, client_req
 
     credential_id = WebAuthnCredential(webauthn_credential).to_credential_data().credential_id
 
-    return cbor.encode(
+    return json.dumps(
         {
-            "credentialId": credential_id,
-            "authenticatorData": base64.b64decode(b"dKbqkhPJnC90siSSsyDPQCYqlMGpUKA5fyklC2CEHvABAAACfQ=="),
-            "clientDataJSON": b'{"challenge":"e-g-nXaRxMagEiqTJSyD82RsEc5if_6jyfJDy8bNKlw","origin":"https://webauthn.io","type":"webauthn.get"}',
-            "signature": bytes.fromhex(
-                "304502204a76f05cd52a778cdd4df1565e0004e5cc1ead360419d0f5c3a0143bf37e7f15022100932b5c308a560cfe4f244214843075b904b3eda64e85d64662a81198c386cdde"
-            ),
+            "id": websafe_encode(credential_id),
+            "rawId": websafe_encode(credential_id),
+            "type": "public-key",
+            "response": {
+                "authenticatorData": websafe_encode(
+                    base64.b64decode(b"dKbqkhPJnC90siSSsyDPQCYqlMGpUKA5fyklC2CEHvABAAACfQ==")
+                ),
+                "clientDataJSON": websafe_encode(
+                    b'{"challenge":"e-g-nXaRxMagEiqTJSyD82RsEc5if_6jyfJDy8bNKlw","origin":"https://webauthn.io","type":"webauthn.get"}'
+                ),
+                "signature": websafe_encode(
+                    bytes.fromhex(
+                        "304502204a76f05cd52a778cdd4df1565e0004e5cc1ead360419d0f5c3a0143bf37e7f15022100932b5c308a560cfe4f244214843075b904b3eda64e85d64662a81198c386cdde"
+                    )
+                ),
+            },
         }
-    )
+    ).encode("utf-8")
 
 
 def _set_up_webauthn_session(user_id, client):
@@ -64,7 +75,7 @@ def test_begin_register_returns_encoded_options(
         "main.webauthn_begin_register",
     )
 
-    webauthn_options = cbor.decode(response.data)["publicKey"]
+    webauthn_options = response.get_json()["publicKey"]
     assert webauthn_options["attestation"] == "direct"
     assert webauthn_options["timeout"] == 30_000
 
@@ -74,7 +85,7 @@ def test_begin_register_returns_encoded_options(
 
     user_options = webauthn_options["user"]
     assert user_options["name"] == platform_admin_user["email_address"]
-    assert user_options["id"] == bytes(platform_admin_user["id"], "utf-8")
+    assert websafe_decode(user_options["id"]) == bytes(platform_admin_user["id"], "utf-8")
 
     relying_party_options = webauthn_options["rp"]
     assert relying_party_options["name"] == "GOV.UK Notify"
@@ -97,7 +108,7 @@ def test_begin_register_includes_existing_credentials(
         "main.webauthn_begin_register",
     )
 
-    webauthn_options = cbor.decode(response.data)["publicKey"]
+    webauthn_options = response.get_json()["publicKey"]
     assert len(webauthn_options["excludeCredentials"]) == 2
 
 
@@ -135,7 +146,8 @@ def test_complete_register_creates_credential(
     client_request.login(platform_admin_user)
     client_request.post_response(
         "main.webauthn_begin_register",
-        _data=cbor.encode("public_key_credential"),
+        _data=json.dumps("public_key_credential"),
+        _content_type="application/json",
         _expected_status=200,
     )
 
@@ -161,7 +173,8 @@ def test_complete_register_clears_session(
     client_request.login(platform_admin_user)
     client_request.post(
         "main.webauthn_complete_register",
-        _data=cbor.encode("public_key_credential"),
+        _data=json.dumps("public_key_credential"),
+        _content_type="application/json",
         _expected_status=200,
     )
 
@@ -190,7 +203,8 @@ def test_complete_register_handles_library_errors(
     client_request.login(platform_admin_user)
     client_request.post_response(
         "main.webauthn_complete_register",
-        _data=cbor.encode("public_key_credential"),
+        _data=json.dumps("public_key_credential"),
+        _content_type="application/json",
         _expected_status=400,
     )
 
@@ -203,11 +217,12 @@ def test_complete_register_handles_missing_state(
     client_request.login(platform_admin_user)
     response = client_request.post_response(
         "main.webauthn_complete_register",
-        _data=cbor.encode("public_key_credential"),
+        _data=json.dumps("public_key_credential"),
+        _content_type="application/json",
         _expected_status=400,
     )
 
-    assert cbor.decode(response.data) == "No registration in progress"
+    assert response.get_json() == "No registration in progress"
 
 
 def test_begin_authentication_forbidden_for_users_without_webauthn(client_request, mocker, platform_admin_user):
@@ -240,7 +255,7 @@ def test_begin_authentication_returns_encoded_options(
     )
     response = client_request.get_response("main.webauthn_begin_authentication")
 
-    decoded_data = cbor.decode(response.data)
+    decoded_data = response.get_json()
     allowed_credentials = decoded_data["publicKey"]["allowCredentials"]
 
     assert len(allowed_credentials) == 1
@@ -287,10 +302,11 @@ def test_complete_authentication_checks_credentials(
     response = client_request.post_response(
         "main.webauthn_complete_authentication",
         _data=webauthn_authentication_post_data,
+        _content_type="application/json",
         _expected_status=200,
     )
 
-    assert cbor.decode(response.data) == {"redirect_url": "/foo"}
+    assert response.get_json() == {"redirect_url": "/foo"}
 
 
 def test_complete_authentication_403s_if_key_isnt_in_users_credentials(
@@ -313,6 +329,7 @@ def test_complete_authentication_403s_if_key_isnt_in_users_credentials(
     client_request.post_response(
         "main.webauthn_complete_authentication",
         _data=webauthn_authentication_post_data,
+        _content_type="application/json",
         _expected_status=403,
     )
 
@@ -343,7 +360,11 @@ def test_complete_authentication_clears_session(
         "app.main.views_nl.webauthn_credentials._complete_webauthn_login_attempt", return_value=Mock(location="/foo")
     )
 
-    client_request.post("main.webauthn_complete_authentication", _data=webauthn_authentication_post_data)
+    client_request.post(
+        "main.webauthn_complete_authentication",
+        _data=webauthn_authentication_post_data,
+        _content_type="application/json",
+    )
 
     with client_request.session_transaction() as session:
         # it's important that we clear the session to ensure that we don't re-use old login artifacts in future
@@ -375,7 +396,7 @@ def test_verify_webauthn_login_signs_user_in(
 
     resp = client_request.post_response("main.webauthn_complete_authentication", _expected_status=200, **url_kwargs)
 
-    assert cbor.decode(resp.data)["redirect_url"] == expected_redirect
+    assert resp.get_json()["redirect_url"] == expected_redirect
     # removes stuff from session
     with client_request.session_transaction() as session:
         assert "user_details" not in session
@@ -421,7 +442,7 @@ def test_verify_webauthn_login_signs_user_in_sends_revalidation_email_if_needed(
         _expected_status=200,
     )
 
-    assert cbor.decode(resp.data)["redirect_url"] == url_for("main.revalidate_email_sent")
+    assert resp.get_json()["redirect_url"] == url_for("main.revalidate_email_sent")
 
     with client_request.session_transaction() as session:
         # stuff stays in session so we can log them in later when they validate their email

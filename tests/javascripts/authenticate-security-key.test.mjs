@@ -11,38 +11,26 @@ let AuthenticateSecurityKey;
 let locationAssign;
 
 beforeAll( async() => {
-  const CBOR = await import('cbor2');
   const authenticateSecurityKeyModule = await import('../../app/assets/javascripts/esm/authenticate-security-key.mjs');
   const locationUtilModule = await import('../../app/assets/javascripts/utils/location.mjs');
 
   AuthenticateSecurityKey = authenticateSecurityKeyModule.default;
   locationAssign = locationUtilModule.locationAssign;
-  decode = CBOR.decode;
-  encode = CBOR.encode;
 })
 
 describe('Authenticate with security key', () => {
   let button;
   let mockClickEvent;
   let mockFetch;
-  let mockWebauthnOptions;
+  let mockOptionsJSON;
   let mockLoginResponse;
   let authenticateKeyInstance;
   let errorBannerShowBannerSpy;
-  
+  let parseRequestOptionsFromJSON;
+  let credentialsGetResponse;
 
   const mockBrowserCredentials = {
     get: jest.fn(),
-  };
-
-  let credentialsGetResponse = {
-    response: {
-      authenticatorData: [2, 2, 2],
-      signature: [3, 3, 3],
-      clientDataJSON: [4, 4, 4]
-    },
-    rawId: [1, 1, 1],
-    type: "public-key",
   };
 
   afterAll(() => {
@@ -74,14 +62,30 @@ describe('Authenticate with security key', () => {
     mockFetch = jest.fn();
     window.fetch = mockFetch;
 
-    // mock WebAuthn browser API
+    // mock WebAuthn browser APIs
     window.navigator.credentials = mockBrowserCredentials;
+    parseRequestOptionsFromJSON = jest.fn().mockReturnValue('parsedRequestOptions');
+    window.PublicKeyCredential = { parseRequestOptionsFromJSON };
 
-    mockWebauthnOptions = encode('someArbitraryOptions');
-    mockLoginResponse = encode({ redirect_url: '/foo' });
+    mockOptionsJSON = { publicKey: 'someArbitraryOptions' };
+    mockLoginResponse = { redirect_url: '/foo' };
+
+    credentialsGetResponse = {
+      toJSON: () => ({
+        id: 'credential-id',
+        rawId: 'credential-id',
+        type: 'public-key',
+        response: {
+          authenticatorData: 'authenticator-data',
+          signature: 'signature',
+          clientDataJSON: 'client-data-json',
+        }
+      }),
+    };
+
     // instantiate class
     authenticateKeyInstance = new AuthenticateSecurityKey(button);
-    
+
   });
 
   afterEach(() => {
@@ -89,6 +93,7 @@ describe('Authenticate with security key', () => {
     mockFetch.mockClear();
     delete window.fetch;
     delete window.navigator.credentials;
+    delete window.PublicKeyCredential;
   });
 
   it('authenticates a credential and redirects based on the admin app response', async () => {
@@ -96,32 +101,30 @@ describe('Authenticate with security key', () => {
     // mock fetch auth
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: jest.fn(() => Promise.resolve(mockWebauthnOptions)),
+      json: jest.fn(() => Promise.resolve(mockOptionsJSON)),
     });
-    
+
     // mock getCredential response
     mockBrowserCredentials.get.mockResolvedValueOnce(credentialsGetResponse);
 
     // mock fetch auth
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: jest.fn(() => Promise.resolve(mockLoginResponse)),
+      json: jest.fn(() => Promise.resolve(mockLoginResponse)),
     });
 
     await authenticateKeyInstance.authenticateKey(mockClickEvent);
 
+    expect(parseRequestOptionsFromJSON).toHaveBeenCalledWith('someArbitraryOptions');
+    expect(mockBrowserCredentials.get).toHaveBeenCalledWith({ publicKey: 'parsedRequestOptions' });
+
     const mockFetchOptions = mockFetch.mock.calls[1][1]
-    expect(mockFetchOptions.headers).toEqual({ 'X-CSRFToken': 'abc123' });
+    expect(mockFetchOptions.headers).toEqual({ 'X-CSRFToken': 'abc123', 'Content-Type': 'application/json' });
     expect(mockFetchOptions.method).toBe('POST');
 
-    expect(mockBrowserCredentials.get.mock.calls[0][0]).toEqual('someArbitraryOptions')
+    const decodedData = JSON.parse(mockFetchOptions.body);
+    expect(decodedData).toEqual(credentialsGetResponse.toJSON());
 
-    const decodedData = decode(mockFetchOptions.body)
-    expect(decodedData.credentialId).toEqual(new Uint8Array([1, 1, 1]))
-    expect(decodedData.authenticatorData).toEqual(new Uint8Array([2, 2, 2]))
-    expect(decodedData.signature).toEqual(new Uint8Array([3, 3, 3]))
-    expect(decodedData.clientDataJSON).toEqual(new Uint8Array([4, 4, 4]))
- 
     expect(mockFetch).toHaveBeenCalledTimes(2);
     expect(locationAssign).toHaveBeenCalledWith('/foo');
     expect(ErrorBanner.prototype.showBanner).not.toHaveBeenCalled();
@@ -134,31 +137,22 @@ describe('Authenticate with security key', () => {
     // mock fetch auth
      mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: jest.fn(() => Promise.resolve(mockWebauthnOptions)),
+      json: jest.fn(() => Promise.resolve(mockOptionsJSON)),
     });
 
     // mock getCredential response
-    credentialsGetResponse = {
-        response: {
-          authenticatorData: [],
-          signature: [],
-          clientDataJSON: []
-        },
-        rawId: [],
-        type: "public-key",
-    };
     mockBrowserCredentials.get.mockResolvedValueOnce(credentialsGetResponse);
 
     // mock fetch auth
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: jest.fn(() => Promise.resolve(mockLoginResponse)),
+      json: jest.fn(() => Promise.resolve(mockLoginResponse)),
     });
 
     await authenticateKeyInstance.authenticateKey(mockClickEvent);
 
     expect(mockFetch).toHaveBeenCalledTimes(2);
-    expect(mockBrowserCredentials.get.mock.calls[0][0]).toEqual('someArbitraryOptions');
+    expect(mockBrowserCredentials.get).toHaveBeenCalledWith({ publicKey: 'parsedRequestOptions' });
     expect(locationAssign).toHaveBeenCalledWith('/foo');
     expect(ErrorBanner.prototype.showBanner).not.toHaveBeenCalled();
     expect(mockFetch.mock.calls[1][0].toString()).toEqual(
@@ -188,11 +182,11 @@ describe('Authenticate with security key', () => {
   });
 
   it('errors if comms with the authenticator fails', async() => {
-    
+
     // mock fetch auth
      mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: jest.fn(() => Promise.resolve(mockWebauthnOptions)),
+      json: jest.fn(() => Promise.resolve(mockOptionsJSON)),
     });
 
     // mock getCredential response
@@ -208,11 +202,11 @@ describe('Authenticate with security key', () => {
     ['network'],
     ['server'],
   ])('errors if POSTing WebAuthn credentials fails (%s)', async(errorType) => {
-     
+
     // mock fetch auth
      mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: jest.fn(() => Promise.resolve(mockWebauthnOptions)),
+      json: jest.fn(() => Promise.resolve(mockOptionsJSON)),
     });
 
     // mock getCredential response
@@ -225,7 +219,7 @@ describe('Authenticate with security key', () => {
     await authenticateKeyInstance.authenticateKey(mockClickEvent);
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(mockBrowserCredentials.get.mock.calls[0][0]).toEqual('someArbitraryOptions');
+    expect(mockBrowserCredentials.get).toHaveBeenCalledWith({ publicKey: 'parsedRequestOptions' });
     expect(locationAssign).not.toHaveBeenCalled();
     expect(ErrorBanner.prototype.showBanner).toHaveBeenCalled();
   });
@@ -235,7 +229,7 @@ describe('Authenticate with security key', () => {
     // mock fetch auth
      mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: jest.fn(() => Promise.resolve(mockWebauthnOptions)),
+      json: jest.fn(() => Promise.resolve(mockOptionsJSON)),
     });
 
     // mock getCredential
@@ -250,7 +244,7 @@ describe('Authenticate with security key', () => {
     await authenticateKeyInstance.authenticateKey(mockClickEvent);
 
     expect(mockFetch).toHaveBeenCalledTimes(2);
-    expect(mockBrowserCredentials.get.mock.calls[0][0]).toEqual('someArbitraryOptions');
+    expect(mockBrowserCredentials.get).toHaveBeenCalledWith({ publicKey: 'parsedRequestOptions' });
     expect(locationAssign).not.toHaveBeenCalledWith();
     expect(ErrorBanner.prototype.showBanner).toHaveBeenCalled();
   });

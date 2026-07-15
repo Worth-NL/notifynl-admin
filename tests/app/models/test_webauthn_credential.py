@@ -24,8 +24,13 @@ UNSUPPORTED_ATTESTATION_OBJECT = base64.b64decode(
 
 def test_from_registration_verifies_response(webauthn_dev_server):
     registration_response = {
-        "clientDataJSON": CLIENT_DATA_JSON,
-        "attestationObject": ATTESTATION_OBJECT,
+        "id": b"test-credential-id",
+        "rawId": b"test-credential-id",
+        "type": "public-key",
+        "response": {
+            "clientDataJSON": CLIENT_DATA_JSON,
+            "attestationObject": ATTESTATION_OBJECT,
+        },
     }
 
     credential = WebAuthnCredential.from_registration(SESSION_STATE, registration_response)
@@ -41,8 +46,13 @@ def test_from_registration_verifies_response(webauthn_dev_server):
 
 def test_from_registration_encodes_as_unicode(webauthn_dev_server):
     registration_response = {
-        "clientDataJSON": CLIENT_DATA_JSON,
-        "attestationObject": ATTESTATION_OBJECT,
+        "id": b"test-credential-id",
+        "rawId": b"test-credential-id",
+        "type": "public-key",
+        "response": {
+            "clientDataJSON": CLIENT_DATA_JSON,
+            "attestationObject": ATTESTATION_OBJECT,
+        },
     }
 
     credential = WebAuthnCredential.from_registration(SESSION_STATE, registration_response)
@@ -92,8 +102,13 @@ def test_serialize_returns_valid_typeddict(webauthn_dev_server):
 
 def test_from_registration_handles_library_errors(notify_admin):
     registration_response = {
-        "clientDataJSON": CLIENT_DATA_JSON,
-        "attestationObject": ATTESTATION_OBJECT,
+        "id": b"test-credential-id",
+        "rawId": b"test-credential-id",
+        "type": "public-key",
+        "response": {
+            "clientDataJSON": CLIENT_DATA_JSON,
+            "attestationObject": ATTESTATION_OBJECT,
+        },
     }
 
     with pytest.raises(RegistrationError) as exc_info:
@@ -104,8 +119,13 @@ def test_from_registration_handles_library_errors(notify_admin):
 
 def test_from_registration_handles_unsupported_keys(webauthn_dev_server):
     registration_response = {
-        "clientDataJSON": CLIENT_DATA_JSON,
-        "attestationObject": UNSUPPORTED_ATTESTATION_OBJECT,
+        "id": b"test-credential-id",
+        "rawId": b"test-credential-id",
+        "type": "public-key",
+        "response": {
+            "clientDataJSON": CLIENT_DATA_JSON,
+            "attestationObject": UNSUPPORTED_ATTESTATION_OBJECT,
+        },
     }
 
     with pytest.raises(RegistrationError) as exc_info:

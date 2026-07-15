@@ -1,7 +1,6 @@
 import { isSupported } from 'govuk-frontend';
 import ErrorBanner from './error-banner.mjs';
 import { locationAssign } from '../utils/location.mjs';
-import { decode, encode } from 'cbor2';
 
 // This new way of writing Javascript components is based on the GOV.UK Frontend skeleton Javascript coding standard
 // that uses ES 2015 Classes -
@@ -15,7 +14,11 @@ import { decode, encode } from 'cbor2';
 
 class AuthenticateSecurityKey {
   constructor($module) {
-    if (!isSupported() || !window.TextEncoder) {
+    if (
+      !isSupported() ||
+      !window.TextEncoder ||
+      !window.PublicKeyCredential?.parseRequestOptionsFromJSON
+    ) {
       return this;
     }
     this.authenticationEndpoint = '/webauthn/authenticate';
@@ -44,13 +47,13 @@ class AuthenticateSecurityKey {
       throw Error(response.statusText);
     }
 
-    const data = await response.arrayBuffer();
-    return decode(new Uint8Array(data));
+    const optionsJSON = await response.json();
+    return PublicKeyCredential.parseRequestOptionsFromJSON(optionsJSON.publicKey);
   }
 
-  async getCredential(options) {
+  async getCredential(publicKey) {
     // triggers browser dialogue to login with authenticator
-    return window.navigator.credentials.get(options);
+    return window.navigator.credentials.get({ publicKey });
   }
 
   async postCredential(credential) {
@@ -70,13 +73,11 @@ class AuthenticateSecurityKey {
 
     return fetch(authenticateURL, {
       method: 'POST',
-      headers: { 'X-CSRFToken': this.$module.dataset.csrfToken },
-      body: encode({
-        credentialId: new Uint8Array(credential.rawId),
-        authenticatorData: new Uint8Array(credential.response.authenticatorData),
-        signature: new Uint8Array(credential.response.signature),
-        clientDataJSON: new Uint8Array(credential.response.clientDataJSON),
-      })
+      headers: {
+        'X-CSRFToken': this.$module.dataset.csrfToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(credential.toJSON())
     });
   }
 
@@ -85,8 +86,7 @@ class AuthenticateSecurityKey {
       throw Error(response.statusText);
     }
 
-    const cbor = await response.arrayBuffer();
-    const data = decode(new Uint8Array(cbor));
+    const data = await response.json();
 
     // Redirect the user on successful authentication
     locationAssign(data.redirect_url);

@@ -1,7 +1,6 @@
 import { isSupported } from 'govuk-frontend';
 import ErrorBanner from './error-banner.mjs';
 import { locationReload } from '../utils/location.mjs';
-import { decode, encode } from 'cbor2';
 
 // This new way of writing Javascript components is based on the GOV.UK Frontend skeleton Javascript coding standard
 // that uses ES 2015 Classes -
@@ -15,7 +14,11 @@ import { decode, encode } from 'cbor2';
 
 class RegisterSecurityKey {
   constructor($module) {
-    if (!isSupported() || !window.TextEncoder) {
+    if (
+      !isSupported() ||
+      !window.TextEncoder ||
+      !window.PublicKeyCredential?.parseCreationOptionsFromJSON
+    ) {
       return this;
     }
     this.registerAuthenticationEndpoint = '/webauthn/register';
@@ -44,23 +47,23 @@ class RegisterSecurityKey {
       throw Error(response.statusText);
     }
 
-    const data = await response.arrayBuffer();
-    return decode(new Uint8Array(data));
+    const optionsJSON = await response.json();
+    return PublicKeyCredential.parseCreationOptionsFromJSON(optionsJSON.publicKey);
   }
 
-  createCredential(options) {
+  createCredential(publicKey) {
     // triggers browser dialogue to select authenticator
-    return window.navigator.credentials.create(options);
+    return window.navigator.credentials.create({ publicKey });
   }
 
   postCredential(credential) {
     return fetch(this.registerAuthenticationEndpoint, {
       method: 'POST',
-      headers: { 'X-CSRFToken': this.$module.dataset.csrfToken },
-      body: encode({
-        attestationObject: new Uint8Array(credential.response.attestationObject),
-        clientDataJSON: new Uint8Array(credential.response.clientDataJSON),
-      })
+      headers: {
+        'X-CSRFToken': this.$module.dataset.csrfToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(credential.toJSON())
     });
   }
 

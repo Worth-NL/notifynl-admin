@@ -4,11 +4,7 @@ from typing import Any, TypedDict
 
 from fido2 import cbor
 from fido2.cose import UnsupportedKey
-from fido2.webauthn import (
-    AttestationObject,
-    AttestedCredentialData,
-    CollectedClientData,
-)
+from fido2.webauthn import AttestedCredentialData
 from flask import current_app
 
 from app.models import JSONModel, ModelList
@@ -41,11 +37,7 @@ class WebAuthnCredential(JSONModel):
         server = current_app.webauthn_server
 
         try:
-            auth_data = server.register_complete(
-                state,
-                CollectedClientData(response["clientDataJSON"]),
-                AttestationObject(response["attestationObject"]),
-            )
+            auth_data = server.register_complete(state, response)
         except ValueError as e:
             raise RegistrationError(e) from e
 

@@ -9,33 +9,25 @@ let RegisterSecurityKey;
 let locationReload;
 
 beforeAll( async() => {
-  const CBOR = await import('cbor2');
   const registerSecurityKeyModule = await import('../../app/assets/javascripts/esm/register-security-key.mjs');
   const locationUtilModule = await import('../../app/assets/javascripts/utils/location.mjs');
 
   RegisterSecurityKey = registerSecurityKeyModule.default;
   locationReload = locationUtilModule.locationReload;
-  decode = CBOR.decode;
-  encode = CBOR.encode;
 })
 
 describe('Register security key', () => {
   let button;
   let mockClickEvent;
   let mockFetch;
-  let mockWebauthnOptions;
+  let mockOptionsJSON;
+  let mockCredentialJSON;
   let registerKeyInstance;
   let errorBannerShowBannerSpy;
+  let parseCreationOptionsFromJSON;
 
   const mockBrowserCredentials = {
     create: jest.fn(),
-  };
-
-  let credentialsGetResponse = {
-    response: {
-      attestationObject: [1, 2, 3],
-      clientDataJSON: [4, 5, 6],
-    }
   };
 
   afterAll(() => {
@@ -68,10 +60,22 @@ describe('Register security key', () => {
     mockFetch = jest.fn();
     window.fetch = mockFetch;
 
-    // mock WebAuthn browser API
+    // mock WebAuthn browser APIs
     window.navigator.credentials = mockBrowserCredentials;
+    parseCreationOptionsFromJSON = jest.fn().mockReturnValue('parsedCreationOptions');
+    window.PublicKeyCredential = { parseCreationOptionsFromJSON };
 
-    mockWebauthnOptions = encode('options');
+    mockOptionsJSON = { publicKey: 'someOptionsJSON' };
+    mockCredentialJSON = {
+      id: 'credential-id',
+      rawId: 'credential-id',
+      type: 'public-key',
+      response: {
+        attestationObject: 'attestation-object',
+        clientDataJSON: 'client-data-json',
+      }
+    };
+
     // instantiate class
     registerKeyInstance = new RegisterSecurityKey(button);
   })
@@ -82,6 +86,7 @@ describe('Register security key', () => {
     mockFetch.mockClear();
     delete window.fetch;
     delete window.navigator.credentials;
+    delete window.PublicKeyCredential;
   });
 
   it('creates a new credential and reloads', async() => {
@@ -89,28 +94,33 @@ describe('Register security key', () => {
     // mock fetch auth
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: jest.fn(() => Promise.resolve(mockWebauthnOptions)),
+      json: jest.fn(() => Promise.resolve(mockOptionsJSON)),
     });
 
     // mock createCredential
-    mockBrowserCredentials.create.mockResolvedValueOnce(credentialsGetResponse);
+    mockBrowserCredentials.create.mockResolvedValueOnce({
+      toJSON: () => mockCredentialJSON,
+    });
 
     // mock postCredential
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: jest.fn(() => Promise.resolve({ ok: true }))
+      json: jest.fn(() => Promise.resolve('')),
     });
 
     await registerKeyInstance.registerKey(mockClickEvent);
 
+    expect(parseCreationOptionsFromJSON).toHaveBeenCalledWith('someOptionsJSON');
+    expect(mockBrowserCredentials.create).toHaveBeenCalledWith({ publicKey: 'parsedCreationOptions' });
+
     const mockFetchOptions = mockFetch.mock.calls[1][1];
     expect(mockFetchOptions.headers['X-CSRFToken']).toBe();
+    expect(mockFetchOptions.headers['Content-Type']).toBe('application/json');
     expect(mockFetchOptions.method).toBe('POST');
 
-    const decodedData = decode(mockFetchOptions.body);
-    expect(decodedData.attestationObject).toEqual(new Uint8Array([1, 2, 3]));
-    expect(decodedData.clientDataJSON).toEqual(new Uint8Array([4, 5, 6]));
- 
+    const decodedData = JSON.parse(mockFetchOptions.body);
+    expect(decodedData).toEqual(mockCredentialJSON);
+
     expect(mockFetch).toHaveBeenCalledTimes(2);
     expect(locationReload).toHaveBeenCalled();
     expect(ErrorBanner.prototype.showBanner).not.toHaveBeenCalled();
@@ -120,7 +130,7 @@ describe('Register security key', () => {
     ['network'],
     ['server'],
   ])('errors if fetching WebAuthn options fails (%s error)', async(errorType) => {
-    
+
     if (errorType == 'network') {
       mockFetch.mockRejectedValueOnce(new Error('error'));
     } else {
@@ -145,11 +155,13 @@ describe('Register security key', () => {
     // mock fetch auth
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: jest.fn(() => Promise.resolve(mockWebauthnOptions)),
+      json: jest.fn(() => Promise.resolve(mockOptionsJSON)),
     });
 
     // mock createCredential
-    mockBrowserCredentials.create.mockResolvedValueOnce({response: {}});
+    mockBrowserCredentials.create.mockResolvedValueOnce({
+      toJSON: () => mockCredentialJSON,
+    });
 
     // mock postCredential
     if (errorType == 'network') {
@@ -169,11 +181,11 @@ describe('Register security key', () => {
   });
 
   it('errors if comms with the authenticator fails', async() => {
-  
+
     // mock fetch auth
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: jest.fn(() => Promise.resolve(mockWebauthnOptions)),
+      json: jest.fn(() => Promise.resolve(mockOptionsJSON)),
     });
 
     // mock createCredential
