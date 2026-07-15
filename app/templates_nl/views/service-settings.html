@@ -86,10 +86,16 @@
 
     {% set service_email_settings %}
       {% set email_sender_html %}
-        {% with email_sender_name = current_service.custom_email_sender_name or current_service.name %}
-          {% include "partials/preview-email-sender-name.html" %}
-        {% endwith %}
+        {% if current_service.confirmed_email_sender_name == False %}
+        <span class="govuk-hint">Niet ingesteld</span>
+        {% else %}
+          {% with email_sender_name = current_service.custom_email_sender_name or current_service.name %}
+            {% include "partials/preview-email-sender-name.html" %}
+          {% endwith %}
+        {% endif %}
       {% endset %}
+
+      {% set email_sender_classes = "govuk-summary-list__value--truncate govuk-summary-list__value--default" if current_service.confirmed_email_sender_name == False else "govuk-summary-list__value--truncate" %}
 
       {% set reply_to_email_addresses_html %}
         {{ current_service.default_email_reply_to_address or 'Niet ingesteld' }}
@@ -126,31 +132,31 @@
               }
             ] if current_user.has_permissions('manage_service') else []
           }
+        },
+        {
+          "key": {
+            "classes": "notify-summary-list__key notify-summary-list__key--35-100",
+            "text": "'Van' naam voor e-mail"
+          },
+          "value": {
+            "html": email_sender_html,
+            "classes": email_sender_classes
+          },
+          "actions": {
+            "items": [
+              {
+                "href": url_for('main.service_email_sender_change', service_id=current_service.id),
+                "text": "Wijzigen",
+                "visuallyHiddenText": "'van' naam voor e-mail",
+                "classes": "govuk-link--no-visited-state"
+              }
+            ] if current_user.has_permissions('manage_service') else []
+          }
         }
       ]%}
 
       {% if current_service.has_permission("email") %}
         {% set restricted_email_settings_rows = [
-          {
-            "key": {
-              "classes": "notify-summary-list__key notify-summary-list__key--35-100",
-              "text": "Naam afzender e-mail"
-            },
-            "value": {
-              "html": email_sender_html,
-              "classes": "govuk-summary-list__value--truncate"
-            },
-            "actions": {
-              "items": [
-                {
-                  "href": url_for('main.service_email_sender_change', service_id=current_service.id),
-                  "text": "Wijzigen",
-                  "visuallyHiddenText": "naam afzender e-mail",
-                  "classes": "govuk-link--no-visited-state"
-                }
-              ] if current_user.has_permissions('manage_service') else []
-            }
-          },
           {
             "key": {
               "classes": "notify-summary-list__key notify-summary-list__key--35-100",

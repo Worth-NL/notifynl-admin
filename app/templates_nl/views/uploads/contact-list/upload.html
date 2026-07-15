@@ -29,7 +29,7 @@
 <div class="bottom-gutter">
   {{ file_upload(
     form.file,
-    allowed_file_extensions=allowed_file_extensions,
+    allowed_file_extensions=form.ALLOWED_FILE_EXTENSIONS,
     button_text='Kies bestand',
   )}}
 </div>
@@ -52,7 +52,7 @@
           ['email address'],
           ['test@example.gov.nl'],
         ],
-        caption="Voorbeeld",
+        caption="Voorbeeldlijst met e-mailadressen van medewerkers",
         caption_visible=False,
         field_headings=['', 'A']
       ) %}
@@ -70,7 +70,7 @@
           ['phone number'],
           ['06 12345678'],
         ],
-        caption="Voorbeeld",
+        caption="Voorbeeldlijst met telefoonnummers van medewerkers",
         caption_visible=False,
         field_headings=['', 'A']
       ) %}

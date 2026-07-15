@@ -5,7 +5,7 @@
 {% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
 
 {% block per_page_title %}
-  Wijzig uw {{ thing }}
+  Voer uw sms-code in – Wijzig uw mobiele telefoonnummer
 {% endblock %}
 
 {% block backLink %}
@@ -13,13 +13,13 @@
 {% endblock %}
 
 {% block maincolumn_content %}
-
-  {{ page_header('Wijzig uw {}'.format(thing)) }}
+  <span class="govuk-caption-xl">Wijzig uw mobiele telefoonnummer</span>
+  {{ page_header("Voer uw sms-code in", classes='govuk-!-margin-top-0') }}
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-three-quarters">
       <p class="govuk-body">
-        We hebben een beveiligingscode gestuurd naar uw nieuwe {{ thing }}.
+        We hebben een beveiligingscode gestuurd naar uw nieuwe mobiele telefoonnummer.
       </p>
       {% call form_wrapper() %}
         {{ form_field() }}

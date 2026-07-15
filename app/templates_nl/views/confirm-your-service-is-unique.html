@@ -22,15 +22,11 @@
         <div class="govuk-grid-column-five-sixths">
 
             <p class="govuk-body">
-                Uw service moet de enige in zijn soort in uw organisatie zijn.
+                Onze <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.terms_of_use') }}">gebruiksvoorwaarden</a> stellen dat uw service de enige in zijn soort in uw organisatie moet zijn.
             </p>
 
             <p class="govuk-body">
-                Voordat u een verzoek verzendt om live te gaan, controleert u of uw servicenaam beschrijft waar uw berichten over gaan, evenals wie ze komen.
-            </p>
-
-            <p class="govuk-body">
-                Dit zal ons helpen te begrijpen of uw service uniek is.
+                Om ons hierbij te helpen, kiest u een servicenaam die gemakkelijk te begrijpen is.
             </p>
 
             <p class="govuk-body">
@@ -38,10 +34,13 @@
             </p>
 
             <ul class="govuk-list govuk-list--bullet">
-                <li> Acroniemen, initialismen of afkortingen tenzij uw ontvangers er bekend mee zijn </li>
-                <li> Uw eigen naam of de naam van een persoon </li>
-                <li> De naam van een webtoepassing of backoffice -systeem </li>
+                <li>acroniemen, initialismen of afkortingen</li>
+                <li>uw eigen naam of de naam van iemand in uw team</li>
             </ul>
+
+            <p class="govuk-body">
+                Als wij niet kunnen bevestigen dat uw service uniek is, kunnen wij uw verzoek om live te gaan weigeren.
+            </p>
 
             {% call form_wrapper() %}
                 {{ form.name }}

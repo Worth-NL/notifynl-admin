@@ -42,8 +42,8 @@
   {% endset %}
 
   {{ govukErrorSummary({
-    "classes": "govuk-!-display-none",
-    "attributes": { "aria-live": "polite", "tabindex":"-1" },
+    "classes": "webauthn__error",
+    "attributes": { "aria-live": "polite", "tabindex":"-1", "hidden":"hidden" },
     "titleText": "Er is een probleem met uw beveiligingssleutels",
     "descriptionHtml": keyProblemDescription,
     "errorList": [],

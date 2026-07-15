@@ -3,13 +3,12 @@
 {% from "components/page-footer.html" import page_footer %}
 {% from "components/form.html" import form_wrapper %}
 {% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "govuk_frontend_jinja/components/details/macro.html" import govukDetails %}
 
 {% set heading = 'Voer een servicenaam in' %}
 
 {% block backLink %}
-  {% if request.args.get("back") == "your_services" %}
-    {{ govukBackLink({ "href": url_for('main.your_services') }) }}
-  {% endif %}
+  {{ govukBackLink({ "href": url_for('main.add_service') }) }}
 {% endblock %}
 
 {% block per_page_title %}
