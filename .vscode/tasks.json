@@ -12,6 +12,38 @@
             }
         },
         {
+            "label": "Generate Admin Python requirements_nl.in",
+            "type": "shell",
+            "command": "uv pip compile requirements_nl.in -o requirements_nl.txt ",
+            "dependsOn": [],
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "close": true
+            },
+            "options": {
+                "env": {
+                    "UV_LINK_MODE": "copy"
+                }
+            }
+        },
+        {
+            "label": "Generate Admin Python requirements_nl_test.in",
+            "type": "shell",
+            "command": "uv pip compile requirements_nl_test.in -o requirements_nl_test.txt ",
+            "dependsOn": ["Generate Admin Python requirements_nl.in"],
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "close": true
+            },
+            "options": {
+                "env": {
+                    "UV_LINK_MODE": "copy"
+                }
+            }
+        },
+        {
             "label": "Install Admin Python requirements",
             "type": "shell",
             "command": "uv pip install -r requirements_nl_test.txt",
