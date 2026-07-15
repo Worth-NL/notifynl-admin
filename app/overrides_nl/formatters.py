@@ -430,6 +430,38 @@ def format_yes_no(value, yes="Ja", no="Nee", none="Geen"):
     return yes if value else no
 
 
+def format_pluralise(files):
+    if len(files) == 1:
+        return ""
+    return "s"
+
+
+def format_provider(provider):
+    if provider == "firetext":
+        return provider.title()
+
+    return provider.upper()
+
+
+def format_retention_period(weeks):
+    if weeks == 1:
+        return "1 week after sending"
+    if weeks < 9:
+        return f"{weeks} weeks after sending"
+    delta = humanize.naturaltime(timedelta(weeks=weeks)).replace(" ago", "")
+    return Markup(f"""
+        {weeks} weeks after sending<br>
+        <span class='govuk-hint'>(about {delta})</span>
+    """)
+
+
+def format_invite_status(user_status):
+    if user_status == "pending":
+        return "(uitgenodigd)"
+    if user_status == "cancelled":
+        return "(uitnodiging geannuleerd)"
+
+
 def format_auth_type(auth_type, with_indefinite_article=False):
     indefinite_article, auth_type = {
         "email_auth": ("een", "E-maillink"),
