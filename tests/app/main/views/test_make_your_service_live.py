@@ -888,7 +888,7 @@ def test_should_render_the_same_page_after_request_to_go_live(
     )
     mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
     mock_send_ticket_to_zendesk = mocker.patch(
-        "app.main.views.make_your_service_live.zendesk_client.send_ticket_to_zendesk",
+        "app.main.views_nl.make_your_service_live.zendesk_client.send_ticket_to_zendesk",
         autospec=True,
     )
     page = client_request.post("main.request_to_go_live", service_id=SERVICE_ONE_ID, _follow_redirects=True)
@@ -1051,7 +1051,7 @@ def test_request_to_go_live_displays_go_live_notes_in_zendesk_ticket(
     )
     mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
     mock_send_ticket_to_zendesk = mocker.patch(
-        "app.main.views.make_your_service_live.zendesk_client.send_ticket_to_zendesk",
+        "app.main.views_nl.make_your_service_live.zendesk_client.send_ticket_to_zendesk",
         autospec=True,
     )
     client_request.post("main.request_to_go_live", service_id=SERVICE_ONE_ID, _follow_redirects=True)
@@ -1126,7 +1126,7 @@ def test_request_to_go_live_displays_mou_signatories(
         return_value=True,
     )
     mocker.patch(
-        "app.main.views.make_your_service_live.zendesk_client.send_ticket_to_zendesk",
+        "app.main.views_nl.make_your_service_live.zendesk_client.send_ticket_to_zendesk",
         autospec=True,
     )
     mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
@@ -1166,7 +1166,7 @@ def test_should_be_able_to_request_to_go_live_with_no_organisation(
         return_value=True,
     )
     mock_post = mocker.patch(
-        "app.main.views.make_your_service_live.zendesk_client.send_ticket_to_zendesk",
+        "app.main.views_nl.make_your_service_live.zendesk_client.send_ticket_to_zendesk",
         autospec=True,
     )
 
@@ -1207,7 +1207,7 @@ def test_request_to_go_live_is_sent_to_organiation_if_can_be_approved_by_organis
     )
     mocker.patch("app.organisations_client.get_organisation", return_value=organisation_one)
     mocker.patch(
-        "app.main.views.make_your_service_live.zendesk_client.send_ticket_to_zendesk",
+        "app.main.views_nl.make_your_service_live.zendesk_client.send_ticket_to_zendesk",
         autospec=True,
     )
 
@@ -1266,7 +1266,7 @@ def test_confirm_service_is_unique_fails_validation(
 
 def test_confirm_service_is_unique_doesnt_suppress_api_errors(client_request, mocker, service_one):
     mocker.patch(
-        "app.main.views.service_settings.index.service_api_client.update_service",
+        "app.main.views_nl.service_settings.index.service_api_client.update_service",
         side_effect=HTTPError(response=Mock(status_code=500)),
     )
 

@@ -234,7 +234,7 @@ def test_upload_csv_file_shows_error_banner_for_too_many_rows(
     )
     mocker.patch("app.models.contact_list.get_csv_metadata", return_value={"original_file_name": "invalid.csv"})
     mocker.patch(
-        "app.main.views.uploads.RecipientCSV.max_rows",
+        "app.main.views_nl.uploads.RecipientCSV.max_rows",
         new_callable=PropertyMock,
         return_value=1_234,
     )

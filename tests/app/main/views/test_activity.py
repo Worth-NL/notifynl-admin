@@ -406,7 +406,7 @@ def test_view_notifications_calls_report_request_method_with_expected_args(
         ),
     ],
 )
-@mock.patch("app.main.views.dashboard.REPORT_REQUEST_MAX_NOTIFICATIONS", 900001)
+@mock.patch("app.main.views_nl.dashboard.REPORT_REQUEST_MAX_NOTIFICATIONS", 900001)
 def test_report_request_notifications_link(
     client_request,
     mocker,

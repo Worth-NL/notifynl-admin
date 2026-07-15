@@ -59,7 +59,7 @@ def test_get_support_index_page_when_signed_out(
 def test_choose_question_support_type_shows_feedback_form(
     client_request, mock_get_non_empty_organisations_and_services_for_user, mocker
 ):
-    mocker.patch("app.main.views.feedback.in_business_hours", return_value=True)
+    mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=True)
     page = client_request.post(
         "main.support",
         _data={"support_type": QUESTION_TICKET_TYPE},
@@ -303,7 +303,7 @@ def test_support_no_security_code_account_details_form_requires_all_fields(clien
 def test_support_no_security_code_account_details_submits_zendesk_ticket(client_request, mocker):
     mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
     mocker.patch(
-        "app.main.views.feedback.zendesk_client.send_ticket_to_zendesk",
+        "app.main.views_nl.feedback.zendesk_client.send_ticket_to_zendesk",
         autospec=True,
     )
 
@@ -363,7 +363,7 @@ def test_support_mobile_number_changed_account_details_form_requires_all_fields(
 def test_support_mobile_number_changed_account_details_submits_zendesk_ticket(client_request, mocker):
     mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
     mocker.patch(
-        "app.main.views.feedback.zendesk_client.send_ticket_to_zendesk",
+        "app.main.views_nl.feedback.zendesk_client.send_ticket_to_zendesk",
         autospec=True,
     )
 
@@ -426,7 +426,7 @@ def test_support_no_email_link_account_details_form_requires_all_fields(client_r
 def test_support_no_email_link_account_details_submits_zendesk_ticket(client_request, mocker):
     mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
     mocker.patch(
-        "app.main.views.feedback.zendesk_client.send_ticket_to_zendesk",
+        "app.main.views_nl.feedback.zendesk_client.send_ticket_to_zendesk",
         autospec=True,
     )
 
@@ -484,7 +484,7 @@ def test_support_email_address_changed_account_details_form_requires_all_fields(
 def test_support_email_address_account_details_submits_zendesk_ticket(client_request, mocker):
     mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
     mocker.patch(
-        "app.main.views.feedback.zendesk_client.send_ticket_to_zendesk",
+        "app.main.views_nl.feedback.zendesk_client.send_ticket_to_zendesk",
         autospec=True,
     )
 
@@ -884,10 +884,10 @@ def test_zendesk_subject_and_ticket_type_reflect_journey_taken_to_support_form(
     topics,
     mocker,
 ):
-    mocker.patch("app.main.views.feedback.in_business_hours", return_value=True)
+    mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=True)
     mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
     mocker.patch(
-        "app.main.views.feedback.zendesk_client.send_ticket_to_zendesk",
+        "app.main.views_nl.feedback.zendesk_client.send_ticket_to_zendesk",
         autospec=True,
     )
     client_request.post(
@@ -956,8 +956,8 @@ def test_name_required_for_problems_and_questions(
     ticket_type,
     mocker,
 ):
-    mocker.patch("app.main.views.feedback.in_business_hours", return_value=True)
-    mocker.patch("app.main.views.feedback.zendesk_client")
+    mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=True)
+    mocker.patch("app.main.views_nl.feedback.zendesk_client")
     client_request.logout()
     page = client_request.post(
         "main.feedback",
@@ -1037,7 +1037,7 @@ def test_urgency(
         "app.main.views_nl.feedback.zendesk_client.send_ticket_to_zendesk",
         autospec=True,
     )
-    mocker.patch("app.main.views.feedback.zendesk_client.update_ticket", autospec=True)
+    mocker.patch("app.main.views_nl.feedback.zendesk_client.update_ticket", autospec=True)
 
     client_request.post(
         "main.feedback",

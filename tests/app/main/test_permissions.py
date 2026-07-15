@@ -6,7 +6,7 @@ import pytest
 from flask import current_app
 from notifications_utils.formatters import formatted_list
 
-from app.main.views.index import REDIRECTS
+from app.main.views_nl.index import REDIRECTS
 from tests import sample_uuid, service_json
 from tests.conftest import (
     ORGANISATION_ID,

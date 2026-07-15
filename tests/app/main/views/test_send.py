@@ -1107,7 +1107,7 @@ def test_upload_csv_file_limits_number_of_columns_displayed_when_error(
     fake_uuid,
 ):
     mocker.patch(
-        "app.main.views.send.s3download",
+        "app.main.views_nl.send.s3download",
         return_value=(
             f"""
             {"phone number," * 678}

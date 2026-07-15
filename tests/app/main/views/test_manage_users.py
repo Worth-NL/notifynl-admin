@@ -1879,7 +1879,7 @@ def test_remove_user_from_service_when_user_api_gives_error_x(
             message="User cannot be removed from the service",
         ),
     )
-    mock_event_handler = mocker.patch("app.main.views.manage_users.Events.remove_user_from_service")
+    mock_event_handler = mocker.patch("app.main.views_nl.manage_users.Events.remove_user_from_service")
 
     if not user_is_gov_user:
         client_request.login(api_nongov_user_active)
@@ -1920,7 +1920,7 @@ def test_remove_user_from_service_when_user_api_gives_error_for_platform_admin_u
             message="User cannot be removed from the service",
         ),
     )
-    mock_event_handler = mocker.patch("app.main.views.manage_users.Events.remove_user_from_service")
+    mock_event_handler = mocker.patch("app.main.views_nl.manage_users.Events.remove_user_from_service")
 
     client_request.login(platform_admin_user)
     page = client_request.post(
