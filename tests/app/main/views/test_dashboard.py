@@ -1019,10 +1019,13 @@ def test_correct_font_size_for_big_numbers(
 
     assert (
         (len(page.select_one("[data-key=totals]").select(".govuk-grid-column-one-third")))
-        == (len(page.select_one("[data-key=usage]").select(".govuk-grid-column-one-third")))
         == (len(page.select(".big-number-with-status .big-number-smaller")))
         == 3
     )
+    # usage (unlike totals) always shows all categories including messagebox,
+    # regardless of the service's current permissions -- it reflects historical
+    # billing data, not current capability.
+    assert len(page.select_one("[data-key=usage]").select(".govuk-grid-column-one-third")) == 4
 
 
 def test_should_not_show_jobs_on_dashboard_for_users_with_uploads_page(
@@ -1536,6 +1539,7 @@ def test_aggregate_notifications_stats():
         "sms": {"requested": 100, "delivered": 50, "failed": 0},
         "letter": {"requested": 700, "delivered": 700, "failed": 0},
         "email": {"requested": 200, "delivered": 0, "failed": 100},
+        "messagebox": {"requested": 0, "delivered": 0, "failed": 0},
     }
 
 

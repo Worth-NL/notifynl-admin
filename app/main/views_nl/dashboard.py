@@ -532,7 +532,7 @@ def aggregate_notifications_stats(template_statistics):
     template_statistics = filter_out_cancelled_stats(template_statistics)
     notifications = {
         template_type: dict.fromkeys(("requested", "delivered", "failed"), 0)
-        for template_type in ["sms", "email", "letter"]
+        for template_type in ["sms", "email", "letter", "messagebox"]
     }
     for stat in template_statistics:
         notifications[stat["template_type"]]["requested"] += stat["count"]
@@ -601,6 +601,9 @@ def get_annual_usage_breakdown(usage, free_sms_fragment_limit):
     letters_sent = sum(row["notifications_sent"] for row in letters)
     letters_cost = sum(row["cost"] for row in letters)
 
+    messageboxes = get_usage_breakdown_by_type(usage, "messagebox")
+    messageboxes_sent = sum(row["notifications_sent"] for row in messageboxes)
+
     return {
         "emails_sent": emails_sent,
         "sms_free_allowance": sms_free_allowance,
@@ -610,6 +613,7 @@ def get_annual_usage_breakdown(usage, free_sms_fragment_limit):
         "sms_breakdown": sms,
         "letter_sent": letters_sent,
         "letter_cost": letters_cost,
+        "messageboxes_sent": messageboxes_sent,
     }
 
 

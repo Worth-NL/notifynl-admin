@@ -180,7 +180,7 @@ def valid_phone_number(phone_number):
 
 
 def format_notification_type(notification_type):
-    return {"email": "E-mail", "sms": "SMS", "letter": "Brief"}[notification_type]
+    return {"email": "E-mail", "sms": "SMS", "letter": "Brief", "messagebox": "Berichtenbox"}[notification_type]
 
 
 def format_notification_status(status, template_type):

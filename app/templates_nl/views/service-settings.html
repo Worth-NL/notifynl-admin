@@ -605,6 +605,88 @@
 
     {% endset %}
 
+    {% set service_messagebox_settings %}
+      {% set messagebox_limit_html %}
+        {{ "{} per dag".format(current_service.get_message_limit("messagebox")|format_thousands) }}
+        <div class="govuk-hint">
+          {{ current_service.sent_today("messagebox")|format_thousands + " sent today" }}
+        </div>
+      {% endset %}
+
+      {% set messagebox_settings_rows = [
+        {
+          "key": {
+            "classes": "notify-summary-list__key notify-summary-list__key--35-100",
+            "text": "Berichtenbox-berichten versturen"
+          },
+          "value": {
+            "text": "Aan" if current_service.has_permission("messagebox") else "Uit"
+          },
+          "actions": {
+            "items": [
+              {
+                "href": url_for('main.service_set_messagebox_channel', service_id=current_service.id),
+                "text": "Wijzigen",
+                "visuallyHiddenText": "uw instellingen voor het versturen van berichten via de berichtenbox",
+                "classes": "govuk-link--no-visited-state"
+              }
+            ] if current_user.has_permissions('manage_service') else []
+          }
+        },
+        {
+          "key": {
+            "classes": "notify-summary-list__key notify-summary-list__key--35-100",
+            "text": "Afzender OIN"
+          },
+          "value": {
+            "text": current_service.oin or "Niet ingesteld",
+            "classes": "govuk-summary-list__value--default" if not current_service.oin
+          },
+          "actions": {
+            "items": [
+              {
+                "href": url_for('main.edit_service_messagebox_settings', service_id=current_service.id),
+                "text": "Wijzigen",
+                "visuallyHiddenText": "Afzender OIN",
+                "classes": "govuk-link--no-visited-state"
+              }
+            ] if current_user.has_permissions('manage_service') else []
+          }
+        }
+      ] %}
+
+      <!-- only show limit page for live services -->
+      {% if current_service.has_permission("messagebox") and current_service.live %}
+        {% set _ = messagebox_settings_rows.append(
+          {
+            "key": {
+              "classes": "notify-summary-list__key notify-summary-list__key--35-100",
+              "text": "Berichtenboxlimiet"
+            },
+            "value": {
+              "text": messagebox_limit_html,
+              "classes": "govuk-summary-list__value--truncate"
+            },
+            "actions": {
+              "items": [
+                {
+                  "href": url_for("main.set_daily_message_limit", service_id=current_service.id, daily_limit_type="messagebox"),
+                  "text": "Wijzigen",
+                  "visuallyHiddenText": "daily {} limit".format("messagebox"|format_notification_type|lower),
+                  "classes": "govuk-link--no-visited-state"
+                }
+              ] if current_user.has_permissions('manage_service') else []
+            }
+          },
+        )%}
+      {% endif %}
+
+      {{ govukSummaryList({
+        "classes": "notify-summary-list service-messagebox-settings",
+        "rows": messagebox_settings_rows
+      }) }}
+    {% endset %}
+
 <h1 class="heading-medium">Instellingen</h1>
     <div class="bottom-gutter-3-2">
       <h2 class="heading-medium govuk-visually-hidden">Algemeen</h2>
@@ -615,6 +697,8 @@
       {{ service_text_message_settings }}
       <h2 class="heading-medium">Briefinstellingen</h2>
       {{ service_letter_settings }}
+      <h2 class="heading-medium">Landelijke Berichtenbox-instellingen</h2>
+      {{ service_messagebox_settings }}
 
     </div>
 
@@ -858,6 +942,25 @@
                 "href": url_for('main.set_per_day_message_limit', service_id=current_service.id, notification_type='letter'),
                 "text": "Wijzigen",
                 "visuallyHiddenText": "dagelijkse {} limiet".format('letter'|format_notification_type|lower),
+                "classes": "govuk-link--no-visited-state"
+              }
+            ]
+          }
+        },
+        {
+          "key": {
+            "classes": "notify-summary-list__key notify-summary-list__key--35-100",
+            "text": "{} limiet".format('messagebox'|format_notification_type)
+          },
+          "value": {
+            "text": "{} per dag".format(current_service.get_message_limit('messagebox')|format_thousands)
+          },
+          "actions": {
+            "items": [
+              {
+                "href": url_for('main.set_per_day_messagebox_message_limit', service_id=current_service.id),
+                "text": "Wijzigen",
+                "visuallyHiddenText": "dagelijkse {} limiet".format('messagebox'|format_notification_type|lower),
                 "classes": "govuk-link--no-visited-state"
               }
             ]

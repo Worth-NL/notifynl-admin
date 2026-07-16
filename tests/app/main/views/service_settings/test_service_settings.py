@@ -5911,6 +5911,251 @@ def test_update_service_notes(client_request, platform_admin_user, service_one, 
     mock_update_service.assert_called_with(SERVICE_ONE_ID, notes="Very fluffy")
 
 
+def test_service_settings_links_to_edit_service_messagebox_settings_page(
+    service_one,
+    client_request,
+    active_user_with_permissions,
+    no_reply_to_email_addresses,
+    no_letter_contact_blocks,
+    single_sms_sender,
+    mock_get_service_settings_page_common,
+    mocker,
+):
+    client_request.login(active_user_with_permissions)
+    page = client_request.get(
+        ".service_settings",
+        service_id=SERVICE_ONE_ID,
+    )
+    assert len(page.select(f'a[href="/services/{SERVICE_ONE_ID}/messagebox-settings"]')) == 1
+
+
+def test_view_edit_service_messagebox_settings(
+    client_request,
+    active_user_with_permissions,
+    service_one,
+):
+    service_one["oin"] = "01234567890123456789"
+    client_request.login(active_user_with_permissions)
+    page = client_request.get(
+        "main.edit_service_messagebox_settings",
+        service_id=SERVICE_ONE_ID,
+    )
+    oin_input = page.select_one("input", attrs={"name": "oin"})
+    assert oin_input["value"] == "01234567890123456789"
+    assert oin_input["maxlength"] == "20"
+    assert oin_input["pattern"] == "[0-9]*"
+    assert oin_input["inputmode"] == "numeric"
+
+
+def test_update_service_messagebox_settings(
+    client_request, active_user_with_permissions, service_one, mock_update_service
+):
+    client_request.login(active_user_with_permissions)
+    client_request.post(
+        "main.edit_service_messagebox_settings",
+        service_id=SERVICE_ONE_ID,
+        _data={"oin": "01234567890123456789"},
+        _expected_redirect=url_for(
+            "main.service_settings",
+            service_id=SERVICE_ONE_ID,
+        ),
+    )
+    mock_update_service.assert_called_with(SERVICE_ONE_ID, oin="01234567890123456789")
+
+
+def test_update_service_messagebox_settings_allows_blank(
+    client_request, active_user_with_permissions, service_one, mock_update_service
+):
+    service_one["oin"] = "01234567890123456789"
+    client_request.login(active_user_with_permissions)
+    client_request.post(
+        "main.edit_service_messagebox_settings",
+        service_id=SERVICE_ONE_ID,
+        _data={"oin": ""},
+        _expected_redirect=url_for(
+            "main.service_settings",
+            service_id=SERVICE_ONE_ID,
+        ),
+    )
+    mock_update_service.assert_called_with(SERVICE_ONE_ID, oin="")
+
+
+@pytest.mark.parametrize(
+    "oin",
+    (
+        "1234567890123456789",  # 19 digits
+        "123456789012345678901",  # 21 digits
+        "abcdefghijklmnopqrst",  # non-digit, 20 chars
+    ),
+)
+def test_update_service_messagebox_settings_rejects_invalid_oin(
+    client_request, active_user_with_permissions, service_one, mock_update_service, oin
+):
+    client_request.login(active_user_with_permissions)
+    page = client_request.post(
+        "main.edit_service_messagebox_settings",
+        service_id=SERVICE_ONE_ID,
+        _data={"oin": oin},
+        _expected_status=200,
+    )
+    assert page.select_one(".govuk-error-message")
+    assert mock_update_service.called is False
+
+
+def test_service_settings_links_to_set_messagebox_channel_page(
+    service_one,
+    client_request,
+    active_user_with_permissions,
+    no_reply_to_email_addresses,
+    no_letter_contact_blocks,
+    single_sms_sender,
+    mock_get_service_settings_page_common,
+    mocker,
+):
+    client_request.login(active_user_with_permissions)
+    page = client_request.get(
+        ".service_settings",
+        service_id=SERVICE_ONE_ID,
+    )
+    assert len(page.select(f'a[href="/services/{SERVICE_ONE_ID}/service-settings/set-messagebox"]')) == 1
+
+
+@pytest.mark.parametrize(
+    "initial_permissions,expected_initial_value",
+    [
+        (["email", "sms"], "False"),
+        (["email", "sms", "messagebox"], "True"),
+    ],
+)
+def test_view_set_messagebox_channel(
+    client_request,
+    active_user_with_permissions,
+    service_one,
+    initial_permissions,
+    expected_initial_value,
+):
+    service_one["permissions"] = initial_permissions
+    client_request.login(active_user_with_permissions)
+    page = client_request.get(
+        "main.service_set_messagebox_channel",
+        service_id=SERVICE_ONE_ID,
+    )
+    assert page.select_one("input[checked]")["value"] == expected_initial_value
+    assert len(page.select("input[checked]")) == 1
+
+
+@pytest.mark.parametrize(
+    "initial_permissions,posted_value,expected_updated_permissions",
+    [
+        (["email", "sms"], "True", ["email", "sms", "messagebox"]),
+        (["email", "sms", "messagebox"], "False", ["email", "sms"]),
+    ],
+)
+def test_switch_messagebox_channel_on_and_off(
+    client_request,
+    active_user_with_permissions,
+    service_one,
+    mock_update_service,
+    initial_permissions,
+    posted_value,
+    expected_updated_permissions,
+):
+    service_one["permissions"] = initial_permissions
+    client_request.login(active_user_with_permissions)
+    client_request.post(
+        "main.service_set_messagebox_channel",
+        service_id=SERVICE_ONE_ID,
+        _data={"enabled": posted_value},
+        _expected_redirect=url_for(
+            "main.service_settings",
+            service_id=SERVICE_ONE_ID,
+        ),
+    )
+    assert set(mock_update_service.call_args[1]["permissions"]) == set(expected_updated_permissions)
+
+
+def test_service_settings_shows_messagebox_limit_row_for_platform_admins(
+    service_one,
+    client_request,
+    platform_admin_user,
+    no_reply_to_email_addresses,
+    no_letter_contact_blocks,
+    single_sms_sender,
+    mock_get_service_settings_page_common,
+    mocker,
+):
+    service_one["permissions"] = ["email", "sms", "messagebox"]
+    client_request.login(platform_admin_user)
+    page = client_request.get(
+        ".service_settings",
+        service_id=SERVICE_ONE_ID,
+    )
+    assert len(page.select(f'a[href="/services/{SERVICE_ONE_ID}/service-settings/set-message-limit/messagebox"]')) == 1
+
+
+def test_service_settings_shows_daily_messagebox_limit_row_for_live_service(
+    service_one,
+    client_request,
+    active_user_with_permissions,
+    no_reply_to_email_addresses,
+    no_letter_contact_blocks,
+    single_sms_sender,
+    mock_get_service_settings_page_common,
+    mocker,
+):
+    service_one["permissions"] = ["email", "sms", "messagebox"]
+    service_one["restricted"] = False
+    client_request.login(active_user_with_permissions)
+    page = client_request.get(
+        ".service_settings",
+        service_id=SERVICE_ONE_ID,
+    )
+    assert (
+        len(page.select(f'a[href="/services/{SERVICE_ONE_ID}/service-settings/daily-message-limit/messagebox"]')) == 1
+    )
+
+
+def test_should_show_page_to_set_per_day_messagebox_message_limit(
+    client_request,
+    platform_admin_user,
+):
+    client_request.login(platform_admin_user)
+    page = client_request.get(
+        "main.set_per_day_messagebox_message_limit",
+        service_id=SERVICE_ONE_ID,
+    )
+    assert normalize_spaces(page.select_one("label").text) == "Dagelijkse limiet voor bericht"
+    assert normalize_spaces(page.select_one("input[type=text]")["value"]) == "1,000"
+
+
+@pytest.mark.parametrize(
+    "new_limit, expected_api_argument",
+    [
+        ("1", 1),
+        ("250000", 250_000),
+    ],
+)
+def test_set_per_day_messagebox_message_limit(
+    client_request,
+    platform_admin_user,
+    new_limit,
+    expected_api_argument,
+    mock_update_service,
+    mocker,
+):
+    client_request.login(platform_admin_user)
+    client_request.post(
+        "main.set_per_day_messagebox_message_limit",
+        service_id=SERVICE_ONE_ID,
+        _data={
+            "message_limit": new_limit,
+        },
+    )
+    assert mock_update_service.call_args_list == [
+        mocker.call(SERVICE_ONE_ID, messagebox_message_limit=expected_api_argument)
+    ]
+
+
 def test_service_settings_links_to_edit_service_billing_details_page_for_platform_admins(
     service_one,
     client_request,
