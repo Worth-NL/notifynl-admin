@@ -51,9 +51,11 @@ class Service(JSONModel):
     international_sms_message_limit: int
     sms_message_limit: int
     letter_message_limit: int
+    messagebox_message_limit: int
     rate_limit: int
     name: str
     notes: str
+    oin: str
     prefix_sms: bool
     purchase_order_number: str
     service_callback_api: Any
@@ -75,6 +77,7 @@ class Service(JSONModel):
         "inbound_sms",
         "international_letters",
         "international_sms",
+        "messagebox",
         "sms_to_uk_landlines",
     )
 

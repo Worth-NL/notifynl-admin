@@ -665,6 +665,7 @@ def mock_update_service(notify_admin, mocker):
                     "sms_message_limit",
                     "email_message_limit",
                     "letter_message_limit",
+                    "messagebox_message_limit",
                     "restricted",
                     "sms_sender",
                     "permissions",
