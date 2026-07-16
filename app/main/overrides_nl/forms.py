@@ -2127,6 +2127,17 @@ class AdminBillingDetailsForm(StripWhitespaceForm):
     notes = GovukTextareaField("Aantekeningen", validators=[])
 
 
+class AdminMessageboxSettingsForm(StripWhitespaceForm):
+    oin = GovukTextInputField(
+        "OIN",
+        validators=[
+            Optional(),
+            Regexp(regex=r"^\d+$", message="Alleen cijfers"),
+            Length(min=20, max=20, thing="OIN", unit="cijfers"),
+        ],
+    )
+
+
 class ServiceLetterContactBlockForm(StripWhitespaceForm):
     letter_contact_block = GovukTextareaField(
         validators=[NotifyDataRequired(thing="een verzendadres"), NoCommasInPlaceHolders()]
@@ -2165,6 +2176,7 @@ class ServiceSwitchChannelForm(OnOffSettingForm):
                 "email": "emails",
                 "sms": "SMSjes",
                 "letter": "brieven",
+                "messagebox": "berichten via de berichtenbox",
             }.get(channel)
         )
 
@@ -2821,6 +2833,7 @@ class AdminServiceAddDataRetentionForm(StripWhitespaceForm):
             ("email", "E-mail"),
             ("sms", "SMS"),
             ("letter", "Brief"),
+            ("messagebox", "Berichtenbox"),
         ],
         thing="a type of notification",
     )
