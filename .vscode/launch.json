@@ -24,7 +24,23 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "watch"],
       "preLaunchTask": "NPM Admin install"
-    }
+    },
+    {
+      "name": "Admin (non-local)",
+      "type": "debugpy",
+      "request": "launch",
+      "envFile": "${workspaceFolder}/.env",
+      "module": "flask",
+      "args": [
+        "run",
+        "--port",
+        "6012",
+        "--debug"
+      ],
+      "autoStartBrowser": true,
+      "consoleName": "Admin",
+      "preLaunchTask": "Install Admin Python requirements"
+    },
   ],
   "compounds": [
     {
