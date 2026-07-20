@@ -147,6 +147,10 @@ class Test(Development):
     DEBUG = True
     TESTING = True
     WTF_CSRF_ENABLED = False
+    # Explicitly unset - don't inherit Development's os.getenv("SERVER_NAME"), which picks up
+    # the local devcontainer's dev-server-only .env value (loaded by pytest-dotenv) and breaks
+    # url_for(_external=True) assertions that expect the default "localhost".
+    SERVER_NAME = None
     S3_BUCKET_CSV_UPLOAD = "test-notifications-csv-upload"
     S3_BUCKET_CONTACT_LIST_UPLOAD = "test-contact-list"
     S3_BUCKET_LOGO_UPLOAD = "public-logos-test"
