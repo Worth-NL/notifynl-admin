@@ -56,7 +56,6 @@ describe('CheckReportStatus', () => {
     // Clean up the mock module and restore the original functions
     document.body.removeChild($module);
     jest.restoreAllMocks();
-    mockLocation.reset()
   });
 
   describe('checkStatus', () => {
