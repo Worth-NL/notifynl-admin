@@ -3,6 +3,7 @@
 
 ago~=0.1
 humanize~=4.4
+pytz~=2025.2
 Flask-WTF~=1.2
 Flask-Login~=0.6
 
