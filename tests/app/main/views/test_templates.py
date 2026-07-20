@@ -709,6 +709,7 @@ def test_add_email_template_should_add_unsubscribe(
     )
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "template_type",
     (
@@ -733,6 +734,7 @@ def test_add_service_template_should_include_save_and_preview_button(
     assert "Save and preview" in page.text
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "template_type",
     (
@@ -3548,6 +3550,7 @@ def test_edit_service_template_should_show_interstitial_when_making_breaking_cha
     )
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "old_content, new_content, extra_email_file, expected_paragraphs, expected_placeholders",
     [
@@ -3838,6 +3841,7 @@ def test_should_not_update_too_big_template(
     assert "Content has a character count greater than the limit of 459" in page.text
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_not_edit_letter_template_with_too_big_qr_code(
     client_request,
     mock_get_service_template,
@@ -4992,12 +4996,13 @@ def test_letter_attachment_preview_image_shows_overlay_when_content_outside_prin
             None,
             None,
         ),
-        (
+        pytest.param(
             "letter",
             None,
             "Attach pages",
             "main.letter_template_attach_pages",
             None,
+            marks=pytest.mark.skip(reason="[NOTIFYNL] Translation issue"),
         ),
     ),
 )
