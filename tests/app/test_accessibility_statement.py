@@ -2,7 +2,13 @@ import re
 import subprocess
 from datetime import datetime
 
+import pytest
 
+
+@pytest.mark.skip(
+    reason="[NOTIFYNL] app/templates/views/accessibility_statement.html (upstream) is never served in NL - "
+    "the NL Jinja loader only resolves app/templates_nl/, which has no review-date metadata block"
+)
 def test_last_review_date():
     statement_file_path = "app/templates/views/accessibility_statement.html"
 
