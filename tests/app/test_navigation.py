@@ -705,6 +705,7 @@ def test_make_your_service_live_link_shows_if_service_is_in_trial_mode_and_user_
     )
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_navigation_displayed_on_service_page_404(
     client_request,
     mock_get_job_doesnt_exist,

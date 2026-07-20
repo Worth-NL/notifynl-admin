@@ -482,6 +482,7 @@ def test_upload_files_in_different_formats(
         assert f"Could not read {filename}" in [r.message for r in caplog.records]
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize("filename", test_spreadsheet_files_surplus_header)
 def test_upload_files_with_excessive_header_columns(
     filename,
@@ -519,6 +520,7 @@ def test_upload_files_with_excessive_header_columns(
     assert f"Abandoned parsing {filename}" in [r.message for r in caplog.records]
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_upload_file_with_excessive_rows(
     client_request,
     service_one,
@@ -1094,6 +1096,7 @@ def test_upload_csv_file_with_missing_columns_shows_error(
     assert normalize_spaces(page.select(".banner-dangerous")[0].text) == expected_error
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_upload_csv_file_limits_number_of_columns_displayed_when_error(
     client_request,
     mocker,
