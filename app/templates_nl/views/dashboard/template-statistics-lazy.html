@@ -5,18 +5,18 @@
     <div class='template-statistics-table'>
       {% call(item, row_number) list_table(
         [1],
-        caption="By template",
+        caption="Per template",
         caption_visible=True,
         empty_message='',
         field_headings=[
           'Template',
-          'Messages sent'
+          'Verzonden berichten'
         ],
         field_headings_visible=False
       ) %}
 
         {% call row_heading() %}
-          <span class="template-statistics-table-template-name" aria-label="Loading data for templates">
+          <span class="template-statistics-table-template-name" aria-label="Gegevens laden voor sjablonen">
             <span class="spark-bar">
               <span class="spark-bar-bar" style="width: 100%">
                 &nbsp;
@@ -29,7 +29,7 @@
         {% endcall %}
 
         {% call field() %}
-          <span class="spark-bar" aria-label="Loading data for messages sent">
+          <span class="spark-bar" aria-label="Gegevens laden voor verzonden berichten">
             <span class="spark-bar-bar" style="width: 100%">
               &nbsp;
             </span>

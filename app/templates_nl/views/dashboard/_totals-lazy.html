@@ -2,14 +2,14 @@
 {% from "components/loading-indicator.html" import loading_indicator %}
 
 {% set whitespace = "&ensp;"|safe %}
-{% set hidden_label = "<span class='govuk-visually-hidden'>Unknown </span>"|safe %}
+{% set hidden_label = "<span class='govuk-visually-hidden'>Onbekend </span>"|safe %}
 
 <div class="ajax-block-container">
   <div class="govuk-grid-row">
     <div id="total-email" class="govuk-grid-column-one-third">
       {{ big_number_with_status(
         loading_indicator(1),
-        999|message_count_label('email', suffix='sent'),
+        999|message_count_label('email', suffix='verstuurd'),
         whitespace,
         whitespace + hidden_label,
         False,
@@ -21,7 +21,7 @@
     <div id="total-sms" class="govuk-grid-column-one-third">
       {{ big_number_with_status(
         loading_indicator(2),
-        999|message_count_label('sms', suffix='sent'),
+        999|message_count_label('sms', suffix='verstuurd'),
         whitespace,
         whitespace + hidden_label,
         False,
@@ -33,7 +33,7 @@
     <div id="total-letters" class="govuk-grid-column-one-third">
       {{ big_number_with_status(
         loading_indicator(3),
-        999|message_count_label('letter', suffix='sent'),
+        999|message_count_label('letter', suffix='verstuurd'),
         whitespace,
         whitespace + hidden_label,
         False,
