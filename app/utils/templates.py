@@ -106,7 +106,7 @@ class BaseLetterImageTemplate(BaseLetterTemplate):
             "page_numbers": self.page_numbers,
             "address": self._address_block,
             "contact_block": self._contact_block,
-            "date": self._date,
+            "date": self.date,
             "subject": self.subject,
             "message": self._message,
             "show_postage": bool(self.postage),
