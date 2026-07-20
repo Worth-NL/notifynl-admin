@@ -113,21 +113,6 @@ if ($addBrandingOptionsForm) {
   new AddBrandingOptionsControls($addBrandingOptionsForm);
 }
 
-const $checkReportStatusEl = document.querySelector('[data-notify-module="check-report-status"]');
-if ($checkReportStatusEl) {
-  new CheckReportStatus($checkReportStatusEl).checkStatus();
-}
-
-const $authTypeForm = document.querySelector('[data-notify-module="set-auth-type-form"]');
-if ($authTypeForm) {
-  new LiveCheckboxControls($authTypeForm);
-}
-
-const $addBrandingOptionsForm = document.querySelector('[data-notify-module="add-branding-options-form"]');
-if ($addBrandingOptionsForm) {
-  new AddBrandingOptionsControls($addBrandingOptionsForm);
-}
-
 const $radioSelectElementsArray = document.querySelectorAll('[data-notify-module="radio-select"]');
 
 if ($radioSelectElementsArray.length > 0) {

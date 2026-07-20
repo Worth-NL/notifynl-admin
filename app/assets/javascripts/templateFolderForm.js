@@ -278,9 +278,14 @@
       if (['move-to-existing-folder', 'add-new-template'].indexOf(this.currentState) !== -1) {
         mode = 'dialog';
       }
-      GOVUK.stickAtBottomWhenScrolling.setMode(mode);
-      // make sticky JS recalculate its cache of the element's position
-      GOVUK.stickAtBottomWhenScrolling.recalculate();
+      // stickAtBottomWhenScrolling lives in the ESM bundle, which loads as a deferred
+      // module script - it can still be undefined here if this (classic, non-deferred)
+      // script's ready handler wins the race and runs first.
+      if (GOVUK.stickAtBottomWhenScrolling) {
+        GOVUK.stickAtBottomWhenScrolling.setMode(mode);
+        // make sticky JS recalculate its cache of the element's position
+        GOVUK.stickAtBottomWhenScrolling.recalculate();
+      }
 
       if (currentStateObj && ('setFocus' in currentStateObj) && !this.formHasError()) {
         scrollTop = $(window).scrollTop();
