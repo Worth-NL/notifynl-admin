@@ -4,7 +4,7 @@ from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from functools import partial
 from html import escape
-from itertools import chain
+from itertools import chain, repeat
 from math import ceil
 from numbers import Number
 from zipfile import BadZipFile
@@ -115,6 +115,7 @@ from app.utils.govuk_frontend_field import (
     render_govuk_frontend_macro,
 )
 from app.utils.image_processing import CorruptImage, ImageProcessor, WrongImageFormat
+from app.utils.interruptible_io import InterruptibleIterableList, interruptible_iter
 from app.utils.user_permissions import (
     all_ui_permissions,
     organisation_user_permission_names,
@@ -457,12 +458,22 @@ class RadioFieldWithNoneOption(FieldWithNoneOption, RadioField):
 
 
 class NestedFieldMixin:
+    CHILD_MAP_ITERATION_INTERRUPTIBLE_EVERY = 128
+
+    @cached_property
     def children(self):
+        # beginning iteration through a Field is surprisingly expensive - cache the list of options
+        options = tuple(self)
+
         # start map with root option as a single child entry
-        child_map = {None: [option for option in self if option.data == self.NONE_OPTION_VALUE]}
+        child_map = {None: [option for option in options if option.data == self.NONE_OPTION_VALUE]}
 
         # add entries for all other children
-        for option in self:
+        for option in interruptible_iter(
+            options,
+            self.CHILD_MAP_ITERATION_INTERRUPTIBLE_EVERY,
+            label="child map iteration",
+        ):
             # assign all options with a NONE_OPTION_VALUE (not always None) to the None key
             if option.data == self.NONE_OPTION_VALUE:
                 child_ids = [folder["id"] for folder in self.all_template_folders if folder["parent_id"] is None]
@@ -471,22 +482,17 @@ class NestedFieldMixin:
                 child_ids = [folder["id"] for folder in self.all_template_folders if folder["parent_id"] == option.data]
                 key = option.data
 
-            child_map[key] = [option for option in self if option.data in child_ids]
+            child_map[key] = [option for option in options if option.data in child_ids]
 
         return child_map
-
-    # to be used as the only version of .children once radios are converted
-    @cached_property
-    def _children(self):
-        return self.children()
 
     def get_items_from_options(self, field):
         items = []
 
-        for option in self._children[None]:
+        for option in self.children[None]:
             item = self.get_item_from_option(option)
-            if option.data in self._children:
-                item["children"] = self.render_children(field.name, option.label.text, self._children[option.data])
+            if option.data in self.children:
+                item["children"] = self.render_children(field.name, option.label.text, self.children[option.data])
             items.append(item)
 
         return items
@@ -502,8 +508,8 @@ class NestedFieldMixin:
         for option in options:
             item = self.get_item_from_option(option)
 
-            if len(self._children[option.data]):
-                item["children"] = self.render_children(name, option.label.text, self._children[option.data])
+            if len(self.children[option.data]):
+                item["children"] = self.render_children(name, option.label.text, self.children[option.data])
 
             params["items"].append(item)
 
@@ -726,6 +732,25 @@ class GovukCheckboxesField(GovukFrontendWidgetMixin, SelectMultipleField):
         return params
 
 
+class InterruptibleItemsFieldMixin:
+    def __init__(self, *args, items_iteration_interruptible_every=32, **kwargs):
+        self.items_iteration_interruptible_every = items_iteration_interruptible_every
+        super().__init__(*args, **kwargs)
+
+    def get_items_from_options(self, field):
+        r = InterruptibleIterableList(super().get_items_from_options(field))
+        r.INTERRUPTIBLE_ITERABLE_INTERRUPTIBLE_EVERY = self.items_iteration_interruptible_every
+        r.INTERRUPTIBLE_ITERABLE_LABEL_OVERRIDE = self.__class__.__name__
+        # the returned InterruptibleIterableList *usually* survives an encounter with
+        # merge_jsonlike, but arbitrary processing steps are liable to replace it with
+        # a regular list or other Sequence, defeating its purpose
+        return r
+
+
+class InterruptibleItemsGovukCheckboxesField(InterruptibleItemsFieldMixin, GovukCheckboxesField):
+    pass
+
+
 # Wraps checkboxes rendering in HTML needed by the collapsible JS
 class GovukCollapsibleCheckboxesField(GovukCheckboxesField):
     param_extensions = {"hint": {"html": '<div class="selection-summary" role="region" aria-live="polite"></div>'}}
@@ -892,12 +917,32 @@ class GovukNestedRadiosField(NestedFieldMixin, GovukRadiosFieldWithNoneOption):
                     "hint": {"text": self.option_hints.get(option.data, "")},
                 }
             )
-            if len(self._children[option.data]):
-                item["children"] = self.render_children(name, option.label.text, self._children[option.data])
+            if len(self.children[option.data]):
+                item["children"] = self.render_children(name, option.label.text, self.children[option.data])
 
             params["items"].append(item)
 
         return render_govuk_frontend_macro(self.govuk_frontend_component_name, params=params)
+
+
+class InterruptibleChildRenderingNestedFieldMixin:
+    def __init__(self, *args, child_rendering_interruptible_every=32, **kwargs):
+        self.child_rendering_interruptible_dummy_iterator = interruptible_iter(
+            repeat(None),
+            child_rendering_interruptible_every,
+            label=self.__class__.__name__,
+        )
+        super().__init__(*args, **kwargs)
+
+    def render_children(self, *args, **kwargs):
+        next(self.child_rendering_interruptible_dummy_iterator)
+        return super().render_children(*args, **kwargs)
+
+
+class InterruptibleChildRenderingGovukNestedRadiosField(
+    InterruptibleChildRenderingNestedFieldMixin, GovukNestedRadiosField
+):
+    pass
 
 
 class GovukRadiosWithImagesField(GovukRadiosField):
@@ -2886,7 +2931,7 @@ class TemplateAndFoldersSelectionForm(OrderableFieldsForm):
             return self.move_to_new_folder_name.data
         return None
 
-    templates_and_folders = GovukCheckboxesField(
+    templates_and_folders = InterruptibleItemsGovukCheckboxesField(
         "Kies templates of mappen",
         validators=[required_for_ops("move-to-new-folder", "move-to-existing-folder")],
         choices=[],  # added to keep order of arguments, added properly in __init__
@@ -2896,7 +2941,7 @@ class TemplateAndFoldersSelectionForm(OrderableFieldsForm):
     # if no default set, it is set to None, which process_data transforms to '__NONE__'
     # this means '__NONE__' (self.ALL_TEMPLATES option) is selected when no form data has been submitted
     # set default to empty string so process_data method doesn't perform any transformation
-    move_to = GovukNestedRadiosField(
+    move_to = InterruptibleChildRenderingGovukNestedRadiosField(
         "Kies een map", default="", validators=[required_for_ops("move-to-existing-folder"), Optional()]
     )
 
