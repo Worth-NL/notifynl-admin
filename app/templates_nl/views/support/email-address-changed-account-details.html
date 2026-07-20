@@ -5,7 +5,7 @@
 {% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
 
 {% block per_page_title %}
-  Enter your account details
+  Vul uw accountgegevens in
 {% endblock %}
 
 {% block backLink %}
@@ -16,16 +16,16 @@
 
 <div class="govuk-grid-row">
   <div class="govuk-grid-column-two-thirds">
-    {{ govuk_page_header("Enter your account details") }}
+    {{ govuk_page_header("Vul uw accountgegevens in") }}
 
     <p class="govuk-body">
-      We’ll use them to look up your NotifyNL account before we contact you.
+      We gebruiken deze gegevens om uw NotifyNL-account op te zoeken voordat we contact met u opnemen.
     </p>
       {% call form_wrapper() %}
         {{ form.name(param_extensions={"classes": "govuk-!-width-full", "autocomplete": "name"}) }}
         {{ form.old_email_address(param_extensions={"classes": "govuk-!-width-full", "autocomplete": "email"}) }}
         {{ form.new_email_address(param_extensions={"classes": "govuk-!-width-full", "autocomplete": "email"}) }}
-        {{ sticky_page_footer('Send') }}
+        {{ sticky_page_footer('Versturen') }}
       {% endcall %}
   </div>
 </div>

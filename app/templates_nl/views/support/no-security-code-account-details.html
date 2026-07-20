@@ -5,7 +5,7 @@
 {% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
 
 {% block per_page_title %}
-  Enter your account details
+  Vul uw accountgegevens in
 {% endblock %}
 
 {% block backLink %}
@@ -16,16 +16,16 @@
 
 <div class="govuk-grid-row">
   <div class="govuk-grid-column-two-thirds">
-    {{ govuk_page_header("Enter your account details") }}
+    {{ govuk_page_header("Vul uw accountgegevens in") }}
 
     <p class="govuk-body">
-      We’ll use them to investigate why your security code has not arrived yet.
+      We gebruiken deze gegevens om te onderzoeken waarom u nog geen beveiligingscode heeft ontvangen.
     </p>
       {% call form_wrapper() %}
         {{ form.name(param_extensions={"classes": "govuk-!-width-full", "autocomplete": "name"}) }}
         {{ form.email_address(param_extensions={"classes": "govuk-!-width-full", "autocomplete": "email"}) }}
         {{ form.mobile_number(param_extensions={"classes": "govuk-!-width-full"}) }}
-        {{ sticky_page_footer('Send') }}
+        {{ sticky_page_footer('Versturen') }}
       {% endcall %}
   </div>
 </div>

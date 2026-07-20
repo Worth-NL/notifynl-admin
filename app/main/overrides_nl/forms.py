@@ -1820,60 +1820,54 @@ class SupportSignInIssuesForm(StripWhitespaceForm):
 
 
 class SupportNoSecurityCodeForm(StripWhitespaceForm):
-    name = GovukTextInputField("Name", validators=[NotifyDataRequired(thing="your name")])
-    email_address = make_email_address_field(
-        label="Email address", gov_user=False, required=True, thing="your email address"
-    )
+    name = GovukTextInputField("Naam", validators=[NotifyDataRequired(thing="uw naam")])
+    email_address = make_email_address_field(label="E-mailadres", gov_user=False, required=True, thing="uw e-mailadres")
     mobile_number = PhoneNumber(
-        "Mobile number",
+        "Mobiel telefoonnummer",
         validators=[
-            NotifyDataRequired(thing="your mobile number"),
+            NotifyDataRequired(thing="uw mobiele telefoonnummer"),
             ValidPhoneNumber(allow_international_sms=True),
         ],
     )
 
 
 class SupportMobileNumberChangedForm(StripWhitespaceForm):
-    name = GovukTextInputField("Name", validators=[NotifyDataRequired(thing="your name")])
-    email_address = make_email_address_field(
-        label="Email address", gov_user=False, required=True, thing="your email address"
-    )
+    name = GovukTextInputField("Naam", validators=[NotifyDataRequired(thing="uw naam")])
+    email_address = make_email_address_field(label="E-mailadres", gov_user=False, required=True, thing="uw e-mailadres")
     old_mobile_number = PhoneNumber(
-        "Old mobile number",
+        "Oud mobiel telefoonnummer",
         validators=[
-            NotifyDataRequired(thing="your old mobile number"),
+            NotifyDataRequired(thing="uw oude mobiele telefoonnummer"),
             ValidPhoneNumber(allow_international_sms=True),
         ],
     )
     new_mobile_number = PhoneNumber(
-        "New mobile number",
+        "Nieuw mobiel telefoonnummer",
         validators=[
-            NotifyDataRequired(thing="your new mobile number"),
+            NotifyDataRequired(thing="uw nieuwe mobiele telefoonnummer"),
             ValidPhoneNumber(allow_international_sms=True),
         ],
     )
 
 
 class SupportNoEmailLinkForm(StripWhitespaceForm):
-    name = GovukTextInputField("Name", validators=[NotifyDataRequired(thing="your name")])
-    email_address = make_email_address_field(
-        label="Email address", gov_user=False, required=True, thing="your email address"
-    )
+    name = GovukTextInputField("Naam", validators=[NotifyDataRequired(thing="uw naam")])
+    email_address = make_email_address_field(label="E-mailadres", gov_user=False, required=True, thing="uw e-mailadres")
 
 
 class SupportEmailAddressChangedForm(StripWhitespaceForm):
-    name = GovukTextInputField("Name", validators=[NotifyDataRequired(thing="your name")])
+    name = GovukTextInputField("Naam", validators=[NotifyDataRequired(thing="uw naam")])
     old_email_address = make_email_address_field(
-        label="Old email address",
+        label="Oud e-mailadres",
         gov_user=False,
         required=True,
-        thing="your old email address",
+        thing="uw oude e-mailadres",
     )
     new_email_address = make_email_address_field(
-        label="New email address",
+        label="Nieuw e-mailadres",
         gov_user=False,
         required=True,
-        thing="your new email address",
+        thing="uw nieuwe e-mailadres",
     )
 
 
