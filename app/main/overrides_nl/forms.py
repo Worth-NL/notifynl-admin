@@ -380,7 +380,9 @@ class GovukIntegerField(GovukTextInputField):
             if value == "":
                 value = 0
 
-        return super().process_formdata([value])
+            return super().process_formdata([value])
+
+        return super().process_formdata(valuelist)
 
     def pre_validate(self, form):
         if self.data:
@@ -401,7 +403,7 @@ class GovukIntegerField(GovukTextInputField):
             # it won’t have a submitted value yet so we can return early
             return super().__call__(**kwargs)
 
-        if self.get_form().is_submitted() and not self.get_form().validate():
+        if self.get_form().is_submitted() and self.get_form().errors:
             return super().__call__(value=(self.raw_data or [None])[0], **kwargs)
 
         try:
@@ -953,10 +955,11 @@ class GovukRadiosWithImagesField(GovukRadiosField):
         "fieldset": {"legend": {"classes": "govuk-fieldset__legend--l", "isPageHeading": True}},
     }
 
-    def __init__(self, label="", *, image_data, **kwargs):
+    def __init__(self, label="", *, image_data, disabled_values=(), **kwargs):
         super(GovukRadiosField, self).__init__(label, **kwargs)
 
         self.image_data = image_data
+        self.disabled_values = set(disabled_values)
 
     def get_item_from_option(self, option):
         # deepcopy to avoid mutating the same `dict` multiple times
@@ -969,6 +972,7 @@ class GovukRadiosWithImagesField(GovukRadiosField):
             "value": str(option.data),  # to protect against non-string types like uuids
             "checked": option.checked,
             "image": image_data,
+            "disabled": option.data in self.disabled_values,
         }
 
 
@@ -2278,6 +2282,21 @@ class AdminEditEmailBrandingForm(StripWhitespaceForm):
             ("org_banner", "Huisstijl banner"),
         ],
     )
+    height = GovukIntegerField(
+        "Logo hoogte (px)",
+        things="de hoogte van het logo in pixels",
+        validators=[Optional(), NumberRange(min=1, max=300, message="Logo hoogte moet tussen 1 en 300px zijn")],
+        param_extensions={"hint": {"text": "Laat leeg om de standaardhoogte te gebruiken"}},
+    )
+    alignment = GovukRadiosField(
+        "Uitlijning logo",
+        choices=[
+            ("left", "Links"),
+            ("center", "Gecentreerd"),
+            ("right", "Rechts"),
+        ],
+        default="left",
+    )
 
     def validate_name(self, name):
         op = request.form.get("operation")
@@ -2724,6 +2743,7 @@ class EmailBrandingChooseLogoForm(StripWhitespaceForm):
         "Kies een logo voor uw e-mails",
         choices=tuple((key, value["label"]) for key, value in BRANDING_OPTIONS_DATA.items()),
         image_data={key: value["image"] for key, value in BRANDING_OPTIONS_DATA.items()},
+        disabled_values={"single_identity"},
     )
 
 
@@ -2760,6 +2780,21 @@ class EmailBrandingChooseBannerColour(StripWhitespaceForm):
 
 class EmailBrandingAltTextForm(StripWhitespaceForm):
     alt_text = GovukTextInputField("Alt text", validators=[DataRequired(message="Kan niet leeg zijn")])
+    height = GovukIntegerField(
+        "Logo hoogte (px)",
+        things="de hoogte van het logo in pixels",
+        validators=[Optional(), NumberRange(min=1, max=300, message="Logo hoogte moet tussen 1 en 300px zijn")],
+        param_extensions={"hint": {"text": "Laat leeg om de standaardhoogte te gebruiken"}},
+    )
+    alignment = GovukRadiosField(
+        "Uitlijning logo",
+        choices=[
+            ("left", "Links"),
+            ("center", "Gecentreerd"),
+            ("right", "Rechts"),
+        ],
+        default="left",
+    )
 
     def validate_alt_text(self, field):
         if "logo" in field.data.lower():

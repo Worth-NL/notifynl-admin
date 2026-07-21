@@ -100,6 +100,8 @@ def email_template():
                 brand_logo=branding.logo_url,
                 brand_banner=branding.has_brand_banner,
                 brand_alt_text=branding.alt_text,
+                brand_height=branding.height,
+                brand_alignment=branding.alignment,
                 rebrand=True,
                 asset_path=current_app.config["ASSET_PATH"],
             )

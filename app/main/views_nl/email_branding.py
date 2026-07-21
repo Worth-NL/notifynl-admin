@@ -94,6 +94,8 @@ def platform_admin_update_email_branding(branding_id):
                 text=form.text.data,
                 colour=form.colour.data,
                 brand_type=form.brand_type.data,
+                height=form.height.data,
+                alignment=form.alignment.data,
                 updated_by_id=current_user.id,
             )
             Events.update_email_branding(
@@ -226,6 +228,8 @@ def platform_admin_create_email_branding():
                 text=form.text.data,
                 colour=form.colour.data,
                 brand_type=form.brand_type.data,
+                height=form.height.data,
+                alignment=form.alignment.data,
                 created_by_id=current_user.id,
             )
         except HTTPError as e:

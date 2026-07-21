@@ -918,6 +918,7 @@ urllib3==2.6.3 \
     --hash=sha256:bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4
     # via
     #   botocore
+    #   notifications-utils
     #   requests
     #   sentry-sdk
 werkzeug==3.1.3 \

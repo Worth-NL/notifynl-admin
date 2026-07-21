@@ -384,6 +384,8 @@ def email_branding_set_alt_text(service_id):
 
         new_email_branding = EmailBranding.create(
             alt_text=form.alt_text.data,
+            height=form.height.data,
+            alignment=form.alignment.data,
             **email_branding_data,
         )
 

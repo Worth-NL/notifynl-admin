@@ -1722,6 +1722,8 @@ def test_POST_email_branding_set_alt_text_creates_branding_adds_to_pool_and_redi
         text=None,
         colour=None,
         brand_type=brand_type,
+        height=None,
+        alignment="left",
         created_by_id=active_user_with_permissions["id"],
     )
     mock_add_to_branding_pool.assert_called_once_with(service_one["organisation"], [fake_uuid])
@@ -1778,6 +1780,8 @@ def test_POST_email_branding_set_alt_text_creates_branding_and_redirects_if_serv
         text=None,
         colour=None,
         brand_type="org",
+        height=None,
+        alignment="left",
         created_by_id=active_user_with_permissions["id"],
     )
     assert not mock_add_to_branding_pool.called
@@ -1838,6 +1842,8 @@ def test_POST_email_branding_set_alt_text_creates_branding_sets_org_default_if_a
         text=None,
         colour=None,
         brand_type="org",
+        height=None,
+        alignment="left",
         created_by_id=active_user_with_permissions["id"],
     )
     mock_add_to_branding_pool.assert_called_once_with(service_one["organisation"], [fake_uuid])

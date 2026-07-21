@@ -18,11 +18,16 @@ class RadiosWithImages {
 
     this.$module = $module;
     this.$module.addEventListener('click', this.handleImageClick);
-    this.$module.style.cursor = 'pointer';
+
+    const image_input = this.$module.nextElementSibling.querySelector(`[aria-describedby="${this.$module.id}"]`);
+    this.$module.style.cursor = image_input.disabled ? 'not-allowed' : 'pointer';
   }
 
   handleImageClick () {
     const image_input = this.nextElementSibling.querySelector(`[aria-describedby="${this.id}"]`);
+    if (image_input.disabled) {
+      return;
+    }
     image_input.checked = true;
     image_input.focus();
   };
