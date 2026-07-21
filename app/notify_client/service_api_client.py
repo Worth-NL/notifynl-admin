@@ -1,5 +1,5 @@
 from contextvars import ContextVar
-from datetime import datetime
+from datetime import UTC, datetime
 
 from flask import current_app
 from notifications_utils.clients.redis import daily_limit_cache_key
@@ -10,6 +10,7 @@ from app import memo_resetters
 from app.constants import LetterLanguageOptions
 from app.extensions import redis_client
 from app.notify_client import NotifyAdminAPIClient, _attach_current_user, cache
+from app.utils.time import str_no_tz
 
 ALLOWED_TEMPLATE_ATTRIBUTES = {
     "content",
@@ -20,6 +21,7 @@ ALLOWED_TEMPLATE_ATTRIBUTES = {
     "letter_welsh_subject",
     "letter_welsh_content",
     "has_unsubscribe_link",
+    "archive_email_file_ids",
 }
 
 
@@ -103,6 +105,7 @@ class ServiceAPIClient(NotifyAdminAPIClient):
             "billing_contact_email_addresses",
             "billing_contact_names",
             "billing_reference",
+            "confirmed_email_sender_name",
             "confirmed_unique",
             "contact_link",
             "created_by",
@@ -154,7 +157,7 @@ class ServiceAPIClient(NotifyAdminAPIClient):
             sms_message_limit=get_daily_limit(live, "sms"),
             letter_message_limit=get_daily_limit(live, "letter"),
             restricted=(not live),
-            go_live_at=str(datetime.utcnow()) if live else None,
+            go_live_at=str_no_tz(datetime.now(UTC)) if live else None,
             has_active_go_live_request=False,
         )
 
@@ -285,18 +288,8 @@ class ServiceAPIClient(NotifyAdminAPIClient):
         """
         Retrieve all templates for service.
         """
-        endpoint = f"/service/{service_id}/template?detailed=False"
+        endpoint = f"/service/{service_id}/template"
         return self.get(endpoint)
-
-    # This doesn’t need caching because it calls through to a method which is cached
-    def count_service_templates(self, service_id, template_type=None):
-        return len(
-            [
-                template
-                for template in self.get_service_templates(service_id)["data"]
-                if (not template_type or template["template_type"] == template_type)
-            ]
-        )
 
     @cache.delete("service-{service_id}-templates")
     @cache.delete_by_pattern("service-{service_id}-template-{template_id}*")
@@ -541,7 +534,7 @@ class ServiceAPIClient(NotifyAdminAPIClient):
     def parse_custom_email_sender_name_http_error(cls, http_error):
         """Inspect the HTTPError from a update_service call and return a human-friendly error message"""
         if http_error.message.get("email_sender_local_part"):
-            return "Sender name cannot include characters from a non-Latin alphabet"
+            return "‘From’ name cannot include characters from a non-Latin alphabet"
 
         return None
 

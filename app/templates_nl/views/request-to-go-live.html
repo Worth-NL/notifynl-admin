@@ -9,10 +9,10 @@
 {% endblock %}
 
 {% block maincolumn_content %}
-  {# as options objects are different for completed vs not completed #}
+  {# as options objects are different for completed vs incomplete #}
   {# we set them here to reuse them later #}
   {% set completed_status = {"text": "Voltooid"} %}
-  {% set not_completed_status = {"tag": {"text": "Niet voltooid"}} %}
+  {% set incomplete_status = {"tag": {"text": "Niet voltooid"}} %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-full">
       {{ page_header('Maak uw service live') }}
@@ -35,7 +35,7 @@
               "classes": "govuk-link--no-visited-state",
             },
             "href": url_for('main.confirm_service_is_unique', service_id=current_service.id),
-            "status": completed_status if current_service.confirmed_unique else not_completed_status,
+            "status": completed_status if current_service.confirmed_unique else incomplete_status,
           },
           {
             "title": {
@@ -43,15 +43,15 @@
               "classes": "govuk-link--no-visited-state",
             },
             "href": url_for('main.estimate_usage', service_id=current_service.id),
-            "status": completed_status if current_service.has_estimated_usage else not_completed_status,
+            "status": completed_status if current_service.has_estimated_usage else incomplete_status,
           },
           {
             "title": {
-              "text": "Geef een ander teamlid de toestemming van ‘instellingen beheren’",
+              "text": "Finish setting up your team",
               "classes": "govuk-link--no-visited-state",
             },
             "href": url_for('main.manage_users', service_id=current_service.id),
-            "status": completed_status if current_service.has_team_members_with_manage_service_permission else not_completed_status,
+            "status": completed_status if current_service.has_team_members_with_manage_service_permission else incomplete_status,
           },
           {
             "title": {
@@ -59,22 +59,30 @@
               "classes": "govuk-link--no-visited-state",
             },
             "href": url_for('main.choose_template', service_id=current_service.id),
-            "status": completed_status if current_service.has_templates else not_completed_status,
+            "status": completed_status if current_service.has_templates else incomplete_status,
           }]
         %}
 
         {# all the conditional task #}
         {% if current_service.intending_to_send_email %}
-          {% do task_list_items.append(
+          {% do task_list_items.extend([
+            {
+              "title": {
+                "text": "Choose a ‘from’ name",
+                "classes": "govuk-link--no-visited-state",
+              },
+              "href":  url_for('main.service_email_sender_change', service_id=current_service.id),
+              "status": completed_status if current_service.confirmed_email_sender_name else incomplete_status,
+            },
             {
               "title": {
                 "text": "Voeg een antwoord-naar-e-mailadres toe",
                 "classes": "govuk-link--no-visited-state",
               },
               "href":  url_for('main.service_email_reply_to', service_id=current_service.id),
-              "status": completed_status if current_service.has_email_reply_to_address else not_completed_status,
+              "status": completed_status if current_service.has_email_reply_to_address else incomplete_status,
             }
-          )%}
+          ])%}
         {% endif %}
         {% if (current_service.intending_to_send_sms and current_service.shouldnt_use_govuk_as_sms_sender) %}
           {% do task_list_items.append(
@@ -84,7 +92,7 @@
                 "classes": "govuk-link--no-visited-state",
               },
               "href": url_for('main.service_sms_senders', service_id=current_service.id),
-              "status": completed_status if not current_service.sms_sender_is_govuk else not_completed_status,
+              "status": completed_status if not current_service.sms_sender_is_govuk else incomplete_status,
             }
           )%}
         {% endif %}
@@ -108,7 +116,7 @@
                   "classes": "govuk-link--no-visited-state",
                 },
                 "href": url_for('main.service_agreement', service_id=current_service.id),
-                "status": completed_status if current_service.organisation.agreement_signed else not_completed_status,
+                "status": completed_status if current_service.organisation.agreement_signed else incomplete_status,
               }
             ]
           }) }}
@@ -125,14 +133,13 @@
             Alleen teamleden met een e -mailadres van de overheid kunnen vragen om live te gaan.
           </p>
         {% else %}
-          {% set go_live_disabled = True if (not current_service.go_live_checklist_completed) or (current_service.able_to_accept_agreement and not current_service.organisation.agreement_signed) else False %}
-          {% if go_live_disabled %}
-            <p class="govuk-body">
-             U moet alle taken voltooien voordat u een verzoek kunt verzenden om live te gaan.
-            </p>
-          {% endif %}
           {% call form_wrapper() %}
-            {{ page_footer('Stuur een verzoek om live te gaan', disabled=go_live_disabled) }}
+            <div class="js-stick-at-bottom-when-scrolling">
+              <p class="govuk-body">
+               U moet alle taken voltooien voordat u een verzoek kunt verzenden om live te gaan.
+              </p>
+              {{ page_footer('Stuur een verzoek om live te gaan') }}
+            </div>
           {% endcall %}
         {% endif %}
       {% endif %}

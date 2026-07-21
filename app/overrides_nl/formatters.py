@@ -61,7 +61,7 @@ def format_time_24h(date):
 def get_human_day(time, date_prefix="", include_day_of_week=False):
     #  Add 1 minute to transform 00:00 into ‘midnight today’ instead of ‘midnight tomorrow’
     date = (utc_string_to_aware_gmt_datetime(time) - timedelta(minutes=1)).date()
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     if date == (now + timedelta(days=1)).date():
         return "morgen"
@@ -79,8 +79,8 @@ def get_human_day(time, date_prefix="", include_day_of_week=False):
 
 def format_time(date):
     return {"0:00": "Middernacht", "12:00": "Middag"}.get(
-        utc_string_to_aware_gmt_datetime(date).strftime("%-I:%M%p"),
-        utc_string_to_aware_gmt_datetime(date).strftime("%-I:%M%p"),
+        utc_string_to_aware_gmt_datetime(date).strftime("%H:%M"),
+        utc_string_to_aware_gmt_datetime(date).strftime("%H:%M"),
     ).lower()
 
 
@@ -428,6 +428,38 @@ def format_yes_no(value, yes="Ja", no="Nee", none="Geen"):
     if value is None:
         return none
     return yes if value else no
+
+
+def format_pluralise(files):
+    if len(files) == 1:
+        return ""
+    return "s"
+
+
+def format_provider(provider):
+    if provider == "firetext":
+        return provider.title()
+
+    return provider.upper()
+
+
+def format_retention_period(weeks):
+    if weeks == 1:
+        return "1 week after sending"
+    if weeks < 9:
+        return f"{weeks} weeks after sending"
+    delta = humanize.naturaltime(timedelta(weeks=weeks)).replace(" ago", "")
+    return Markup(f"""
+        {weeks} weeks after sending<br>
+        <span class='govuk-hint'>(about {delta})</span>
+    """)
+
+
+def format_invite_status(user_status):
+    if user_status == "pending":
+        return "(uitgenodigd)"
+    if user_status == "cancelled":
+        return "(uitnodiging geannuleerd)"
 
 
 def format_auth_type(auth_type, with_indefinite_article=False):

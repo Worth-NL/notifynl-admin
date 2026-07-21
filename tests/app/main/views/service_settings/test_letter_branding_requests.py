@@ -466,7 +466,7 @@ def test_POST_letter_branding_upload_branding_validates_svg_file(
     )
 
     assert normalize_spaces(page.select_one("h1").text) == "Upload letter branding"
-    assert normalize_spaces(page.select_one(".error-message").text) == expected_error
+    assert normalize_spaces(page.select_one(".govuk-error-message").text) == expected_error
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -480,7 +480,7 @@ def test_POST_letter_branding_upload_branding_rejects_non_svg_files(client_reque
     )
 
     assert normalize_spaces(page.select_one("h1").text) == "Upload letter branding"
-    assert normalize_spaces(page.select_one(".error-message").text) == "Branding must be an SVG file"
+    assert normalize_spaces(page.select_one(".govuk-error-message").text) == "Branding must be an SVG file"
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -494,7 +494,7 @@ def test_POST_letter_branding_upload_branding_scans_for_viruses(client_request, 
     )
 
     assert normalize_spaces(page.select_one("h1").text) == "Upload letter branding"
-    assert normalize_spaces(page.select_one(".error-message").text) == "This file contains a virus"
+    assert normalize_spaces(page.select_one(".govuk-error-message").text) == "This file contains a virus"
 
 
 def test_POST_letter_branding_upload_branding_redirects_on_success(client_request, mock_antivirus_virus_free, mocker):

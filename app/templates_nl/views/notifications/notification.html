@@ -59,8 +59,7 @@
          </p>
       {% elif notification.status == 'technical-failure' %}
         <p class="notification-status-cancelled">
-          Technische fout – Notify probeert opnieuw zodra het team het probleem heeft opgelost
-        </p>
+          <a class="govuk-link govuk-link--destructive" href="{{ url_for('main.guidance_message_status', notification_type='letter') }}">Technische fout</a> – Probeer niet om deze brief opnieuw te versturen        </p>
       {% else %}
         {% if notification.sent_with_test_key %}
           {% if notification.is_precompiled_letter %}
@@ -97,7 +96,7 @@
           {% else %}
             <div>&nbsp;</div>
           {% endif %}
-          <a class="govuk-link govuk-link--no-visited-state page-footer-right-aligned-link-without-button" href="{{ url_for('main.view_letter_notification_as_preview', service_id=current_service.id, notification_id=notification.id, filetype='pdf') }}" download>Download als PDF</a>
+          <a class="govuk-link govuk-link--no-visited-state page-footer-right-aligned-link-without-button" href="{{ url_for('main.view_letter_notification_as_preview', service_id=current_service.id, notification_id=notification.id, filetype='pdf') }}">Download als PDF</a>
         </div>
       </div>
     {% elif template.template_type == 'email' %}

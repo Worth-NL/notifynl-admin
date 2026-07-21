@@ -1,5 +1,14 @@
 {
     "version": "2.0.0",
+    "inputs": [
+        {
+            "id": "installLocalEditables",
+            "type": "pickString",
+            "description": "Local dev only: after installing requirements, switch notifications-utils and govuk-frontend-jinja back to local editable installs (../notifynl-utils, ../LandRegistry-frontend-jinja)?",
+            "options": ["No", "Yes"],
+            "default": "No"
+        }
+    ],
     "tasks": [
         {
             "label": "Generate Admin version file",
@@ -12,10 +21,42 @@
             }
         },
         {
+            "label": "Generate Admin Python requirements_nl.in",
+            "type": "shell",
+            "command": "uv pip compile requirements_nl.in -o requirements_nl.txt ",
+            "dependsOn": [],
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "close": true
+            },
+            "options": {
+                "env": {
+                    "UV_LINK_MODE": "copy"
+                }
+            }
+        },
+        {
+            "label": "Generate Admin Python requirements_nl_test.in",
+            "type": "shell",
+            "command": "uv pip compile requirements_nl_test.in -o requirements_nl_test.txt ",
+            "dependsOn": ["Generate Admin Python requirements_nl.in"],
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "close": true
+            },
+            "options": {
+                "env": {
+                    "UV_LINK_MODE": "copy"
+                }
+            }
+        },
+        {
             "label": "Install Admin Python requirements",
             "type": "shell",
-            "command": "uv pip install -r requirements_nl_test.txt",
-            "dependsOn": ["Generate Admin version file"],
+            "command": "uv pip install -r requirements_nl_test.txt && if [ \"${input:installLocalEditables}\" = \"Yes\" ]; then uv pip uninstall notifications-utils govuk-frontend-jinja; uv pip install -e ../notifynl-utils -e ../LandRegistry-frontend-jinja; fi",
+            "dependsOn": ["Generate Admin version file","Generate Admin Python requirements_nl_test.in"],
             "problemMatcher": [],
             "presentation": {
                 "showReuseMessage": false,
@@ -30,12 +71,12 @@
         {
             "label": "Install Admin local notifynl-utils",
             "type": "shell",
-            "command": "uv pip uninstall notifynl-utils && uv pip install -e ../notifynl-utils",
+            "command": "uv pip uninstall notifications-utils && uv pip install -e ../notifynl-utils",
             "dependsOn": ["Install Admin Python requirements"],
             "problemMatcher": [],
             "presentation": {
                 "showReuseMessage": false,
-                "close": true
+                // "close": true
             },
             "options": {
                 "env": {

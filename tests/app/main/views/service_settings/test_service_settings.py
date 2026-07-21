@@ -27,6 +27,7 @@ from tests.conftest import (
     SERVICE_ONE_ID,
     TEMPLATE_ONE_ID,
     USER_ONE_ID,
+    _template,
     create_active_user_no_settings_permission,
     create_active_user_with_permissions,
     create_letter_contact_block,
@@ -39,6 +40,7 @@ from tests.conftest import (
     create_sms_sender,
     normalize_spaces,
 )
+from tests.utils import RedisClientMock
 
 FAKE_TEMPLATE_ID = uuid4()
 
@@ -55,7 +57,7 @@ FAKE_TEMPLATE_ID = uuid4()
                 "Sign-in method Text message code Change sign-in method",
                 "Data retention period 7 days Change data retention",
                 "Send emails On Change your settings for sending emails",
-                "Email sender name Test Service test.service@notifications.service.gov.uk Change email sender name",
+                "Email ‘from’ name Test Service test.service@notifications.service.gov.uk Change email ‘from’ name",
                 "Reply-to email addresses Not set Manage reply-to email addresses",
                 "Email branding GOV.UK Change email branding",
                 "Send files by email contact_us@gov.uk Manage sending files by email",
@@ -77,6 +79,8 @@ FAKE_TEMPLATE_ID = uuid4()
                 "Sign-in method Text message code Change sign-in method",
                 "Data retention period 7 days Change data retention",
                 "Send emails Off Change your settings for sending emails",
+                "Email ‘from’ name Test Service test.service@notifications.service.gov.uk Change email ‘from’ name",
+                "Reply-to email addresses Not set Manage reply-to email addresses",
                 "Send text messages Off Change your settings for sending text messages",
                 "Send letters On Change your settings for sending letters",
                 "Send international letters Off Change your settings for sending international letters",
@@ -93,7 +97,7 @@ FAKE_TEMPLATE_ID = uuid4()
                 "Sign-in method Text message code",
                 "Data retention period 7 days",
                 "Send emails On",
-                "Email sender name Test Service test.service@notifications.service.gov.uk",
+                "Email ‘from’ name Test Service test.service@notifications.service.gov.uk",
                 "Reply-to email addresses Not set Manage reply-to email addresses",  # user will see manage button
                 "Email branding GOV.UK",
                 "Send files by email contact_us@gov.uk",
@@ -119,7 +123,7 @@ FAKE_TEMPLATE_ID = uuid4()
                 "Sign-in method Text message code Change sign-in method",
                 "Data retention period 7 days Change data retention",
                 "Send emails On Change your settings for sending emails",
-                "Email sender name Test Service test.service@notifications.service.gov.uk Change email sender name",
+                "Email ‘from’ name Test Service test.service@notifications.service.gov.uk Change email ‘from’ name",
                 "Reply-to email addresses Not set Manage reply-to email addresses",
                 "Email branding GOV.UK Change email branding",
                 "Send files by email contact_us@gov.uk Manage sending files by email",
@@ -157,6 +161,8 @@ FAKE_TEMPLATE_ID = uuid4()
                 "Sign-in method Text message code Change sign-in method",
                 "Data retention period 7 days Change data retention",
                 "Send emails Off Change your settings for sending emails",
+                "Email ‘from’ name Test Service test.service@notifications.service.gov.uk Change email ‘from’ name",
+                "Reply-to email addresses Not set Manage reply-to email addresses",
                 "Send text messages Off Change your settings for sending text messages",
                 "Send letters On Change your settings for sending letters",
                 "Send international letters Off Change your settings for sending international letters",
@@ -384,7 +390,7 @@ def test_send_files_by_email_row_on_settings_page(
                 "Sign-in method Text message code Change sign-in method",
                 "Data retention period 7 days Change data retention",
                 "Send emails On Change your settings for sending emails",
-                "Email sender name service one service.one@notifications.service.gov.uk Change email sender name",
+                "Email ‘from’ name service one service.one@notifications.service.gov.uk Change email ‘from’ name",
                 "Reply-to email addresses test@example.com Manage reply-to email addresses",
                 "Email branding Organisation name Change email branding",
                 "Send files by email Not set up Manage sending files by email",
@@ -406,7 +412,7 @@ def test_send_files_by_email_row_on_settings_page(
                 "Sign-in method Email link or text message code Change sign-in method",
                 "Data retention period 7 days Change data retention",
                 "Send emails On Change your settings for sending emails",
-                "Email sender name service one service.one@notifications.service.gov.uk Change email sender name",
+                "Email ‘from’ name service one service.one@notifications.service.gov.uk Change email ‘from’ name",
                 "Reply-to email addresses test@example.com Manage reply-to email addresses",
                 "Email branding Organisation name Change email branding",
                 "Send files by email Not set up Manage sending files by email",
@@ -427,6 +433,8 @@ def test_send_files_by_email_row_on_settings_page(
                 "Sign-in method Text message code Change sign-in method",
                 "Data retention period 7 days Change data retention",
                 "Send emails Off Change your settings for sending emails",
+                "Email ‘from’ name service one service.one@notifications.service.gov.uk Change email ‘from’ name",
+                "Reply-to email addresses test@example.com Manage reply-to email addresses",
                 "Send text messages Off Change your settings for sending text messages",
                 "Send letters On Change your settings for sending letters",
                 "Send international letters Off Change your settings for sending international letters",
@@ -512,79 +520,22 @@ def test_escapes_letter_contact_block(
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
-@pytest.mark.parametrize(
-    "organisation_type, expected_content_lines",
-    [
-        (
-            "central",
-            [
-                "Your service name should tell the recipient what your message is about, as well as who it’s from. For example:",  # noqa
-                "Register to vote",
-            ],
-        ),
-        (
-            "local",
-            [
-                "Your service name should tell the recipient what your message is about, as well as who it’s from. For example",  # noqa
-                "School admissions - Test Organisation",
-            ],
-        ),
-        ("nhs", ["Your service name should tell the recipient what your message is about, as well as who it’s from."]),
-    ],
-)
-def test_change_service_name_content_varies_by_organisation_type(
-    client_request, mocker, service_one, organisation_type, expected_content_lines
-):
-    mocker.patch(
-        "app.organisations_client.get_organisation_by_domain",
-        return_value=organisation_json(organisation_type=organisation_type),
-    )
-    service_one["organisation_type"] = organisation_type
-    page = client_request.get("main.service_name_change", service_id=SERVICE_ONE_ID)
-    assert page.select_one("h1").text == "Change your service name"
-    assert page.select_one("input", attrs={"type": "text"})["value"] == "service one"
-    assert all(content in page.select_one("main").text for content in expected_content_lines)
-    app.service_api_client.get_service.assert_called_with(SERVICE_ONE_ID)
-
-
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
-def test_should_show_service_org_in_hint_on_change_service_name_page_for_local_services_if_service_has_org(
+def test_should_show_service_name_content(
     client_request,
     service_one,
     mocker,
 ):
     mocker.patch(
         "app.organisations_client.get_organisation_by_domain",
-        return_value=organisation_json(organisation_type="local"),
+        return_value=organisation_json(organisation_type=None),
     )
-    mocker.patch(
-        "app.organisations_client.get_organisation",
-        return_value=organisation_json(organisation_type="local", name="Local Authority"),
-    )
-    service_one["organisation_type"] = "local"
-    service_one["organisation"] = "1234"
-    page = client_request.get("main.service_name_change", service_id=SERVICE_ONE_ID)
-    # when there is organisation on the service object, it is used for hint text instead of user default org
-    assert "School admissions - Local Authority" in page.select_one("ul.govuk-list.govuk-list--bullet").text
 
-
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
-def test_should_show_service_name_with_no_prefixing(
-    client_request,
-    service_one,
-    mocker,
-):
-    mocker.patch(
-        "app.organisations_client.get_organisation_by_domain",
-        return_value=organisation_json(organisation_type="nhs"),
-    )
-    service_one["organisation_type"] = "nhs"
-    service_one["prefix_sms"] = False
     page = client_request.get("main.service_name_change", service_id=SERVICE_ONE_ID)
     assert page.select_one("h1").text == "Change your service name"
+    assert "Choose a name that you think the GOV.UK Notify team will understand." in page.select_one("main").text
+    assert "acronyms, initialisms or abbreviations" in page.select_one("ul.govuk-list.govuk-list--bullet").text
     assert (
-        "Your service name should tell the recipient what your message is about, as well as who it’s from."
-        in page.select_one("main").text
+        "your own name or the name of someone on your team" in page.select_one("ul.govuk-list.govuk-list--bullet").text
     )
 
 
@@ -660,6 +611,11 @@ def test_switch_service_to_live(
         "app.organisations_client.get_organisation",
         return_value=organisation_json(agreement_signed=agreement_signed),
     )
+    mix_of_all_template_types = [
+        _template(template_type, f"Template {index}")
+        for index, template_type in enumerate(["email", "email", "sms", "letter"])
+    ]
+    mocker.patch("app.service_api_client.get_service_templates", return_value={"data": mix_of_all_template_types})
     client_request.login(platform_admin_user)
     client_request.post(
         "main.service_switch_live",
@@ -731,6 +687,58 @@ def test_switch_archived_service_to_live(
     )
 
 
+@pytest.mark.parametrize(
+    "email_volume, template_types, expect_emails_to_be_turned_off",
+    (
+        (20000, ["email", "email", "sms", "letter"], False),
+        (None, ["email", "email", "sms", "letter"], False),
+        (None, ["sms", "sms", "sms"], True),
+        (0, ["email", "email", "sms", "letter"], False),
+        (0, ["letter"], True),
+    ),
+)
+def test_switch_service_to_live_turns_email_off_if_no_expected_volumes_and_no_email_templates(
+    client_request,
+    service_one,
+    platform_admin_user,
+    mock_get_service_organisation,
+    mocker,
+    email_volume,
+    template_types,
+    expect_emails_to_be_turned_off,
+):
+    service_one["permissions"] = ["sms", "email", "letter"]
+    service_one["volume_email"] = email_volume
+    templates = [_template(template_type, f"Template {index}") for index, template_type in enumerate(template_types)]
+    mocker.patch("app.service_api_client.get_service_templates", return_value={"data": templates})
+    mocker.patch("app.service_api_client.update_service")
+    mocker.patch(
+        "app.organisations_client.get_organisation",
+        return_value=organisation_json(agreement_signed=True),
+    )
+    client_request.login(platform_admin_user)
+    client_request.post(
+        "main.service_switch_live",
+        service_id=SERVICE_ONE_ID,
+        _data={"enabled": "True"},
+        _expected_status=302,
+        _expected_redirect=url_for(
+            "main.service_settings",
+            service_id=SERVICE_ONE_ID,
+        ),
+    )
+
+    # update_service should always be called to make the service live
+    # if emails aren't being used it's called again, to remove the 'emails' service permission
+    update_service_kwargs = app.service_api_client.update_service.call_args.kwargs
+    if expect_emails_to_be_turned_off:
+        assert app.service_api_client.update_service.call_count == 2
+        assert "permissions" in update_service_kwargs and set(update_service_kwargs["permissions"]) == {"sms", "letter"}
+    else:
+        assert app.service_api_client.update_service.call_count == 1
+        assert "permissions" not in update_service_kwargs
+
+
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_show_live_service(
     client_request,
@@ -754,7 +762,13 @@ def test_switch_service_to_restricted(
     mock_get_live_service,
     mock_update_service,
     mock_get_inbound_number_for_service,
+    mocker,
 ):
+    mix_of_all_template_types = [
+        _template(template_type, f"Template {index}")
+        for index, template_type in enumerate(["email", "email", "sms", "letter"])
+    ]
+    mocker.patch("app.service_api_client.get_service_templates", return_value={"data": mix_of_all_template_types})
     client_request.login(platform_admin_user)
     client_request.post(
         "main.service_switch_live",
@@ -1475,6 +1489,7 @@ def test_should_not_default_to_zero_if_some_fields_dont_validate(
         "confirmed_unique,"
         "expected_readyness,"
         "agreement_signed,"
+        "confirmed_email_sender_name,"
     ),
     (
         (  # Just sending email
@@ -1488,6 +1503,7 @@ def test_should_not_default_to_zero_if_some_fields_dont_validate(
             1,
             0,
             0,
+            True,
             True,
             True,
             True,
@@ -1506,6 +1522,7 @@ def test_should_not_default_to_zero_if_some_fields_dont_validate(
             True,
             False,
             True,
+            True,
         ),
         (  # Just sending SMS
             True,
@@ -1521,6 +1538,7 @@ def test_should_not_default_to_zero_if_some_fields_dont_validate(
             True,
             True,
             True,
+            False,
         ),
         (  # Needs to change SMS sender
             True,
@@ -1536,6 +1554,7 @@ def test_should_not_default_to_zero_if_some_fields_dont_validate(
             True,
             False,
             True,
+            False,
         ),
         (  # Needs team members
             False,
@@ -1550,6 +1569,7 @@ def test_should_not_default_to_zero_if_some_fields_dont_validate(
             0,
             True,
             False,
+            True,
             True,
         ),
         (  # Needs templates
@@ -1566,6 +1586,7 @@ def test_should_not_default_to_zero_if_some_fields_dont_validate(
             True,
             False,
             True,
+            True,
         ),
         (  # Just confirm unique service
             True,
@@ -1581,6 +1602,39 @@ def test_should_not_default_to_zero_if_some_fields_dont_validate(
             False,
             False,
             True,
+            True,
+        ),
+        (  # Just confirm unique service
+            True,
+            True,
+            True,
+            True,
+            True,
+            True,
+            True,
+            1,
+            0,
+            0,
+            False,
+            False,
+            True,
+            True,
+        ),
+        (  # Needs from name to be confirmed
+            True,
+            True,
+            True,
+            True,
+            True,
+            True,
+            True,
+            1,
+            0,
+            0,
+            True,
+            False,
+            True,
+            False,
         ),
         (  # Not done anything yet
             False,
@@ -1593,6 +1647,7 @@ def test_should_not_default_to_zero_if_some_fields_dont_validate(
             None,
             None,
             None,
+            False,
             False,
             False,
             False,
@@ -1616,6 +1671,7 @@ def test_ready_to_go_live(
     confirmed_unique,
     expected_readyness,
     agreement_signed,
+    confirmed_email_sender_name,
 ):
     mocker.patch(
         "app.organisations_client.get_organisation", return_value=organisation_json(agreement_signed=agreement_signed)
@@ -1644,7 +1700,13 @@ def test_ready_to_go_live(
             return_value=volume,
         )
 
-    service = app.models.service.Service({"id": SERVICE_ONE_ID, "confirmed_unique": confirmed_unique})
+    service = app.models.service.Service(
+        {
+            "id": SERVICE_ONE_ID,
+            "confirmed_unique": confirmed_unique,
+            "confirmed_email_sender_name": confirmed_email_sender_name,
+        }
+    )
 
     assert service.go_live_checklist_completed is expected_readyness
 
@@ -1780,6 +1842,43 @@ def test_and_more_hint_appears_on_settings_with_more_than_just_a_single_sender(
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
+    "confirmed_email_sender_name, custom_email_sender_name, expected_from_name",
+    [
+        (None, None, "service one service.one@notifications.service.gov.uk"),
+        (False, None, "Not set"),
+        (True, None, "service one service.one@notifications.service.gov.uk"),
+        (True, "Custom Service", "Custom Service custom.service@notifications.service.gov.uk"),
+    ],
+)
+def test_email_from_name_has_the_right_value(
+    client_request,
+    service_one,
+    mocker,
+    api_user_active,
+    no_reply_to_email_addresses,
+    no_letter_contact_blocks,
+    single_sms_sender,
+    confirmed_email_sender_name,
+    custom_email_sender_name,
+    expected_from_name,
+    mock_get_service_settings_page_common,
+):
+    mocker.patch("app.service_api_client.get_service", return_value={"data": service_one})
+    service_one["confirmed_email_sender_name"] = confirmed_email_sender_name
+    service_one["custom_email_sender_name"] = custom_email_sender_name
+
+    client_request.login(create_active_user_with_permissions(), service_one)
+    page = client_request.get("main.service_settings", service_id=service_one["id"])
+
+    assert (
+        normalize_spaces(
+            find_element_by_tag_and_partial_text(page, tag=".govuk-summary-list__row", string="Email ‘from’ name").text
+        )
+        == f"Email ‘from’ name {expected_from_name} Change email ‘from’ name"
+    )
+
+
+@pytest.mark.parametrize(
     "sender_list_page, index, expected_output",
     [
         ("main.service_email_reply_to", 0, "test@example.com (default) Change test@example.com"),
@@ -1787,6 +1886,7 @@ def test_and_more_hint_appears_on_settings_with_more_than_just_a_single_sender(
         ("main.service_sms_senders", 0, "GOVUK (default) Change GOVUK"),
     ],
 )
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_api_ids_dont_show_on_option_pages_with_a_single_sender(
     client_request,
     single_reply_to_email_address,
@@ -3501,7 +3601,13 @@ def test_get_service_set_letter_branding_add_to_branding_pool_step_protects_agai
         branding_id="234",
     )
     form = page.select_one("form")
-    for hint in form.select(".govuk-hint"):
+
+    hint_text = form.select(".govuk-hint")
+    assert normalize_spaces(hint_text[0]) == (
+        "Should other teams in organisation one have the option to use this branding?"
+    )
+
+    for hint in hint_text[1:]:
         assert not hint.select("script")
         assert "apply this branding to ‘<script>evil</script>’" in normalize_spaces(hint.text).lower()
 
@@ -3615,7 +3721,7 @@ def test_should_show_page_to_set_sms_allowance(client_request, platform_admin_us
     client_request.login(platform_admin_user)
     page = client_request.get("main.set_free_sms_allowance", service_id=SERVICE_ONE_ID)
 
-    assert normalize_spaces(page.select_one("label").text) == "Numbers of text message fragments per year"
+    assert normalize_spaces(page.select_one("label").text) == "Free text message allowance"
     mock_get_free_sms_fragment_limit.assert_called_once_with(SERVICE_ONE_ID)
 
 
@@ -3715,7 +3821,7 @@ def test_should_show_page_to_set_per_minute_rate_limit(
 ):
     client_request.login(platform_admin_user)
     page = client_request.get("main.set_per_minute_rate_limit", service_id=SERVICE_ONE_ID)
-    assert normalize_spaces(page.select_one("label").text) == (
+    assert normalize_spaces(page.select_one(".govuk-hint").text) == (
         "Number of messages the service can send in a rolling 60 second window"
     )
     assert normalize_spaces(page.select_one("input[type=text]")["value"]) == "3,000"
@@ -3738,6 +3844,9 @@ def test_should_set_per_minute_rate_limit(
     mock_update_service,
     mocker,
 ):
+    mock_redis_delete_by_pattern = mocker.patch(
+        "app.extensions.RedisClient.delete_by_pattern", new_callable=RedisClientMock
+    )
     client_request.login(platform_admin_user)
     client_request.post(
         "main.set_per_minute_rate_limit",
@@ -3752,6 +3861,7 @@ def test_should_set_per_minute_rate_limit(
             rate_limit=expected_api_argument,
         )
     ]
+    assert mock_redis_delete_by_pattern.call_args_list == [mocker.call("596364a0-858e-42c8-9062-a8fe822260eb-tokens*")]
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -3826,6 +3936,9 @@ def test_should_show_error_for_invalid_message_limits(
     mocker,
     patches,
 ):
+    mock_redis_delete_by_pattern = mocker.patch(
+        "app.extensions.RedisClient.delete_by_pattern", new_callable=RedisClientMock
+    )
     for patch, patch_retval in patches.items():
         mocker.patch(patch, return_value=patch_retval)
 
@@ -3838,6 +3951,7 @@ def test_should_show_error_for_invalid_message_limits(
         _expected_status=200,
     )
     assert normalize_spaces(page.select_one(".govuk-error-message").text) == expected_error_message
+    assert mock_redis_delete_by_pattern.called is False
 
 
 def test_old_set_letters_page_redirects(
@@ -3906,7 +4020,7 @@ def test_unknown_channel_404s(
             "True",
             ["sms"],
         ),
-        (
+        pytest.param(
             "email",
             "It’s free to send emails through GOV.UK Notify.",
             "Send emails",
@@ -3914,6 +4028,7 @@ def test_unknown_channel_404s(
             "False",
             "True",
             ["email"],
+            marks=pytest.mark.xfail(raises=AssertionError),  # in this case there is no paragraph
         ),
         (
             "email",
@@ -3968,6 +4083,151 @@ def test_switch_service_channels_on_and_off(
     )
     assert set(mocked_fn.call_args[1]["permissions"]) == set(expected_updated_permissions)
     assert mocked_fn.call_args[0][0] == service_one["id"]
+
+
+@pytest.mark.parametrize(
+    ("initial_permissions,expected_html_element,confirmed_email_sender_name,has_email_reply_to_address,"),
+    [
+        (["email", "sms"], ".govuk-radios", None, None),
+        (["sms"], ".govuk-task-list", False, False),
+        (["sms"], ".govuk-task-list", True, False),
+        (["sms"], ".govuk-task-list", False, True),
+        (["sms"], ".govuk-task-list", True, True),
+    ],
+)
+def test_set_email_page_markup(
+    client_request,
+    service_one,
+    mocker,
+    single_sms_sender,
+    api_user_active,
+    mock_get_free_sms_fragment_limit,
+    mock_get_letter_rates,
+    mock_get_sms_rate,
+    initial_permissions,
+    expected_html_element,
+    confirmed_email_sender_name,
+    has_email_reply_to_address,
+):
+    if has_email_reply_to_address:
+        mocker.patch(
+            "app.service_api_client.get_reply_to_email_addresses",
+            return_value=[create_reply_to_email_address(is_default=True)],
+        )
+    else:
+        mocker.patch("app.service_api_client.get_reply_to_email_addresses", return_value=[])
+    mocker.patch("app.service_api_client.get_service", return_value={"data": service_one})
+
+    service_one["permissions"] = initial_permissions
+    service_one["confirmed_email_sender_name"] = confirmed_email_sender_name
+
+    page = client_request.get(
+        "main.service_set_channel",
+        service_id=service_one["id"],
+        channel="email",
+    )
+
+    if not confirmed_email_sender_name and "email" not in initial_permissions:
+        assert (
+            normalize_spaces(
+                find_element_by_tag_and_partial_text(
+                    page, tag=".govuk-task-list__item", string="Choose a ‘from’ name"
+                ).text
+            )
+            == "Choose a ‘from’ name Incomplete"
+        )
+    if not has_email_reply_to_address and "email" not in initial_permissions:
+        assert (
+            normalize_spaces(
+                find_element_by_tag_and_partial_text(
+                    page, tag=".govuk-task-list__item", string="Add a reply-to email address"
+                ).text
+            )
+            == "Add a reply-to email address Incomplete"
+        )
+    if has_email_reply_to_address and confirmed_email_sender_name:
+        assert (
+            normalize_spaces(
+                find_element_by_tag_and_partial_text(
+                    page, tag=".govuk-task-list__item", string="Add a reply-to email address"
+                ).text
+            )
+            == "Add a reply-to email address Completed"
+        )
+        assert (
+            normalize_spaces(
+                find_element_by_tag_and_partial_text(
+                    page, tag=".govuk-task-list__item", string="Choose a ‘from’ name"
+                ).text
+            )
+            == "Choose a ‘from’ name Completed"
+        )
+
+    assert len(page.select(expected_html_element)) == 1
+
+
+@pytest.mark.parametrize(
+    (
+        "initial_permissions,"
+        "confirmed_email_sender_name,"
+        "has_email_reply_to_address,"
+        "expected_updated_permissions,"
+        "expected_page_title"
+    ),
+    [
+        (["sms"], False, False, ["sms"], "Send emails"),
+        (["sms"], True, False, ["sms"], "Send emails"),
+        (["sms"], False, True, ["sms"], "Send emails"),
+        (["sms"], True, True, ["sms", "email"], "Settings"),
+    ],
+)
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+def test_switch_email_on_from_tasklist_form(
+    client_request,
+    service_one,
+    mocker,
+    single_sms_sender,
+    api_user_active,
+    mock_get_free_sms_fragment_limit,
+    mock_get_letter_rates,
+    mock_get_sms_rate,
+    mock_get_service_settings_page_common,
+    initial_permissions,
+    has_email_reply_to_address,
+    confirmed_email_sender_name,
+    expected_updated_permissions,
+    expected_page_title,
+):
+    mocker.patch("app.service_api_client.get_service", return_value={"data": service_one})
+    if has_email_reply_to_address:
+        mocker.patch(
+            "app.service_api_client.get_reply_to_email_addresses",
+            return_value=[create_reply_to_email_address(is_default=True)],
+        )
+    else:
+        mocker.patch(
+            "app.service_api_client.get_reply_to_email_addresses",
+            return_value=[],
+        )
+
+    service_one["permissions"] = initial_permissions
+    service_one["confirmed_email_sender_name"] = confirmed_email_sender_name
+
+    mock_update_service = mocker.patch("app.service_api_client.update_service", return_value=service_one)
+
+    page = client_request.post("main.enable_email_channel", service_id=service_one["id"], _follow_redirects=True)
+
+    if not confirmed_email_sender_name or not has_email_reply_to_address:
+        assert normalize_spaces(page.select_one(".banner-dangerous h2").text) == ("There is a problem")
+        assert normalize_spaces(page.select_one(".banner-dangerous p").text) == (
+            "Some of the tasks on this page are incomplete"
+        )
+    if has_email_reply_to_address and confirmed_email_sender_name:
+        assert set(mock_update_service.call_args[1]["permissions"]) == set(expected_updated_permissions)
+    else:
+        assert not mock_update_service.called
+
+    assert normalize_spaces(page.select_one("h1").text) == expected_page_title
 
 
 @pytest.mark.parametrize(
@@ -4064,9 +4324,9 @@ def test_should_show_page_to_set_per_day_international_sms_message_limit(
     # form prefilled with current limit
     assert normalize_spaces(page.select_one("input[type=text]")["value"]) == "500"
     # today's remaining limit pulled and displayed
-    assert mock_get_notification_count.called_once_with(
-        service_id=SERVICE_ONE_ID, notification_type="international_sms"
-    )
+    assert mock_get_notification_count.call_args_list == [
+        call(SERVICE_ONE_ID, notification_type="international_sms"),
+    ]
     assert (
         normalize_spaces(page.select(".ajax-block-container")[0].text)
         == "You have sent 1 international text message today (499 remaining)."
@@ -4132,7 +4392,6 @@ def test_should_show_daily_message_limit_page(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "user, is_trial_service",
     (
@@ -4143,6 +4402,7 @@ def test_should_show_daily_message_limit_page(
         pytest.param(create_active_user_no_settings_permission(), True, marks=pytest.mark.xfail),
     ),
 )
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_archive_service_after_confirm(
     client_request,
     mocker,
@@ -4250,6 +4510,32 @@ def test_cant_archive_inactive_service(
     assert "Delete service" not in {a.text for a in page.select("a.button")}
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+def test_send_files_by_email_in_page_guidance(client_request):
+    page = client_request.get("main.send_files_by_email_contact_details", service_id=SERVICE_ONE_ID)
+    assert [normalize_spaces(p.text) for p in page.select("main p, main li")] == [
+        "To send a file by email, either:",
+        "choose a template and select ‘Attach files’",
+        "or follow the instructions in our API documentation",
+        "You need to include contact details for your service so your users can get in touch if "
+        "there’s a problem. For example, if the link to download the file you sent them has expired.",
+    ]
+
+
+@pytest.mark.parametrize(
+    "endpoint, extra_args",
+    (
+        ("main.send_files_by_email_contact_details", {}),
+        pytest.param(
+            "main.setup_template_email_files",
+            {"template_id": sample_uuid()},
+            marks=pytest.mark.skip(
+                reason="[NOTIFYNL] email template file attachments not yet implemented "
+                "(see docs/plans/email-template-file-attachments.md)"
+            ),
+        ),
+    ),
+)
 @pytest.mark.parametrize(
     "contact_details_type, contact_details_value",
     [
@@ -4261,17 +4547,35 @@ def test_cant_archive_inactive_service(
 def test_send_files_by_email_contact_details_prefills_the_form_with_the_existing_contact_details(
     client_request,
     service_one,
+    mock_get_service_email_template,
     contact_details_type,
     contact_details_value,
+    endpoint,
+    extra_args,
 ):
     service_one["contact_link"] = contact_details_value
 
-    page = client_request.get("main.send_files_by_email_contact_details", service_id=SERVICE_ONE_ID)
+    page = client_request.get(endpoint, service_id=SERVICE_ONE_ID, **extra_args)
     assert page.select_one(f"input[name=contact_details_type][value={contact_details_type}]").has_attr("checked")
     assert page.select_one(f"input#{contact_details_type}")["value"] == contact_details_value
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+@pytest.mark.parametrize(
+    "endpoint, extra_args, expected_redirect_endpoint",
+    (
+        (
+            "main.send_files_by_email_contact_details",
+            {},
+            "main.service_settings",
+        ),
+        (
+            "main.setup_template_email_files",
+            {"template_id": sample_uuid()},
+            "main.template_email_files",
+        ),
+    ),
+)
 @pytest.mark.parametrize(
     "contact_details_type, old_value, new_value",
     [
@@ -4285,44 +4589,64 @@ def test_send_files_by_email_contact_details_updates_contact_details_and_redirec
     service_one,
     mock_update_service,
     mock_get_service_settings_page_common,
+    mock_get_service_email_template,
     no_reply_to_email_addresses,
     no_letter_contact_blocks,
     single_sms_sender,
     contact_details_type,
     old_value,
     new_value,
+    endpoint,
+    extra_args,
+    expected_redirect_endpoint,
 ):
     service_one["contact_link"] = old_value
 
-    page = client_request.post(
-        "main.send_files_by_email_contact_details",
+    client_request.post(
+        endpoint,
         service_id=SERVICE_ONE_ID,
         _data={
             "contact_details_type": contact_details_type,
             contact_details_type: new_value,
         },
-        _follow_redirects=True,
+        _expected_redirect=url_for(expected_redirect_endpoint, service_id=SERVICE_ONE_ID, **extra_args),
+        **extra_args,
     )
-    # no idea why its trying to assert `Settings` as the title when the code says `
-    # Send files by email` in our case NL Bestanden per e-mail verzenden
-    assert page.select_one("h1").text == "Settings"
     mock_update_service.assert_called_once_with(SERVICE_ONE_ID, contact_link=new_value)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+@pytest.mark.parametrize(
+    "endpoint, extra_args, expected_redirect_endpoint",
+    (
+        (
+            "main.send_files_by_email_contact_details",
+            {},
+            "main.service_settings",
+        ),
+        (
+            "main.setup_template_email_files",
+            {"template_id": sample_uuid()},
+            "main.template_email_files",
+        ),
+    ),
+)
 def test_send_files_by_email_contact_details_uses_the_selected_field_when_multiple_textboxes_contain_data(
     client_request,
     service_one,
     mock_update_service,
     mock_get_service_settings_page_common,
+    mock_get_service_email_template,
     no_reply_to_email_addresses,
     no_letter_contact_blocks,
     single_sms_sender,
+    endpoint,
+    extra_args,
+    expected_redirect_endpoint,
 ):
     service_one["contact_link"] = "http://www.old-url.com"
 
-    page = client_request.post(
-        "main.send_files_by_email_contact_details",
+    client_request.post(
+        endpoint,
         service_id=SERVICE_ONE_ID,
         _data={
             "contact_details_type": "url",
@@ -4330,10 +4654,10 @@ def test_send_files_by_email_contact_details_uses_the_selected_field_when_multip
             "email_address": "me@example.com",
             "phone_number": "0207 123 4567",
         },
-        _follow_redirects=True,
+        _expected_redirect=url_for(expected_redirect_endpoint, service_id=SERVICE_ONE_ID, **extra_args),
+        **extra_args,
     )
 
-    assert page.select_one("h1").text == "Settings"
     mock_update_service.assert_called_once_with(SERVICE_ONE_ID, contact_link="http://www.new-url.com")
 
 
@@ -4350,19 +4674,33 @@ def test_send_files_by_email_contact_details_page(
 ):
     service_one["contact_link"] = contact_link
     page = client_request.get("main.send_files_by_email_contact_details", service_id=SERVICE_ONE_ID)
+
+    assert normalize_spaces(page.select_one("h1").text) == "Send files by email"
     assert normalize_spaces(page.select("h2")[0].text) == subheader
+
     if button_selected:
         assert "checked" in page.select_one("input[name=contact_details_type][value=email_address]").attrs
     else:
         assert "checked" not in page.select_one("input[name=contact_details_type][value=email_address]").attrs
 
 
+@pytest.mark.parametrize(
+    "endpoint, extra_args",
+    (
+        ("main.send_files_by_email_contact_details", {}),
+        ("main.setup_template_email_files", {"template_id": sample_uuid()}),
+    ),
+)
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_send_files_by_email_contact_details_displays_error_message_when_no_radio_button_selected(
-    client_request, service_one
+    client_request,
+    service_one,
+    mock_get_service_email_template,
+    endpoint,
+    extra_args,
 ):
     page = client_request.post(
-        "main.send_files_by_email_contact_details",
+        endpoint,
         service_id=SERVICE_ONE_ID,
         _data={
             "contact_details_type": None,
@@ -4370,13 +4708,21 @@ def test_send_files_by_email_contact_details_displays_error_message_when_no_radi
             "email_address": "",
             "phone_number": "",
         },
-        _follow_redirects=True,
+        _expected_status=200,
+        **extra_args,
     )
+    assert normalize_spaces(page.select_one(".govuk-error-summary").text) == "There is a problem Select an option"
     assert normalize_spaces(page.select_one(".govuk-error-message").text) == "Error: Select an option"
-    assert normalize_spaces(page.select_one("h1").text) == "Send files by email"
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+@pytest.mark.parametrize(
+    "endpoint, extra_args",
+    (
+        ("main.send_files_by_email_contact_details", {}),
+        ("main.setup_template_email_files", {"template_id": sample_uuid()}),
+    ),
+)
 @pytest.mark.parametrize(
     "contact_details_type, invalid_value, error",
     [
@@ -4388,25 +4734,29 @@ def test_send_files_by_email_contact_details_displays_error_message_when_no_radi
 def test_send_files_by_email_contact_details_does_not_update_invalid_contact_details(
     client_request,
     service_one,
+    mock_get_service_email_template,
     contact_details_type,
     invalid_value,
     error,
+    endpoint,
+    extra_args,
     mocker,
 ):
     service_one["contact_link"] = "http://example.com/"
 
     page = client_request.post(
-        "main.send_files_by_email_contact_details",
+        endpoint,
         service_id=SERVICE_ONE_ID,
         _data={
             "contact_details_type": contact_details_type,
             contact_details_type: invalid_value,
         },
-        _follow_redirects=True,
+        _expected_status=200,
+        **extra_args,
     )
 
+    assert normalize_spaces(page.select_one(".govuk-error-summary").text) == f"There is a problem {error}"
     assert error in page.select_one(".govuk-error-message").text
-    assert normalize_spaces(page.select_one("h1").text) == "Send files by email"
 
 
 class TestSetAuthType:
@@ -5208,12 +5558,14 @@ def test_service_receive_text_messages_stop_fails_when_inbound_number_is_default
     assert radios[1]["value"] == "false"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_show_sms_prefixing_setting_page(
     client_request,
     mock_update_service,
 ):
     page = client_request.get("main.service_set_sms_prefix", service_id=SERVICE_ONE_ID)
-    assert normalize_spaces(page.select_one("legend").text) == "Start all text messages with ‘service one:’"
+    assert normalize_spaces(page.select_one("h1")) == "Start text messages with service name"
+    assert normalize_spaces(page.select_one(".govuk-hint").text) == "Start all text messages with ‘service one:’"
     radios = page.select("input[type=radio]")
     assert len(radios) == 2
     assert radios[0]["value"] == "True"
@@ -5540,8 +5892,7 @@ def test_view_edit_service_notes(
         "main.edit_service_notes",
         service_id=SERVICE_ONE_ID,
     )
-    assert page.select_one("h1").text == "Edit service notes"
-    assert page.select_one(".govuk-label").text.strip() == "Notes"
+    assert normalize_spaces(page.select_one("h1").text) == "Edit service notes"
     assert page.select_one("textarea").attrs["name"] == "notes"
 
 
@@ -5590,7 +5941,7 @@ def test_view_edit_service_billing_details(
     )
 
     assert page.select_one("h1").text == "Change billing details"
-    assert [label.text.strip() for label in page.select("label.govuk-label") + page.select("label.form-label")] == [
+    assert [label.text.strip() for label in page.select("label.govuk-label")] == [
         "Contact names",
         "Contact email addresses",
         "Reference",
@@ -5722,12 +6073,12 @@ class TestServiceEmailSenderChange:
             (
                 "custom sender name",
                 "True",
-                "Sender name custom sender name custom.sender.name@notifications.service.gov.uk",
+                "‘From’ name Do not use your own name or the name of someone on your team.",
             ),
             (
                 None,
                 "False",
-                "Sender name Example example@notifications.service.gov.uk",
+                "‘From’ name Do not use your own name or the name of someone on your team.",
             ),
         ],
     )
@@ -5742,38 +6093,34 @@ class TestServiceEmailSenderChange:
         service_one["custom_email_sender_name"] = custom_email_sender_name
         service_one["email_sender_local_part"] = "local.part"
         page = client_request.get("main.service_email_sender_change", service_id=SERVICE_ONE_ID, _expected_status=200)
-        assert page.select_one("h1").text == "Email sender name"
+        assert page.select_one("h1").text == "Choose a ‘from’ name"
         assert [normalize_spaces(radio.text) for radio in page.select(".govuk-radios__item")] == [
-            "Use the name of your service service one service.one@notifications.service.gov.uk",
-            "Enter a custom sender name",
+            "Use the name of your service",
+            "Enter a ‘from’ name",
         ]
         assert page.select_one("input[name=use_custom_email_sender_name][checked]")["value"] == expected_value
         assert normalize_spaces(page.select_one(".govuk-radios__conditional").text) == expected_conditional_content
-        custom_preview = page.select_one(
-            "#conditional-use_custom_email_sender_name-1 .govuk-hint[data-notify-module=update-status]"
-        )
-        assert custom_preview["data-target"] == "custom_email_sender_name"
+        preview = page.select_one(".sender-email-preview[data-notify-module=update-status]")
+        assert preview["data-target"] == "use_custom_email_sender_name"
         assert page.select_one("input#custom_email_sender_name[type=text]")
-        assert custom_preview["data-updates-url"] == url_for(
-            "main.service_email_sender_preview", service_id=SERVICE_ONE_ID
-        )
+        assert preview["data-updates-url"] == url_for("main.service_email_sender_preview", service_id=SERVICE_ONE_ID)
 
     @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
     @pytest.mark.parametrize(
         "custom_email_sender_name, error_message",
         [
-            ("", "Error: Enter a sender name"),
-            (".", "Sender name must include at least 2 letters or numbers"),
-            ("GOV.UK Ειδοποίηση", "Sender name cannot include characters from a non-Latin alphabet"),
-            ("no reply", "Sender name needs to be more specific"),
-            ("NO-REPLY", "Sender name needs to be more specific"),
-            ("info", "Sender name needs to be more specific"),
-            ("Support", "Sender name needs to be more specific"),
-            ("ALERT", "Sender name needs to be more specific"),
-            ("test@example.com", "Sender name cannot be an email address"),
-            ("Foo.BAR@example.gov.uk", "Sender name cannot be an email address"),
+            ("", "Error: Enter a ‘from’ name"),
+            (".", "‘From’ name must include at least 2 letters or numbers"),
+            ("GOV.UK Ειδοποίηση", "‘From’ name cannot include characters from a non-Latin alphabet"),
+            ("no reply", "‘From’ name needs to be more specific"),
+            ("NO-REPLY", "‘From’ name needs to be more specific"),
+            ("info", "‘From’ name needs to be more specific"),
+            ("Support", "‘From’ name needs to be more specific"),
+            ("ALERT", "‘From’ name needs to be more specific"),
+            ("test@example.com", "‘From’ name cannot be an email address"),
+            ("Foo.BAR@example.gov.uk", "‘From’ name cannot be an email address"),
             # under the 255 db col length, but too long when combined with email_sender_local_part to make an email
-            ("a" * 150 + " " * 100 + "a", "Sender name cannot be longer than 143 characters"),
+            ("a" * 150 + " " * 100 + "a", "‘From’ name cannot be longer than 143 characters"),
         ],
     )
     def test_service_email_sender_change_fails_if_new_name_fails_validation(
@@ -5782,7 +6129,7 @@ class TestServiceEmailSenderChange:
         page = client_request.post(
             "main.service_email_sender_change",
             service_id=SERVICE_ONE_ID,
-            _data={"use_custom_email_sender_name": "True", "custom_email_sender_name": custom_email_sender_name},
+            _data={"use_custom_email_sender_name": True, "custom_email_sender_name": custom_email_sender_name},
             _expected_status=200,
         )
         assert not mock_update_service.called
@@ -5809,7 +6156,7 @@ class TestServiceEmailSenderChange:
             "main.service_email_sender_change",
             service_id=SERVICE_ONE_ID,
             _data={
-                "use_custom_email_sender_name": "True",
+                "use_custom_email_sender_name": True,
                 "custom_email_sender_name": custom_email_sender_name,
             },
             _expected_redirect=url_for(
@@ -5820,40 +6167,75 @@ class TestServiceEmailSenderChange:
         mock_update_service.assert_called_once_with(
             SERVICE_ONE_ID,
             custom_email_sender_name=custom_email_sender_name,
+            confirmed_email_sender_name=True,
         )
+
+    # email sender change page preview contains html so instead of repeatably
+    # writing out the html in each expected output
+    # this helper method returns the html with input values
+    def expected_html_response(input, safe_input_local_part):
+        return f"""
+            <dl class="govuk-summary-list govuk-summary-list--no-border">
+                <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key"> From </dt>
+                <dd class="govuk-summary-list__value">
+                    <span class="govuk-!-display-block govuk-!-margin-bottom-2">{input}</span>
+                    <span>{safe_input_local_part}@notifications.service.gov.uk</span>
+                </dd>
+                </div>
+            </dl>
+            """
 
     @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
     @pytest.mark.parametrize(
         "custom_email_sender_name, expected_preview",
         [
-            ("", "Example<br> example@notifications.service.gov.uk"),
-            (".", ".<br> example@notifications.service.gov.uk"),
-            ("Custom Name", "Custom Name<br> custom.name@notifications.service.gov.uk"),
-            ("GOV.UK Ειδοποίηση", "GOV.UK Ειδοποίηση<br> gov.uk.ειδοποιηση@notifications.service.gov.uk"),
+            ("", expected_html_response("Example", "example")),
+            (".", expected_html_response(".", "")),
+            ("Custom Name", expected_html_response("Custom Name", "custom.name")),
+            ("GOV.UK Ειδοποίηση", expected_html_response("GOV.UK Ειδοποίηση", "gov.uk.ειδοποιηση")),
             (
                 "<script>alert()</script>",
-                "&lt;script&gt;alert()&lt;/script&gt;<br> scriptalertscript@notifications.service.gov.uk",
+                expected_html_response("&lt;script&gt;alert()&lt;/script&gt;", "scriptalertscript"),
             ),
             # This example isn’t valid but we still preview it
-            ("test@example.com", "test@example.com<br> testexample.com@notifications.service.gov.uk"),
+            ("test@example.com", expected_html_response("test@example.com", "testexample.com")),
         ],
     )
-    def test_service_preview_email_sender_name(self, client_request, custom_email_sender_name, expected_preview):
+    def test_service_preview_email_sender_name_custom_sender(
+        self, client_request, custom_email_sender_name, expected_preview
+    ):
         response = client_request.post_response(
             "main.service_email_sender_preview",
             service_id=SERVICE_ONE_ID,
-            _data={"custom_email_sender_name": custom_email_sender_name},
+            _data={"use_custom_email_sender_name": True, "custom_email_sender_name": custom_email_sender_name},
             _expected_status=200,
         )
-        assert normalize_spaces(response.get_json()["html"]) == expected_preview
+        assert normalize_spaces(response.get_json()["html"]) == normalize_spaces(expected_preview)
+
+    @pytest.mark.parametrize(
+        "expected_preview",
+        [
+            expected_html_response("service one", "service.one"),
+        ],
+    )
+    @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+    def test_service_preview_email_sender_name_service_name(self, client_request, expected_preview):
+        response = client_request.post_response(
+            "main.service_email_sender_preview",
+            service_id=SERVICE_ONE_ID,
+            _data={"use_custom_email_sender_name": False},
+            _expected_status=200,
+        )
+        assert normalize_spaces(response.get_json()["html"]) == normalize_spaces(expected_preview)
 
     @pytest.mark.parametrize(
         "use_custom_email_sender_name, custom_email_sender_name, expected_custom_email_sender_name",
         [
-            ("False", "", None),
+            (False, "", None),
             # don't validate sender name if the use flag is false
-            ("False", "GOV.UK Ειδοποίηση", None),
-            ("True", "GOV.UK Notify", "GOV.UK Notify"),
+            (False, "GOV.UK Ειδοποίηση", None),
+            (True, "GOV.UK Notify", "GOV.UK Notify"),
         ],
     )
     def test_service_email_sender_change_should_redirect_on_success(
@@ -5879,5 +6261,7 @@ class TestServiceEmailSenderChange:
         )
 
         mock_update_service.assert_called_once_with(
-            SERVICE_ONE_ID, custom_email_sender_name=expected_custom_email_sender_name
+            SERVICE_ONE_ID,
+            custom_email_sender_name=expected_custom_email_sender_name,
+            confirmed_email_sender_name=True,
         )

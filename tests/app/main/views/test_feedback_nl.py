@@ -1,0 +1,277 @@
+from unittest.mock import ANY
+
+import pytest
+from notifications_utils.clients.zendesk.zendesk_client import (
+    NotifySupportTicket,
+    NotifyTicketType,
+)
+
+from app.constants import ZendeskTopicId
+from app.models.feedback import PROBLEM_TICKET_TYPE, QUESTION_TICKET_TYPE
+from tests.conftest import normalize_spaces
+
+
+def test_get_support_what_do_you_want_to_do_page(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_what_do_you_want_to_do")
+    assert normalize_spaces(page.select("h1")) == "Wat wilt u doen?"
+    assert normalize_spaces(page.select_one("form label[for=support_type-0]").text) == "Meld een probleem"
+    assert page.select_one("form input#support_type-0")["value"] == PROBLEM_TICKET_TYPE
+    assert normalize_spaces(page.select_one("form label[for=support_type-1]").text) == "Stel een vraag of geef feedback"
+    assert page.select_one("form input#support_type-1")["value"] == QUESTION_TICKET_TYPE
+    assert normalize_spaces(page.select_one("form button").text) == "Doorgaan"
+
+
+def test_get_support_as_someone_in_the_public_sector(
+    client_request,
+    mocker,
+):
+    mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=True)
+    client_request.logout()
+    page = client_request.post(
+        "main.support",
+        _data={"who": "public-sector"},
+        _follow_redirects=True,
+    )
+    assert normalize_spaces(page.select("h1")) == "Wat wilt u doen?"
+    assert normalize_spaces(page.select_one("form label[for=support_type-0]").text) == "Meld een probleem"
+    assert page.select_one("form input#support_type-0")["value"] == PROBLEM_TICKET_TYPE
+    assert normalize_spaces(page.select_one("form label[for=support_type-1]").text) == "Stel een vraag of geef feedback"
+    assert page.select_one("form input#support_type-1")["value"] == QUESTION_TICKET_TYPE
+    assert normalize_spaces(page.select_one("form button").text) == "Doorgaan"
+
+
+def test_choose_question_support_type_shows_feedback_form(
+    client_request, mock_get_non_empty_organisations_and_services_for_user, mocker
+):
+    mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=True)
+    page = client_request.post(
+        "main.support",
+        _data={"support_type": QUESTION_TICKET_TYPE},
+        _follow_redirects=True,
+    )
+    assert not page.select_one("input[name=name]")
+    assert not page.select_one("input[name=email_address]")
+    assert page.select_one("form").find("p").text.strip() == "Wij reageren via test@user.gov.uk"
+
+
+def test_support_email_address_account_details_submits_zendesk_ticket(client_request, mocker):
+    mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
+    mocker.patch(
+        "app.main.views_nl.feedback.zendesk_client.send_ticket_to_zendesk",
+        autospec=True,
+    )
+
+    client_request.logout()
+    page = client_request.post(
+        "main.support_email_address_changed_account_details",
+        _data={
+            "name": "User",
+            "old_email_address": "old_address@gov.uk",
+            "new_email_address": "new_address@gov.uk",
+        },
+        _follow_redirects=True,
+    )
+    assert normalize_spaces(page.select_one("h1").text) == "Bedankt voor uw bericht"
+    mock_create_ticket.assert_called_once_with(
+        ANY,
+        subject="[env: test] Email address has changed",
+        message=ANY,
+        ticket_type="incident",
+        user_name="User",
+        user_email="new_address@gov.uk",
+        notify_ticket_type=NotifyTicketType.NON_TECHNICAL,
+        requester_sees_message_content=False,
+        custom_topics=[
+            {"id": ZendeskTopicId.topic_1, "value": "notify_topic_accessing"},
+            {"id": ZendeskTopicId.accessing_notify_1, "value": "notify_accessing_account"},
+            {"id": ZendeskTopicId.topic_2, "value": "notify_topic_accessing_2"},
+            {"id": ZendeskTopicId.accessing_notify_2, "value": "notify_accessing_service_2"},
+        ],
+    )
+
+
+def test_support_no_email_link_account_details_submits_zendesk_ticket(client_request, mocker):
+    mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
+    mocker.patch(
+        "app.main.views_nl.feedback.zendesk_client.send_ticket_to_zendesk",
+        autospec=True,
+    )
+
+    client_request.logout()
+    page = client_request.post(
+        "main.support_no_email_link_account_details",
+        _data={"name": "User", "email_address": "test@gov.uk"},
+        _follow_redirects=True,
+    )
+    assert normalize_spaces(page.select_one("h1").text) == "Bedankt voor uw bericht"
+    mock_create_ticket.assert_called_once_with(
+        ANY,
+        subject="[env: test] Email link not received",
+        message=ANY,
+        ticket_type="incident",
+        user_name="User",
+        user_email="test@gov.uk",
+        notify_ticket_type=None,
+        requester_sees_message_content=False,
+        custom_topics=[
+            {"id": ZendeskTopicId.topic_1, "value": "notify_topic_accessing"},
+            {"id": ZendeskTopicId.accessing_notify_1, "value": "notify_accessing_account"},
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    "ticket_type",
+    [
+        PROBLEM_TICKET_TYPE,
+        QUESTION_TICKET_TYPE,
+    ],
+)
+def test_email_address_required_for_problems_and_questions(
+    client_request,
+    ticket_type,
+    mocker,
+):
+    mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=True)
+    mocker.patch("app.main.views_nl.feedback.zendesk_client")
+    client_request.logout()
+    page = client_request.post(
+        "main.feedback",
+        ticket_type=ticket_type,
+        severe="no",
+        _data={"feedback": "blah", "name": "Fred"},
+        _expected_status=200,
+    )
+    assert normalize_spaces(page.select_one("#email_address-error").text) == "Error: Vul uw e-mailadres in"
+
+
+@pytest.mark.parametrize(
+    "ticket_type",
+    [
+        PROBLEM_TICKET_TYPE,
+        QUESTION_TICKET_TYPE,
+    ],
+)
+def test_name_required_for_problems_and_questions(
+    client_request,
+    ticket_type,
+    mocker,
+):
+    mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=True)
+    mocker.patch("app.main.views_nl.feedback.zendesk_client")
+    client_request.logout()
+    page = client_request.post(
+        "main.feedback",
+        ticket_type=ticket_type,
+        severe="no",
+        _data={"feedback": "blah", "email_address": "me@gov.uk"},
+        _expected_status=200,
+    )
+    assert normalize_spaces(page.select_one("#name-error").text) == "Error: Vul uw naam in"
+
+
+def test_support_no_security_code_account_details_shows_form(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_no_security_code_account_details")
+    assert normalize_spaces(page.select_one("h1").text) == "Vul uw accountgegevens in"
+
+    form_labels = page.select("form label")
+    assert len(form_labels) == 3
+    assert normalize_spaces(form_labels[0].text) == "Naam"
+    assert normalize_spaces(form_labels[1].text) == "E-mailadres"
+    assert normalize_spaces(form_labels[2].text) == "Mobiel telefoonnummer"
+    assert normalize_spaces(page.select_one("form button").text) == "Versturen"
+
+
+def test_support_no_security_code_account_details_form_requires_all_fields(client_request):
+    client_request.logout()
+    page = client_request.post(
+        "main.support_no_security_code_account_details",
+        _data={"name": "", "email_address": "", "mobile_number": ""},
+        _expected_status=200,
+    )
+    assert normalize_spaces(page.select_one("#name-error").text) == "Error: Vul uw naam in"
+    assert normalize_spaces(page.select_one("#email_address-error").text) == "Error: Vul uw e-mailadres in"
+    assert normalize_spaces(page.select_one("#mobile_number-error").text) == "Error: Vul uw mobiele telefoonnummer in"
+
+
+def test_support_mobile_number_changed_account_details_shows_form(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_mobile_number_changed_account_details")
+    assert normalize_spaces(page.select_one("h1").text) == "Vul uw accountgegevens in"
+
+    form_labels = page.select("form label")
+    assert len(form_labels) == 4
+    assert normalize_spaces(form_labels[0].text) == "Naam"
+    assert normalize_spaces(form_labels[1].text) == "E-mailadres"
+    assert normalize_spaces(form_labels[2].text) == "Oud mobiel telefoonnummer"
+    assert normalize_spaces(form_labels[3].text) == "Nieuw mobiel telefoonnummer"
+    assert normalize_spaces(page.select_one("form button").text) == "Versturen"
+
+
+def test_support_mobile_number_changed_account_details_form_requires_all_fields(client_request):
+    client_request.logout()
+    page = client_request.post(
+        "main.support_mobile_number_changed_account_details",
+        _data={"name": "", "email_address": "", "old_mobile_number": "", "new_mobile_number": ""},
+        _expected_status=200,
+    )
+    assert normalize_spaces(page.select_one("#name-error").text) == "Error: Vul uw naam in"
+    assert normalize_spaces(page.select_one("#email_address-error").text) == "Error: Vul uw e-mailadres in"
+    assert (
+        normalize_spaces(page.select_one("#old_mobile_number-error").text)
+        == "Error: Vul uw oude mobiele telefoonnummer in"
+    )
+    assert (
+        normalize_spaces(page.select_one("#new_mobile_number-error").text)
+        == "Error: Vul uw nieuwe mobiele telefoonnummer in"
+    )
+
+
+def test_support_no_email_link_account_details_shows_form(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_no_email_link_account_details")
+    assert normalize_spaces(page.select_one("h1").text) == "Vul uw accountgegevens in"
+
+    form_labels = page.select("form label")
+    assert len(form_labels) == 2
+    assert normalize_spaces(form_labels[0].text) == "Naam"
+    assert normalize_spaces(form_labels[1].text) == "E-mailadres"
+    assert normalize_spaces(page.select_one("form button").text) == "Versturen"
+
+
+def test_support_no_email_link_account_details_form_requires_all_fields(client_request):
+    client_request.logout()
+    page = client_request.post(
+        "main.support_no_email_link_account_details",
+        _data={"name": "", "email_address": ""},
+        _expected_status=200,
+    )
+    assert normalize_spaces(page.select_one("#name-error").text) == "Error: Vul uw naam in"
+    assert normalize_spaces(page.select_one("#email_address-error").text) == "Error: Vul uw e-mailadres in"
+
+
+def test_support_email_address_changed_account_details_shows_form(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_email_address_changed_account_details")
+    assert normalize_spaces(page.select_one("h1").text) == "Vul uw accountgegevens in"
+
+    form_labels = page.select("form label")
+    assert len(form_labels) == 3
+    assert normalize_spaces(form_labels[0].text) == "Naam"
+    assert normalize_spaces(form_labels[1].text) == "Oud e-mailadres"
+    assert normalize_spaces(form_labels[2].text) == "Nieuw e-mailadres"
+    assert normalize_spaces(page.select_one("form button").text) == "Versturen"
+
+
+def test_support_email_address_changed_account_details_form_requires_all_fields(client_request):
+    client_request.logout()
+    page = client_request.post(
+        "main.support_email_address_changed_account_details",
+        _data={"name": "", "old_email_address": "", "new_email_address": ""},
+        _expected_status=200,
+    )
+    assert normalize_spaces(page.select_one("#name-error").text) == "Error: Vul uw naam in"
+    assert normalize_spaces(page.select_one("#old_email_address-error").text) == "Error: Vul uw oude e-mailadres in"
+    assert normalize_spaces(page.select_one("#new_email_address-error").text) == "Error: Vul uw nieuwe e-mailadres in"

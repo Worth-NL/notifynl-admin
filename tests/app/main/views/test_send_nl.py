@@ -1,12 +1,15 @@
+import gzip
 import uuid
 from functools import partial
 from glob import glob
+from io import BytesIO
 from os import path
 
 import pytest
 from flask import url_for
 
 from tests import (
+    sample_uuid,
     template_json,
 )
 from tests.conftest import (
@@ -683,6 +686,119 @@ def test_send_one_off_letter_address_populates_address_fields_in_session(
     )
     with client_request.session_transaction() as session:
         assert session["placeholders"] == expected_placeholders
+
+
+test_spreadsheet_files_surplus_header = glob(path.join("tests", "spreadsheet_files", "surplus_header_columns", "*"))
+
+
+@pytest.mark.parametrize("filename", test_spreadsheet_files_surplus_header)
+def test_upload_files_with_excessive_header_columns(
+    filename,
+    client_request,
+    service_one,
+    mock_get_service_template,
+    mock_s3_set_metadata,
+    mock_s3_upload,
+    fake_uuid,
+    caplog,
+    mocker,
+):
+    # our example files aren't that "excessive", we're just reducing the app's threshold for them
+    mocker.patch("app.models.spreadsheet.Spreadsheet.ABSOLUTE_COLUMN_LIMIT_DEFAULT_ARG", new=6)
+    mocker.patch("app.models.spreadsheet.Spreadsheet.MIN_COLUMN_LIMIT_DEFAULT_ARG", new=3)
+
+    with open(filename, "rb") as uploaded, caplog.at_level("INFO", "app"):
+        page = client_request.post(
+            "main.send_messages",
+            service_id=service_one["id"],
+            template_id=fake_uuid,
+            _data={"file": (BytesIO(uploaded.read()), filename)},
+            _content_type="multipart/form-data",
+            _expected_status=200,
+        )
+
+    log_messages = {r.message for r in caplog.records}
+    assert f"User 6ce466d0-fd6a-11e5-82f5-e0accb9d11a6 uploaded {filename}" in log_messages
+
+    assert mock_s3_upload.mock_calls == []
+    assert normalize_spaces(page.select_one(".govuk-error-summary__body").text) == (
+        "Uw bestand heeft te veel kolommen (Notify kan tot 1.000 kolommen verwerken)"
+    )
+    assert f"{filename} persisted in S3 as {sample_uuid()}" not in [r.message for r in caplog.records]
+    assert f"Abandoned parsing {filename}" in [r.message for r in caplog.records]
+
+
+def test_upload_file_with_excessive_rows(
+    client_request,
+    service_one,
+    mock_get_service_template,
+    mock_s3_set_metadata,
+    mock_s3_upload,
+    fake_uuid,
+    caplog,
+    mocker,
+):
+    filename = "400k rows tab separated.tsv"
+    with (
+        gzip.open("tests/spreadsheet_files/excessive/400k rows tab separated.tsv.gz", "r") as uploaded,
+        caplog.at_level("INFO", "app"),
+    ):
+        page = client_request.post(
+            "main.send_messages",
+            service_id=service_one["id"],
+            template_id=fake_uuid,
+            _data={"file": (BytesIO(uploaded.read()), filename)},
+            _content_type="multipart/form-data",
+            _expected_status=200,
+        )
+
+    log_messages = {r.message for r in caplog.records}
+    assert f"User 6ce466d0-fd6a-11e5-82f5-e0accb9d11a6 uploaded {filename}" in log_messages
+
+    assert mock_s3_upload.mock_calls == []
+    assert normalize_spaces(page.select_one(".govuk-error-summary__body").text) == (
+        "Uw bestand heeft te veel rijen (Notify kan tot 100.000 rijen tegelijk verwerken)"
+    )
+    assert f"{filename} persisted in S3 as {sample_uuid()}" not in [r.message for r in caplog.records]
+    assert f"Abandoned parsing {filename}" in [r.message for r in caplog.records]
+
+
+def test_upload_csv_file_limits_number_of_columns_displayed_when_error(
+    client_request,
+    mocker,
+    mock_get_service_template_with_placeholders,
+    mock_s3_set_metadata,
+    mock_s3_get_metadata,
+    mock_s3_upload,
+    mock_get_users_by_service,
+    mock_get_job_doesnt_exist,
+    mock_get_jobs,
+    fake_uuid,
+):
+    mocker.patch(
+        "app.main.views_nl.send.s3download",
+        return_value=(
+            f"""
+            {"phone number," * 678}
+            +447700900111
+            +447700900222
+            """
+        ),
+    )
+
+    page = client_request.post(
+        "main.send_messages",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+        _data={"file": (BytesIO(b""), "example.csv")},
+        _follow_redirects=True,
+    )
+
+    assert "We hebben meer dan één kolom gevonden met de naam ‘phone number’" in normalize_spaces(
+        page.select_one(".banner-dangerous").text
+    )
+    assert len(page.select("table th.table-field-heading")) == 512
+    assert len(page.select("table td")) == 1_024  # 512 × 2 rows of data
 
 
 def test_example_spreadsheet_for_letters(

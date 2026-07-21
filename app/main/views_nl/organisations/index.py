@@ -12,6 +12,7 @@ from app import (
     org_invite_api_client,
     organisations_client,
 )
+from app.constants import PERMISSION_CAN_MAKE_SERVICES_LIVE
 from app.main import main
 from app.main.overrides_nl.forms import (
     AddGPOrganisationForm,
@@ -191,7 +192,7 @@ def download_organisation_usage_report(org_id):
         {
             "Content-Type": "text/csv; charset=utf-8",
             "Content-Disposition": (
-                'inline;filename="{} ogranisatieverbruik {} - gegenereerd op {}.csv"'.format(
+                'attachment;filename="{} ogranisatieverbruik {} - gegenereerd op {}.csv"'.format(
                     current_organisation.name, selected_year, datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
                 )
             ),
@@ -200,7 +201,7 @@ def download_organisation_usage_report(org_id):
 
 
 @main.route("/organisations/<uuid:org_id>/trial-services", methods=["GET"])
-@user_is_platform_admin
+@user_has_permissions(org_permissions=[PERMISSION_CAN_MAKE_SERVICES_LIVE])
 def organisation_trial_mode_services(org_id):
     return render_template(
         "views/organisations/organisation/trial-mode-services.html",

@@ -2,6 +2,7 @@ import json
 import uuid
 from functools import partial
 from io import BytesIO
+from itertools import count, cycle, islice
 from unittest.mock import ANY, Mock
 
 import pytest
@@ -41,6 +42,47 @@ from tests.conftest import (
 )
 
 
+@pytest.fixture()
+def mock_complex_templates_and_folders(
+    notify_admin,
+    mocker,
+):
+    # generate an interesting mixture of folder depths and contained template counts in a
+    # fizzbuzz-style fashion
+    c = count()
+    folders = [_folder(f"folder {i}", str(uuid.uuid4())) for i in islice(c, 0, 100)]
+    folders.extend(
+        _folder(f"folder {i}", str(uuid.uuid4()), parent=parent["id"])
+        for parent, i in zip(folders[::2], c, strict=False)
+    )
+    folders.extend(
+        _folder(f"folder {i}", str(uuid.uuid4()), parent=parent["id"])
+        for parent, i in zip(folders[::3], c, strict=False)
+    )
+    folders.extend(
+        _folder(f"folder {i}", str(uuid.uuid4()), parent=parent["id"])
+        for parent, i in zip(folders[::5], c, strict=False)
+    )
+
+    c = count()
+    templates = [_template("sms", f"sms template {i}") for i in islice(c, 0, 500)]
+    templates.extend(
+        _template("sms", f"sms template {i}", folder["id"])
+        for folder, i in zip(islice(cycle(folders), 0, 2000, 7), c, strict=False)
+    )
+
+    mocker.patch(
+        "app.template_folder_api_client.get_template_folders",
+        return_value=folders,
+    )
+    mocker.patch(
+        "app.service_api_client.get_service_templates",
+        return_value={
+            "data": templates,
+        },
+    )
+
+
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "permissions, expected_message",
@@ -68,7 +110,7 @@ def test_should_show_empty_page_when_no_templates(
     )
 
     assert normalize_spaces(page.select_one("h1").text) == "Templates"
-    assert normalize_spaces(page.select_one("main p").text) == (expected_message)
+    assert normalize_spaces(page.select_one("main p").text) == expected_message
     assert page.select_one("#add_new_folder_form")
     assert page.select_one("#add_new_template_form")
 
@@ -355,6 +397,27 @@ def test_should_show_new_template_choices_if_service_has_folder_permission(
     assert [normalize_spaces(choice.text) for choice in page.select("#add_new_template_form label")] == expected_labels
 
 
+def test_choose_template_interruptible(
+    client_request,
+    service_one,
+    mock_get_no_api_keys,
+    mock_complex_templates_and_folders,
+    mocker,
+):
+    mock_interruptible = mocker.patch("app.utils.interruptible_io._interruptible")
+
+    client_request.get("main.choose_template", service_id=SERVICE_ONE_ID, _test_page_title=False)
+
+    # assert this view calls _interruptible in all the expected ways at least once. this may need
+    # updating if class names, inheritance or the view structure changes, but this is here to avoid
+    # nullification of one of the forms of interruptibility without noticing. of course, it doesn't
+    # test that they're all called an appropriate number of times and in the right *places*.
+    assert mocker.call("child map iteration") in mock_interruptible.mock_calls
+    assert mocker.call("InterruptibleUserTemplateList") in mock_interruptible.mock_calls
+    assert mocker.call("InterruptibleItemsGovukCheckboxesField") in mock_interruptible.mock_calls
+    assert mocker.call("InterruptibleChildRenderingGovukNestedRadiosField") in mock_interruptible.mock_calls
+
+
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "custom_email_sender_name, expected_email_from",
@@ -388,6 +451,33 @@ def test_should_show_page_for_email_template(
         ("Subject", "Your ((thing)) is due soon"),
     ]
     assert normalize_spaces(page.select_one(".email-message-body").text) == "Your vehicle tax expires on ((date))"
+    assert not page.select_one(".email-message-body a")  # No unsubscribe link
+
+
+def test_should_show_page_for_email_template_with_unsubscribe_link(
+    client_request,
+    fake_uuid,
+    mocker,
+):
+    mocker.patch(
+        "app.service_api_client.get_service_template",
+        return_value={
+            "data": create_template(
+                template_id=fake_uuid,
+                template_type="email",
+                has_unsubscribe_link=True,
+            )
+        },
+    )
+    page = client_request.get(
+        ".view_template",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+        _test_page_title=False,
+    )
+    unsubscribe_link = page.select_one(".email-message-body a")
+    assert unsubscribe_link["href"] == "http://localhost/unsubscribe/example"
+    assert normalize_spaces(unsubscribe_link.text) == "Unsubscribe from these emails"
 
 
 @pytest.mark.parametrize(
@@ -476,7 +566,7 @@ def test_should_show_page_for_one_template(
 
     assert (
         (page.select_one("[data-notify-module=update-status]")["data-target"])
-        == (page.select_one("textarea")["id"])
+        == page.select_one("textarea")["id"]
         == "template_content"
     )
 
@@ -486,7 +576,7 @@ def test_should_show_page_for_one_template(
         template_type="sms",
     )
 
-    assert (page.select_one("[data-notify-module=update-status]")["aria-live"]) == "polite"
+    assert page.select_one("[data-notify-module=update-status]")["aria-live"] == "polite"
 
     mock_get_service_template.assert_called_with(SERVICE_ONE_ID, template_id, None)
 
@@ -541,6 +631,7 @@ def test_edit_email_template_should_update_unsubscribe(
     client_request,
     platform_admin_user,
     mock_update_service_template,
+    mock_get_no_api_keys,
     post_data,
     expected_unsubscribeable,
     fake_uuid,
@@ -616,6 +707,49 @@ def test_add_email_template_should_add_unsubscribe(
         parent_folder_id=None,
         has_unsubscribe_link=True,
     )
+
+
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+@pytest.mark.parametrize(
+    "template_type",
+    (
+        "email",
+        "sms",
+        "letter",
+    ),
+)
+def test_add_service_template_should_include_save_and_preview_button(
+    client_request,
+    service_one,
+    template_type,
+):
+    if template_type == "letter":
+        service_one["permissions"].append("letter")
+
+    page = client_request.get(
+        ".add_service_template",
+        service_id=SERVICE_ONE_ID,
+        template_type=template_type,
+    )
+    assert "Save and preview" in page.text
+
+
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+@pytest.mark.parametrize(
+    "template_type",
+    (
+        "email",
+        "sms",
+        "letter",
+    ),
+)
+def test_edit_service_template_should_include_save_and_preview_button(
+    client_request, template_type, mock_get_service_letter_template, fake_uuid, service_one
+):
+    service_one["permissions"].append("letter")
+    page = client_request.get(".edit_service_template", service_id=SERVICE_ONE_ID, template_id=fake_uuid)
+
+    assert "Save and preview" in page.text
 
 
 def test_editing_letter_template_should_have_hidden_name_field(
@@ -2151,6 +2285,7 @@ def test_letter_branding_preview_image(
             },
             "values": None,
             "filename": "example",
+            "date": None,
         },
         headers={
             "Authorization": "Token my-secret-key",
@@ -2537,6 +2672,47 @@ def test_choose_a_template_to_copy_from_folder_within_service(
         template_id=TEMPLATE_ONE_ID,
         from_service=SERVICE_ONE_ID,
     )
+
+
+def test_choose_template_to_copy_interruptible(
+    client_request,
+    service_one,
+    mock_get_no_api_keys,
+    mock_complex_templates_and_folders,
+    mock_get_just_services_for_user,
+    mocker,
+):
+    mock_interruptible = mocker.patch("app.utils.interruptible_io._interruptible")
+
+    client_request.get(
+        "main.choose_template_to_copy",
+        service_id=SERVICE_ONE_ID,
+    )
+
+    # assert this view calls _interruptible in the expected way at least once. this may need
+    # updating if class names, inheritance or the view structure changes.
+    assert mocker.call("InterruptibleUserTemplateLists") in mock_interruptible.mock_calls
+
+
+def test_choose_template_to_copy_from_service_interruptible(
+    client_request,
+    service_one,
+    mock_get_no_api_keys,
+    mock_complex_templates_and_folders,
+    mock_get_just_services_for_user,
+    mocker,
+):
+    mock_interruptible = mocker.patch("app.utils.interruptible_io._interruptible")
+
+    client_request.get(
+        "main.choose_template_to_copy",
+        service_id=SERVICE_ONE_ID,
+        from_service=SERVICE_ONE_ID,
+    )
+
+    # assert this view calls _interruptible in the expected way at least once. this may need
+    # updating if class names, inheritance or the view structure changes.
+    assert mocker.call("InterruptibleUserTemplateList") in mock_interruptible.mock_calls
 
 
 @pytest.mark.parametrize(
@@ -3035,7 +3211,7 @@ def test_should_show_page_to_rename_template(
     assert "action" not in form
 
     assert form.select_one("input[name=name]")
-    assert normalize_spaces(form.select_one("label[for=name]").text) == "Template name"
+    assert normalize_spaces(form.select_one("label[for=name]").text) == "Rename template"
 
 
 def test_should_show_rename_template(
@@ -3185,24 +3361,26 @@ def test_should_not_allow_template_edits_without_correct_permission(
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
-    "old_content, new_content, expected_paragraphs",
+    "old_content, new_content, expected_paragraphs, expected_placeholders",
     [
         (
             "my favourite colour is blue",
             "my favourite colour is ((colour))",
             [
-                "You added ((colour))",
+                "You added the placeholder ((colour)).",
                 "Before you send any messages, make sure your API calls include colour.",
             ],
+            ["((colour))"],
         ),
         (
             "hello ((name))",
             "hello ((first name)) ((middle name)) ((last name))",
             [
-                "You removed ((name))",
-                "You added ((first name)) ((middle name)) and ((last name))",
+                "You removed the placeholder ((name)).",
+                "You added the placeholders:",
                 "Before you send any messages, make sure your API calls include first name, middle name and last name.",
             ],
+            ["((name))", "((first name))", "((middle name))", "((last name))"],
         ),
     ],
 )
@@ -3216,6 +3394,7 @@ def test_should_show_interstitial_when_making_breaking_change_to_sms_template(
     new_content,
     old_content,
     expected_paragraphs,
+    expected_placeholders,
 ):
     service_one["permissions"] += ["sms"]
 
@@ -3248,6 +3427,10 @@ def test_should_show_interstitial_when_making_breaking_change_to_sms_template(
     )
     assert [normalize_spaces(paragraph.text) for paragraph in page.select("main p")] == expected_paragraphs
 
+    assert [
+        normalize_spaces(placeholder.text) for placeholder in page.select("span.placeholder")
+    ] == expected_placeholders
+
     for key, value in (
         {
             "name": "my new template name",
@@ -3267,28 +3450,30 @@ def test_should_show_interstitial_when_making_breaking_change_to_sms_template(
     ),
 )
 @pytest.mark.parametrize(
-    "old_content, new_content, expected_paragraphs",
+    "old_content, new_content, expected_paragraphs, expected_placeholders",
     [
         (
             "my favourite colour is blue",
             "my favourite colour is ((colour))",
             [
-                "You added ((colour))",
+                "You added the placeholder ((colour)).",
                 "Before you send any messages, make sure your API calls include colour.",
             ],
+            ["((colour))"],
         ),
         (
             "hello ((name))",
             "hello ((first name)) ((middle name)) ((last name))",
             [
-                "You removed ((name))",
-                "You added ((first name)) ((middle name)) and ((last name))",
+                "You removed the placeholder ((name)).",
+                "You added the placeholders:",
                 "Before you send any messages, make sure your API calls include first name, middle name and last name.",
             ],
+            ["((name))", "((first name))", "((middle name))", "((last name))"],
         ),
     ],
 )
-def test_should_show_interstitial_when_making_breaking_change(
+def test_edit_service_template_should_show_interstitial_when_making_breaking_change(
     client_request,
     service_one,
     mock_get_api_keys,
@@ -3297,13 +3482,26 @@ def test_should_show_interstitial_when_making_breaking_change(
     new_content,
     old_content,
     expected_paragraphs,
+    expected_placeholders,
     template_type,
     additional_data,
 ):
     service_one["permissions"] += [template_type]
 
     email_template = create_template(
-        template_id=fake_uuid, template_type=template_type, subject="Your ((thing)) is due soon", content=old_content
+        template_id=fake_uuid,
+        template_type=template_type,
+        subject="Your ((thing)) is due soon",
+        content=old_content,
+        email_files=[
+            {
+                "id": fake_uuid,
+                "filename": "invite.pdf",
+                "link_text": None,
+                "retention_period": 90,
+                "validate_users_email": False,
+            },
+        ],
     )
     mocker.patch("app.service_api_client.get_service_template", return_value={"data": email_template})
 
@@ -3331,6 +3529,10 @@ def test_should_show_interstitial_when_making_breaking_change(
     )
     assert [normalize_spaces(paragraph.text) for paragraph in page.select("main p")] == expected_paragraphs
 
+    assert [
+        normalize_spaces(placeholder.text) for placeholder in page.select("span.placeholder")
+    ] == expected_placeholders
+
     for key, value in (
         {
             "subject": "reminder '\" <span> & ((thing))",
@@ -3338,6 +3540,155 @@ def test_should_show_interstitial_when_making_breaking_change(
             "confirm": "true",
         }
         | additional_data
+    ).items():
+        assert page.select_one(f"input[name={key}]")["value"] == value
+
+    # BeautifulSoup returns the value attribute as unencoded, let’s make
+    # sure that it is properly encoded in the HTML
+    assert str(page.select_one("input[name=subject]")) == (
+        """<input name="subject" type="hidden" value="reminder '&quot; &lt;span&gt; &amp; ((thing))"/>"""
+    )
+
+
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+@pytest.mark.parametrize(
+    "old_content, new_content, extra_email_file, expected_paragraphs, expected_placeholders",
+    [
+        # remove an email file placeholder
+        (
+            "here is your invite: ((invite.pdf))",
+            "We will send your invite separately.",
+            [],
+            [
+                "You removed the file ((invite.pdf)).",
+                "Are you sure you want to remove this file?",
+            ],
+            ["((invite.pdf))"],
+        ),
+        # remove an email file placeholder and remove a regular placeholder
+        (
+            "Dear ((name)), here is your invite: ((invite.pdf))",
+            "We will send your invite separately.",
+            [],
+            [
+                "You removed the file ((invite.pdf)).",
+                "Are you sure you want to remove this file?",
+            ],
+            ["((invite.pdf))"],
+        ),
+        # remove an email file placeholder and add a regular placeholder
+        (
+            "Dear ((name)), here is your invite: ((invite.pdf))",
+            "((greeting)), We will send your invite separately.",
+            [],
+            [
+                "You removed the file ((invite.pdf)).",
+                "You removed the placeholder ((name)).",
+                "You added the placeholder ((greeting)).",
+                (
+                    "Confirm that you: "
+                    "want to remove this file. "
+                    "will modify any API calls for this template to include greeting "
+                    "before sending any messages."
+                ),
+            ],
+            ["((invite.pdf))", "((name))", "((greeting))"],
+        ),
+        # remove two email files, remove a regular placeholder and add two regular placeholders
+        (
+            "Dear ((name)), here is your invite: ((invite.pdf)) and map: ((map.jpeg))",
+            "((greeting)), We will send your invite separately. ((footer))",
+            [
+                {
+                    "id": str(uuid.UUID(int=1, version=4)),
+                    "filename": "map.jpeg",
+                    "link_text": None,
+                    "retention_period": 90,
+                    "validate_users_email": False,
+                }
+            ],
+            [
+                "You removed the files:",
+                "You removed the placeholder ((name)).",
+                "You added the placeholders:",
+                (
+                    "Confirm that you: "
+                    "want to remove these files. "
+                    "will modify any API calls for this template to include greeting and footer"
+                    " before sending any messages."
+                ),
+            ],
+            ["((invite.pdf))", "((map.jpeg))", "((name))", "((greeting))", "((footer))"],
+        ),
+    ],
+)
+def test_edit_service_template_asks_confirmation_when_removing_email_files(
+    client_request,
+    service_one,
+    mock_get_api_keys,
+    fake_uuid,
+    mocker,
+    new_content,
+    old_content,
+    extra_email_file,
+    expected_paragraphs,
+    expected_placeholders,
+):
+    service_one["permissions"] += ["email"]
+
+    # mock out template with email files
+    email_template = create_template(
+        template_id=fake_uuid,
+        template_type="email",
+        subject="Your ((thing)) is due soon",
+        content=old_content,
+        email_files=[
+            {
+                "id": fake_uuid,
+                "filename": "invite.pdf",
+                "link_text": None,
+                "retention_period": 90,
+                "validate_users_email": False,
+            },
+        ]
+        + extra_email_file,
+    )
+    mocker.patch("app.service_api_client.get_service_template", return_value={"data": email_template})
+
+    edit_request_data = {
+        "id": fake_uuid,
+        "template_content": new_content,
+        "template_type": "email",
+        "subject": "reminder '\" <span> & ((thing))",
+        "service": SERVICE_ONE_ID,
+    }
+
+    page = client_request.post(
+        ".edit_service_template",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+        _data=edit_request_data,
+        _expected_status=200,
+    )
+
+    assert page.select_one("h1").string.strip() == "Confirm changes"
+    assert page.select_one("a.govuk-back-link")["href"] == url_for(
+        ".edit_service_template",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+    )
+    assert [normalize_spaces(paragraph.text) for paragraph in page.select("main p")] == expected_paragraphs
+
+    assert [
+        normalize_spaces(placeholder.text) for placeholder in page.select("span.placeholder")
+    ] == expected_placeholders
+
+    for key, value in (
+        {
+            "subject": "reminder '\" <span> & ((thing))",
+            "template_content": new_content,
+            "confirm": "true",
+        }
     ).items():
         assert page.select_one(f"input[name={key}]")["value"] == value
 
@@ -3425,6 +3776,7 @@ def test_removing_placeholders_is_not_a_breaking_change(
     client_request,
     mock_get_service_email_template,
     mock_update_service_template,
+    mock_get_no_api_keys,
     fake_uuid,
 ):
     existing_template = mock_get_service_email_template(0, 0)["data"]
@@ -3470,6 +3822,7 @@ def test_should_not_update_too_big_template(
     client_request,
     mock_get_service_template,
     mock_update_service_template_400_content_too_big,
+    mock_get_no_api_keys,
     fake_uuid,
 ):
     page = client_request.post(
@@ -3488,10 +3841,12 @@ def test_should_not_update_too_big_template(
     assert "Content has a character count greater than the limit of 459" in page.text
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_not_edit_letter_template_with_too_big_qr_code(
     client_request,
     mock_get_service_template,
     mock_update_service_template_400_qr_code_too_big,
+    mock_get_no_api_keys,
     fake_uuid,
     service_one,
 ):
@@ -3510,9 +3865,12 @@ def test_should_not_edit_letter_template_with_too_big_qr_code(
         },
         _expected_status=200,
     )
-    assert (
-        normalize_spaces(page.select_one(".govuk-error-message").text)
-        == "Error: Cannot create a usable QR code - the link you entered is too long"
+
+    assert normalize_spaces(page.select_one(".govuk-error-summary").text) == (
+        "There is a problem Cannot create a usable QR code - the link you entered is too long"
+    )
+    assert normalize_spaces(page.select_one(".govuk-error-message").text) == (
+        "Error: Cannot create a usable QR code - the link you entered is too long"
     )
 
 
@@ -3520,6 +3878,7 @@ def test_should_redirect_when_saving_a_template_email(
     client_request,
     mock_get_service_email_template,
     mock_update_service_template,
+    mock_get_no_api_keys,
     fake_uuid,
 ):
     name = "new name"
@@ -3554,11 +3913,137 @@ def test_should_redirect_when_saving_a_template_email(
     )
 
 
+@pytest.mark.parametrize(
+    "new_content, expected_file_ids_to_archive, expected_banner_text",
+    (
+        (
+            "For the appointment, you will just need ((map.pdf))",
+            [
+                "00000000-0000-4000-8000-000000000001",
+                "00000000-0000-4000-8000-000000000002",
+            ],
+            "‘invite.pdf’ and ‘form.pdf’ have been removed",
+        ),
+        (
+            "For the appointment, you will just need ((form.pdf)) and ((map.pdf))",
+            [
+                "00000000-0000-4000-8000-000000000001",
+            ],
+            "‘invite.pdf’ has been removed",
+        ),
+    ),
+)
+def test_edit_service_template_archives_email_files(
+    client_request,
+    fake_uuid,
+    mocker,
+    new_content,
+    expected_file_ids_to_archive,
+    expected_banner_text,
+):
+    # mock out template with email files
+    email_template = create_template(
+        template_id=fake_uuid,
+        template_type="email",
+        subject="Your ((thing)) is due soon",
+        content="For the appointment, you will need: ((invite.pdf)), ((form.pdf)), ((map.pdf))",
+        email_files=[
+            {
+                "id": str(uuid.UUID(int=1, version=4)),
+                "filename": "invite.pdf",
+                "link_text": None,
+                "retention_period": 90,
+                "validate_users_email": False,
+            },
+            {
+                "id": str(uuid.UUID(int=2, version=4)),
+                "filename": "form.pdf",
+                "link_text": None,
+                "retention_period": 90,
+                "validate_users_email": False,
+            },
+            {
+                "id": str(uuid.UUID(int=3, version=4)),
+                "filename": "map.pdf",
+                "link_text": None,
+                "retention_period": 90,
+                "validate_users_email": False,
+            },
+        ],
+    )
+    mocker.patch("app.service_api_client.get_service_template", return_value={"data": email_template})
+
+    mock_update_service_template = mocker.patch("notifications_python_client.base.BaseAPIClient.request")
+
+    page = client_request.post(
+        ".edit_service_template",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+        _data={
+            "id": fake_uuid,
+            "template_content": new_content,
+            "template_type": "email",
+            "service": SERVICE_ONE_ID,
+            "confirm": True,
+        },
+        _follow_redirects=True,
+    )
+    mock_update_service_template.assert_called_with(
+        "POST",
+        "/service/596364a0-858e-42c8-9062-a8fe822260eb/template/6ce466d0-fd6a-11e5-82f5-e0accb9d11a6",
+        data={
+            "created_by": "6ce466d0-fd6a-11e5-82f5-e0accb9d11a6",
+            "content": new_content,
+            "subject": "Your ((thing)) is due soon",
+            "name": "sample template",
+            "has_unsubscribe_link": False,
+            "archive_email_file_ids": expected_file_ids_to_archive,
+        },
+    )
+
+    assert normalize_spaces(page.select(".banner-default-with-tick")[0].text) == expected_banner_text
+
+
+def test_edit_service_template_does_not_allow_email_file_in_subject(
+    client_request,
+    fake_uuid,
+    mocker,
+):
+    email_template = create_template(
+        template_type="email",
+        email_files=[
+            {
+                "id": str(uuid.UUID(int=1, version=4)),
+                "filename": "invite.pdf",
+                "link_text": None,
+                "retention_period": 90,
+                "validate_users_email": False,
+            },
+        ],
+    )
+    mocker.patch("app.service_api_client.get_service_template", return_value={"data": email_template})
+
+    page = client_request.post(
+        ".edit_service_template",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+        _data={
+            "name": email_template["name"],
+            "template_content": email_template["content"],
+            "subject": "Please download ((INVITE.PDF))",
+            "service": SERVICE_ONE_ID,
+        },
+        _expected_status=200,
+    )
+    assert normalize_spaces(page.select_one(".govuk-error-message")) == "Error: You cannot put a file in the subject"
+
+
 def test_should_redirect_when_saving_a_template_letter(
     client_request,
     mock_get_service_letter_template,
     mock_get_page_counts_for_letter,
     mock_update_service_template,
+    mock_get_no_api_keys,
     fake_uuid,
     service_one,
 ):
@@ -3629,6 +4114,7 @@ def test_update_template_for_welsh_language_content(
     client_request,
     mock_update_service_template,
     mock_get_page_counts_for_letter,
+    mock_get_no_api_keys,
     fake_uuid,
     service_one,
     language,
@@ -3671,6 +4157,7 @@ def test_update_template_for_english_content_in_welsh_letter(
     client_request,
     mock_update_service_template,
     mock_get_service_letter_template_welsh_language,
+    mock_get_no_api_keys,
     fake_uuid,
     service_one,
     mocker,
@@ -4456,3 +4943,231 @@ def test_letter_attachment_preview_image_shows_overlay_when_content_outside_prin
     else:
         template_preview_mock_valid.assert_called_once_with("pdf_file", page_requested)
         assert template_preview_mock_invalid.called is False
+
+
+@pytest.mark.parametrize(
+    "template_type, email_files, expected_button_text, expected_button_endpoint, expected_hint",
+    (
+        (
+            "email",
+            None,
+            "Attach files",
+            "main.template_email_files",
+            "No files added",
+        ),
+        (
+            "email",
+            [
+                {
+                    "filename": "example.pdf",
+                    "retention_period": 26,
+                    "id": str(uuid.UUID(int=1, version=4)),
+                    "link_text": None,
+                }
+            ],
+            "Manage files",
+            "main.template_email_files",
+            "1 file added",
+        ),
+        (
+            "email",
+            [
+                {
+                    "filename": "example.pdf",
+                    "retention_period": 26,
+                    "id": str(uuid.UUID(int=1, version=4)),
+                    "link_text": None,
+                },
+                {
+                    "filename": "picture.png",
+                    "retention_period": 90,
+                    "id": str(uuid.UUID(int=2, version=4)),
+                    "link_text": None,
+                },
+            ],
+            "Manage files",
+            "main.template_email_files",
+            "2 files added",
+        ),
+        (
+            "sms",
+            None,
+            None,
+            None,
+            None,
+        ),
+        pytest.param(
+            "letter",
+            None,
+            "Attach pages",
+            "main.letter_template_attach_pages",
+            None,
+            marks=pytest.mark.skip(reason="[NOTIFYNL] Translation issue"),
+        ),
+    ),
+)
+def test_attach_files_button(
+    client_request,
+    service_one,
+    mock_get_template_folders,
+    mock_get_page_counts_for_letter,
+    single_letter_contact_block,
+    fake_uuid,
+    template_type,
+    email_files,
+    expected_button_text,
+    expected_button_endpoint,
+    expected_hint,
+    mocker,
+):
+    mocker.patch(
+        "app.service_api_client.get_service_template",
+        return_value={
+            "data": create_template(
+                template_id=fake_uuid,
+                template_type=template_type,
+                email_files=email_files,
+            )
+        },
+    )
+    page = client_request.get(
+        "main.view_template",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+    )
+
+    button = page.select_one(".js-stick-at-bottom-when-scrolling .govuk-button--secondary")
+    hint = page.select_one(".js-stick-at-bottom-when-scrolling .email-files-selected-counter")
+
+    if expected_button_text or expected_button_endpoint:
+        assert button["href"] == url_for(expected_button_endpoint, service_id=SERVICE_ONE_ID, template_id=fake_uuid)
+        assert normalize_spaces(button.text) == expected_button_text
+        if template_type == "email":
+            assert normalize_spaces(page.select_one("h2.govuk-visually-hidden").text) == "Added Files"
+    else:
+        assert button is None
+
+    if expected_hint:
+        assert normalize_spaces(hint.text) == expected_hint
+    else:
+        assert hint is None
+
+
+@pytest.mark.parametrize(
+    "raw_content, email_files, view_template_content, rendered_links",
+    [
+        (
+            "For the appointment, you will need: ((invite.pdf)), ((form.pdf))",
+            [
+                {
+                    "id": str(uuid.UUID(int=1, version=4)),
+                    "filename": "invite.pdf",
+                    "link_text": None,
+                    "retention_period": 90,
+                    "validate_users_email": False,
+                },
+                {
+                    "id": str(uuid.UUID(int=2, version=4)),
+                    "filename": "form.pdf",
+                    "link_text": "This is a link",
+                    "retention_period": 90,
+                    "validate_users_email": False,
+                },
+            ],
+            (
+                "For the appointment, you will need: "
+                "http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg, "
+                "This is a link"
+            ),
+            [
+                (
+                    "<a"
+                    ' href="http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg"'
+                    ' style="word-wrap: break-word; color: #1D70B8;"'
+                    ">"
+                    "http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg"
+                    "</a>"
+                ),
+                (
+                    "<a"
+                    ' href="http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAg?key=bORm0P1qEeWC9eCsy50Rpg"'
+                    ' style="word-wrap: break-word; color: #1D70B8;">'
+                    "This is a link"
+                    "</a>"
+                ),
+            ],
+        ),
+        (
+            "This template only contains normal placeholders. The current date is: ((current_date))",
+            None,
+            "This template only contains normal placeholders. The current date is: ((current_date))",
+            [],
+        ),
+        (
+            "This template contains a mixture of normal placeholders, and file placeholders: ((current_date)), ((invite.pdf)), ((form.pdf))",  # noqa: E501
+            [
+                {
+                    "id": str(uuid.UUID(int=1, version=4)),
+                    "filename": "invite.pdf",
+                    "link_text": None,
+                    "retention_period": 90,
+                    "validate_users_email": False,
+                },
+                {
+                    "id": str(uuid.UUID(int=2, version=4)),
+                    "filename": "form.pdf",
+                    "link_text": "This is a link",
+                    "retention_period": 90,
+                    "validate_users_email": False,
+                },
+            ],
+            (
+                "This template contains a mixture of normal placeholders, and file placeholders: "
+                "((current_date)), "
+                "http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg, "
+                "This is a link"
+            ),
+            [
+                (
+                    "<a"
+                    ' href="http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg"'
+                    ' style="word-wrap: break-word; color: #1D70B8;"'
+                    ">"
+                    "http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg"
+                    "</a>"
+                ),
+                (
+                    "<a"
+                    ' href="http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAg?key=bORm0P1qEeWC9eCsy50Rpg"'
+                    ' style="word-wrap: break-word; color: #1D70B8;"'
+                    ">"
+                    "This is a link"
+                    "</a>"
+                ),
+            ],
+        ),
+    ],
+)
+def test_template_email_file_with_linktext_renders_markdown_link(
+    client_request, fake_uuid, mocker, raw_content, email_files, view_template_content, rendered_links
+):
+    # mock out template with email files
+    email_template = create_template(
+        template_id=fake_uuid,
+        template_type="email",
+        subject="Your ((thing)) is due soon",
+        content=raw_content,
+        email_files=email_files,
+    )
+    mocker.patch("app.service_api_client.get_service_template", return_value={"data": email_template})
+
+    page = client_request.get(
+        ".view_template",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+        _test_page_title=False,
+    )
+    email_body = page.select_one(".email-message-body")
+    assert normalize_spaces(email_body) == view_template_content
+    for rendered_link in rendered_links:
+        assert rendered_link in str(email_body)

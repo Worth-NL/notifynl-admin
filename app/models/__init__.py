@@ -1,20 +1,15 @@
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from functools import total_ordering
+from inspect import get_annotations
 
-from flask import abort
 from notifications_utils.serialised_model import (
     SerialisedModel,
     SerialisedModelCollection,
-    SerialisedModelMeta,
 )
 
 
-class JSONModelMeta(SerialisedModelMeta, ABCMeta):
-    pass
-
-
 @total_ordering
-class JSONModel(SerialisedModel, ABC, metaclass=JSONModelMeta):
+class JSONModel(SerialisedModel, ABC):
     @property
     @abstractmethod
     def __sort_attribute__(self):
@@ -46,19 +41,13 @@ class JSONModel(SerialisedModel, ABC, metaclass=JSONModelMeta):
     def __init__(self, _dict):
         # in the case of a bad request _dict may be `None`
         self._dict = _dict or {}
-        for property, type_ in self.__annotations__.items():
+        for property, type_ in get_annotations(type(self)).items():
             if property in self._dict:
                 value = self.coerce_value_to_type(self._dict[property], type_)
                 setattr(self, property, value)
 
     def __bool__(self):
         return self._dict != {}
-
-    def _get_by_id(self, things, id):
-        try:
-            return next(thing for thing in things if thing["id"] == str(id))
-        except StopIteration:
-            abort(404)
 
 
 class ModelList(SerialisedModelCollection):

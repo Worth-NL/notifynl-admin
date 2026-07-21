@@ -33,7 +33,7 @@ REPORT_REQUEST_MAX_NOTIFICATIONS = 800_000
 
 
 # Language options supported for bilingual letter templates
-class LetterLanguageOptions(str, enum.Enum):
+class LetterLanguageOptions(enum.StrEnum):
     english = "english"
     welsh_then_english = "welsh_then_english"
 
@@ -44,3 +44,11 @@ class ServiceCallbackTypes(enum.StrEnum):
     complaint = "complaint"
     returned_letter = "returned_letter"
     inbound_sms = "inbound_sms"
+
+
+# Zendesk form topic IDs
+class ZendeskTopicId(enum.StrEnum):
+    topic_1 = "14225082291228"
+    accessing_notify_1 = "14225263121692"
+    topic_2 = "15432323861788"
+    accessing_notify_2 = "15432373090716"

@@ -26,21 +26,19 @@
         {{ page_header('Geef aan hoeveel berichten u verwacht te versturen') }}
       {% endif %}
       {% call form_wrapper() %}
-        <div class="form-group">
-          {{ form.volume_email(param_extensions={
-            "classes": "govuk-!-width-one-half",
-            "hint": {"text": "Bijvoorbeeld 50.000"},
-          }) }}
-          {{ form.volume_sms(param_extensions={
-            "classes": "govuk-!-width-one-half",
-            "hint": {"text": "Bijvoorbeeld 50.000"},
-          }) }}
-          {{ form.volume_letter(param_extensions={
-            "classes": "govuk-!-width-one-half",
-            "hint": {"text": "Bijvoorbeeld 50.000"},
-          }) }}
-        </div>
-        {{ page_footer('Doorgaan') }}
+        {{ form.volume_email(param_extensions={
+          "classes": "govuk-!-width-one-half",
+          "hint": {"text": "Bijvoorbeeld 50.000"},
+        }) }}
+        {{ form.volume_sms(param_extensions={
+          "classes": "govuk-!-width-one-half",
+          "hint": {"text": "Bijvoorbeeld 50.000"},
+        }) }}
+        {{ form.volume_letter(param_extensions={
+          "classes": "govuk-!-width-one-half",
+          "hint": {"text": "Bijvoorbeeld 50.000"},
+        }) }}
+      {{ page_footer('Doorgaan') }}
       {% endcall %}
     </div>
   </div>

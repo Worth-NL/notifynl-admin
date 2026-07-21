@@ -147,6 +147,10 @@ def using_notify_nav():
                     "link": "main.guidance_reply_to_email_address",
                 },
                 {
+                    "name": "Geretourneerde brieven",
+                    "link": "main.guidance_returned_letters",
+                },
+                {
                     "name": "Berichten inplannen",
                     "link": "main.guidance_schedule_messages",
                 },

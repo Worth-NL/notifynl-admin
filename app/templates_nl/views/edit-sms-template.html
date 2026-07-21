@@ -41,12 +41,12 @@
           }) }}
         </div>
         <div class="govuk-grid-column-full">
-          <div class="template-content-count">
+          <div class="template-content-count" hidden>
             <div data-notify-module="update-status" data-target="template_content" data-updates-url="{{ url_for('main.count_content_length', service_id=current_service.id, template_type='sms') }}" aria-live="polite">
               &nbsp;
             </div>
           </div>
-          {{ page_footer('Opslaan') }}
+          {{ page_footer('Opslaan en voorbeeld bekijken') }}
         </div>
         <div class="govuk-grid-column-full">
           {% include "partials/templates/guidance-personalisation.html" %}

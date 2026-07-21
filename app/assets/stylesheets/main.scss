@@ -1,12 +1,6 @@
 // Path to assets for use with file-url()
 $path: '/static/images/';
 
-// TODO: remove this when moving to a version of GOVUK Frontend above 6
-// The organisation colours will be set to the new ones by default from that version
-// See: https://github.com/alphagov/govuk-frontend/releases/tag/v5.9.0
-//      > Deprecated features > Migrate to the new organisation colour palette
-$govuk-new-organisation-colours: true;
-
 // By default GOV.UK Frontend adds .js-enabled for all browsers that have
 // javascript enabled which isn't useful as their and our enhancements
 // only run in browsers that support type='module' and add
@@ -31,9 +25,6 @@ $govuk-new-link-styles: true;
 // https://github.com/alphagov/govuk_elements
 @import './govuk-elements/helpers';
 @import './govuk-elements/elements-typography';
-@import './govuk-elements/forms';
-@import './govuk-elements/forms/form-multiple-choice';
-@import './govuk-elements/forms/form-validation';
 @import './govuk-elements/tables';
 
 // Specific to this application
@@ -64,12 +55,12 @@ $govuk-new-link-styles: true;
 @import './components/stick-at-top-when-scrolling';
 @import './components/fullscreen-table';
 @import './components/conditional-radios';
-@import './components/vendor/responsive-embed';
 @import './components/preview-pane';
 @import './components/loading-indicator';
 @import './components/content-metadata';
 @import './components/simple-search-form';
 @import './components/formatting-example';
+@import './components/sender-email-preview';
 @import './views/branding';
 @import './views/dashboard';
 @import './views/users';

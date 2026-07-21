@@ -117,6 +117,19 @@ html.rhc-theme {
             padding: 0px;
             border: none;
         }
+
+        .govuk-header__logo a {
+            color: #FFF;
+
+            &:hover,
+            &:visited {
+                color: #FFF;
+            }
+        }
+    }
+
+    .govuk-service-navigation--inverse .govuk-width-container {
+        border: none !important;
     }
 
     .product-page-intro {
@@ -232,6 +245,12 @@ html.rhc-theme {
         .govuk-footer__section-break,
         .govuk-footer__heading {
             border-color: var(--rhc-color-lintblauw-500);
+        }
+
+        .govuk-footer__link,
+        .govuk-footer__link:visited {
+            color: var(--rhc-color-lintblauw-500);
+
         }
     }
 }

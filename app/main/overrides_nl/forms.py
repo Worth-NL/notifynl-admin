@@ -4,9 +4,10 @@ from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from functools import partial
 from html import escape
-from itertools import chain
+from itertools import chain, repeat
 from math import ceil
 from numbers import Number
+from zipfile import BadZipFile
 
 import pytz
 from flask import request
@@ -16,13 +17,16 @@ from flask_wtf.file import FileAllowed, FileSize
 from flask_wtf.file import FileField as FileField_wtf
 from markupsafe import Markup
 from notifications_utils.countries_nl import Postage
+from notifications_utils.eventlet import SoftEventletTimeout
+from notifications_utils.field import Field as UtilsField
 from notifications_utils.formatters import strip_all_whitespace
 from notifications_utils.insensitive_dict import InsensitiveDict, InsensitiveSet
-from notifications_utils.recipient_validation.email_address import validate_email_address
+from notifications_utils.recipient_validation.email_address import format_email_address, validate_email_address
 from notifications_utils.recipient_validation.errors import InvalidEmailError, InvalidPhoneError
 from notifications_utils.recipient_validation.notifynl.phone_number import PhoneNumber as PhoneNumberUtils
 from notifications_utils.recipient_validation.notifynl.postal_address import PostalAddress
 from notifications_utils.safe_string import make_string_safe_for_email_local_part
+from notifications_utils.sanitise_text import SanitiseASCII
 from notifications_utils.timezones import local_timezone, utc_string_to_aware_gmt_datetime
 from ordered_set import OrderedSet
 from werkzeug.utils import cached_property
@@ -52,6 +56,8 @@ from wtforms.validators import (
     Regexp,
     StopValidation,
 )
+from xlrd.biffh import XLRDError
+from xlrd.xldate import XLDateError
 
 from app import asset_fingerprinter, current_organisation
 from app.constants import (
@@ -66,6 +72,7 @@ from app.main.overrides_nl.validators import (
     CharactersNotAllowed,
     CommonlyUsedPassword,
     CsvFileValidator,
+    DocumentDownloadFileValidator,
     DoesNotStartWithDoubleZero,
     FileIsVirusFree,
     IsAUKMobileNumberOrShortCode,
@@ -74,6 +81,7 @@ from app.main.overrides_nl.validators import (
     IsNotLikeNHSNoReply,
     Length,
     MustContainAlphanumericCharacters,
+    NoBracketsInFileName,
     NoCommasInPlaceHolders,
     NoEmbeddedImagesInSVG,
     NoTextInSVG,
@@ -91,6 +99,7 @@ from app.models.branding import (
 )
 from app.models.feedback import PROBLEM_TICKET_TYPE, QUESTION_TICKET_TYPE
 from app.models.organisation import Organisation
+from app.models.spreadsheet import Spreadsheet
 from app.overrides_nl.formatters import (
     format_auth_type,
     format_date_human,
@@ -100,12 +109,13 @@ from app.overrides_nl.formatters import (
     message_count_noun,
     sentence_case,
 )
-from app.utils import branding
+from app.utils import branding, unicode_truncate
 from app.utils.govuk_frontend_field import (
     GovukFrontendWidgetMixin,
     render_govuk_frontend_macro,
 )
 from app.utils.image_processing import CorruptImage, ImageProcessor, WrongImageFormat
+from app.utils.interruptible_io import InterruptibleIterableList, interruptible_iter
 from app.utils.user_permissions import (
     all_ui_permissions,
     organisation_user_permission_names,
@@ -450,12 +460,22 @@ class RadioFieldWithNoneOption(FieldWithNoneOption, RadioField):
 
 
 class NestedFieldMixin:
+    CHILD_MAP_ITERATION_INTERRUPTIBLE_EVERY = 128
+
+    @cached_property
     def children(self):
+        # beginning iteration through a Field is surprisingly expensive - cache the list of options
+        options = tuple(self)
+
         # start map with root option as a single child entry
-        child_map = {None: [option for option in self if option.data == self.NONE_OPTION_VALUE]}
+        child_map = {None: [option for option in options if option.data == self.NONE_OPTION_VALUE]}
 
         # add entries for all other children
-        for option in self:
+        for option in interruptible_iter(
+            options,
+            self.CHILD_MAP_ITERATION_INTERRUPTIBLE_EVERY,
+            label="child map iteration",
+        ):
             # assign all options with a NONE_OPTION_VALUE (not always None) to the None key
             if option.data == self.NONE_OPTION_VALUE:
                 child_ids = [folder["id"] for folder in self.all_template_folders if folder["parent_id"] is None]
@@ -464,22 +484,17 @@ class NestedFieldMixin:
                 child_ids = [folder["id"] for folder in self.all_template_folders if folder["parent_id"] == option.data]
                 key = option.data
 
-            child_map[key] = [option for option in self if option.data in child_ids]
+            child_map[key] = [option for option in options if option.data in child_ids]
 
         return child_map
-
-    # to be used as the only version of .children once radios are converted
-    @cached_property
-    def _children(self):
-        return self.children()
 
     def get_items_from_options(self, field):
         items = []
 
-        for option in self._children[None]:
+        for option in self.children[None]:
             item = self.get_item_from_option(option)
-            if option.data in self._children:
-                item["children"] = self.render_children(field.name, option.label.text, self._children[option.data])
+            if option.data in self.children:
+                item["children"] = self.render_children(field.name, option.label.text, self.children[option.data])
             items.append(item)
 
         return items
@@ -495,8 +510,8 @@ class NestedFieldMixin:
         for option in options:
             item = self.get_item_from_option(option)
 
-            if len(self._children[option.data]):
-                item["children"] = self.render_children(name, option.label.text, self._children[option.data])
+            if len(self.children[option.data]):
+                item["children"] = self.render_children(name, option.label.text, self.children[option.data])
 
             params["items"].append(item)
 
@@ -719,6 +734,25 @@ class GovukCheckboxesField(GovukFrontendWidgetMixin, SelectMultipleField):
         return params
 
 
+class InterruptibleItemsFieldMixin:
+    def __init__(self, *args, items_iteration_interruptible_every=32, **kwargs):
+        self.items_iteration_interruptible_every = items_iteration_interruptible_every
+        super().__init__(*args, **kwargs)
+
+    def get_items_from_options(self, field):
+        r = InterruptibleIterableList(super().get_items_from_options(field))
+        r.INTERRUPTIBLE_ITERABLE_INTERRUPTIBLE_EVERY = self.items_iteration_interruptible_every
+        r.INTERRUPTIBLE_ITERABLE_LABEL_OVERRIDE = self.__class__.__name__
+        # the returned InterruptibleIterableList *usually* survives an encounter with
+        # merge_jsonlike, but arbitrary processing steps are liable to replace it with
+        # a regular list or other Sequence, defeating its purpose
+        return r
+
+
+class InterruptibleItemsGovukCheckboxesField(InterruptibleItemsFieldMixin, GovukCheckboxesField):
+    pass
+
+
 # Wraps checkboxes rendering in HTML needed by the collapsible JS
 class GovukCollapsibleCheckboxesField(GovukCheckboxesField):
     param_extensions = {"hint": {"html": '<div class="selection-summary" role="region" aria-live="polite"></div>'}}
@@ -885,12 +919,32 @@ class GovukNestedRadiosField(NestedFieldMixin, GovukRadiosFieldWithNoneOption):
                     "hint": {"text": self.option_hints.get(option.data, "")},
                 }
             )
-            if len(self._children[option.data]):
-                item["children"] = self.render_children(name, option.label.text, self._children[option.data])
+            if len(self.children[option.data]):
+                item["children"] = self.render_children(name, option.label.text, self.children[option.data])
 
             params["items"].append(item)
 
         return render_govuk_frontend_macro(self.govuk_frontend_component_name, params=params)
+
+
+class InterruptibleChildRenderingNestedFieldMixin:
+    def __init__(self, *args, child_rendering_interruptible_every=32, **kwargs):
+        self.child_rendering_interruptible_dummy_iterator = interruptible_iter(
+            repeat(None),
+            child_rendering_interruptible_every,
+            label=self.__class__.__name__,
+        )
+        super().__init__(*args, **kwargs)
+
+    def render_children(self, *args, **kwargs):
+        next(self.child_rendering_interruptible_dummy_iterator)
+        return super().render_children(*args, **kwargs)
+
+
+class InterruptibleChildRenderingGovukNestedRadiosField(
+    InterruptibleChildRenderingNestedFieldMixin, GovukNestedRadiosField
+):
+    pass
 
 
 class GovukRadiosWithImagesField(GovukRadiosField):
@@ -1484,6 +1538,10 @@ class LetterAddressForm(StripWhitespaceForm):
 
 
 class EmailTemplateForm(BaseTemplateForm, TemplateNameMixin):
+    def __init__(self, *args, email_file_filenames=None, **kwargs):
+        self.email_file_filenames = email_file_filenames or set()
+        super().__init__(*args, **kwargs)
+
     subject = GovukTextareaField("Onderwerp", validators=[NotifyDataRequired(thing="het onderwerp van de e-mail")])
     has_unsubscribe_link = GovukCheckboxField(
         "Voeg een afmeldlink toe",
@@ -1496,6 +1554,13 @@ class EmailTemplateForm(BaseTemplateForm, TemplateNameMixin):
             ],
         },
     )
+
+    def validate_subject(self, field):
+        if field.errors:
+            return
+
+        if self.email_file_filenames & UtilsField(field.data).placeholders:
+            raise ValidationError("You cannot put a file in the subject")
 
 
 class LetterTemplateForm(BaseTemplateForm, TemplateNameMixin):
@@ -1544,7 +1609,7 @@ class LetterTemplatePostageForm(StripWhitespaceForm):
     ]
 
     postage = GovukRadiosField(
-        "Kies de frankering voor dit briefsjabloon",
+        "Wijzig posttarief",
         choices=choices,
         thing="Prioriteit- of standaardverzending",
         validators=[DataRequired()],
@@ -1553,7 +1618,7 @@ class LetterTemplatePostageForm(StripWhitespaceForm):
 
 class LetterTemplateLanguagesForm(StripWhitespaceForm):
     languages = GovukRadiosField(
-        "Dit wijzigt de taal dat wordt gebruikt voor de datum en paginanummers in uw briefsjabloon.",
+        "Taal wijzigen",
         choices=[
             (LetterLanguageOptions.english.value, "Alleen Nederlands"),
             (LetterLanguageOptions.welsh_then_english.value, "Fries, gevolgd door Nederlands"),
@@ -1610,6 +1675,8 @@ class ChangePasswordForm(StripWhitespaceForm):
 
 
 class CsvUploadForm(StripWhitespaceForm):
+    ALLOWED_FILE_EXTENSIONS = Spreadsheet.ALLOWED_FILE_EXTENSIONS
+
     file = FileField(
         "Voeg ontvangers toe",
         validators=[
@@ -1618,6 +1685,72 @@ class CsvUploadForm(StripWhitespaceForm):
             FileSize(max_size=10 * 1024 * 1024, message="Het bestand mag niet grote zijn dan 10MB"),
         ],
     )
+
+    @property
+    def safe_filename(self):
+        return unicode_truncate(SanitiseASCII.encode(self.file.data.filename), 1600)
+
+    def validate_file(self, field):
+        from flask import current_app
+
+        if field.errors:
+            return
+
+        extra = {"user_id": current_user.id, "file_name": field.data.filename}
+
+        current_app.logger.info(
+            "User %(user_id)s uploaded %(file_name)s",
+            extra,
+            extra=extra,
+        )
+
+        try:
+            self.as_csv_data = Spreadsheet.from_file(field.data, filename=field.data.filename).as_csv_data
+        except (UnicodeDecodeError, BadZipFile, XLRDError) as e:
+            current_app.logger.warning(
+                "Could not read %s",
+                field.data.filename,
+                exc_info=True,
+                extra={"file_name": field.data.filename},
+            )
+            raise ValidationError("Notify kan dit bestand niet lezen - probeer een ander bestandstype") from e
+        except SoftEventletTimeout as e:
+            current_app.logger.warning(
+                "Timed out reading %s",
+                field.data.filename,
+                exc_info=True,
+                extra={"file_name": field.data.filename},
+            )
+            raise ValidationError(
+                "Het verwerken van uw bestand duurde te lang - probeer het opnieuw, of verwijder tabbladen, "
+                "kolommen of rijen die niet nodig zijn"
+            ) from e
+        except XLDateError as e:
+            current_app.logger.warning(
+                "Could not parse numbers/dates in %s",
+                field.data.filename,
+                exc_info=True,
+                extra={"file_name": field.data.filename},
+            )
+            raise ValidationError("Notify kan dit bestand niet lezen - probeer het op te slaan als CSV") from e
+        except Spreadsheet.TooManyColumnsError as e:
+            current_app.logger.warning(
+                "Abandoned parsing %s",
+                field.data.filename,
+                exc_info=True,
+                extra={"file_name": field.data.filename},
+            )
+            raise ValidationError("Uw bestand heeft te veel kolommen (Notify kan tot 1.000 kolommen verwerken)") from e
+        except Spreadsheet.TooManyRowsError as e:
+            current_app.logger.warning(
+                "Abandoned parsing %s",
+                field.data.filename,
+                exc_info=True,
+                extra={"file_name": field.data.filename},
+            )
+            raise ValidationError(
+                "Uw bestand heeft te veel rijen (Notify kan tot 100.000 rijen tegelijk verwerken)"
+            ) from e
 
 
 class ChangeNameForm(StripWhitespaceForm):
@@ -1696,7 +1829,6 @@ class CreateKeyForm(StripWhitespaceForm):
 
 class SupportType(StripWhitespaceForm):
     support_type = GovukRadiosField(
-        "Hoe kunnen wij u helpen?",
         choices=[
             (PROBLEM_TICKET_TYPE, "Meld een probleem"),
             (QUESTION_TICKET_TYPE, "Stel een vraag of geef feedback"),
@@ -1704,9 +1836,92 @@ class SupportType(StripWhitespaceForm):
     )
 
 
+class SupportProblemTypeForm(StripWhitespaceForm):
+    def __init__(self, *args, user_logged_in, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if user_logged_in:
+            self.problem_type.choices = [
+                ("sending-messages", "I’m having problems sending messages"),
+                ("something-else", "Something else"),
+            ]
+        else:
+            self.problem_type.choices = [
+                ("signing-in", "I cannot sign in to my account"),
+                ("sending-messages", "I’m having problems sending messages"),
+                ("something-else", "Something else"),
+            ]
+
+    problem_type = GovukRadiosField("Report a problem")
+
+
+class SupportSignInIssuesForm(StripWhitespaceForm):
+    sign_in_issue = GovukRadiosField(
+        "Tell us why you cannot sign in",
+        choices=[
+            ("no-code", "I did not receive a text message with a security code"),
+            ("mobile-number-changed", "My mobile number has changed"),
+            ("no-email-link", "I did not receive an email with a link to sign in"),
+            ("email-address-changed", "My email address has changed"),
+            ("something-else", "Something else"),
+        ],
+    )
+
+
+class SupportNoSecurityCodeForm(StripWhitespaceForm):
+    name = GovukTextInputField("Naam", validators=[NotifyDataRequired(thing="uw naam")])
+    email_address = make_email_address_field(label="E-mailadres", gov_user=False, required=True, thing="uw e-mailadres")
+    mobile_number = PhoneNumber(
+        "Mobiel telefoonnummer",
+        validators=[
+            NotifyDataRequired(thing="uw mobiele telefoonnummer"),
+            ValidPhoneNumber(allow_international_sms=True),
+        ],
+    )
+
+
+class SupportMobileNumberChangedForm(StripWhitespaceForm):
+    name = GovukTextInputField("Naam", validators=[NotifyDataRequired(thing="uw naam")])
+    email_address = make_email_address_field(label="E-mailadres", gov_user=False, required=True, thing="uw e-mailadres")
+    old_mobile_number = PhoneNumber(
+        "Oud mobiel telefoonnummer",
+        validators=[
+            NotifyDataRequired(thing="uw oude mobiele telefoonnummer"),
+            ValidPhoneNumber(allow_international_sms=True),
+        ],
+    )
+    new_mobile_number = PhoneNumber(
+        "Nieuw mobiel telefoonnummer",
+        validators=[
+            NotifyDataRequired(thing="uw nieuwe mobiele telefoonnummer"),
+            ValidPhoneNumber(allow_international_sms=True),
+        ],
+    )
+
+
+class SupportNoEmailLinkForm(StripWhitespaceForm):
+    name = GovukTextInputField("Naam", validators=[NotifyDataRequired(thing="uw naam")])
+    email_address = make_email_address_field(label="E-mailadres", gov_user=False, required=True, thing="uw e-mailadres")
+
+
+class SupportEmailAddressChangedForm(StripWhitespaceForm):
+    name = GovukTextInputField("Naam", validators=[NotifyDataRequired(thing="uw naam")])
+    old_email_address = make_email_address_field(
+        label="Oud e-mailadres",
+        gov_user=False,
+        required=True,
+        thing="uw oude e-mailadres",
+    )
+    new_email_address = make_email_address_field(
+        label="Nieuw e-mailadres",
+        gov_user=False,
+        required=True,
+        thing="uw nieuwe e-mailadres",
+    )
+
+
 class SupportRedirect(StripWhitespaceForm):
     who = GovukRadiosField(
-        "Waar heeft u hulp bij nodig?",
         choices=[
             ("public-sector", "Ik werk voor een overheidsorganisatie en ik wil emails, sms of brieven sturen"),
             ("public", "Ik ben een inwoner van Nederland met een vraag voor de overheid"),
@@ -1716,18 +1931,21 @@ class SupportRedirect(StripWhitespaceForm):
 
 class FeedbackOrProblem(StripWhitespaceForm):
     feedback = GovukTextareaField("Uw bericht", validators=[NotifyDataRequired(thing="uw bericht")])
-    name = GovukTextInputField("Naam (optioneel)")
+    name = GovukTextInputField("Naam", validators=[NotifyDataRequired(thing="uw naam")])
     email_address = make_email_address_field(label="E-mailadres", gov_user=False, required=True, thing="uw e-mailadres")
 
 
-class Triage(StripWhitespaceForm):
-    severe = GovukRadiosField(
-        "Ervaart u een of meerdere van de volgende foutmeldingen?",
+class SupportWhatHappenedForm(StripWhitespaceForm):
+    what_happened = GovukRadiosField(
+        "What happened?",
         choices=[
-            ("yes", "Ja"),
-            ("no", "Nee"),
+            (
+                "technical-difficulties",
+                "I got a ‘technical difficulties’ error when I tried to send messages using the Notify website",
+            ),
+            ("api-500-response", "I got a 500 response code from the API"),
+            ("something-else", "Something else"),
         ],
-        thing="Vul ‘Ja’ als dit een noodgeval is",
     )
 
 
@@ -1793,6 +2011,17 @@ class AdminProviderRatioForm(OrderableFieldsForm):
 
 
 class ServiceContactDetailsForm(StripWhitespaceForm):
+    def __init__(self, *args, service=None, **kwargs):
+        if service and service.contact_details_type:
+            super().__init__(
+                *args,
+                contact_details_type=service.contact_details_type,
+                **{service.contact_details_type: service.contact_link},
+                **kwargs,
+            )
+        else:
+            super().__init__(*args, **kwargs)
+
     contact_details_type = GovukRadiosField(
         "Soort contactgegevens",
         choices=[
@@ -1846,6 +2075,10 @@ class ServiceContactDetailsForm(StripWhitespaceForm):
             ]
 
         return super().validate(*args, **kwargs)
+
+    @property
+    def chosen_contact_type(self):
+        return self.data[self.contact_details_type.data]
 
 
 class ServiceReplyToEmailForm(StripWhitespaceForm):
@@ -2607,7 +2840,7 @@ class AdminServiceEditDataRetentionForm(StripWhitespaceForm):
 
 class AdminReturnedLettersForm(StripWhitespaceForm):
     references = GovukTextareaField(
-        "Briefvoorkeuren",
+        "Retourbriefjes indienen",
         validators=[
             NotifyDataRequired(thing="de geretourneerde briefreferenties"),
         ],
@@ -2733,7 +2966,7 @@ class TemplateAndFoldersSelectionForm(OrderableFieldsForm):
             return self.move_to_new_folder_name.data
         return None
 
-    templates_and_folders = GovukCheckboxesField(
+    templates_and_folders = InterruptibleItemsGovukCheckboxesField(
         "Kies templates of mappen",
         validators=[required_for_ops("move-to-new-folder", "move-to-existing-folder")],
         choices=[],  # added to keep order of arguments, added properly in __init__
@@ -2743,7 +2976,7 @@ class TemplateAndFoldersSelectionForm(OrderableFieldsForm):
     # if no default set, it is set to None, which process_data transforms to '__NONE__'
     # this means '__NONE__' (self.ALL_TEMPLATES option) is selected when no form data has been submitted
     # set default to empty string so process_data method doesn't perform any transformation
-    move_to = GovukNestedRadiosField(
+    move_to = InterruptibleChildRenderingGovukNestedRadiosField(
         "Kies een map", default="", validators=[required_for_ops("move-to-existing-folder"), Optional()]
     )
 
@@ -2760,7 +2993,7 @@ class TemplateAndFoldersSelectionForm(OrderableFieldsForm):
 
 
 class AdminClearCacheForm(StripWhitespaceForm):
-    model_type = GovukCheckboxesField("Wat wilt u vandaag opschonen?")
+    model_type = GovukCheckboxesField("Cache wissen")
 
     def validate_model_type(self, field):
         if not field.data:
@@ -3100,3 +3333,103 @@ class ProcessUnsubscribeRequestForm(StripWhitespaceForm):
 
         if field.data and self.report_completed:
             raise ValidationError("Er is een probleem. U hebt het rapport reeds gemarkeerd als voltooid")
+
+
+class TemplateEmailFilesUploadForm(StripWhitespaceForm):
+    def __init__(self, *args, template, **kwargs):
+        self.existing_file_names = template.filenames
+        self.placeholders_in_subject = UtilsField(template._subject).placeholders
+        super().__init__(*args, **kwargs)
+
+    allowed_file_formats = {
+        "CSV": ("csv",),
+        "image": (
+            "jpeg",
+            "jpg",
+            "png",
+        ),
+        "Microsoft Excel Spreadsheet": ("xlsx",),
+        "Microsoft Word Document": (
+            "doc",
+            "docx",
+        ),
+        "PDF": ("pdf",),
+        "text": ("json", "odt", "rtf", "txt"),
+    }
+    allowed_file_extensions = tuple(chain(*allowed_file_formats.values()))
+
+    file = VirusScannedFileField(
+        "Voeg een bestand toe",
+        validators=[
+            DataRequired(message="U moet een bestand uploaden om te versturen"),
+            DocumentDownloadFileValidator(),
+            FileSize(
+                max_size=2 * 1_024 * 1_024,
+                message="Het bestand moet kleiner zijn dan 2MB",
+            ),
+            NoBracketsInFileName(),
+        ],
+    )
+
+    def validate_file(self, field):
+        if field.errors:
+            return
+
+        if (length := len(field.data.filename)) > 100:
+            raise ValidationError(
+                f"Bestandsnaam mag niet langer zijn dan 100 tekens (‘{field.data.filename}’ is {length} tekens)"
+            )
+
+        if field.data.filename in self.existing_file_names:
+            raise ValidationError(f"Uw sjabloon heeft al een bestand met de naam ‘{field.data.filename}’")
+
+        if field.data.filename in self.placeholders_in_subject:
+            raise ValidationError(
+                f"U kunt geen bestand in het onderwerp van een sjabloon plaatsen "
+                f"– verwijder (({field.data.filename})) of hernoem uw bestand"
+            )
+
+
+class TemplateEmailFileLinkTextForm(StripWhitespaceForm):
+    link_text = GovukTextInputField("Linktekst (optioneel)")
+
+
+class TemplateEmailFileRetentionPeriodForm(StripWhitespaceForm):
+    retention_period = GovukIntegerField(
+        label="Aantal weken beschikbaar voor ontvangers",
+        things="het aantal weken",
+        validators=[
+            NotifyDataRequired(thing="een aantal weken"),
+            validators.NumberRange(min=1, max=78, message="Het aantal weken moet tussen 1 en 78 liggen"),
+        ],
+        param_extensions={"hint": {"text": "Moet tussen 1 en 78 weken zijn"}},
+    )
+
+
+class DocumentDownloadConfirmEmailAddressForm(StripWhitespaceForm):
+    def __init__(self, *args, current_user_email_address, service_name, **kwargs):
+        self.current_user_email_address = current_user_email_address
+        self.service_name = service_name
+        super().__init__(*args, **kwargs)
+
+    email_address = GovukEmailField(
+        "E-mailadres",
+        validators=[
+            NotifyDataRequired(thing="e-mailadres"),
+        ],
+    )
+
+    def validate_email_address(self, field):
+        try:
+            validate_email_address(self.email_address.data)
+        except InvalidEmailError as e:
+            raise ValidationError("Geen geldig e-mailadres") from e
+
+        if format_email_address(self.email_address.data) != format_email_address(self.current_user_email_address):
+            raise ValidationError(
+                Markup(
+                    "Dit is niet het e-mailadres waar het bestand naartoe is gestuurd.<br><br>"
+                    f"Voer het e-mailadres in waar {self.service_name} het bestand naartoe heeft gestuurd "
+                    "om te bevestigen dat het bestand voor u bedoeld was."
+                )
+            )

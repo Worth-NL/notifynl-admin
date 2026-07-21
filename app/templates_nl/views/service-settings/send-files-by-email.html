@@ -17,12 +17,17 @@
     <div class="govuk-grid-column-five-sixths">
       {{ page_header('Bestanden per e-mail verzenden') }}
       <p class="govuk-body">
-        Dit is een API-only functie.
+        Om een bestand per e-mail te versturen, kunt u:
       </p>
-      <p class="govuk-body">
-        Om een bestand per e-mail te verzenden, volgt u de instructies in onze <a class="govuk-link govuk-link--no-visited-state" href={{ url_for('main.guidance_api_documentation') }}>API-documentatie</a>.
-      </p>
-      <h2 class="heading-medium">{% if contact_details %}Wijzig contactgegevens voor{% else %}Voeg contactgegevens toe aan{% endif %} de pagina voor het downloaden van bestanden</h2>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          een sjabloon kiezen en ‘Bestanden bijvoegen’ selecteren
+        </li>
+        <li>
+          of de instructies volgen in onze <a class="govuk-link govuk-link--no-visited-state" href={{ url_for('main.guidance_api_documentation') }}>API-documentatie</a>
+        </li>
+      </ul>
+      <h2 class="heading-medium">{% if current_service.contact_link %}Wijzig contactgegevens voor{% else %}Voeg contactgegevens toe aan{% endif %} de pagina voor het downloaden van bestanden</h2>
       <p class="govuk-body">
         U moet contactgegevens voor uw dienst toevoegen zodat uw gebruikers contact kunnen opnemen bij problemen. Bijvoorbeeld wanneer de link om het bestand te downloaden is verlopen.
       </p>
@@ -30,8 +35,8 @@
 
         {{ form.contact_details_type(param_extensions={
           "items": [
-            { "conditional": { "html": form.url(param_extensions={ "label": { "classes": "govuk-visually-hidden" } }) } },
-            { "conditional": { "html": form.email_address(param_extensions={ "label": { "classes": "govuk-visually-hidden" } }) } },
+            { "conditional": { "html": form.url(param_extensions={ "label": { "classes": "govuk-visually-hidden" }, "classes": "govuk-!-width-full" }) } },
+            { "conditional": { "html": form.email_address(param_extensions={ "label": { "classes": "govuk-visually-hidden" }, "classes": "govuk-!-width-full" }) } },
             { "conditional": { "html": form.phone_number(param_extensions={ "label": { "classes": "govuk-visually-hidden" } }) } }
           ]
         }) }}

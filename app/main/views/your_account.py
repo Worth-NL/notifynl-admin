@@ -109,6 +109,7 @@ def your_account_email_confirm(token):
         current_app.config["SECRET_KEY"],
         current_app.config["DANGEROUS_SALT"],
         current_app.config["EMAIL_EXPIRY_SECONDS"],
+        current_app.config["TOKEN_SECRET_KEY"],
     )
     token = Token(token_data)
     user = User.from_id(token.user_id)
@@ -198,7 +199,7 @@ def your_account_mobile_number_confirm():
         current_user.update(mobile_number=mobile_number)
         return redirect(url_for(".your_account"))
 
-    return render_template("views/your-account/confirm.html", form_field=form.sms_code, thing="mobile number")
+    return render_template("views/your-account/confirm.html", form_field=form.sms_code)
 
 
 @main.route("/your-account/password", methods=["GET", "POST"])

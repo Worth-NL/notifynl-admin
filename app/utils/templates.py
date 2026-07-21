@@ -6,6 +6,7 @@ from markupsafe import Markup
 from notifications_utils.countries_nl import Postage
 from notifications_utils.field import Field
 from notifications_utils.formatters import escape_html, formatted_list, normalise_whitespace
+from notifications_utils.insensitive_dict import InsensitiveSet
 from notifications_utils.take import Take
 from notifications_utils.template import (
     BaseEmailTemplate,
@@ -13,9 +14,11 @@ from notifications_utils.template import (
     SMSPreviewTemplate,
     do_nice_typography,
 )
+from ordered_set import OrderedSet
 
 from app.extensions import redis_client
 from app.models import JSONModel
+from app.models.template_email_file import TemplateEmailFiles
 from app.notify_client import cache
 
 
@@ -103,7 +106,7 @@ class BaseLetterImageTemplate(BaseLetterTemplate):
             "page_numbers": self.page_numbers,
             "address": self._address_block,
             "contact_block": self._contact_block,
-            "date": self._date,
+            "date": self.date,
             "subject": self.subject,
             "message": self._message,
             "show_postage": bool(self.postage),
@@ -232,12 +235,13 @@ class EmailPreviewTemplate(BaseEmailTemplate):
         reply_to=None,
         show_recipient=True,
         redact_missing_personalisation=False,
-        **kwargs,
     ):
-        super().__init__(template, values, redact_missing_personalisation=redact_missing_personalisation, **kwargs)
+        super().__init__(template, values, redact_missing_personalisation=redact_missing_personalisation)
         self.from_name = from_name
         self.reply_to = reply_to
         self.show_recipient = show_recipient
+        if template.get("has_unsubscribe_link"):
+            self.unsubscribe_link = url_for("main.unsubscribe_example", _external=True)
 
     def __str__(self):
         return Markup(
@@ -271,6 +275,39 @@ class EmailPreviewTemplate(BaseEmailTemplate):
             .then(do_nice_typography)
             .then(normalise_whitespace)
         )
+
+    @property
+    def email_files(self):
+        return TemplateEmailFiles(self)
+
+    @property
+    def values(self):
+        if self.email_files:
+            return super().values | self.email_files.as_personalisation
+        return super().values
+
+    @values.setter
+    def values(self, value):
+        # Assigning to super().values doesn’t work here. We need to get
+        # the property object instead, which has the special method
+        # fset, which invokes the setter as if we were
+        # assigning to it outside this class.
+        super(EmailPreviewTemplate, type(self)).values.fset(self, value)
+
+    @property
+    def filenames(self):
+        return InsensitiveSet(self.email_files.as_personalisation.keys())
+
+    @property
+    def all_placeholders(self):
+        """
+        Returns normal placeholders and file placeholders
+        """
+        return super().placeholders
+
+    @property
+    def placeholders(self):
+        return OrderedSet([placeholder for placeholder in self.all_placeholders if placeholder not in self.filenames])
 
 
 class LetterAttachment(JSONModel):
@@ -308,7 +345,6 @@ def get_template(
             show_recipient=show_recipient,
             redact_missing_personalisation=redact_missing_personalisation,
             reply_to=email_reply_to,
-            unsubscribe_link=url_for(".unsubscribe_example") if template.get("has_unsubscribe_link") else None,
         )
     if "sms" == template["template_type"]:
         return SMSPreviewTemplate(
@@ -333,3 +369,43 @@ def get_template(
             contact_block=template["reply_to_text"],
             include_letter_edit_ui_overlay=include_letter_edit_ui_overlay,
         )
+
+
+class TemplateChange:
+    def __init__(self, old_template, new_template, *, service_has_api_keys):
+        self.old_placeholders = InsensitiveSet(getattr(old_template, "all_placeholders", old_template.placeholders))
+        self.new_placeholders = InsensitiveSet(getattr(new_template, "all_placeholders", new_template.placeholders))
+        self.email_files = getattr(old_template, "email_files", [])
+        self.service_has_api_keys = service_has_api_keys
+
+    @property
+    def has_different_placeholders(self):
+        return self.new_placeholders != self.old_placeholders
+
+    @property
+    def placeholders_added(self):
+        return self.new_placeholders - self.old_placeholders
+
+    @property
+    def placeholders_removed(self):
+        return self.placeholders_and_email_files_removed - self.email_filenames_removed
+
+    @property
+    def placeholders_and_email_files_removed(self):
+        return self.old_placeholders - self.new_placeholders
+
+    @property
+    def email_files_removed(self):
+        return OrderedSet(
+            [file for file in self.email_files if file.filename in self.placeholders_and_email_files_removed]
+        )
+
+    @property
+    def email_filenames_removed(self):
+        return InsensitiveSet(file.filename for file in self.email_files_removed)
+
+    @property
+    def is_breaking_change(self):
+        if self.email_files_removed:
+            return True
+        return bool(self.placeholders_added and self.service_has_api_keys)

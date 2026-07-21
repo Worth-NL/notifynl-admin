@@ -20,6 +20,7 @@ from app.main.views_nl.sub_navigation_dictionaries import features_nav, using_no
 from app.models.branding import EmailBranding
 from app.models.letter_rates import LetterRates
 from app.models.sms_rate import SMSRate
+from app.utils import hide_from_search_engines
 from app.utils.user import user_has_permissions
 
 redirects = Blueprint("redirects", __name__)
@@ -108,6 +109,15 @@ def email_template():
     )
 
     resp.headers["X-Frame-Options"] = "SAMEORIGIN"
+
+    # Allow the admin app to embed this preview in a same-origin iframe without weakening the default
+    # policy elsewhere; the preview HTML needs inline styles and access to the asset domain.
+    resp.headers["Content-Security-Policy"] = resp.headers.get("Content-Security-Policy", "") + (
+        "style-src-elem 'self' {asset_domain} 'unsafe-inline';"
+    ).format(
+        asset_domain=current_app.config["ASSET_DOMAIN"],
+    )
+
     return resp
 
 
@@ -246,7 +256,7 @@ def guidance_letter_branding():
     )
 
 
-@main.route("/using-notify/links-and-URLs")
+@main.route("/using-notify/links-and-urls")
 def guidance_links_and_URLs():
     return render_template(
         "views/guidance/using-notify/links-and-URLs.html",
@@ -290,6 +300,14 @@ def guidance_receive_text_messages():
 def guidance_reply_to_email_address():
     return render_template(
         "views/guidance/using-notify/reply-to-email-address.html",
+        navigation_links=using_notify_nav(),
+    )
+
+
+@main.route("/using-notify/returned-letters")
+def guidance_returned_letters():
+    return render_template(
+        "views/guidance/using-notify/returned-letters.html",
         navigation_links=using_notify_nav(),
     )
 
@@ -407,6 +425,19 @@ def submit_request_to_go_live_old_path(service_id):
     return redirect(url_for("main.submit_request_to_go_live", service_id=service_id), 301)
 
 
+@main.route("/support/general")
+@hide_from_search_engines
+def feedback_guidance_ticket_type():
+    return redirect(url_for("main.support"), 301)
+
+
+@main.route("/support/triage")
+@main.route("/support/triage/<ticket_type:ticket_type>")
+@hide_from_search_engines
+def triage(ticket_type="problem"):
+    return redirect(url_for("main.support_problem"), 301)
+
+
 def historical_redirects(new_endpoint, **kwargs):
     return redirect(url_for(new_endpoint, **kwargs), 301)
 
@@ -475,6 +506,7 @@ REDIRECTS = {
     "/user-profile/security-keys": "main.your_account_security_keys",
     "/user-profile/security-keys/<uuid:key_id>/manage": "main.your_account_manage_security_key",
     "/user-profile/take-part-in-user-research": "main.your_account_take_part_in_user_research",
+    "/using-notify/links-and-URLs": "main.guidance_links_and_URLs",
 }
 
 for old_url, new_endpoint in REDIRECTS.items():

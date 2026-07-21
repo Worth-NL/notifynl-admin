@@ -4,16 +4,11 @@ from unittest.mock import ANY, call
 
 import pytest
 from flask import url_for
+from freezegun import freeze_time
 
 from app.main.views_nl.platform_admin import (
     build_live_service_permissions_for_users_list,
-    create_global_stats,
-    format_stats_by_service,
-    get_tech_failure_status_box_data,
-    is_over_threshold,
-    sum_service_usage,
 )
-from tests import service_json
 from tests.conftest import SERVICE_ONE_ID, SERVICE_TWO_ID, create_user, normalize_spaces
 
 
@@ -29,103 +24,6 @@ def test_should_403_if_not_platform_admin(client_request):
     client_request.get("main.platform_admin_search", _expected_status=403)
 
 
-def test_create_global_stats_sets_failure_rates(fake_uuid):
-    services = [service_json(fake_uuid, "a", []), service_json(fake_uuid, "b", [])]
-    services[0]["statistics"] = create_stats(
-        emails_requested=1,
-        emails_delivered=1,
-        emails_failed=0,
-    )
-    services[1]["statistics"] = create_stats(
-        emails_requested=2,
-        emails_delivered=1,
-        emails_failed=1,
-    )
-
-    stats = create_global_stats(services)
-    assert stats == {
-        "email": {"delivered": 2, "failed": 1, "requested": 3, "failure_rate": "33.3"},
-        "sms": {"delivered": 0, "failed": 0, "requested": 0, "failure_rate": "0"},
-        "letter": {"delivered": 0, "failed": 0, "requested": 0, "failure_rate": "0"},
-    }
-
-
-def create_stats(
-    emails_requested=0,
-    emails_delivered=0,
-    emails_failed=0,
-    sms_requested=0,
-    sms_delivered=0,
-    sms_failed=0,
-    letters_requested=0,
-    letters_delivered=0,
-    letters_failed=0,
-):
-    return {
-        "sms": {
-            "requested": sms_requested,
-            "delivered": sms_delivered,
-            "failed": sms_failed,
-        },
-        "email": {
-            "requested": emails_requested,
-            "delivered": emails_delivered,
-            "failed": emails_failed,
-        },
-        "letter": {
-            "requested": letters_requested,
-            "delivered": letters_delivered,
-            "failed": letters_failed,
-        },
-    }
-
-
-def test_format_stats_by_service_returns_correct_values(fake_uuid):
-    services = [service_json(fake_uuid, "a", [])]
-    services[0]["statistics"] = create_stats(
-        emails_requested=10,
-        emails_delivered=3,
-        emails_failed=5,
-        sms_requested=50,
-        sms_delivered=7,
-        sms_failed=11,
-        letters_requested=40,
-        letters_delivered=20,
-        letters_failed=7,
-    )
-
-    ret = list(format_stats_by_service(services))
-    assert len(ret) == 1
-
-    assert ret[0]["stats"]["email"]["requested"] == 10
-    assert ret[0]["stats"]["email"]["delivered"] == 3
-    assert ret[0]["stats"]["email"]["failed"] == 5
-
-    assert ret[0]["stats"]["sms"]["requested"] == 50
-    assert ret[0]["stats"]["sms"]["delivered"] == 7
-    assert ret[0]["stats"]["sms"]["failed"] == 11
-
-    assert ret[0]["stats"]["letter"]["requested"] == 40
-    assert ret[0]["stats"]["letter"]["delivered"] == 20
-    assert ret[0]["stats"]["letter"]["failed"] == 7
-
-
-def test_sum_service_usage_is_sum_of_all_activity(fake_uuid):
-    service = service_json(fake_uuid, "My Service 1")
-    service["statistics"] = create_stats(
-        emails_requested=100, emails_delivered=25, emails_failed=25, sms_requested=100, sms_delivered=25, sms_failed=25
-    )
-    assert sum_service_usage(service) == 200
-
-
-def test_sum_service_usage_with_zeros(fake_uuid):
-    service = service_json(fake_uuid, "My Service 1")
-    service["statistics"] = create_stats(
-        emails_requested=0, emails_delivered=0, emails_failed=25, sms_requested=0, sms_delivered=0, sms_failed=0
-    )
-    assert sum_service_usage(service) == 0
-
-
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_platform_admin_list_complaints(client_request, platform_admin_user, mocker):
     complaint = {
@@ -139,7 +37,8 @@ def test_platform_admin_list_complaints(client_request, platform_admin_user, moc
         "created_at": "2018-06-05T13:50:30.012354",
     }
     mock = mocker.patch(
-        "app.complaint_api_client.get_all_complaints", return_value={"complaints": [complaint], "links": {}}
+        "app.complaint_api_client.get_all_complaints",
+        return_value={"complaints": [complaint], "links": {}},
     )
 
     client_request.login(platform_admin_user)
@@ -169,7 +68,11 @@ def test_should_show_complaints_with_next_previous(
                 "ses_feedback_id": "None",
             }
         ],
-        "links": {"last": "/complaint?page=3", "next": "/complaint?page=3", "prev": "/complaint?page=1"},
+        "links": {
+            "last": "/complaint?page=3",
+            "next": "/complaint?page=3",
+            "prev": "/complaint?page=1",
+        },
     }
 
     mocker.patch("app.complaint_api_client.get_all_complaints", return_value=api_response)
@@ -195,7 +98,10 @@ def test_platform_admin_list_complaints_returns_404_with_invalid_page(
     platform_admin_user,
     mocker,
 ):
-    mocker.patch("app.complaint_api_client.get_all_complaints", return_value={"complaints": [], "links": {}})
+    mocker.patch(
+        "app.complaint_api_client.get_all_complaints",
+        return_value={"complaints": [], "links": {}},
+    )
 
     client_request.login(platform_admin_user)
     client_request.get(
@@ -203,30 +109,6 @@ def test_platform_admin_list_complaints_returns_404_with_invalid_page(
         page="invalid",
         _expected_status=404,
     )
-
-
-@pytest.mark.parametrize(
-    "number, total, threshold, result",
-    [
-        (0, 0, 0, False),
-        (1, 1, 0, True),
-        (2, 3, 66, True),
-        (2, 3, 67, False),
-    ],
-)
-def test_is_over_threshold(number, total, threshold, result):
-    assert is_over_threshold(number, total, threshold) is result
-
-
-def test_get_tech_failure_status_box_data_removes_percentage_data():
-    stats = {
-        "failures": {"permanent-failure": 0, "technical-failure": 0, "temporary-failure": 1, "virus-scan-failed": 0},
-        "test-key": 0,
-        "total": 5589,
-    }
-    tech_failure_data = get_tech_failure_status_box_data(stats)
-
-    assert "percentage" not in tech_failure_data
 
 
 def test_platform_admin_show_submit_returned_letters_page(
@@ -299,6 +181,7 @@ def test_clear_cache_shows_form(
         "text_message_and_letter_rates",
         "unsubscribe_request_reports",
         "service_join_request",
+        "rate_limits",
     }
 
 
@@ -364,6 +247,15 @@ def test_clear_cache_shows_form(
                 call("service-join-request-????????-????-????-????-????????????"),
             ],
             "Removed 2 objects across 1 key formats for service join request",
+        ),
+        (
+            ["rate_limits"],
+            [
+                call("????????-????-????-????-????????????-tokens-normal"),
+                call("????????-????-????-????-????????????-tokens-team"),
+                call("????????-????-????-????-????????????-tokens-test"),
+            ],
+            "Removed 6 objects across 3 key formats for rate limits",
         ),
     ),
 )
@@ -507,7 +399,9 @@ def test_get_notifications_sent_by_service_validates_form(
     client_request.login(platform_admin_user)
 
     page = client_request.post(
-        "main.notifications_sent_by_service", _expected_status=200, _data={"start_date": "", "end_date": "20190101"}
+        "main.notifications_sent_by_service",
+        _expected_status=200,
+        _data={"start_date": "", "end_date": "20190101"},
     )
 
     errors = page.select(".govuk-error-message")
@@ -524,10 +418,15 @@ def test_get_notifications_sent_by_service_validates_form(
 def test_get_billing_report_when_no_results_for_date(client_request, platform_admin_user, mocker):
     client_request.login(platform_admin_user)
 
-    mocker.patch("app.main.views_nl.platform_admin.billing_api_client.get_data_for_billing_report", return_value=[])
+    mocker.patch(
+        "app.main.views_nl.platform_admin.billing_api_client.get_data_for_billing_report",
+        return_value=[],
+    )
 
     page = client_request.post(
-        "main.get_billing_report", _expected_status=200, _data={"start_date": "2019-01-01", "end_date": "2019-03-31"}
+        "main.get_billing_report",
+        _expected_status=200,
+        _data={"start_date": "2019-01-01", "end_date": "2019-03-31"},
     )
 
     error = page.select_one(".banner-dangerous")
@@ -593,7 +492,8 @@ class TestGetDvlaBillingReport:
         client_request.login(platform_admin_user)
 
         mocker.patch(
-            "app.main.views_nl.platform_admin.billing_api_client.get_data_for_dvla_billing_report", return_value=[]
+            "app.main.views_nl.platform_admin.billing_api_client.get_data_for_dvla_billing_report",
+            return_value=[],
         )
 
         page = client_request.post(
@@ -668,7 +568,18 @@ def test_get_notifications_sent_by_service_calls_api_and_downloads_data(
     mocker,
 ):
     api_data = [
-        ["2019-01-01", SERVICE_ONE_ID, service_one["name"], "email", 191, 0, 0, 14, 0, 0],
+        [
+            "2019-01-01",
+            SERVICE_ONE_ID,
+            service_one["name"],
+            "email",
+            191,
+            0,
+            0,
+            14,
+            0,
+            0,
+        ],
         ["2019-01-01", SERVICE_ONE_ID, service_one["name"], "sms", 42, 0, 0, 8, 0, 0],
         ["2019-01-01", SERVICE_TWO_ID, service_two["name"], "email", 3, 1, 0, 2, 0, 0],
     ]
@@ -866,10 +777,17 @@ class TestPlatformAdminSearch:
             "app.main.views_nl.platform_admin.organisations_client.search",
             return_value={"data": []},
         )
-        mocker.patch("app.main.views_nl.platform_admin.get_url_for_notify_record", return_value=None)
+        mocker.patch(
+            "app.main.views_nl.platform_admin.get_url_for_notify_record",
+            return_value=None,
+        )
         client_request.login(platform_admin_user)
 
-        response = client_request.post(".platform_admin_search", _data={"search": "caseworker"}, _expected_status=200)
+        response = client_request.post(
+            ".platform_admin_search",
+            _data={"search": "caseworker"},
+            _expected_status=200,
+        )
 
         assert normalize_spaces(response.select(".govuk-tabs ul")[0]) == "Users (1)"
 
@@ -891,7 +809,10 @@ class TestPlatformAdminSearch:
             "app.main.views_nl.platform_admin.organisations_client.search",
             return_value={"data": []},
         )
-        mocker.patch("app.main.views_nl.platform_admin.get_url_for_notify_record", return_value=None)
+        mocker.patch(
+            "app.main.views_nl.platform_admin.get_url_for_notify_record",
+            return_value=None,
+        )
         client_request.login(platform_admin_user)
 
         response = client_request.post(".platform_admin_search", _data={"search": "service"}, _expected_status=200)
@@ -918,7 +839,10 @@ class TestPlatformAdminSearch:
             "app.main.views_nl.platform_admin.organisations_client.search",
             return_value={"data": [organisation_one]},
         )
-        mocker.patch("app.main.views_nl.platform_admin.get_url_for_notify_record", return_value=None)
+        mocker.patch(
+            "app.main.views_nl.platform_admin.get_url_for_notify_record",
+            return_value=None,
+        )
         client_request.login(platform_admin_user)
 
         response = client_request.post(".platform_admin_search", _data={"search": "service"}, _expected_status=200)
@@ -952,7 +876,10 @@ class TestPlatformAdminSearch:
             "app.main.views_nl.platform_admin.organisations_client.search",
             return_value={"data": [organisation_one]},
         )
-        mocker.patch("app.main.views_nl.platform_admin.get_url_for_notify_record", return_value=None)
+        mocker.patch(
+            "app.main.views_nl.platform_admin.get_url_for_notify_record",
+            return_value=None,
+        )
         client_request.login(platform_admin_user)
 
         response = client_request.post(".platform_admin_search", _data={"search": "blah"}, _expected_status=200)
@@ -976,7 +903,10 @@ class TestPlatformAdminSearch:
     @pytest.mark.parametrize(
         "api_response, expected_redirect",
         (
-            ({"type": "organisation"}, "/organisations/abcdef12-3456-7890-abcd-ef1234567890"),
+            (
+                {"type": "organisation"},
+                "/organisations/abcdef12-3456-7890-abcd-ef1234567890",
+            ),
             ({"type": "service"}, "/services/abcdef12-3456-7890-abcd-ef1234567890"),
             (
                 {"type": "notification", "context": {"service_id": "abc"}},
@@ -986,8 +916,14 @@ class TestPlatformAdminSearch:
                 {"type": "template", "context": {"service_id": "abc"}},
                 "/services/abc/templates/abcdef12-3456-7890-abcd-ef1234567890",
             ),
-            ({"type": "email_branding"}, "/email-branding/abcdef12-3456-7890-abcd-ef1234567890/edit"),
-            ({"type": "letter_branding"}, "/letter-branding/abcdef12-3456-7890-abcd-ef1234567890/edit"),
+            (
+                {"type": "email_branding"},
+                "/email-branding/abcdef12-3456-7890-abcd-ef1234567890/edit",
+            ),
+            (
+                {"type": "letter_branding"},
+                "/letter-branding/abcdef12-3456-7890-abcd-ef1234567890/edit",
+            ),
             ({"type": "user"}, "/users/abcdef12-3456-7890-abcd-ef1234567890"),
             ({"type": "provider"}, "/provider/abcdef12-3456-7890-abcd-ef1234567890"),
             (
@@ -1011,7 +947,10 @@ class TestPlatformAdminSearch:
                 "/services/abc/service-settings/sms-sender/abcdef12-3456-7890-abcd-ef1234567890/edit",
             ),
             ({"type": "inbound_number"}, "/inbound-sms-admin"),
-            ({"type": "api_key", "context": {"service_id": "abc"}}, "/services/abc/api/keys"),
+            (
+                {"type": "api_key", "context": {"service_id": "abc"}},
+                "/services/abc/api/keys",
+            ),
             (
                 {"type": "template_folder", "context": {"service_id": "abc"}},
                 "/services/abc/templates/all/folders/abcdef12-3456-7890-abcd-ef1234567890",
@@ -1027,19 +966,30 @@ class TestPlatformAdminSearch:
             ),
         ),
     )
-    def test_find_uuid_redirects(self, client_request, platform_admin_user, api_response, expected_redirect, mocker):
+    def test_find_uuid_redirects(
+        self,
+        client_request,
+        platform_admin_user,
+        api_response,
+        expected_redirect,
+        mocker,
+    ):
         mocker.patch(
             "app.main.views_nl.platform_admin.user_api_client.find_users_by_full_or_partial_email",
             return_value={"data": []},
         )
         mocker.patch(
-            "app.main.views_nl.platform_admin.service_api_client.find_services_by_name", return_value={"data": []}
+            "app.main.views_nl.platform_admin.service_api_client.find_services_by_name",
+            return_value={"data": []},
         )
         mocker.patch(
             "app.main.views_nl.platform_admin.organisations_client.search",
             return_value={"data": []},
         )
-        mocker.patch("app.main.views_nl.platform_admin.admin_api_client.find_by_uuid", return_value=api_response)
+        mocker.patch(
+            "app.main.views_nl.platform_admin.admin_api_client.find_by_uuid",
+            return_value=api_response,
+        )
         client_request.login(platform_admin_user)
         client_request.post(
             ".platform_admin_search",
@@ -1056,11 +1006,19 @@ class TestPlatformAdminSearch:
 
 
 def test_build_live_service_permissions_for_users_list_csv():
-    services = [{"id": "1", "name": "Service 1"}, {"id": "2", "name": "Service 2"}, {"id": "3", "name": "Service 3"}]
+    services = [
+        {"id": "1", "name": "Service 1"},
+        {"id": "2", "name": "Service 2"},
+        {"id": "3", "name": "Service 3"},
+    ]
 
     permissions = {
         "1": ["manage_users", "manage_settings"],  # equivalent to ui manage_service
-        "2": ["send_texts", "send_emails", "send_letters"],  # equivalent to ui send_messages
+        "2": [
+            "send_texts",
+            "send_emails",
+            "send_letters",
+        ],  # equivalent to ui send_messages
         "3": ["manage_templates"],
     }
 
@@ -1087,16 +1045,22 @@ def test_platform_admin_users_list_without_any_filters(client_request, platform_
 def test_platform_admin_users_list_when_no_results_for_filters(client_request, platform_admin_user, mocker):
     client_request.login(platform_admin_user)
 
-    mocker.patch("app.main.views_nl.platform_admin.admin_api_client.fetch_users_list", return_value={"data": []})
+    mocker.patch(
+        "app.main.views_nl.platform_admin.admin_api_client.fetch_users_list",
+        return_value={"data": []},
+    )
 
     page = client_request.post(
-        "main.platform_admin_users_list", _expected_status=200, _data={"created_to_date": "2024-01-01"}
+        "main.platform_admin_users_list",
+        _expected_status=200,
+        _data={"created_to_date": "2024-01-01"},
     )
 
     error = page.select_one(".banner-dangerous")
     assert normalize_spaces(error.text) == "No results for filters selected"
 
 
+@freeze_time("2020-2-02")
 def test_platform_admin_users_list_csv_export(client_request, platform_admin_user, mocker):
     client_request.login(platform_admin_user)
 
@@ -1127,7 +1091,7 @@ def test_platform_admin_users_list_csv_export(client_request, platform_admin_use
     )
 
     assert response.content_type == "text/csv; charset=utf-8"
-    assert response.headers["Content-Disposition"].startswith('inline; filename="')
+    assert response.headers["Content-Disposition"] == 'attachment; filename="2020-02-02_users_list.csv"'
 
     csv_content = response.get_data(as_text=True)
 

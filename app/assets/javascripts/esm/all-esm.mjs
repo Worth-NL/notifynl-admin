@@ -1,5 +1,5 @@
 // GOVUK Frontend modules
-import { createAll, Header, Button, Radios, ErrorSummary, SkipLink, Tabs, ServiceNavigation } from 'govuk-frontend';
+import { createAll, Button, Radios, ErrorSummary, SkipLink, Tabs, ServiceNavigation } from 'govuk-frontend';
 
 import CollapsibleCheckboxes from './collapsible-checkboxes.mjs';
 import FocusBanner from './focus-banner.mjs';
@@ -18,16 +18,27 @@ import CheckReportStatus from './check-report-status.mjs';
 import LiveCheckboxControls from './live-checkbox-controls.mjs';
 import AddBrandingOptionsControls from './add-branding-options-controls.mjs';
 
-// Modules from 3rd party vendors
-import morphdom from 'morphdom';
+import RadioSelect from './radio-select.mjs';
+import FullscreenTable from './fullscreen-table.mjs';
+import RemoveInPresenceOf from './remove-in-presence-of.mjs';
+import AuthenticateSecurityKey from './authenticate-security-key.mjs';
+import RegisterSecurityKey from './register-security-key.mjs';
+import UpdateStatus from './update-status.mjs';
+import UpdateContent from './update-content.mjs';
+import UpdateRelativeTime from './update-relative-time.mjs';
+import { stickAtTopWhenScrolling, stickAtBottomWhenScrolling } from './stick-to-window-when-scrolling.mjs';
 
-createAll(Button);
-createAll(Header);
+createAll(Button,
+  { preventDoubleClick: true }
+);
 createAll(Radios);
 createAll(ErrorSummary);
 createAll(SkipLink);
 createAll(Tabs);
 createAll(ServiceNavigation);
+
+stickAtTopWhenScrolling.init();
+stickAtBottomWhenScrolling.init();
 
 const $livesearch = document.querySelector('[data-notify-module="live-search"]');
 if ($livesearch) {
@@ -102,13 +113,55 @@ if ($addBrandingOptionsForm) {
   new AddBrandingOptionsControls($addBrandingOptionsForm);
 }
 
-const focusBanner = new FocusBanner();
+const $radioSelectElementsArray = document.querySelectorAll('[data-notify-module="radio-select"]');
 
-// ES modules do not export to global so in order to
-// reuse some of teh import here in our other
-// global functions, we need to explicitly attach them to window
-// this will be removed when we migrate out files
-// to ES modules
+if ($radioSelectElementsArray.length > 0) {
+  $radioSelectElementsArray.forEach(el => {
+    new RadioSelect(el);
+  });
+}
 
-// for UpdateContent.js
-window.Morphdom = morphdom;
+const $fullScreenTableArray = document.querySelectorAll('[data-notify-module="fullscreen-table"]');
+if ($fullScreenTableArray.length > 0) {
+  $fullScreenTableArray.forEach(tableComponent => new FullscreenTable(tableComponent));
+}
+
+const $elementToRemove = document.querySelector('[data-notify-module="remove-in-presence-of"]');
+if ($elementToRemove) {
+  new RemoveInPresenceOf($elementToRemove);
+}
+
+const $authenticateSecurityKey = document.querySelector('[data-notify-module="authenticate-security-key"]');
+if ($authenticateSecurityKey) {
+  new AuthenticateSecurityKey($authenticateSecurityKey);
+}
+
+const $registerSecurityKey = document.querySelector('[data-notify-module="register-security-key"]');
+if ($registerSecurityKey) {
+  new RegisterSecurityKey($registerSecurityKey);
+}
+
+const $updateStatus = document.querySelector('[data-notify-module="update-status"]');
+if ($updateStatus) {
+  new UpdateStatus($updateStatus).init();
+}
+
+const $updateContentBlocks = document.querySelectorAll('[data-notify-module="update-content"]');
+if ($updateContentBlocks.length > 0) {
+  $updateContentBlocks.forEach(updateBlockComponent => {
+    new UpdateContent(updateBlockComponent);
+  });
+};
+
+new FocusBanner();
+
+// if there's at least 1 element on the page initialise the class
+// multiple elements are handled by it
+const updateRelativeTimeSelector = '[data-notify-module="update-relative-time"]';
+if (document.querySelector('[data-notify-module="update-relative-time"]')) {
+  new UpdateRelativeTime(updateRelativeTimeSelector);
+}
+
+window.GOVUK = window.GOVUK || {};
+window.GOVUK.stickAtTopWhenScrolling = stickAtTopWhenScrolling;
+window.GOVUK.stickAtBottomWhenScrolling = stickAtBottomWhenScrolling;

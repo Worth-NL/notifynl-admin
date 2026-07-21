@@ -22,6 +22,11 @@
     <p class="govuk-body">
       U ontvangt alleen een rapport als één of meer van uw brieven is teruggestuurd.
     </p>
+    {% if current_service.api_keys %}
+      <p class="govuk-body">
+        Automatiseer het herkennen van retour gezonden brieven met de Notify API. Volg&nbsp;de instructies in onze <a href="{{ url_for("main.guidance_api_documentation") }}" class="govuk-link govuk-link--no-visited-state">API-documentatie</a>.
+      </p>
+    {% endif %}
   </div>
 </div>
 <div class="dashboard-table">

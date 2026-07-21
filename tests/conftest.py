@@ -1,8 +1,9 @@
 import copy
 import json
 import os
+import re
 from contextlib import contextmanager
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from unittest import mock
 from unittest.mock import Mock, PropertyMock
 from uuid import UUID, uuid4
@@ -86,7 +87,7 @@ def multiple_reply_to_email_addresses(mocker):
                 "service_id": service_id,
                 "email_address": "test@example.com",
                 "is_default": True,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "updated_at": None,
             },
             {
@@ -94,7 +95,7 @@ def multiple_reply_to_email_addresses(mocker):
                 "service_id": service_id,
                 "email_address": "test2@example.com",
                 "is_default": False,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "updated_at": None,
             },
             {
@@ -102,7 +103,7 @@ def multiple_reply_to_email_addresses(mocker):
                 "service_id": service_id,
                 "email_address": "test3@example.com",
                 "is_default": False,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "updated_at": None,
             },
         ]
@@ -130,7 +131,7 @@ def single_reply_to_email_address(notify_admin, mocker):
                 "service_id": service_id,
                 "email_address": "test@example.com",
                 "is_default": True,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "updated_at": None,
             }
         ]
@@ -146,7 +147,7 @@ def get_default_reply_to_email_address(notify_admin, mocker):
             "service_id": service_id,
             "email_address": "test@example.com",
             "is_default": True,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(UTC),
             "updated_at": None,
         }
 
@@ -161,7 +162,7 @@ def get_non_default_reply_to_email_address(notify_admin, mocker):
             "service_id": service_id,
             "email_address": "test@example.com",
             "is_default": False,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(UTC),
             "updated_at": None,
         }
 
@@ -193,7 +194,7 @@ def multiple_letter_contact_blocks(notify_admin, mocker):
                 "service_id": service_id,
                 "contact_block": "1 Example Street",
                 "is_default": True,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "updated_at": None,
             },
             {
@@ -201,7 +202,7 @@ def multiple_letter_contact_blocks(notify_admin, mocker):
                 "service_id": service_id,
                 "contact_block": "2 Example Street",
                 "is_default": False,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "updated_at": None,
             },
             {
@@ -209,7 +210,7 @@ def multiple_letter_contact_blocks(notify_admin, mocker):
                 "service_id": service_id,
                 "contact_block": "3 Example Street",
                 "is_default": False,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "updated_at": None,
             },
         ]
@@ -234,7 +235,7 @@ def single_letter_contact_block(notify_admin, mocker):
                 "service_id": service_id,
                 "contact_block": "1 Example Street",
                 "is_default": True,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "updated_at": None,
             }
         ]
@@ -251,7 +252,7 @@ def injected_letter_contact_block(notify_admin, mocker):
                 "service_id": service_id,
                 "contact_block": "foo\nbar<script>alert(1);</script>",
                 "is_default": True,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "updated_at": None,
             }
         ]
@@ -267,7 +268,7 @@ def get_default_letter_contact_block(notify_admin, mocker):
             "service_id": service_id,
             "contact_block": "1 Example Street",
             "is_default": True,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(UTC),
             "updated_at": None,
         }
 
@@ -283,7 +284,7 @@ def mock_add_letter_contact(notify_admin, mocker):
                 "service_id": service_id,
                 "contact_block": "1 Example Street",
                 "is_default": True,
-                "created_at": str(datetime.utcnow()),
+                "created_at": str(datetime.now(UTC)),
                 "updated_at": None,
             }
         }
@@ -308,7 +309,7 @@ def multiple_sms_senders(notify_admin, mocker):
                 "service_id": service_id,
                 "sms_sender": "07812398712",
                 "is_default": True,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "inbound_number_id": "4321",
                 "updated_at": None,
             },
@@ -317,7 +318,7 @@ def multiple_sms_senders(notify_admin, mocker):
                 "service_id": service_id,
                 "sms_sender": "Example 2",
                 "is_default": False,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "inbound_number_id": None,
                 "updated_at": None,
             },
@@ -326,7 +327,7 @@ def multiple_sms_senders(notify_admin, mocker):
                 "service_id": service_id,
                 "sms_sender": "Example 3",
                 "is_default": False,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "inbound_number_id": None,
                 "updated_at": None,
             },
@@ -344,7 +345,7 @@ def multiple_sms_senders_with_diff_default(notify_admin, mocker):
                 "service_id": service_id,
                 "sms_sender": "Example",
                 "is_default": True,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "inbound_number_id": None,
                 "updated_at": None,
             },
@@ -353,7 +354,7 @@ def multiple_sms_senders_with_diff_default(notify_admin, mocker):
                 "service_id": service_id,
                 "sms_sender": "Example 2",
                 "is_default": False,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "inbound_number_id": None,
                 "updated_at": None,
             },
@@ -362,7 +363,7 @@ def multiple_sms_senders_with_diff_default(notify_admin, mocker):
                 "service_id": service_id,
                 "sms_sender": "Example 3",
                 "is_default": False,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "inbound_number_id": "12354",
                 "updated_at": None,
             },
@@ -380,7 +381,7 @@ def multiple_sms_senders_no_inbound(notify_admin, mocker):
                 "service_id": service_id,
                 "sms_sender": "Example",
                 "is_default": True,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "inbound_number_id": None,
                 "updated_at": None,
             },
@@ -389,7 +390,7 @@ def multiple_sms_senders_no_inbound(notify_admin, mocker):
                 "service_id": service_id,
                 "sms_sender": "Example 2",
                 "is_default": False,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "inbound_number_id": None,
                 "updated_at": None,
             },
@@ -415,7 +416,7 @@ def single_sms_sender(notify_admin, mocker):
                 "service_id": service_id,
                 "sms_sender": "GOVUK",
                 "is_default": True,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(UTC),
                 "inbound_number_id": None,
                 "updated_at": None,
             }
@@ -432,7 +433,7 @@ def get_default_sms_sender(notify_admin, mocker):
             "service_id": service_id,
             "sms_sender": "GOVUK",
             "is_default": True,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(UTC),
             "inbound_number_id": None,
             "updated_at": None,
         }
@@ -448,7 +449,7 @@ def get_non_default_sms_sender(notify_admin, mocker):
             "service_id": service_id,
             "sms_sender": "GOVUK",
             "is_default": False,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(UTC),
             "inbound_number_id": None,
             "updated_at": None,
         }
@@ -871,6 +872,23 @@ def mock_get_service_email_template_without_placeholders(notify_admin, mocker):
 
 
 @pytest.fixture(scope="function")
+def mock_get_email_template_with_multiple_placeholders(notify_admin, mocker):
+    def _get(service_id, template_id, version=None):
+        template = template_json(
+            service_id=service_id,
+            id_=template_id,
+            name="Two week reminder",
+            type_="email",
+            content="((one)) ((two)) ((three))",
+            subject="Your thing is due soon",
+            redact_personalisation=False,
+        )
+        return {"data": template}
+
+    return mocker.patch("app.service_api_client.get_service_template", side_effect=_get)
+
+
+@pytest.fixture(scope="function")
 def mock_get_service_letter_template(notify_admin, mocker):
     def _get(service_id, template_id, version=None, postage="netherlands"):
         template = template_json(
@@ -1004,6 +1022,7 @@ def mock_update_service_template(notify_admin, mocker):
         letter_welsh_subject=None,
         letter_welsh_content=None,
         has_unsubscribe_link=False,
+        archive_email_file_ids=None,
     ):
         template = template_json(
             service_id=service_id,
@@ -1090,18 +1109,13 @@ def create_service_templates(service_id, number_of_templates=6):
         template_type = template_types[(_ % 6) - 1]
 
         service_templates.append(
-            template_json(
-                service_id=service_id,
-                id_=TEMPLATE_ONE_ID if _ == 1 else str(generate_uuid()),
-                name=f"{template_type}_template_{template_number}",
-                type_=template_type,
-                content=f"{template_type} template {template_number} content",
-                subject=(
-                    f"{template_type} template {template_number} subject"
-                    if template_type in ["email", "letter"]
-                    else None
-                ),
-            )
+            {
+                "id": TEMPLATE_ONE_ID if _ == 1 else str(generate_uuid()),
+                "name": f"{template_type}_template_{template_number}",
+                "template_type": template_type,
+                "folder": None,
+                "is_precompiled_letter": False,
+            }
         )
 
     return {"data": service_templates}
@@ -1144,17 +1158,7 @@ def mock_get_service_templates_when_no_templates_exist(notify_admin, mocker):
 @pytest.fixture(scope="function")
 def mock_get_service_templates_with_only_one_template(notify_admin, mocker):
     def _get(service_id):
-        return {
-            "data": [
-                template_json(
-                    service_id=service_id,
-                    id_=generate_uuid(),
-                    name="sms_template_one",
-                    type_="sms",
-                    content="sms template one content",
-                )
-            ]
-        }
+        return create_service_templates(service_id, number_of_templates=1)
 
     return mocker.patch("app.service_api_client.get_service_templates", side_effect=_get)
 
@@ -1311,7 +1315,7 @@ def api_user_changed_password(fake_uuid):
     return create_user(
         id=fake_uuid,
         failed_login_count=5,
-        password_changed_at=str(datetime.utcnow() + timedelta(minutes=1)),
+        password_changed_at=str(datetime.now(UTC) + timedelta(minutes=1)),
     )
 
 
@@ -2131,7 +2135,7 @@ def mock_get_inbound_sms_summary(notify_admin, mocker):
     def _get_inbound_sms_summary(
         service_id,
     ):
-        return {"count": 9999, "most_recent": datetime.utcnow().isoformat()}
+        return {"count": 9999, "most_recent": datetime.now(UTC).isoformat()}
 
     return mocker.patch(
         "app.service_api_client.get_inbound_sms_summary",
@@ -2237,7 +2241,7 @@ def sample_invite(mocker, service_one):
     email_address = "invited_user@test.gov.uk"
     service_id = service_one["id"]
     permissions = "view_activity,send_emails,send_letters,send_texts,manage_settings,manage_users,manage_api_keys"
-    created_at = str(datetime.utcnow())
+    created_at = str(datetime.now(UTC))
     auth_type = "sms_auth"
     folder_permissions = []
 
@@ -2283,7 +2287,7 @@ def mock_get_invites_without_manage_permission(mocker, service_one, sample_invit
                 email_address="invited_user@test.gov.uk",
                 service_id=service_one["id"],
                 permissions="view_activity,send_messages,manage_api_keys",
-                created_at=str(datetime.utcnow()),
+                created_at=str(datetime.now(UTC)),
                 auth_type="sms_auth",
                 folder_permissions=[],
                 status="pending",
@@ -2358,7 +2362,7 @@ def mock_get_monthly_notification_stats(notify_admin, mocker, service_one, fake_
     def _stats(service_id, year):
         return {
             "data": {
-                datetime.utcnow().strftime("%Y-%m"): {
+                datetime.now(UTC).strftime("%Y-%m"): {
                     "email": {
                         "sending": 1,
                         "delivered": 1,
@@ -2943,6 +2947,8 @@ def client_request(request, _logged_in_client, mocker, service_one, fake_nonce):
 
         setattr(object, method_name, blocked_method)
 
+    ELEMENTS_TO_CHECK_FOR_PUNCTUATION = "h1, h2, h3, h4, h5, h6, p, li, .banner-dangerous, label"
+
     class ClientRequest:
         @staticmethod
         @contextmanager
@@ -3047,10 +3053,16 @@ def client_request(request, _logged_in_client, mocker, service_one, fake_nonce):
             if _test_for_non_smart_quotes:
                 ClientRequest.test_for_non_smart_quotes(page)
 
+            ClientRequest.test_for_visited_links(page)
+
+            ClientRequest.test_for_missing_en_dashes(page)
+
             if _test_for_script_csp_nonce:
                 ClientRequest.test_for_script_csp_nonce(page)
 
             ClientRequest._test_for_duplicate_ids(page)
+
+            ClientRequest._test_download_attribute_on_links(page)
 
             return page
 
@@ -3180,6 +3192,25 @@ def client_request(request, _logged_in_client, mocker, service_one, fake_nonce):
                 )
 
         @staticmethod
+        def test_for_visited_links(page):
+            for element in page.select("a.govuk-link"):
+                if set(element["class"]).intersection(
+                    {
+                        # Link modifiers which already override the visited state
+                        "govuk-link--destructive",
+                        "govuk-link--inverse",
+                        "govuk-link--text-colour",
+                    }
+                ):
+                    continue
+                assert "govuk-link--no-visited-state" in element["class"], (
+                    f"Found an <a> element with a visited link state:\n"
+                    f"    {element}\n"
+                    f"\n"
+                    f'(you probably want to add govuk-link--no-visited-state to the class attribute")'
+                )
+
+        @staticmethod
         def test_forms_have_an_action_set(page):
             assert not len(
                 page.select("form:not(.js-hidden form):not(form[hidden]):not(form[action])")
@@ -3189,9 +3220,27 @@ def client_request(request, _logged_in_client, mocker, service_one, fake_nonce):
 
         @staticmethod
         def test_for_non_smart_quotes(page):
-            for el in page.select("h1, h2, h3, h4, h5, h6, p, li, .banner-dangerous"):
+            for el in page.select(ELEMENTS_TO_CHECK_FOR_PUNCTUATION):
                 assert not ("'" in el.text or '"' in el.text), (
-                    f"Non-smart quote or apostrophe found in <{el.name}>: {normalize_spaces(el.text)}"
+                    f"Non-smart quote or apostrophe found in <{el.name}>: {normalize_spaces(el.text)} "
+                    "(use ‘smart quotes’ instead)"
+                )
+
+        @staticmethod
+        def test_for_missing_en_dashes(page):
+            for el in page.select(ELEMENTS_TO_CHECK_FOR_PUNCTUATION):
+                assert " - " not in normalize_spaces(el.text), (
+                    f"Hyphen used as clause separator in <{el.name}> (use an en dash instead): "
+                    f"{normalize_spaces(el.text)}"
+                )
+                assert not re.match(r"[^\s]–[^\s]", el.text), (
+                    f"En dash used as range separator in <{el.name}> (use ‘to’ instead): {normalize_spaces(el.text)}"
+                )
+                assert not re.match(r"\d-\d", el.text), (
+                    f"Hyphen used as range separator in <{el.name}> (use ‘to’ instead): {normalize_spaces(el.text)}"
+                )
+                assert "—" not in el.text, (
+                    f"Em dash in <{el.name}> (use an en dash instead): {normalize_spaces(el.text)}"
                 )
 
         @staticmethod
@@ -3211,6 +3260,10 @@ def client_request(request, _logged_in_client, mocker, service_one, fake_nonce):
                 assert ids.count(id) == 1, f"Duplicate id `{id}` found on these elements:\n    " + ", ".join(
                     f"<{element.name}>" for element in page.select(f"*[id='{id}']")
                 )
+
+        @staticmethod
+        def _test_download_attribute_on_links(page):
+            assert not page.select("a[download]"), "Don’t use <a download> (set the Content-Disposition header instead)"
 
     return ClientRequest
 
@@ -3613,7 +3666,7 @@ def sample_org_invite(mocker, organisation_one):
     invited_by = organisation_one["users"][0]
     email_address = "invited_user@test.gov.uk"
     organisation = organisation_one["id"]
-    created_at = str(datetime.utcnow())
+    created_at = str(datetime.now(UTC))
     status = "pending"
     permissions = ["can_make_services_live"]
 
@@ -4084,7 +4137,7 @@ def create_user(**overrides):
         "organisation_permissions": {},
         "platform_admin": False,
         "auth_type": "sms_auth",
-        "password_changed_at": str(datetime.utcnow()),
+        "password_changed_at": str(datetime.now(UTC)),
         "services": [],
         "organisations": [],
         "current_session_id": None,
@@ -4116,7 +4169,7 @@ def create_multiple_email_reply_to_addresses(service_id="abcd"):
             "service_id": service_id,
             "email_address": "test@example.com",
             "is_default": True,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(UTC),
             "updated_at": None,
         },
         {
@@ -4124,7 +4177,7 @@ def create_multiple_email_reply_to_addresses(service_id="abcd"):
             "service_id": service_id,
             "email_address": "test2@example.com",
             "is_default": False,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(UTC),
             "updated_at": None,
         },
         {
@@ -4132,7 +4185,7 @@ def create_multiple_email_reply_to_addresses(service_id="abcd"):
             "service_id": service_id,
             "email_address": "test3@example.com",
             "is_default": False,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(UTC),
             "updated_at": None,
         },
     ]
@@ -4165,7 +4218,7 @@ def create_multiple_sms_senders(service_id="abcd"):
             "service_id": service_id,
             "sms_sender": "Example",
             "is_default": True,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(UTC),
             "inbound_number_id": "1234",
             "updated_at": None,
         },
@@ -4174,7 +4227,7 @@ def create_multiple_sms_senders(service_id="abcd"):
             "service_id": service_id,
             "sms_sender": "Example 2",
             "is_default": False,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(UTC),
             "inbound_number_id": None,
             "updated_at": None,
         },
@@ -4183,7 +4236,7 @@ def create_multiple_sms_senders(service_id="abcd"):
             "service_id": service_id,
             "sms_sender": "Example 3",
             "is_default": False,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(UTC),
             "inbound_number_id": None,
             "updated_at": None,
         },
@@ -4215,7 +4268,7 @@ def create_multiple_letter_contact_blocks(service_id="abcd"):
             "service_id": service_id,
             "contact_block": "1 Example Street",
             "is_default": True,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(UTC),
             "updated_at": None,
         },
         {
@@ -4223,7 +4276,7 @@ def create_multiple_letter_contact_blocks(service_id="abcd"):
             "service_id": service_id,
             "contact_block": "2 Example Street",
             "is_default": False,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(UTC),
             "updated_at": None,
         },
         {
@@ -4231,7 +4284,7 @@ def create_multiple_letter_contact_blocks(service_id="abcd"):
             "service_id": service_id,
             "contact_block": "foo\n\n<bar>\n\nbaz",
             "is_default": False,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(UTC),
             "updated_at": None,
         },
     ]
@@ -4330,6 +4383,8 @@ def create_template(
     redact_personalisation=False,
     postage=None,
     folder=None,
+    has_unsubscribe_link=False,
+    email_files=None,
 ):
     return template_json(
         service_id=service_id,
@@ -4341,6 +4396,8 @@ def create_template(
         redact_personalisation=redact_personalisation,
         postage=postage,
         folder=folder,
+        has_unsubscribe_link=has_unsubscribe_link,
+        email_files=email_files,
     )
 
 
@@ -4526,3 +4583,30 @@ def mock_get_service_settings_page_common(
     mock_get_organisation,
 ):
     return
+
+
+@pytest.fixture()
+def test_template_email_files_data():
+    return [
+        {
+            "filename": "test_file_1.csv",
+            "id": "e9ecb3f2-8674-4436-b233-d2c16ad135e7",
+            "link_text": None,
+            "retention_period": 90,
+            "validate_users_email": False,
+            "pending": False,
+        },
+        {
+            "filename": "test_file_2.png",
+            "id": "bd3376c2-7b80-4a53-80f0-8de21db25b1a",
+            "link_text": None,
+            "retention_period": 90,
+            "validate_users_email": False,
+            "pending": False,
+        },
+    ]
+
+
+@pytest.fixture()
+def test_data_for_a_template_email_file(test_template_email_files_data):
+    return copy.copy(test_template_email_files_data[0])
