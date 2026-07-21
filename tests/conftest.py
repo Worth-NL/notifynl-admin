@@ -2703,6 +2703,8 @@ def create_email_branding(id, non_standard_values=None):
         "id": id,
         "colour": "#f00",
         "brand_type": "org",
+        "height": None,
+        "alignment": "left",
     }
 
     if non_standard_values:
