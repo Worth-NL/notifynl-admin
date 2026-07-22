@@ -45,7 +45,7 @@ def verify_email(token):
             current_app.config["TOKEN_SECRET_KEY"],
         )
     except SignatureExpired:
-        flash("The link in the email we sent you has expired. We’ve sent you a new one.")
+        flash("De link in de e-mail die we u hebben gestuurd is verlopen. We hebben u een nieuwe gestuurd.")
         return redirect(url_for("main.resend_email_verification"))
 
     token = Token(token_data)
@@ -54,7 +54,7 @@ def verify_email(token):
         abort(404)
 
     if user.is_active:
-        flash("That verification link has expired.")
+        flash("Deze bevestigingslink is verlopen.")
         return redirect(url_for("main.sign_in"))
 
     if user.email_auth:

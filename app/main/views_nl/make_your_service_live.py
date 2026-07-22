@@ -70,7 +70,11 @@ def submit_request_to_go_live(service_id):
 
     current_service.notify_organisation_users_of_request_to_go_live()
 
-    flash("Thanks for your request to go live. We’ll get back to you within one working day.", "default")
+    flash(
+        "Bedankt voor uw verzoek om live te gaan. "
+        "We nemen uiterlijk aan het einde van de volgende werkdag contact met u op.",
+        "default",
+    )
     # current_service.update won’t modify itself, it only makes a request to the API and returns the JSON response
     # https://github.com/alphagov/notifications-admin/blob/main/app/models/service.py#L103-L104
     # so what you have in memory will be whatever the state of the service was before calling update

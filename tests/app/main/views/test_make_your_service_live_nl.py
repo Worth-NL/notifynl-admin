@@ -167,7 +167,7 @@ def test_should_not_show_go_live_button_if_service_already_has_active_go_live_re
     "go_live_at, message",
     [
         (None, "‘service one’ is al actief."),
-        ("2020-10-09 13:55:20", "‘service one’ is actief sinds 9 October 2020."),
+        ("2020-10-09 13:55:20", "‘service one’ is actief sinds 9 oktober 2020."),
     ],
 )
 def test_request_to_go_live_redirects_if_service_already_live(

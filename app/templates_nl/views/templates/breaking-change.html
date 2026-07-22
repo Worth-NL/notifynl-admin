@@ -62,7 +62,7 @@
 
         {% set confirm_button = "Wijzigingen in sjabloon bevestigen" %}
 
-        <h2 class="heading-medium">Bestand{{ email_files_removed|format_pluralise }} verwijderen</h2>
+        <h2 class="heading-medium">{{ "Bestand" if email_files_removed|length == 1 else "Bestanden" }} verwijderen</h2>
           {{ confirm_breaking_change(
             name="bestand",
             list_of_changes=email_files_removed,
@@ -70,7 +70,7 @@
           ) }}
 
         {% if template_change.placeholders_removed %}
-          <h2 class="heading-medium">Placeholder{{ template_change.placeholders_removed|format_pluralise }} verwijderen</h2>
+          <h2 class="heading-medium">{{ "Placeholder" if template_change.placeholders_removed|length == 1 else "Placeholders" }} verwijderen</h2>
             {{ confirm_breaking_change(
               name="placeholder",
               list_of_changes=template_change.placeholders_removed,
@@ -78,7 +78,7 @@
             ) }}
         {% endif %}
 
-        <h2 class="heading-medium">Placeholder{{ template_change.placeholders_added|format_pluralise }} toevoegen</h2>
+        <h2 class="heading-medium">{{ "Placeholder" if template_change.placeholders_added|length == 1 else "Placeholders" }} toevoegen</h2>
         {{ confirm_breaking_change(
           name="placeholder",
           list_of_changes=template_change.placeholders_added,

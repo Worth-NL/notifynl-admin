@@ -234,7 +234,7 @@ def invite_org_user(org_id):
             permissions=list(form.permissions),
         )
 
-        flash(f"Invite sent to {invited_org_user.email_address}", "default_with_tick")
+        flash(f"Uitnodiging verstuurd naar {invited_org_user.email_address}", "default_with_tick")
         return redirect(url_for(".manage_org_users", org_id=org_id))
 
     return render_template(

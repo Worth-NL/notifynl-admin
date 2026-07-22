@@ -196,9 +196,9 @@ def get_billing_report():
         try:
             result = billing_api_client.get_data_for_billing_report(start_date, end_date)
         except HTTPError as e:
-            message = "Date must be in a single financial year."
-            if e.status_code == 400 and e.message == message:
-                flash(message)
+            api_error_message = "Date must be in a single financial year."
+            if e.status_code == 400 and e.message == api_error_message:
+                flash("De datum moet binnen één financieel jaar vallen.")
                 return render_template("views/platform-admin/get-billing-report.html", form=form)
             else:
                 raise e
@@ -230,7 +230,7 @@ def get_billing_report():
                 },
             )
         else:
-            flash("No results for dates")
+            flash("Geen resultaten voor deze datums")
     return render_template(
         "views/platform-admin/get-billing-report.html",
         form=form,
@@ -258,9 +258,9 @@ def get_dvla_billing_report():
         try:
             result = billing_api_client.get_data_for_dvla_billing_report(start_date, end_date)
         except HTTPError as e:
-            message = "Date must be in a single financial year."
-            if e.status_code == 400 and e.message == message:
-                flash(message)
+            api_error_message = "Date must be in a single financial year."
+            if e.status_code == 400 and e.message == api_error_message:
+                flash("De datum moet binnen één financieel jaar vallen.")
                 return render_template("views/platform-admin/get-dvla-billing-report.html", form=form)
             else:
                 raise e
@@ -288,7 +288,7 @@ def get_dvla_billing_report():
                 },
             )
         else:
-            flash("No results for dates")
+            flash("Geen resultaten voor deze datums")
     return render_template("views/platform-admin/get-dvla-billing-report.html", form=form)
 
 
@@ -343,7 +343,7 @@ def get_volumes_by_service():
                 },
             )
         else:
-            flash("No results for dates")
+            flash("Geen resultaten voor deze datums")
     return render_template(
         "views/platform-admin/volumes-by-service-report.html",
         form=form,
@@ -394,7 +394,7 @@ def get_daily_volumes():
                 },
             )
         else:
-            flash("No results for dates")
+            flash("Geen resultaten voor deze datums")
     return render_template(
         "views/platform-admin/daily-volumes-report.html",
         form=form,
@@ -443,7 +443,7 @@ def get_daily_sms_provider_volumes():
                 },
             )
         else:
-            flash("No results for dates")
+            flash("Geen resultaten voor deze datums")
     return render_template(
         "views/platform-admin/daily-sms-provider-volumes-report.html",
         form=form,
@@ -673,7 +673,7 @@ def platform_admin_users_list():
     ).get("data", [])
 
     if not results:
-        flash("No results for filters selected")
+        flash("Geen resultaten voor de geselecteerde filters")
         return render_template("views/platform-admin/users-list.html", form=form, error_summary_enabled=True)
 
     column_names = {

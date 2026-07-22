@@ -28,7 +28,7 @@ def remove_platform_admin(user_id):
         Events.remove_platform_admin(user_id=str(user_id), removed_by_id=current_user.id)
         return redirect(url_for(".user_information", user_id=user_id))
 
-    flash("Are you sure you want to remove platform admin from this user?", "remove")
+    flash("Weet u zeker dat u de platformbeheerdersrechten van deze gebruiker wilt verwijderen?", "remove")
     return user_information(user_id)
 
 
@@ -46,17 +46,17 @@ def archive_user(user_id):
                 flash(
                     Markup(
                         """
-                        <h2 class='govuk-heading-m'>You cannot archive this user</h2>
+                        <h2 class='govuk-heading-m'>U kunt deze gebruiker niet archiveren</h2>
                         <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
-                            They have the ‘manage settings’ permission for at least one service.
+                            Deze gebruiker heeft voor ten minste één dienst de rechten om instellingen te beheren.
                         </p>
                         <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
-                            If the user wants us to delete their service(s), follow the guidance in the support manual,
-                            then try again.
+                            Als de gebruiker wil dat wij hun dienst(en) verwijderen, volg dan de instructies in de
+                            ondersteuningshandleiding en probeer het daarna opnieuw.
                         </p>
                         <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
-                            If they do not, ask them to add new team members or update the permissions for their
-                            team(s), then try again.
+                            Zo niet, vraag hen dan om nieuwe teamleden toe te voegen of de rechten van hun team(s)
+                            bij te werken, en probeer het daarna opnieuw.
                         </p>
                         """
                     )
@@ -69,7 +69,7 @@ def archive_user(user_id):
 
         return redirect(url_for(".user_information", user_id=user_id))
     else:
-        flash("There’s no way to reverse this! Are you sure you want to archive this user?", "delete")
+        flash("Dit kan niet ongedaan worden gemaakt! Weet u zeker dat u deze gebruiker wilt archiveren?", "delete")
         return user_information(user_id)
 
 

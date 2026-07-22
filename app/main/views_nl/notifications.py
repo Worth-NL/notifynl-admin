@@ -150,7 +150,7 @@ def cancel_letter(service_id, notification_id):
                 raise e
         return redirect(url_for("main.view_notification", service_id=service_id, notification_id=notification_id))
 
-    flash("Are you sure you want to cancel sending this letter?", "cancel")
+    flash("Weet u zeker dat u het versturen van deze brief wilt annuleren?", "cancel")
     return view_notification(service_id, notification_id)
 
 

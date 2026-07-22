@@ -127,13 +127,13 @@ from app.utils.user_permissions import (
 def get_time_value_and_label(future_time):
     return (
         future_time.replace(tzinfo=None).isoformat(),
-        f"{get_human_day(future_time, include_day_of_week=True).title()} at {get_human_time(future_time)}",
+        f"{get_human_day(future_time, include_day_of_week=True).title()} om {get_human_time(future_time)}",
     )
 
 
 def get_human_time(time):
     time = utc_string_to_aware_gmt_datetime(time)
-    return {"0": "middernacht", "12": "middag"}.get(time.strftime("%-H"), time.strftime("%-I%p").lower())
+    return {"0:00": "middernacht", "12:00": "middag"}.get(time.strftime("%H:%M"), time.strftime("%H:%M"))
 
 
 def get_furthest_possible_scheduled_time():

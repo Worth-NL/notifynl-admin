@@ -163,10 +163,12 @@ class OnlySMSCharacters:
     def __call__(self, form, field):
         non_sms_characters = sorted(SanitiseSMS.get_non_compatible_characters(field.data))
         if non_sms_characters:
+            subject, verb = ("Dit karakter", "wordt") if len(non_sms_characters) == 1 else ("Deze karakters", "worden")
             raise ValidationError(
-                "U kunt geen {} gebruiken in SMS-berichten. {} worden niet goed weergegeven op telefoons.".format(
+                "U kunt geen {} gebruiken in SMS-berichten. {} {} niet goed weergegeven op telefoons.".format(
                     formatted_list(non_sms_characters, conjunction="of", before_each="", after_each=""),
-                    ("It" if len(non_sms_characters) == 1 else "Deze karakters"),
+                    subject,
+                    verb,
                 )
             )
 

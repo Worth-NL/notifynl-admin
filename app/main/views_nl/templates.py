@@ -189,7 +189,7 @@ def choose_template(service_id, template_type="all", template_folder_id=None):
         )
 
     if "templates_and_folders" in templates_and_folders_form.errors:
-        flash("Select at least one template or folder")
+        flash("Selecteer ten minste één sjabloon of map")
 
     initial_state = request.args.get("initial_state")
     if request.method == "GET" and initial_state:
@@ -581,7 +581,7 @@ def manage_template_folder(service_id, template_folder_id):
 def delete_template_folder(service_id, template_folder_id):
     template_folder = current_service.get_template_folder_with_user_permission_or_403(template_folder_id, current_user)
     template_list = TemplateList(service=current_service, template_folder_id=template_folder_id)
-    must_empty_folder_message = "You must empty this folder before you can delete it"
+    must_empty_folder_message = "U moet deze map leegmaken voordat u deze kunt verwijderen"
 
     if not template_list.folder_is_empty:
         flash(must_empty_folder_message, "info")
@@ -613,7 +613,7 @@ def delete_template_folder(service_id, template_folder_id):
             else:
                 abort(500, e)
     else:
-        flash(f"Are you sure you want to delete the ‘{template_folder['name']}’ folder?", "delete")
+        flash(f"Weet u zeker dat u de map ‘{template_folder['name']}’ wilt verwijderen?", "delete")
         return manage_template_folder(service_id, template_folder_id)
 
 
@@ -788,8 +788,8 @@ def edit_service_template(service_id, template_id, language=None):  # noqa
             if template_change.email_files_removed:
                 multiple_files_removed = len(template_change.email_filenames_removed) > 1
                 flash(
-                    f"{formatted_list(template_change.email_filenames_removed)} "
-                    f"{'have' if multiple_files_removed else 'has'} been removed",
+                    f"{formatted_list(template_change.email_filenames_removed, conjunction='en')} "
+                    f"{'zijn' if multiple_files_removed else 'is'} verwijderd",
                     "default_with_tick",
                 )
             return redirect(
@@ -892,9 +892,9 @@ def delete_service_template(service_id, template_id):
     try:
         last_used_notification = template_statistics_client.get_last_used_date_for_template(service_id, template.id)
         message = (
-            "This template has not been used within the last year."
+            "Dit sjabloon is het afgelopen jaar niet gebruikt."
             if not last_used_notification
-            else f"This template was last used {format_delta(last_used_notification)}."
+            else f"Dit sjabloon is voor het laatst gebruikt {format_delta(last_used_notification)}."
         )
 
     except HTTPError as e:
@@ -903,7 +903,7 @@ def delete_service_template(service_id, template_id):
         else:
             raise e
 
-    flash([f"Are you sure you want to delete ‘{template.name}’?", message, template.name], "delete")
+    flash([f"Weet u zeker dat u ‘{template.name}’ wilt verwijderen?", message, template.name], "delete")
     return render_template(
         "views/templates/template.html",
         template=template,
@@ -939,7 +939,10 @@ def confirm_redact_template(service_id, template_id):
 def redact_template(service_id, template_id):
     service_api_client.redact_service_template(service_id, template_id)
 
-    flash("Personalised content will be hidden for messages sent with this template", "default_with_tick")
+    flash(
+        "Gepersonaliseerde inhoud wordt verborgen voor berichten die met dit sjabloon worden verzonden",
+        "default_with_tick",
+    )
 
     return redirect(
         url_for(
@@ -1176,7 +1179,7 @@ def letter_template_edit_pages(template_id, service_id):
         )
 
     flash(
-        f"Are you sure you want to remove the ‘{template.attachment.original_filename}’ attachment?",
+        f"Weet u zeker dat u de bijlage ‘{template.attachment.original_filename}’ wilt verwijderen?",
         "remove",
     )
 

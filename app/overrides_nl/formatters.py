@@ -19,6 +19,37 @@ from notifications_utils.timezones import utc_string_to_aware_gmt_datetime
 
 from app.utils.time import is_less_than_days_ago
 
+DUTCH_WEEKDAYS = {
+    "Monday": "maandag",
+    "Tuesday": "dinsdag",
+    "Wednesday": "woensdag",
+    "Thursday": "donderdag",
+    "Friday": "vrijdag",
+    "Saturday": "zaterdag",
+    "Sunday": "zondag",
+}
+
+DUTCH_MONTHS = {
+    "January": "januari",
+    "February": "februari",
+    "March": "maart",
+    "April": "april",
+    "May": "mei",
+    "June": "juni",
+    "July": "juli",
+    "August": "augustus",
+    "September": "september",
+    "October": "oktober",
+    "November": "november",
+    "December": "december",
+}
+
+
+def _translate_weekday_and_month(formatted):
+    for english, dutch in {**DUTCH_WEEKDAYS, **DUTCH_MONTHS}.items():
+        formatted = formatted.replace(english, dutch)
+    return formatted
+
 
 def convert_to_boolean(value):
     if isinstance(value, str):
@@ -71,7 +102,7 @@ def get_human_day(time, date_prefix="", include_day_of_week=False):
         return "gisteren"
 
     date_prefix = f"{date_prefix} " if date_prefix else ""
-    day_of_week = date.strftime("%A ") if include_day_of_week else ""
+    day_of_week = DUTCH_WEEKDAYS[date.strftime("%A")] + " " if include_day_of_week else ""
     year = date.strftime(" %Y") if date.strftime("%Y") != now.strftime("%Y") else ""
 
     return f"{date_prefix}{day_of_week}{_format_datetime_short(date)}{year}"
@@ -85,11 +116,11 @@ def format_time(date):
 
 
 def format_date(date):
-    return utc_string_to_aware_gmt_datetime(date).strftime("%A %d %B %Y")
+    return _translate_weekday_and_month(utc_string_to_aware_gmt_datetime(date).strftime("%A %d %B %Y"))
 
 
 def format_date_normal(date):
-    return utc_string_to_aware_gmt_datetime(date).strftime("%d %B %Y").lstrip("0")
+    return _translate_weekday_and_month(utc_string_to_aware_gmt_datetime(date).strftime("%d %B %Y").lstrip("0"))
 
 
 def format_date_short(date):
@@ -105,16 +136,17 @@ def format_datetime_human(date, date_prefix="op", separator="om"):
 
 
 def format_day_of_week(date):
-    return utc_string_to_aware_gmt_datetime(date).strftime("%A")
+    return DUTCH_WEEKDAYS[utc_string_to_aware_gmt_datetime(date).strftime("%A")]
 
 
 def _format_datetime_short(datetime):
-    return datetime.strftime("%d %B").lstrip("0")
+    return _translate_weekday_and_month(datetime.strftime("%d %B").lstrip("0"))
 
 
 def naturaltime_without_indefinite_article(date):
+    humanize.i18n.activate("nl_NL")
     return re.sub(
-        "an? (.*) geleden",
+        "^een (.*) geleden$",
         lambda match: f"1 {match.group(1)} geleden",
         humanize.naturaltime(date),
     )
@@ -374,8 +406,8 @@ def message_count_noun(count, message_type):
     if message_type == "letter":
         return "brief" if singular else "brieven"
 
-    if message_type and message_type.endswith("request"):
-        return message_type if singular else message_type + "s"
+    if message_type == "afmeldverzoek":
+        return "afmeldverzoek" if singular else "afmeldverzoeken"
 
     return "bericht" if singular else "berichten"
 
@@ -421,6 +453,7 @@ def character_count(count):
 
 
 def format_billions(count):
+    humanize.i18n.activate("nl_NL")
     return humanize.intword(count)
 
 
@@ -445,13 +478,13 @@ def format_provider(provider):
 
 def format_retention_period(weeks):
     if weeks == 1:
-        return "1 week after sending"
+        return "1 week na verzenden"
     if weeks < 9:
-        return f"{weeks} weeks after sending"
-    delta = humanize.naturaltime(timedelta(weeks=weeks)).replace(" ago", "")
+        return f"{weeks} weken na verzenden"
+    delta = naturaltime_without_indefinite_article(timedelta(weeks=weeks)).removesuffix(" geleden")
     return Markup(f"""
-        {weeks} weeks after sending<br>
-        <span class='govuk-hint'>(about {delta})</span>
+        {weeks} weken na verzenden<br>
+        <span class='govuk-hint'>(ongeveer {delta})</span>
     """)
 
 
