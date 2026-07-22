@@ -17,8 +17,8 @@
 
   {# as options objects are different for completed vs incomplete #}
   {# we set them here to reuse them later #}
-  {% set completed_status = {"text": "Completed"} %}
-  {% set incomplete_status = {"tag": {"text": "Incomplete"}} %}
+  {% set completed_status = {"text": "Voltooid"} %}
+  {% set incomplete_status = {"tag": {"text": "Niet voltooid"}} %}
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-five-sixths">
@@ -32,26 +32,26 @@
           {{ page_footer('Opslaan') }}
         {% endcall %}
         <h2 class="govuk-heading-m">
-          If you turn emails off
+          Als u e-mails uitschakelt
         </h2>
       <p class="govuk-body">
-          GOV.UK Notify will hide:
+          Verbergt NotifyNL:
         </p>
       <ul class="govuk-list govuk-list--bullet">
-        <li>any existing email templates</li>
-        <li>the option to add new email templates</li>
-        <li>some of your email settings</li>
+        <li>bestaande e-mailsjablonen</li>
+        <li>de mogelijkheid om nieuwe e-mailsjablonen toe te voegen</li>
+        <li>een deel van uw e-mailinstellingen</li>
       </ul>
       <p class="govuk-body">
-          To get them back, turn emails on again.
+          Om deze terug te krijgen, schakelt u e-mails weer in.
         </p>
       {% else %}
-        <h2 class="govuk-heading-m">Set up your service</h2>
+        <h2 class="govuk-heading-m">Richt uw dienst in</h2>
         {{ govukTaskList({
           "items": [
           {
             "title": {
-              "text": "Choose a ‘from’ name",
+              "text": "Kies een ‘van’ naam",
               "classes": "govuk-link--no-visited-state",
             },
             "href": url_for('main.service_email_sender_change', service_id=current_service.id),
@@ -59,7 +59,7 @@
           },
           {
             "title": {
-              "text": "Add a reply-to email address",
+              "text": "Voeg een antwoord-naar-e-mailadres toe",
               "classes": "govuk-link--no-visited-state",
             },
             "href": url_for('main.service_email_reply_to', service_id=current_service.id),
@@ -69,10 +69,10 @@
           ]
         }) }}
         <p class="govuk-body">
-          You must complete all the tasks before you can send emails.
+          U moet alle taken voltooien voordat u e-mails kunt versturen.
         </p>
         {% call form_wrapper(action=url_for('.enable_email_channel', service_id=current_service.id)) %}
-          {{ page_footer('Start sending emails') }}
+          {{ page_footer('E-mails versturen inschakelen') }}
         {% endcall %}
       {% endif %}
     </div>

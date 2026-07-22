@@ -26,12 +26,12 @@
           }
       ) }}
         {% set insetHtml %}
-        <p class="govuk-body">Before you continue, <a class="govuk-link govuk-link--no-visited-state" href="https://status.notificatie.nl/" target="_blank">
-        check the NotifyNL status page (opens in a new tab)</a>.</p>
-        <p class="govuk-body">You do not need to contact us if your problem is already listed on that page.</p>
+        <p class="govuk-body">Controleer voordat u verdergaat <a class="govuk-link govuk-link--no-visited-state" href="https://status.notificatie.nl/" target="_blank">
+        de statuspagina van NotifyNL (opent in een nieuw tabblad)</a>.</p>
+        <p class="govuk-body">U hoeft geen contact met ons op te nemen als uw probleem al op die pagina staat.</p>
         {% endset %}
         {{ govukInsetText({"html": insetHtml, "classes": "govuk-!-margin-top-0 govuk-!-margin-bottom-3"}) }}
 
-    {{ page_footer('Continue') }}
+    {{ page_footer('Doorgaan') }}
   {% endcall %}
 {% endblock %}

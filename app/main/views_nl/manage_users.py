@@ -52,12 +52,12 @@ def manage_users(service_id):
 def manage_users_download(service_id):
     rows = [
         [
-            "Email address",
-            "Name",
+            "E-mailadres",
+            "Naam",
         ]
         + list(dict(permission_options).values())
         + [
-            "Sign in method",
+            "Aanmeldmethode",
         ],
     ] + [
         [
@@ -78,9 +78,7 @@ def manage_users_download(service_id):
         200,
         {
             "Content-Type": "text/csv; charset=utf-8",
-            "Content-Disposition": (
-                f'attachment; filename="Team members {format_date_numeric(datetime.now(UTC))}.csv"'
-            ),
+            "Content-Disposition": (f'attachment; filename="Teamleden {format_date_numeric(datetime.now(UTC))}.csv"'),
         },
     )
 

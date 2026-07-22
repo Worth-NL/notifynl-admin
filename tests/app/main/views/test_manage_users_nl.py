@@ -17,7 +17,7 @@ def test_download_csv_of_users(
     response = client_request.get_response("main.manage_users_download", service_id=SERVICE_ONE_ID)
 
     assert response.get_data(as_text=True) == (
-        'Email address,Name,"Manage settings, team and usage",See dashboard,Send messages,Add and edit templates,Manage API integration,Sign in method\r\n'  # noqa: E501
+        'E-mailadres,Naam,"Manage settings, team and usage",See dashboard,Send messages,Add and edit templates,Manage API integration,Aanmeldmethode\r\n'  # noqa: E501
         "caseworker@example.gov.uk,Test User,Nee,Nee,Ja,Nee,Nee,SMS-code\r\n"
         "test@user.gov.uk,Test User With Permissions,Nee,Ja,Nee,Nee,Nee,SMS-code\r\n"
         "user_0@testnotify.gov.uk,(uitgenodigd),Ja,Ja,Ja,Nee,Ja,SMS-code\r\n"

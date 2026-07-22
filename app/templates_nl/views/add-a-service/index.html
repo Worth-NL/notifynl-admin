@@ -6,7 +6,7 @@
 
 {% set defaultMainTopMarginClass = True %}
 
-{% set heading = 'Your service will start in trial mode' %}
+{% set heading = 'Uw dienst start in proefmodus' %}
 
 {% block backLink %}
   {{ govukBackLink({ "href": url_for('main.your_services') }) }}
@@ -20,31 +20,31 @@
 <div class="govuk-grid-row">
   <div class="govuk-grid-column-two-thirds">
     {{ govuk_page_header(heading) }}
-    <p class="govuk-body">In trial mode there are limits on:</p>
+    <p class="govuk-body">In proefmodus gelden er beperkingen op:</p>
     <ul class="govuk-list govuk-list--bullet">
-        <li>who you can send messages to</li>
-        <li>how many messages you can send each day</li>
+        <li>naar wie u berichten kunt versturen</li>
+        <li>hoeveel berichten u per dag kunt versturen</li>
     </ul>
-    <p class="govuk-body">To remove these restrictions, you’ll need to make your service live.</p>
+    <p class="govuk-body">Om deze beperkingen op te heffen, moet u uw dienst live laten gaan.</p>
 
     {% set how_to_make_service_live_html %}
-      <p class="govuk-body">When you have finished testing your service:</p>
+      <p class="govuk-body">Wanneer u klaar bent met het testen van uw dienst:</p>
       <ol class="govuk-list govuk-list--number">
-        <li>Go to the <b class="govuk-!-font-weight-bold">Make your service live</b> page.</li>
-        <li>Complete the tasks.</li>
-        <li>Select <b class="govuk-!-font-weight-bold">Send a request to go live</b>.</li>
+        <li>Ga naar de pagina <b class="govuk-!-font-weight-bold">Maak uw dienst live</b>.</li>
+        <li>Voltooi de taken.</li>
+        <li>Selecteer <b class="govuk-!-font-weight-bold">Stuur een verzoek om live te gaan</b>.</li>
       </ol>
-      <p class="govuk-body">It can take up to one working day to make your service live.</p>
-      <p class="govuk-body">This is so we can check that you’ve met our <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.terms_of_use') }}" target="_blank">terms of use (opens in new tab)</a>.</p>
+      <p class="govuk-body">Het kan tot één werkdag duren voordat uw dienst live gaat.</p>
+      <p class="govuk-body">Dit is zodat we kunnen controleren of u voldoet aan onze <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.terms_of_use') }}" target="_blank">gebruiksvoorwaarden (opent in nieuw tabblad)</a>.</p>
     {% endset %}
 
     {{ govukDetails({
-      "summaryText": "How do I make my service live?",
+      "summaryText": "Hoe laat ik mijn dienst live gaan?",
       "html": how_to_make_service_live_html
     }) }}
 
     {{ govukButton({
-      "text": "Continue",
+      "text": "Doorgaan",
       "href": url_for('main.name_service')
     }) }}
 

@@ -3,7 +3,7 @@
 {% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
 
 {% block per_page_title %}
-  If you did not receive an email link
+  Als u geen e-mail met een inloglink heeft ontvangen
 {% endblock %}
 
 {% block backLink %}
@@ -14,24 +14,24 @@
 
 <div class="govuk-grid-row">
   <div class="govuk-grid-column-two-thirds">
-    {{ page_header("If you did not receive an email link") }}
+    {{ page_header("Als u geen e-mail met een inloglink heeft ontvangen") }}
 
     <p class="govuk-body">
-      Make sure you can receive emails from noreply@notifynl.nl
+      Zorg ervoor dat u e-mails van noreply@notifynl.nl kunt ontvangen.
     </p>
     <ol class="govuk-list govuk-list--number">
       <li>
-      Check your spam folder.
+      Controleer uw spamfolder.
       </li>
       <li>
-      Make sure you have not accidentally blocked our email address.
+      Zorg ervoor dat u ons e-mailadres niet per ongeluk heeft geblokkeerd.
       </li>
       <li>
-      Ask your IT department if they have blocked or quarantined any emails.
+      Vraag uw IT-afdeling of zij e-mails hebben geblokkeerd of in quarantaine hebben geplaatst.
       </li>
     </ol>
     <p class="govuk-body">
-      <a class="govuk-link govuk-link--no-visited-state" href={{ url_for("main.support_no_email_link_account_details") }}>I still cannot find an email from NotifyNL</a>
+      <a class="govuk-link govuk-link--no-visited-state" href={{ url_for("main.support_no_email_link_account_details") }}>Ik kan nog steeds geen e-mail van NotifyNL vinden</a>
     </p>
   </div>
 </div>

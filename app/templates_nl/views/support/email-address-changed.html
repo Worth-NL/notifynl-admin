@@ -3,7 +3,7 @@
 {% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
 
 {% block per_page_title %}
-  If your email address has changed
+  Als uw e-mailadres is gewijzigd
 {% endblock %}
 
 {% block backLink %}
@@ -14,30 +14,30 @@
 
 <div class="govuk-grid-row">
   <div class="govuk-grid-column-two-thirds">
-    {{ page_header("If your email address has changed") }}
+    {{ page_header("Als uw e-mailadres is gewijzigd") }}
 
     <p class="govuk-body">
-      Ask a member of your team with the ‘Manage settings, team and usage’ permission to update your email address.
+      Vraag een teamlid met de toestemming ‘Instellingen, team en gebruik beheren’ om uw e-mailadres bij te werken.
     </p>
     <p class="govuk-body">
-      To do this, they should:
+      Diegene moet daarvoor:
     </p>
     <ol class="govuk-list govuk-list--number">
       <li>
-      Sign in to NotifyNL.
+      Inloggen bij NotifyNL.
       </li>
       <li>
-      Go to the <b class="govuk-!-font-weight-bold">Team members</b> page.
+      Naar de pagina <b class="govuk-!-font-weight-bold">Teamleden</b> gaan.
       </li>
       <li>
-      Find your name and select <b class="govuk-!-font-weight-bold">Change details</b>.
+      Uw naam opzoeken en <b class="govuk-!-font-weight-bold">Gegevens wijzigen</b> selecteren.
       </li>
       <li>
-      Select <b class="govuk-!-font-weight-bold">Change</b> next to your email address.
+      <b class="govuk-!-font-weight-bold">Wijzigen</b> selecteren naast uw e-mailadres.
       </li>
     </ol>
     <p class="govuk-body">
-      <a class="govuk-link govuk-link--no-visited-state" href={{ url_for("main.support_email_address_changed_account_details") }}>No one on my team can sign in</a>
+      <a class="govuk-link govuk-link--no-visited-state" href={{ url_for("main.support_email_address_changed_account_details") }}>Niemand in mijn team kan inloggen</a>
     </p>
   </div>
 </div>

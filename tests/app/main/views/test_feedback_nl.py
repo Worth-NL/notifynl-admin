@@ -1,6 +1,7 @@
 from unittest.mock import ANY
 
 import pytest
+from flask import url_for
 from notifications_utils.clients.zendesk.zendesk_client import (
     NotifySupportTicket,
     NotifyTicketType,
@@ -275,3 +276,101 @@ def test_support_email_address_changed_account_details_form_requires_all_fields(
     assert normalize_spaces(page.select_one("#name-error").text) == "Error: Vul uw naam in"
     assert normalize_spaces(page.select_one("#old_email_address-error").text) == "Error: Vul uw oude e-mailadres in"
     assert normalize_spaces(page.select_one("#new_email_address-error").text) == "Error: Vul uw nieuwe e-mailadres in"
+
+
+def test_choose_problem_support_type_shows_problem_type_form(
+    client_request, mock_get_non_empty_organisations_and_services_for_user, mocker
+):
+    mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=True)
+    page = client_request.post(
+        "main.support",
+        _data={"support_type": PROBLEM_TICKET_TYPE},
+        _follow_redirects=True,
+    )
+    assert page.select_one("h1").string.strip() == "Meld een probleem"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support")
+    assert page.select("form input[type=radio]")[0]["value"] == "sending-messages"
+    assert page.select("form input[type=radio]")[1]["value"] == "something-else"
+
+
+def test_support_problem_when_user_is_logged_in(client_request):
+    page = client_request.get("main.support_problem")
+    assert page.select_one("h1").string.strip() == "Meld een probleem"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support")
+
+    radios = page.select("form input[type=radio]")
+    assert len(radios) == 2
+    assert radios[0]["value"] == "sending-messages"
+    assert radios[1]["value"] == "something-else"
+
+
+def test_support_problem_when_user_is_logged_out(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_problem")
+    assert page.select_one("h1").string.strip() == "Meld een probleem"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support_what_do_you_want_to_do")
+
+    radios = page.select("form input[type=radio]")
+    assert len(radios) == 3
+    assert radios[0]["value"] == "signing-in"
+    assert radios[1]["value"] == "sending-messages"
+    assert radios[2]["value"] == "something-else"
+
+
+def test_support_cannot_sign_in(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_cannot_sign_in")
+    assert page.select_one("h1").string.strip() == "Vertel ons waarom u niet kunt inloggen"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support_problem")
+
+    radios = page.select("form input[type=radio]")
+    assert len(radios) == 5
+    assert radios[0]["value"] == "no-code"
+    assert radios[1]["value"] == "mobile-number-changed"
+    assert radios[2]["value"] == "no-email-link"
+    assert radios[3]["value"] == "email-address-changed"
+    assert radios[4]["value"] == "something-else"
+
+
+def test_support_no_security_code(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_no_security_code")
+    assert normalize_spaces(page.select_one("h1").text) == "Als u geen beveiligingscode heeft ontvangen"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support_cannot_sign_in")
+    assert page.select_one(f'a[href="{url_for("main.support_no_security_code_account_details")}"]')
+
+
+def test_support_mobile_number_changed(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_mobile_number_changed")
+    assert normalize_spaces(page.select_one("h1").text) == "Als uw mobiele telefoonnummer is gewijzigd"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support_cannot_sign_in")
+    assert page.select_one(f'a[href="{url_for("main.support_mobile_number_changed_account_details")}"]')
+
+
+def test_support_no_email_link(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_no_email_link")
+    assert normalize_spaces(page.select_one("h1").text) == "Als u geen e-mail met een inloglink heeft ontvangen"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support_cannot_sign_in")
+    assert page.select_one(f'a[href="{url_for("main.support_no_email_link_account_details")}"]')
+
+
+def test_support_email_address_changed(client_request):
+    client_request.logout()
+    page = client_request.get("main.support_email_address_changed")
+    assert normalize_spaces(page.select_one("h1").text) == "Als uw e-mailadres is gewijzigd"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support_cannot_sign_in")
+    assert page.select_one(f'a[href="{url_for("main.support_email_address_changed_account_details")}"]')
+
+
+@pytest.mark.parametrize("user_logged_in", [True, False])
+def test_get_support_what_happened_page(client_request, user_logged_in):
+    if not user_logged_in:
+        client_request.logout()
+
+    page = client_request.get("main.support_what_happened")
+    assert page.select_one("h1").string.strip() == "Wat is er gebeurd?"
+    assert page.select("form input[type=radio]")[0]["value"] == "technical-difficulties"
+    assert page.select("form input[type=radio]")[1]["value"] == "api-500-response"
+    assert page.select("form input[type=radio]")[2]["value"] == "something-else"

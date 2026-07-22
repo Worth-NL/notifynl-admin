@@ -3,7 +3,7 @@
 {% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
 
 {% block per_page_title %}
-  If you did not receive a security code
+  Als u geen beveiligingscode heeft ontvangen
 {% endblock %}
 
 {% block backLink %}
@@ -14,33 +14,33 @@
 
 <div class="govuk-grid-row">
   <div class="govuk-grid-column-two-thirds">
-    {{ page_header("If you did not receive a security code") }}
+    {{ page_header("Als u geen beveiligingscode heeft ontvangen") }}
 
     <p class="govuk-body">
-      Make sure that there are no issues with your device or network.
+      Controleer of er geen problemen zijn met uw toestel of netwerk.
     </p>
     <ol class="govuk-list govuk-list--number">
       <li>
-      Check your phone’s spam folder (if it has one).
+      Controleer de spamfolder van uw telefoon (als die er is).
       </li>
       <li>
-      Make sure you have not accidentally blocked the sender ID ‘Notify’.
+      Zorg ervoor dat u de afzender-ID ‘Notify’ niet per ongeluk heeft geblokkeerd.
       </li>
       <li>
-      Visit your mobile phone network’s website and check their status page.
+      Bezoek de website van uw mobiele netwerkaanbieder en bekijk de statuspagina.
       </li>
       <li>
-      See if you can receive text messages from other numbers.
+      Controleer of u sms-berichten van andere nummers kunt ontvangen.
       </li>
       <li>
-      Turn aeroplane mode on then off again.
+      Zet de vliegtuigmodus aan en daarna weer uit.
       </li>
       <li>
-      Turn your phone off, wait a few minutes then turn it on again.
+      Zet uw telefoon uit, wacht een paar minuten en zet hem daarna weer aan.
       </li>
     </ol>
     <p class="govuk-body">
-      <a class="govuk-link govuk-link--no-visited-state" href={{url_for("main.support_no_security_code_account_details")}}>I am still waiting for a security code</a>
+      <a class="govuk-link govuk-link--no-visited-state" href={{url_for("main.support_no_security_code_account_details")}}>Ik wacht nog steeds op een beveiligingscode</a>
     </p>
   </div>
 </div>

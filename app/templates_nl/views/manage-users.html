@@ -126,10 +126,10 @@
               "href": url_for('main.invite_user', service_id=current_service.id),
               "classes": "govuk-button--secondary govuk-!-margin-bottom-1"
             }) }}
-            <a class="govuk-link govuk-link--no-visited-state govuk-!-margin-bottom-1" href="{{ url_for('main.manage_users_download', service_id=current_service.id) }}">Download list of team members (CSV)</a>
+            <a class="govuk-link govuk-link--no-visited-state govuk-!-margin-bottom-1" href="{{ url_for('main.manage_users_download', service_id=current_service.id) }}">Download lijst met teamleden (CSV)</a>
           </div>
           {% else %}
-          <a class="govuk-link govuk-link--no-visited-state page-footer-link" href="{{ url_for('main.manage_users_download', service_id=current_service.id) }}">Download list of team members (CSV)</a>
+          <a class="govuk-link govuk-link--no-visited-state page-footer-link" href="{{ url_for('main.manage_users_download', service_id=current_service.id) }}">Download lijst met teamleden (CSV)</a>
         {% endif %}
     </div>
   {% endif %}

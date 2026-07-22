@@ -4095,6 +4095,7 @@ def test_switch_service_channels_on_and_off(
         (["sms"], ".govuk-task-list", True, True),
     ],
 )
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_set_email_page_markup(
     client_request,
     service_one,

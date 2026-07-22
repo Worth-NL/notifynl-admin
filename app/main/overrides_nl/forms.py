@@ -1842,28 +1842,28 @@ class SupportProblemTypeForm(StripWhitespaceForm):
 
         if user_logged_in:
             self.problem_type.choices = [
-                ("sending-messages", "I’m having problems sending messages"),
-                ("something-else", "Something else"),
+                ("sending-messages", "Ik heb problemen met het versturen van berichten"),
+                ("something-else", "Iets anders"),
             ]
         else:
             self.problem_type.choices = [
-                ("signing-in", "I cannot sign in to my account"),
-                ("sending-messages", "I’m having problems sending messages"),
-                ("something-else", "Something else"),
+                ("signing-in", "Ik kan niet inloggen op mijn account"),
+                ("sending-messages", "Ik heb problemen met het versturen van berichten"),
+                ("something-else", "Iets anders"),
             ]
 
-    problem_type = GovukRadiosField("Report a problem")
+    problem_type = GovukRadiosField("Meld een probleem")
 
 
 class SupportSignInIssuesForm(StripWhitespaceForm):
     sign_in_issue = GovukRadiosField(
-        "Tell us why you cannot sign in",
+        "Vertel ons waarom u niet kunt inloggen",
         choices=[
-            ("no-code", "I did not receive a text message with a security code"),
-            ("mobile-number-changed", "My mobile number has changed"),
-            ("no-email-link", "I did not receive an email with a link to sign in"),
-            ("email-address-changed", "My email address has changed"),
-            ("something-else", "Something else"),
+            ("no-code", "Ik heb geen sms met een beveiligingscode ontvangen"),
+            ("mobile-number-changed", "Mijn mobiele telefoonnummer is gewijzigd"),
+            ("no-email-link", "Ik heb geen e-mail met een inloglink ontvangen"),
+            ("email-address-changed", "Mijn e-mailadres is gewijzigd"),
+            ("something-else", "Iets anders"),
         ],
     )
 
@@ -1937,14 +1937,15 @@ class FeedbackOrProblem(StripWhitespaceForm):
 
 class SupportWhatHappenedForm(StripWhitespaceForm):
     what_happened = GovukRadiosField(
-        "What happened?",
+        "Wat is er gebeurd?",
         choices=[
             (
                 "technical-difficulties",
-                "I got a ‘technical difficulties’ error when I tried to send messages using the Notify website",
+                "Ik kreeg een foutmelding ‘technische storing’ toen ik berichten probeerde te versturen "
+                "via de NotifyNL website",
             ),
-            ("api-500-response", "I got a 500 response code from the API"),
-            ("something-else", "Something else"),
+            ("api-500-response", "Ik kreeg een 500-responscode van de API"),
+            ("something-else", "Iets anders"),
         ],
     )
 

@@ -2,7 +2,7 @@ from unittest.mock import call
 
 import pytest
 
-from tests import organisation_json, sample_uuid
+from tests import find_element_by_tag_and_partial_text, organisation_json, sample_uuid
 from tests.conftest import (
     SERVICE_ONE_ID,
     create_active_user_no_settings_permission,
@@ -52,6 +52,87 @@ def test_api_ids_dont_show_on_option_pages_with_a_single_sender(
 
     assert normalize_spaces(rows[index].text) == expected_output
     assert len(rows) == index + 1
+
+
+@pytest.mark.parametrize(
+    "initial_permissions, expected_html_element, confirmed_email_sender_name, has_email_reply_to_address",
+    [
+        (["email", "sms"], ".govuk-radios", None, None),
+        (["sms"], ".govuk-task-list", False, False),
+        (["sms"], ".govuk-task-list", True, False),
+        (["sms"], ".govuk-task-list", False, True),
+        (["sms"], ".govuk-task-list", True, True),
+    ],
+)
+def test_set_email_page_markup(
+    client_request,
+    service_one,
+    mocker,
+    single_sms_sender,
+    api_user_active,
+    mock_get_free_sms_fragment_limit,
+    mock_get_letter_rates,
+    mock_get_sms_rate,
+    initial_permissions,
+    expected_html_element,
+    confirmed_email_sender_name,
+    has_email_reply_to_address,
+):
+    if has_email_reply_to_address:
+        mocker.patch(
+            "app.service_api_client.get_reply_to_email_addresses",
+            return_value=[create_reply_to_email_address(is_default=True)],
+        )
+    else:
+        mocker.patch("app.service_api_client.get_reply_to_email_addresses", return_value=[])
+    mocker.patch("app.service_api_client.get_service", return_value={"data": service_one})
+
+    service_one["permissions"] = initial_permissions
+    service_one["confirmed_email_sender_name"] = confirmed_email_sender_name
+
+    page = client_request.get(
+        "main.service_set_channel",
+        service_id=service_one["id"],
+        channel="email",
+    )
+
+    if not confirmed_email_sender_name and "email" not in initial_permissions:
+        assert (
+            normalize_spaces(
+                find_element_by_tag_and_partial_text(
+                    page, tag=".govuk-task-list__item", string="Kies een ‘van’ naam"
+                ).text
+            )
+            == "Kies een ‘van’ naam Niet voltooid"
+        )
+    if not has_email_reply_to_address and "email" not in initial_permissions:
+        assert (
+            normalize_spaces(
+                find_element_by_tag_and_partial_text(
+                    page, tag=".govuk-task-list__item", string="Voeg een antwoord-naar-e-mailadres toe"
+                ).text
+            )
+            == "Voeg een antwoord-naar-e-mailadres toe Niet voltooid"
+        )
+    if has_email_reply_to_address and confirmed_email_sender_name:
+        assert (
+            normalize_spaces(
+                find_element_by_tag_and_partial_text(
+                    page, tag=".govuk-task-list__item", string="Voeg een antwoord-naar-e-mailadres toe"
+                ).text
+            )
+            == "Voeg een antwoord-naar-e-mailadres toe Voltooid"
+        )
+        assert (
+            normalize_spaces(
+                find_element_by_tag_and_partial_text(
+                    page, tag=".govuk-task-list__item", string="Kies een ‘van’ naam"
+                ).text
+            )
+            == "Kies een ‘van’ naam Voltooid"
+        )
+
+    assert len(page.select(expected_html_element)) == 1
 
 
 @pytest.mark.parametrize(
