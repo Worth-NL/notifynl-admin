@@ -4,13 +4,13 @@
 
 What the alphagov/notifications-admin pull brought in, what's already ported and working, and what the team still needs to decide before we commit.
 
-**Repo:** notifynl-admin · **Branch:** alphagov-synch-May-2026 · **Status:** uncommitted · in review · **Upstream commits:** 1363
+**Repo:** notifynl-admin · **Branch:** alphagov-synch-May-2026 · **Status:** committed · in review · **Upstream commits:** 1363
 
 ---
 
 We're pulling in the last year and a half of `alphagov/notifications-admin` into `notifynl-admin`. All of our `_nl` customisations — views, models and templates — are already realigned with the new upstream version, and the app boots and renders end to end. Along the way, upstream brought in a handful of pages and features we didn't have before. This note lists them so the team can decide which ones we keep as-is, which we adjust, and which we leave for later.
 
-**Update 2026-07-22:** the original version of this note said all new copy was left untranslated in English pending a team decision. That was already going stale (two follow-up commits on 2026-07-20 had translated the support-wizard account-details pages and the dashboard loading-skeleton copy), and all of the remaining English copy identified below has now been translated to Dutch — trial-mode intro, CSV export button/headers, the "turn email on" flow, and the last 7 support-wizard "cause" pages. Full `pytest tests/` is green (3148 passed, 0 failed). Nothing English-only is left from this sync; questions 1 and 3 below are resolved, question 2 (document download / email template attachments) is still open.
+**Update 2026-07-22:** the original version of this note said all new copy was left untranslated in English pending a team decision. That was already going stale (two follow-up commits on 2026-07-20 had translated the support-wizard account-details pages and the dashboard loading-skeleton copy), and all of the remaining English copy identified below has now been translated to Dutch — trial-mode intro, CSV export button/headers, the "turn email on" flow, and the last 7 support-wizard "cause" pages. Full `pytest tests/` is green (3148 passed, 0 failed), and the translation work is committed (`bc134233d`). Nothing English-only is left from this sync; questions 1 and 3 below are resolved, question 2 (document download / email template attachments) is still open. `requirements_nl.txt`/`requirements_nl_test.txt` are the only files still uncommitted on this branch.
 
 ## Already ported and working — *in this sync*
 
