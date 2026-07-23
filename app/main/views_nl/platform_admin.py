@@ -36,7 +36,7 @@ from app.utils.pagination import (
     get_page_from_request,
 )
 from app.utils.user import user_is_platform_admin
-from app.utils.user_permissions import all_ui_permissions, translate_permissions_from_db_to_ui
+from app.utils_nl.user_permissions import all_ui_permissions, translate_permissions_from_db_to_ui
 
 COMPLAINT_THRESHOLD = 0.02
 FAILURE_THRESHOLD = 3

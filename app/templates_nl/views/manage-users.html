@@ -13,20 +13,20 @@
 
 {% if active_gov_users_with_manage_service_permission_count < 2 %}
     {% call govukNotificationBanner({
-      "titleText": "Finish setting up your team",
+      "titleText": "Rond het instellen van uw team af",
       "classes": "govuk-!-margin-bottom-4"
     }) %}
       <p class="govuk-body govuk-!-font-weight-bold">
         {% if current_user.is_gov_user %}
-          You need to add a team member from your organisation.
+          U moet een teamlid van uw organisatie toevoegen.
         {% elif active_gov_users_with_manage_service_permission_count == 0 %}
-          You need to add at least two team members from a public sector organisation.
+          U moet ten minste twee teamleden van een overheidsorganisatie toevoegen.
         {% else %}
-          You need to add a team member from a public sector organisation.
+          U moet een teamlid van een overheidsorganisatie toevoegen.
         {% endif %}
       </p>
       <p class="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-0">
-        Give them the ‘manage settings, team and usage’ permission.
+        Geef diegene de rechten ‘Instellingen, team en gebruik beheren’.
       </p>
     {% endcall %}
   {% endif %}
@@ -37,7 +37,7 @@
   </h1>
 
   {% if active_gov_users_with_manage_service_permission_count >= 2 %}
-    <p class="govuk-body">You must have at least 2 team members with the ‘manage settings’ permission.</p>
+    <p class="govuk-body">U moet ten minste 2 teamleden hebben met de rechten ‘Instellingen, team en gebruik beheren’.</p>
   {% endif %}
 
   {% if show_search_box %}

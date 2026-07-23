@@ -41,7 +41,7 @@ from app.models.user import InvitedOrgUser
 from app.s3_client.s3_mou_client import get_mou
 from app.utils.csv import Spreadsheet
 from app.utils.user import user_has_permissions, user_is_platform_admin
-from app.utils.user_permissions import organisation_user_permission_options
+from app.utils_nl.user_permissions import organisation_user_permission_options
 
 
 @main.route("/organisations", methods=["GET"])

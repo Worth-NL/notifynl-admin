@@ -8,9 +8,9 @@ from tests.conftest import SERVICE_ONE_ID, create_template, normalize_spaces
 @pytest.mark.parametrize(
     "count_of_users_with_manage_service,count_of_invites_with_manage_service,count_of_non_gov_users_with_manage,expected_user_checklist_item",
     [
-        (1, 0, 0, "Finish setting up your team Niet voltooid"),
-        (1, 1, 0, "Finish setting up your team Niet voltooid"),
-        (1, 0, 1, "Finish setting up your team Niet voltooid"),
+        (1, 0, 0, "Rond het instellen van uw team af Niet voltooid"),
+        (1, 1, 0, "Rond het instellen van uw team af Niet voltooid"),
+        (1, 0, 1, "Rond het instellen van uw team af Niet voltooid"),
     ],
 )
 @pytest.mark.parametrize(
@@ -110,7 +110,7 @@ def test_should_check_for_sending_things_right_with_two_gov_users(
     assert page.select_one("h1").text == "Maak uw service live"
 
     checklist_items = page.select(".govuk-task-list .govuk-task-list__item")
-    assert normalize_spaces(checklist_items[2].text) == "Finish setting up your team Voltooid"
+    assert normalize_spaces(checklist_items[2].text) == "Rond het instellen van uw team af Voltooid"
     assert normalize_spaces(checklist_items[3].text) == expected_templates_checklist_item
 
     mock_get_users.assert_called_once_with(SERVICE_ONE_ID)

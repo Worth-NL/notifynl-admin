@@ -24,7 +24,7 @@ from app.models.spreadsheet import Spreadsheet
 from app.models.user import InvitedUser, User
 from app.overrides_nl.formatters import format_auth_type, format_invite_status, format_yes_no
 from app.utils.user import is_gov_user, user_has_permissions
-from app.utils.user_permissions import permission_options, translate_permissions_from_ui_to_db
+from app.utils_nl.user_permissions import permission_options, translate_permissions_from_ui_to_db
 
 
 @main.route("/services/<uuid:service_id>/users")
@@ -298,26 +298,28 @@ def edit_user_permissions(service_id, user_id):
             )
         except HTTPError as e:
             if e.status_code == 400 and "Cannot change user permissions" in e.message:
-                service_description = "A service" if current_user.platform_admin else "Your service"
+                service_description = "Een dienst" if current_user.platform_admin else "Uw dienst"
                 org_description = (
-                    "your" if current_user.is_gov_user and not current_user.platform_admin else "a public sector"
+                    "van uw organisatie"
+                    if current_user.is_gov_user and not current_user.platform_admin
+                    else "van een overheidsorganisatie"
                 )
                 action_to_take = (
-                    "Ask the user to add new team members or update the permissions for their team."
+                    "Vraag de gebruiker om nieuwe teamleden toe te voegen of de rechten van hun team bij te werken."
                     if current_user.platform_admin
-                    else "Add new team members or update the permissions for your team, then try again."
+                    else "Voeg nieuwe teamleden toe of werk de rechten van uw team bij en probeer het daarna opnieuw."
                 )
 
                 flash(
                     Markup(
                         f"""
-                        <h2 class='govuk-heading-m'>You cannot change this team member’s permissions</h2>
+                        <h2 class='govuk-heading-m'>U kunt de rechten van dit teamlid niet wijzigen</h2>
                         <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
-                            {service_description} needs at least 2 team members:
+                            {service_description} heeft ten minste 2 teamleden nodig:
                         </p>
                         <ul class='govuk-list govuk-list--bullet error-text-colour govuk-!-font-weight-bold'>
-                            <li>from {org_description} organisation</li>
-                            <li>with the ‘manage settings, team and usage’ permission</li>
+                            <li>{org_description}</li>
+                            <li>met de rechten ‘Instellingen, team en gebruik beheren’</li>
                         </ul>
                         <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
                             {action_to_take}
@@ -358,34 +360,36 @@ def remove_user_from_service(service_id, user_id):
                 flash(
                     Markup(
                         """
-                        <h2 class='govuk-heading-m'>You cannot remove this team member</h2>
+                        <h2 class='govuk-heading-m'>U kunt dit teamlid niet verwijderen</h2>
                         <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
-                            A service needs at least 2 team members:
+                            Een dienst heeft ten minste 2 teamleden nodig:
                         </p>
                         <ul class='govuk-list govuk-list--bullet error-text-colour govuk-!-font-weight-bold'>
-                            <li>from a public sector organisation</li>
-                            <li>with the ‘manage settings, team and usage’ permission</li>
+                            <li>van een overheidsorganisatie</li>
+                            <li>met de rechten ‘Instellingen, team en gebruik beheren’</li>
                         </ul>
                         <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
-                            Ask the user to add new team members or update the permissions for their team.
+                            Vraag de gebruiker om nieuwe teamleden toe te voegen of
+                            de rechten van hun team bij te werken.
                         </p>
                         """
                     )
                 )
             else:
+                org_description = "van uw organisatie" if current_user.is_gov_user else "van een overheidsorganisatie"
                 flash(
                     Markup(
                         f"""
-                        <h2 class='govuk-heading-m'>You cannot remove this team member</h2>
+                        <h2 class='govuk-heading-m'>U kunt dit teamlid niet verwijderen</h2>
                         <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
-                            Your service needs at least 2 team members:
+                            Uw dienst heeft ten minste 2 teamleden nodig:
                         </p>
                         <ul class='govuk-list govuk-list--bullet error-text-colour govuk-!-font-weight-bold'>
-                            <li>from {"your" if current_user.is_gov_user else "a public sector"} organisation</li>
-                            <li>with the ‘manage settings, team and usage’ permission</li>
+                            <li>{org_description}</li>
+                            <li>met de rechten ‘Instellingen, team en gebruik beheren’</li>
                         </ul>
                         <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
-                            Add new team members or update the permissions for your team, then try again.
+                            Voeg nieuwe teamleden toe of werk de rechten van uw team bij en probeer het daarna opnieuw.
                         </p>
                         """
                     )

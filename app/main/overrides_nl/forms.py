@@ -116,7 +116,7 @@ from app.utils.govuk_frontend_field import (
 )
 from app.utils.image_processing import CorruptImage, ImageProcessor, WrongImageFormat
 from app.utils.interruptible_io import InterruptibleIterableList, interruptible_iter
-from app.utils.user_permissions import (
+from app.utils_nl.user_permissions import (
     all_ui_permissions,
     organisation_user_permission_names,
     organisation_user_permission_options,
