@@ -465,7 +465,7 @@ def feedback(ticket_type):
             )
         )
 
-    page_title = "Describe the problem" if ticket_type == PROBLEM_TICKET_TYPE else "Ask a question or give feedback"
+    page_title = "Beschrijf het probleem" if ticket_type == PROBLEM_TICKET_TYPE else "Stel een vraag of geef feedback"
     back_link = url_for(feedback_page_details[ticket_type][category]["back_link"])
 
     return render_template(

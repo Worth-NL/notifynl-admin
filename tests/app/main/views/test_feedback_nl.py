@@ -1,3 +1,4 @@
+from functools import partial
 from unittest.mock import ANY
 
 import pytest
@@ -374,3 +375,56 @@ def test_get_support_what_happened_page(client_request, user_logged_in):
     assert page.select("form input[type=radio]")[0]["value"] == "technical-difficulties"
     assert page.select("form input[type=radio]")[1]["value"] == "api-500-response"
     assert page.select("form input[type=radio]")[2]["value"] == "something-else"
+
+
+@pytest.mark.parametrize(
+    "extra_args, ticket_type, expected_back_link",
+    [
+        (
+            {"severe": "yes"},
+            PROBLEM_TICKET_TYPE,
+            partial(url_for, "main.support"),
+        ),
+        ({"severe": "no"}, PROBLEM_TICKET_TYPE, partial(url_for, "main.support")),
+        ({"severe": "foo"}, QUESTION_TICKET_TYPE, partial(url_for, "main.support")),  # hacking the URL
+        ({}, QUESTION_TICKET_TYPE, partial(url_for, "main.support")),
+        ({"severe": "no", "category": "something-else"}, PROBLEM_TICKET_TYPE, partial(url_for, "main.support_problem")),
+        (
+            {"severe": "no", "category": "problem-sending"},
+            PROBLEM_TICKET_TYPE,
+            partial(url_for, "main.support_what_happened"),
+        ),
+        (
+            {"severe": "yes", "category": "tech-error-live-services"},
+            PROBLEM_TICKET_TYPE,
+            partial(url_for, "main.support_what_happened"),
+        ),
+        (
+            {"severe": "no", "category": "tech-error-no-live-services"},
+            PROBLEM_TICKET_TYPE,
+            partial(url_for, "main.support_what_happened"),
+        ),
+        (
+            {"severe": "no", "category": "tech-error-signed-out"},
+            PROBLEM_TICKET_TYPE,
+            partial(url_for, "main.support_what_happened"),
+        ),
+    ],
+)
+def test_back_link_from_form(
+    client_request,
+    mock_get_non_empty_organisations_and_services_for_user,
+    mocker,
+    extra_args,
+    ticket_type,
+    expected_back_link,
+):
+    mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=True)
+    page = client_request.get("main.feedback", ticket_type=ticket_type, **extra_args)
+    assert page.select_one(".govuk-back-link")["href"] == expected_back_link()
+    h1 = normalize_spaces(page.select_one("h1").text)
+
+    if ticket_type == PROBLEM_TICKET_TYPE:
+        assert h1 == "Beschrijf het probleem"
+    else:
+        assert h1 == "Stel een vraag of geef feedback"
