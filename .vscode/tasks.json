@@ -4,7 +4,7 @@
         {
             "id": "installLocalEditables",
             "type": "pickString",
-            "description": "Local dev only: after installing requirements, switch notifications-utils and govuk-frontend-jinja back to local editable installs (../notifynl-utils, ../LandRegistry-frontend-jinja)?",
+            "description": "Use local utils and jinja templates?",
             "options": ["No", "Yes"],
             "default": "No"
         }
