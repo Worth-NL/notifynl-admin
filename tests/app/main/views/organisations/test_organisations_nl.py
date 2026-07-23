@@ -196,3 +196,36 @@ def test_organisation_services_hides_search_bar_for_7_or_fewer_services(
     services = page.select(".organisation-service")
     assert len(services) == 7
     assert not page.select_one(".live-search")
+
+
+def test_view_edit_organisation_billing_details(
+    client_request,
+    platform_admin_user,
+    organisation_one,
+    mock_get_organisation,
+):
+    client_request.login(platform_admin_user)
+    page = client_request.get(
+        "main.edit_organisation_billing_details",
+        org_id=organisation_one["id"],
+    )
+    assert page.select_one("h1").text == "Organisatiefacturatiegegevens bewerken"
+
+    assert [label.text.strip() for label in page.select("label.govuk-label")] == [
+        "Contact namen",
+        "E-mailadressen voor contact",
+        "Referentie",
+        "Inkoopordernummer",
+        "Aantekeningen",
+    ]
+
+    assert [
+        form_element["name"]
+        for form_element in page.select("input.govuk-input.govuk-\\!-width-full") + page.select("textarea")
+    ] == [
+        "billing_contact_names",
+        "billing_contact_email_addresses",
+        "billing_reference",
+        "purchase_order_number",
+        "notes",
+    ]

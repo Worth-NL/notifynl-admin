@@ -2123,7 +2123,7 @@ class AdminBillingDetailsForm(StripWhitespaceForm):
     billing_contact_email_addresses = GovukTextInputField("E-mailadressen voor contact")
     billing_contact_names = GovukTextInputField("Contact namen")
     billing_reference = GovukTextInputField("Referentie")
-    purchase_order_number = GovukTextInputField("Purchase order nummer")
+    purchase_order_number = GovukTextInputField("Inkoopordernummer")
     notes = GovukTextareaField("Aantekeningen", validators=[])
 
 

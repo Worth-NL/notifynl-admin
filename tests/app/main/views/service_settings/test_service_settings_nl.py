@@ -301,3 +301,34 @@ def test_service_preview_email_sender_name_service_name(client_request, expected
         _expected_status=200,
     )
     assert normalize_spaces(response.get_json()["html"]) == normalize_spaces(expected_preview)
+
+
+def test_view_edit_service_billing_details(
+    client_request,
+    platform_admin_user,
+    service_one,
+):
+    client_request.login(platform_admin_user)
+    page = client_request.get(
+        "main.edit_service_billing_details",
+        service_id=SERVICE_ONE_ID,
+    )
+
+    assert page.select_one("h1").text == "Wijzig factuurgegevens"
+    assert [label.text.strip() for label in page.select("label.govuk-label")] == [
+        "Contact namen",
+        "E-mailadressen voor contact",
+        "Referentie",
+        "Inkoopordernummer",
+        "Aantekeningen",
+    ]
+    assert [
+        form_element["name"]
+        for form_element in page.select("input.govuk-input.govuk-\\!-width-full") + page.select("textarea")
+    ] == [
+        "billing_contact_names",
+        "billing_contact_email_addresses",
+        "billing_reference",
+        "purchase_order_number",
+        "notes",
+    ]
