@@ -142,7 +142,7 @@ function resetStickyMocks () {
 };
 
 beforeAll(() => {
-  require('../../app/assets/javascripts/templateFolderForm.js');
+  require('../../app/assets/javascripts/templateFolderForm_nl.js');
 
   // plug JSDOM's lack of support for window.scrollTo
   window.scrollTo = () => {};
@@ -155,7 +155,7 @@ afterAll(() => {
   delete window.scrollTo;
 });
 
-describe('TemplateFolderForm', () => {
+describe('TemplateFolderForm (nl)', () => {
 
   const hierarchy = [
     {
@@ -375,7 +375,7 @@ describe('TemplateFolderForm', () => {
 
         expect(cancelLink).not.toBeNull();
         expect(cancelLink.querySelector('.govuk-visually-hidden')).not.toBeNull();
-        expect(cancelLink.querySelector('.govuk-visually-hidden').textContent.trim()).toEqual('new template');
+        expect(cancelLink.querySelector('.govuk-visually-hidden').textContent.trim()).toEqual('nieuw sjabloon');
 
       });
 
@@ -391,7 +391,7 @@ describe('TemplateFolderForm', () => {
         id = region.getAttribute('aria-describedby');
         description = document.getElementById(id);
         expect(description).not.toBeNull();
-        expect(description.textContent.trim()).toEqual('Press continue to confirm selection or cancel to close');
+        expect(description.textContent.trim()).toEqual('Selecteer ‘Doorgaan’ om de selectie te bevestigen of ‘Annuleren’ om te sluiten');
 
       });
 
@@ -484,7 +484,7 @@ describe('TemplateFolderForm', () => {
         id = region.getAttribute('aria-describedby');
         description = document.getElementById(id);
         expect(description).not.toBeNull();
-        expect(description.textContent.trim()).toEqual('Press add new folder to confirm name or cancel to close');
+        expect(description.textContent.trim()).toEqual('Selecteer ‘Nieuwe map toevoegen’ om de naam te bevestigen of ‘Annuleren’ om te sluiten');
 
       });
 
@@ -503,7 +503,7 @@ describe('TemplateFolderForm', () => {
 
         expect(cancelLink).not.toBeNull();
         expect(cancelLink.querySelector('.govuk-visually-hidden')).not.toBeNull();
-        expect(cancelLink.querySelector('.govuk-visually-hidden').textContent.trim()).toEqual('new folder');
+        expect(cancelLink.querySelector('.govuk-visually-hidden').textContent.trim()).toEqual('nieuwe map');
 
       });
 
@@ -616,7 +616,7 @@ describe('TemplateFolderForm', () => {
       test("the link has been added with the right text", () => {
 
         expect(clearLink).not.toBeNull();
-        expect(clearLink.textContent.trim()).toEqual('Clear selection');
+        expect(clearLink.textContent.trim()).toEqual('Wissen selectie');
 
       });
 
@@ -652,7 +652,7 @@ describe('TemplateFolderForm', () => {
 
       test("the content of the counter should reflect the selection", () => {
 
-        expect(visibleCounterText).toEqual('1 template, 1 folder selected');
+        expect(visibleCounterText).toEqual('1 sjabloon, 1 map geselecteerd');
 
       });
 
@@ -683,7 +683,7 @@ describe('TemplateFolderForm', () => {
           id = region.getAttribute('aria-describedby');
           description = document.getElementById(id);
           expect(description).not.toBeNull();
-          expect(description.textContent.trim()).toEqual('Press move to confirm or cancel to close');
+          expect(description.textContent.trim()).toEqual('Selecteer ‘Verplaatsen’ om te bevestigen of ‘Annuleren’ om te sluiten');
 
         });
 
@@ -725,7 +725,7 @@ describe('TemplateFolderForm', () => {
 
           expect(cancelLink).not.toBeNull();
           expect(cancelLink.querySelector('.govuk-visually-hidden')).not.toBeNull();
-          expect(cancelLink.querySelector('.govuk-visually-hidden').textContent.trim()).toEqual('move to folder');
+          expect(cancelLink.querySelector('.govuk-visually-hidden').textContent.trim()).toEqual('verplaatsen naar map');
 
         });
 
@@ -808,7 +808,7 @@ describe('TemplateFolderForm', () => {
           id = region.getAttribute('aria-describedby');
           description = document.getElementById(id);
           expect(description).not.toBeNull();
-          expect(description.textContent.trim()).toEqual('Press add to new folder to confirm name or cancel to close');
+          expect(description.textContent.trim()).toEqual('Selecteer ‘Toevoegen aan nieuwe map’ om de naam te bevestigen of ‘Annuleren’ om te sluiten');
 
         });
 
@@ -827,7 +827,7 @@ describe('TemplateFolderForm', () => {
 
           expect(cancelLink).not.toBeNull();
           expect(cancelLink.querySelector('.govuk-visually-hidden')).not.toBeNull();
-          expect(cancelLink.querySelector('.govuk-visually-hidden').textContent.trim()).toEqual('move to new folder');
+          expect(cancelLink.querySelector('.govuk-visually-hidden').textContent.trim()).toEqual('verplaatsen naar nieuwe map');
 
         });
 
@@ -921,7 +921,7 @@ describe('TemplateFolderForm', () => {
         helpers.triggerEvent(templateFolderCheckboxes[1], 'click');
         helpers.triggerEvent(templateFolderCheckboxes[2], 'click');
 
-        expect(visibleCounterText).toEqual('2 templates selected');
+        expect(visibleCounterText).toEqual('2 sjablonen geselecteerd');
 
       });
 
@@ -941,7 +941,7 @@ describe('TemplateFolderForm', () => {
 
         helpers.triggerEvent(templateFolderCheckboxes[0], 'click');
 
-        expect(visibleCounterText).toEqual('1 folder selected');
+        expect(visibleCounterText).toEqual('1 map geselecteerd');
 
       });
 

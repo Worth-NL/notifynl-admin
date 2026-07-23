@@ -25,7 +25,7 @@ import AuthenticateSecurityKey from './authenticate-security-key.mjs';
 import RegisterSecurityKey from './register-security-key.mjs';
 import UpdateStatus from './update-status.mjs';
 import UpdateContent from './update-content.mjs';
-import UpdateRelativeTime from './update-relative-time.mjs';
+import UpdateRelativeTime from './update-relative-time_nl.mjs';
 import { stickAtTopWhenScrolling, stickAtBottomWhenScrolling } from './stick-to-window-when-scrolling.mjs';
 
 createAll(Button,

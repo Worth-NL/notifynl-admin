@@ -32,32 +32,32 @@
           $el: this.$form.find('#move_to_folder_radios'),
           cancellable: true,
           setFocus: () => $('#move_to_folder_radios').focus(),
-          action: 'move to folder',
-          description: 'Press move to confirm or cancel to close'
+          action: 'verplaatsen naar map',
+          description: 'Selecteer ‘Verplaatsen’ om te bevestigen of ‘Annuleren’ om te sluiten'
         },
         {
           key: 'move-to-new-folder',
           $el: this.$form.find('#move_to_new_folder_form'),
           cancellable: true,
           setFocus: () => $('#move_to_new_folder_form').focus(),
-          action: 'move to new folder',
-          description: 'Press add to new folder to confirm name or cancel to close'
+          action: 'verplaatsen naar nieuwe map',
+          description: 'Selecteer ‘Toevoegen aan nieuwe map’ om de naam te bevestigen of ‘Annuleren’ om te sluiten'
         },
         {
           key: 'add-new-folder',
           $el: this.$form.find('#add_new_folder_form'),
           cancellable: true,
           setFocus: () => $('#add_new_folder_form').focus(),
-          action: 'new folder',
-          description: 'Press add new folder to confirm name or cancel to close'
+          action: 'nieuwe map',
+          description: 'Selecteer ‘Nieuwe map toevoegen’ om de naam te bevestigen of ‘Annuleren’ om te sluiten'
         },
         {
           key: 'add-new-template',
           $el: this.$form.find('#add_new_template_form'),
           cancellable: true,
           setFocus: () => $('#add_new_template_form').focus(),
-          action: 'new template',
-          description: 'Press continue to confirm selection or cancel to close'
+          action: 'nieuw sjabloon',
+          description: 'Selecteer ‘Doorgaan’ om de selectie te bevestigen of ‘Annuleren’ om te sluiten'
         }
       ];
 
@@ -112,7 +112,7 @@
 
     this.addCancelButton = function(state) {
       let selector = `[value=${state.key}]`;
-      let $cancel = this.makeButton('Cancel', {
+      let $cancel = this.makeButton('Annuleren', {
         'onclick': () => {
 
           // clear existing data
@@ -131,7 +131,7 @@
 
     this.addClearButton = function(state) {
       let selector = 'button[value=add-new-template]';
-      let $clear = this.makeButton('Clear', {
+      let $clear = this.makeButton('Wissen', {
         'onclick': () => {
 
           // uncheck all templates and folders
@@ -140,7 +140,7 @@
           // go back to action buttons
           this.selectActionButtons(selector);
         },
-        'nonvisualText': "selection"
+        'nonvisualText': "selectie"
       });
 
       state.$el.find('.checkbox-list-selected-counter').append($clear);
@@ -197,15 +197,20 @@
     };
 
     this.selectionStatus = {
-      'default': 'Nothing selected',
+      'default': 'Niets geselecteerd',
       'selected': numSelected => {
+        const nouns = {
+          templates: { singular: 'sjabloon', plural: 'sjablonen' },
+          folders: { singular: 'map', plural: 'mappen' }
+        };
+
         const getString = key => {
           if (numSelected[key] === 0) {
             return '';
           } else if (numSelected[key] === 1) {
-            return `1 ${key.substring(0, key.length - 1)}`;
+            return `1 ${nouns[key].singular}`;
           } else {
-            return `${numSelected[key]} ${key}`;
+            return `${numSelected[key]} ${nouns[key].plural}`;
           }
         };
 
@@ -217,7 +222,7 @@
         if (numSelected.folders > 0) {
           results.push(getString('folders'));
         }
-        return results.join(', ') + ' selected';
+        return results.join(', ') + ' geselecteerd';
       },
       'update': numSelected => {
         let message = (numSelected.total > 0) ? this.selectionStatus.selected(numSelected) : this.selectionStatus.default;
@@ -298,9 +303,9 @@
       <div id="nothing_selected">
         <div class="js-stick-at-bottom-when-scrolling">
           <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-right-3 govuk-!-margin-bottom-1" value="add-new-template" ${!this.$singleNotificationChannel ? 'aria-expanded="false"' : ''}>
-            New template
+            Nieuw sjabloon
           </button>
-          <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-1" value="add-new-folder" aria-expanded="false">New folder</button>
+          <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-1" value="add-new-folder" aria-expanded="false">Nieuwe map</button>
           <div class="checkbox-list-selected-counter">
             <span class="checkbox-list-selected-counter__count" aria-hidden="true">
               ${this.selectionStatus.default}
@@ -314,9 +319,9 @@
       <div id="items_selected">
         <div class="js-stick-at-bottom-when-scrolling">
           <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-right-3 govuk-!-margin-bottom-1" value="move-to-existing-folder" aria-expanded="false">
-            Move<span class="govuk-visually-hidden"> selection to folder</span>
+            Verplaats<span class="govuk-visually-hidden"> de selectie naar de map</span>
           </button>
-          <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-1" value="move-to-new-folder" aria-expanded="false">Add to new folder</button>
+          <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-1" value="move-to-new-folder" aria-expanded="false">Toevoegen aan een nieuwe map</button>
           <div class="checkbox-list-selected-counter" aria-hidden="true">
             <span class="checkbox-list-selected-counter__count" aria-hidden="true">
               ${this.selectionStatus.selected(1)}
