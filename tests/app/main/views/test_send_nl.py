@@ -319,7 +319,7 @@ def test_send_one_off_offers_link_to_upload(
     back_link = page.select_one(".govuk-back-link")
     link = page.select_one("form a")
 
-    assert back_link.text.strip() == "Back"
+    assert back_link.text.strip() == "Terug"
 
     assert link.text.strip() == "Upload een lijst met telefoonnummers"
     assert link["href"] == url_for(

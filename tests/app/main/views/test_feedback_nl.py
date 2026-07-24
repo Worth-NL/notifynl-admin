@@ -428,3 +428,16 @@ def test_back_link_from_form(
         assert h1 == "Beschrijf het probleem"
     else:
         assert h1 == "Stel een vraag of geef feedback"
+
+
+def test_bat_email_page(
+    client_request,
+    active_user_with_permissions,
+):
+    bat_phone_page = "main.bat_phone"
+
+    client_request.logout()
+    page = client_request.get(bat_phone_page)
+
+    assert page.select_one(".govuk-back-link").text.strip() == "Terug"
+    assert page.select_one(".govuk-back-link")["href"] == url_for("main.support")
