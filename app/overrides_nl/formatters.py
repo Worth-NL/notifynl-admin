@@ -224,7 +224,42 @@ def format_notification_status(status, template_type):
             "cancelled": "",
             "validation-failed": "Validatie gefaald",
         },
+        "messagebox": {
+            "failed": "Gefaald",
+            "technical-failure": "Technische fout",
+            "delivered": "Afgeleverd",
+            "sending": "Aan het afleveren",
+            "created": "Aangemaakt",
+            "pending-virus-check": "Wordt gecontroleerd op virussen",
+            "virus-scan-failed": "Virus gedetecteerd",
+        },
     }[template_type].get(status, status)
+
+
+def _notification_attr(notification, name, default=None):
+    # notification is a plain dict in some views (e.g. activity/uploaded-letters
+    # listings, built straight from the API response) and a Notification JSONModel
+    # in others (e.g. the single notification view) - unlike Jinja's `.` operator,
+    # plain Python attribute access doesn't fall back to dict item access.
+    if isinstance(notification, dict):
+        return notification.get(name, default)
+    return getattr(notification, name, default)
+
+
+def format_notification_status_text(notification):
+    # For a failed messagebox notification, show the actual reason Logius
+    # gave (plus its raw VerwerkingsCode) instead of the generic NotifyNL
+    # status -- a service admin can quote both directly to Logius, using
+    # the notification's own id, which doubles as the Logius Batch ID (see
+    # app/clients/messagebox/ebms_adapter.py in notifynl-api).
+    if _notification_attr(notification, "notification_type") == "messagebox":
+        reason = _notification_attr(notification, "messagebox_failure_reason")
+        if reason:
+            code = _notification_attr(notification, "detailed_status_code")
+            return f"{reason} ({code})" if code else reason
+    status = _notification_attr(notification, "status")
+    template_type = _notification_attr(notification, "template")["template_type"]
+    return format_notification_status(status, template_type)
 
 
 def format_notification_status_as_time(status, created, updated):
@@ -247,6 +282,15 @@ def format_notification_status_as_field_status(status, notification_type):
             "virus-scan-failed": "error",
             "returned-letter": None,
             "cancelled": "error",
+        },
+        "messagebox": {
+            "failed": "error",
+            "technical-failure": "error",
+            "delivered": None,
+            "sending": "default",
+            "created": "default",
+            "pending-virus-check": "default",
+            "virus-scan-failed": "error",
         },
     }.get(
         notification_type,

@@ -39,6 +39,9 @@ class Notification(JSONModel):
     created_by_email_address: str
     job_name: str
     api_key_name: str
+    detailed_status_code: str
+    messagebox_stadium: str
+    messagebox_failure_reason: str
 
     __sort_attribute__ = "created_at"
 
@@ -115,6 +118,9 @@ class Notification(JSONModel):
                     self.personalisation,
                 ).subject
             )
+
+        if self.template["template_type"] == "messagebox":
+            return ""
 
     @cached_property
     def job(self):

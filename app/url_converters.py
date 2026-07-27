@@ -24,6 +24,15 @@ class DailyLimitTypeConverter(BaseConverter):
     regex = f"(?:{'|'.join(Service.TEMPLATE_TYPES)}|international_sms|messagebox)"
 
 
+class NotificationTypeConverter(BaseConverter):
+    # Deliberately separate from TemplateTypeConverter (same reasoning as
+    # DailyLimitTypeConverter above): messagebox notifications exist and need to be
+    # filterable/listable, but messagebox isn't in Service.TEMPLATE_TYPES, and the
+    # template create/edit routes that share TemplateTypeConverter aren't built to
+    # handle it.
+    regex = f"(?:{'|'.join(Service.TEMPLATE_TYPES)}|messagebox)"
+
+
 class TicketTypeConverter(BaseConverter):
     regex = f"(?:{PROBLEM_TICKET_TYPE}|{QUESTION_TICKET_TYPE})"
 

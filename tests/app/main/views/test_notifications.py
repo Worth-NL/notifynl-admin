@@ -122,6 +122,51 @@ def test_notification_status_page_formats_email_and_sms_status_correctly(
     assert page.select_one(f".ajax-block-container p.notification-status.{expected_class}")
 
 
+@freeze_time("2016-01-01 11:09:00.061258")
+def test_notification_status_page_shows_messagebox_failure_reason_and_batch_id_hint(
+    client_request,
+    mocker,
+    service_one,
+    fake_uuid,
+    active_user_with_permissions,
+):
+    mocker.patch("app.user_api_client.get_user", return_value=active_user_with_permissions)
+    notification = create_notification(notification_status="permanent-failure", template_type="messagebox")
+    notification["detailed_status_code"] = "OinInCPAKomtNietOvereenMetOinInBericht"
+    notification["messagebox_failure_reason"] = "OIN uit CPA komt niet overeen met OID in het bericht"
+    mocker.patch("app.notification_api_client.get_notification", return_value=notification)
+
+    page = client_request.get("main.view_notification", service_id=service_one["id"], notification_id=fake_uuid)
+
+    status_text = normalize_spaces(page.select(".ajax-block-container p")[0].text)
+    assert "OIN uit CPA komt niet overeen met OID in het bericht" in status_text
+    assert "OinInCPAKomtNietOvereenMetOinInBericht" in status_text
+
+    hint_text = normalize_spaces(page.select_one(".messagebox-batch-id-hint").text)
+    assert "Batch ID" in hint_text
+    assert notification["id"] in hint_text
+
+
+@freeze_time("2016-01-01 11:09:00.061258")
+def test_notification_status_page_shows_no_batch_id_hint_without_a_reason(
+    client_request,
+    mocker,
+    service_one,
+    fake_uuid,
+    active_user_with_permissions,
+):
+    mocker.patch("app.user_api_client.get_user", return_value=active_user_with_permissions)
+    notification = create_notification(notification_status="sending", template_type="messagebox")
+    notification["detailed_status_code"] = None
+    notification["messagebox_failure_reason"] = None
+    mocker.patch("app.notification_api_client.get_notification", return_value=notification)
+
+    page = client_request.get("main.view_notification", service_id=service_one["id"], notification_id=fake_uuid)
+
+    assert page.select_one(".ajax-block-container")
+    assert page.select_one(".messagebox-batch-id-hint") is None
+
+
 @pytest.mark.parametrize(
     "template_redaction_setting, expected_content",
     [

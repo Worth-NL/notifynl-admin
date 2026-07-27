@@ -141,7 +141,7 @@ def post_report_request_and_redirect(current_service, report_type, message_type,
 
 
 @main.route("/services/<uuid:service_id>/notifications", methods=["GET", "POST"])
-@main.route("/services/<uuid:service_id>/notifications/<template_type:message_type>", methods=["GET", "POST"])
+@main.route("/services/<uuid:service_id>/notifications/<notification_type:message_type>", methods=["GET", "POST"])
 @user_has_permissions()
 def view_notifications(service_id, message_type=None):
     partials_data = _get_notifications_dashboard_partials_data(service_id, message_type)
@@ -211,10 +211,11 @@ def view_notifications(service_id, message_type=None):
             "email": ["email address"],
             "sms": ["phone number"],
             "letter": ["postal address", "file name"],
+            "messagebox": ["recipient"],
             # We say recipient here because combining all 3 types, plus
             # reference gets too long for the hint text
             None: ["recipient"],
-        }.get(message_type)
+        }.get(message_type, ["recipient"])
         + {
             True: ["reference"],
             False: [],
@@ -277,7 +278,7 @@ def template_usage(service_id):
 
 @json_updates.route("/services/<uuid:service_id>/notifications.json", methods=["GET", "POST"])
 @json_updates.route(
-    "/services/<uuid:service_id>/notifications/<template_type:message_type>.json", methods=["GET", "POST"]
+    "/services/<uuid:service_id>/notifications/<notification_type:message_type>.json", methods=["GET", "POST"]
 )
 @user_has_permissions()
 def get_notifications_page_partials_as_json(service_id, message_type=None):

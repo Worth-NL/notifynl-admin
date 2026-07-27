@@ -318,6 +318,38 @@ class LetterAttachment(JSONModel):
     __sort_attribute__ = "original_filename"
 
 
+class MessageboxNotificationPreview:
+    """Stand-in for a Template on the notification detail page.
+
+    Messagebox notifications are sent against a fixed, hidden system template
+    with static content -- Notify never stores the real berichtenbox content
+    -- so there's no personalisation to substitute and none of the
+    email/sms/letter preview machinery applies.
+    """
+
+    template_type = "messagebox"
+
+    def __init__(self, template):
+        self.id = template.get("id")
+        self.name = template.get("name")
+        self.subject = template.get("subject")
+        self.content = template["content"]
+
+    def __str__(self):
+        return Markup(
+            self.jinja_template.render(
+                {
+                    "subject": escape_html(self.subject),
+                    "content": escape_html(self.content),
+                }
+            )
+        )
+
+    @property
+    def jinja_template(self):
+        return current_app.jinja_env.get_template("partials/templates/messagebox_preview_template.jinja2")
+
+
 def get_sample_template(template_type):
     if template_type == "email":
         return EmailPreviewTemplate({"content": "any", "subject": "", "template_type": "email"})
@@ -369,6 +401,8 @@ def get_template(
             contact_block=template["reply_to_text"],
             include_letter_edit_ui_overlay=include_letter_edit_ui_overlay,
         )
+    if "messagebox" == template["template_type"]:
+        return MessageboxNotificationPreview(template)
 
 
 class TemplateChange:
