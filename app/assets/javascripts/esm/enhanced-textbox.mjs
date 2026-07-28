@@ -22,7 +22,7 @@ class EnhancedTextbox {
     }
 
     this.$module = $module;
-    this.tagPattern = /\(\(([^\)\((\?)]+)(\?\?)?([^\)\(]*)\)\)/g;
+    this.tagPattern = /\(\(([^()?]+)(\?\?)?([^()]*)\)\)/g;
     this.highlightPlaceholders = this.$module.dataset.highlightPlaceholders === 'true';
     this.autofocus = this.$module.dataset.autofocusTextbox === 'true';
     this.$textbox = this.$module;
@@ -69,7 +69,7 @@ class EnhancedTextbox {
           this.$backgroundHighlightElement.offsetHeight
       )}px`;
 
-    if ('stickAtBottomWhenScrolling' in GOVUK) {
+    if ('stickAtBottomWhenScrolling' in window.GOVUK) {
       window.GOVUK.stickAtBottomWhenScrolling.recalculate();
     }
   }
