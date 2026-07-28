@@ -2,6 +2,39 @@ import pytest
 from freezegun import freeze_time
 
 from app.models.user import User
+from app.utils.login import is_safe_redirect_url
+
+
+@pytest.mark.parametrize(
+    "target",
+    (
+        "/dashboard",
+        "/services/123/dashboard?x=1",
+    ),
+)
+def test_is_safe_redirect_url_allows_same_origin_relative_paths(target):
+    assert is_safe_redirect_url(target) is True
+
+
+@pytest.mark.parametrize(
+    "target",
+    (
+        None,
+        "",
+        "dashboard",  # no leading slash
+        "//evil.com",
+        "///evil.com",
+        "/\\evil.com",  # browsers treat \ the same as / when resolving a URL
+        "\\/evil.com",
+        "\\\\evil.com",
+        "https://evil.com",
+        "https:///evil.com",
+        "  //evil.com",
+        "https://admin.notifynl.nl@evil.com/",
+    ),
+)
+def test_is_safe_redirect_url_rejects_cross_origin_or_malformed_targets(target):
+    assert is_safe_redirect_url(target) is False
 
 
 @freeze_time("2020-11-27T12:00:00")

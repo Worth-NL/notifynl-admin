@@ -65,13 +65,20 @@ def redirect_if_logged_in(f):
     return wrapped
 
 
-# see https://stackoverflow.com/questions/60532973/how-do-i-get-a-is-safe-url-function-to-use-with-flask-and-how-does-it-work  # noqa
 def is_safe_redirect_url(target):
-    from urllib.parse import urljoin, urlparse
-
-    host_url = urlparse(request.host_url)
-    redirect_url = urlparse(urljoin(request.host_url, target))
-    return redirect_url.scheme in ("http", "https") and host_url.netloc == redirect_url.netloc
+    # Only allow same-origin relative paths. A urljoin/urlparse-based
+    # netloc comparison isn't enough here: browsers treat backslashes the
+    # same as forward slashes, and treat any run of 2+ leading slashes as an
+    # absolute/protocol-relative URL - including same-scheme-prefixed forms
+    # like "https:///evil.com" - none of which Python's urllib parses the
+    # same way, so a value that looks same-origin to urlparse can still send
+    # a real browser to an external host. Rather than replicate every quirky
+    # absolute-URL form a browser might recognise, only allow the one
+    # unambiguously-safe shape: a path starting with exactly one slash.
+    if not target:
+        return False
+    normalised = target.replace("\\", "/")
+    return normalised.startswith("/") and not normalised.startswith("//")
 
 
 def encrypt_new_password(new_password: str) -> bytes:
