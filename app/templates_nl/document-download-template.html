@@ -1,0 +1,36 @@
+{% extends "admin_template.html" %}
+{%- from "govuk_frontend_jinja/components/notification-banner/macro.html" import govukNotificationBanner -%}
+
+{% block per_page_title %}Bestand downloaden{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      {% call govukNotificationBanner({
+        "titleText": "Voorbeeld"
+      }) %}
+        <p class="govuk-notification-banner__heading">
+          Dit is een voorbeeld van de pagina die uw ontvangers zullen zien
+        </p>
+        <p class="govuk-body">
+          Om het bestand te wijzigen of te verwijderen, <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for("main.view_template", service_id=current_service.id, template_id=template.id) }}">bewerkt u het e-mailsjabloon</a>.
+        </p>
+        {% block extra_banner_content %}{% endblock %}
+      {% endcall %}
+      <h1 class="govuk-heading-l">{{ self.per_page_title() }}</h1>
+      {% block main_content %}{% endblock %}
+      {% if current_service.contact_link %}
+        <p class="govuk-body">
+          Heeft u vragen?
+          {% if current_service.contact_details_type == "url" %}
+            <a href="{{ current_service.contact_link }}" class="govuk-link govuk-link--no-visited-state" rel="noreferrer">Neem contact op met {{ current_service.name }}</a>.
+          {% elif current_service.contact_details_type == "email_address" %}
+            Mail naar <a href="mailto:{{ current_service.contact_link }}" class="govuk-link govuk-link--no-visited-state">{{ current_service.contact_link }}</a>.
+          {% else %}
+            Bel {{ current_service.contact_link }}.
+          {% endif %}
+        </p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

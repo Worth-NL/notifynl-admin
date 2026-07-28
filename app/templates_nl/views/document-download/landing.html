@@ -1,0 +1,16 @@
+{% extends "document-download-template.html" %}
+{%- from "govuk_frontend_jinja/components/button/macro.html" import govukButton -%}
+
+{% block per_page_title %}
+  U heeft een bestand om te downloaden
+{% endblock %}
+
+{% block main_content %}
+  <p class="govuk-body">{{ current_service.name }} heeft u een bestand gestuurd om te downloaden.</p>
+  <p class="govuk-body govuk-!-margin-bottom-6">
+    {{ govukButton({
+      "href": next_page,
+      "text": "Doorgaan",
+    }) }}
+  </p>
+{% endblock %}
