@@ -209,6 +209,7 @@ class DevNL(Config):
     S3_BUCKET_PRECOMPILED_ORIGINALS_BACKUP_LETTERS = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-precompiled-originals-backup"
     S3_BUCKET_LETTER_ATTACHMENTS = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-attachments"
     S3_BUCKET_REPORT_REQUESTS_DOWNLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-report-requests-download"
+    S3_BUCKET_TEMPLATE_EMAIL_FILES = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-template-email-files"
 
     LOGO_CDN_DOMAIN = "static-logos.notify.tools"
 
@@ -239,6 +240,7 @@ class TestNL(Config):
     )
     S3_BUCKET_LETTER_ATTACHMENTS = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-letter-attachments"
     S3_BUCKET_REPORT_REQUESTS_DOWNLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-report-requests-download"
+    S3_BUCKET_TEMPLATE_EMAIL_FILES = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-template-email-files"
 
 
 class AccNL(Config):
@@ -254,6 +256,7 @@ class AccNL(Config):
     )
     S3_BUCKET_LETTER_ATTACHMENTS = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-letter-attachments"
     S3_BUCKET_REPORT_REQUESTS_DOWNLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-report-requests-download"
+    S3_BUCKET_TEMPLATE_EMAIL_FILES = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-template-email-files"
 
 
 class ProdNL(Config):
@@ -269,6 +272,7 @@ class ProdNL(Config):
     )
     S3_BUCKET_LETTER_ATTACHMENTS = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-letter-attachments"
     S3_BUCKET_REPORT_REQUESTS_DOWNLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-report-requests-download"
+    S3_BUCKET_TEMPLATE_EMAIL_FILES = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-template-email-files"
 
 
 configs = {"development": DevNL, "test": Test, "testnl": TestNL, "acceptance": AccNL, "production": ProdNL}

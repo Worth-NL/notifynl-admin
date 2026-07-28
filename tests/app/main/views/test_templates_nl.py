@@ -275,6 +275,81 @@ def test_attach_files_button_letter_translation(
     assert normalize_spaces(button.text) == "Pagina’s bijvoegen"
 
 
+@pytest.mark.parametrize(
+    "email_files, expected_button_text, expected_hint",
+    (
+        (
+            None,
+            "Bestanden bijvoegen",
+            "Geen bestanden toegevoegd",
+        ),
+        (
+            [
+                {
+                    "filename": "example.pdf",
+                    "retention_period": 26,
+                    "id": str(uuid.UUID(int=1, version=4)),
+                    "link_text": None,
+                }
+            ],
+            "Bestanden beheren",
+            "1 bestand toegevoegd",
+        ),
+        (
+            [
+                {
+                    "filename": "example.pdf",
+                    "retention_period": 26,
+                    "id": str(uuid.UUID(int=1, version=4)),
+                    "link_text": None,
+                },
+                {
+                    "filename": "picture.png",
+                    "retention_period": 90,
+                    "id": str(uuid.UUID(int=2, version=4)),
+                    "link_text": None,
+                },
+            ],
+            "Bestanden beheren",
+            "2 bestanden toegevoegd",
+        ),
+    ),
+)
+def test_attach_files_button_email_translation(
+    client_request,
+    service_one,
+    mock_get_template_folders,
+    fake_uuid,
+    email_files,
+    expected_button_text,
+    expected_hint,
+    mocker,
+):
+    mocker.patch(
+        "app.service_api_client.get_service_template",
+        return_value={
+            "data": create_template(
+                template_id=fake_uuid,
+                template_type="email",
+                email_files=email_files,
+            )
+        },
+    )
+    page = client_request.get(
+        "main.view_template",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+    )
+
+    button = page.select_one(".js-stick-at-bottom-when-scrolling .govuk-button--secondary")
+    hint = page.select_one(".js-stick-at-bottom-when-scrolling .email-files-selected-counter")
+
+    assert button["href"] == url_for("main.template_email_files", service_id=SERVICE_ONE_ID, template_id=fake_uuid)
+    assert normalize_spaces(button.text) == expected_button_text
+    assert normalize_spaces(page.select_one("h2.govuk-visually-hidden").text) == "Toegevoegde bestanden"
+    assert normalize_spaces(hint.text) == expected_hint
+
+
 def test_should_show_delete_template_page_with_time_block(
     client_request, mock_get_service_template, mock_get_template_folders, mocker, fake_uuid
 ):
