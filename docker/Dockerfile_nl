@@ -1,3 +1,6 @@
+# hadolint ignore=DL3029
+# amd64 is pinned deliberately: deploy target is Cloud Foundry (see WORKDIR /home/vcap/app
+# below), which is amd64-only, regardless of the host build machine's architecture.
 FROM --platform=linux/amd64 python:3.13-slim-bookworm AS base
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.8 /uv /uvx /bin/
@@ -21,6 +24,8 @@ WORKDIR /home/vcap/app
 ##### Frontend Build Image ###################################################
 ARG NOTIFY_ENVIRONMENT=development
 
+# hadolint ignore=DL3029
+# amd64 pinned deliberately, same reason as the base image above.
 FROM --platform=linux/amd64 node:24-bookworm-slim AS frontend_build
 
 SHELL ["/bin/bash", "-c"]
