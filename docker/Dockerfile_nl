@@ -1,3 +1,4 @@
+# check=skip=FromPlatformFlagConstDisallowed
 # amd64 is pinned deliberately: deploy target is Cloud Foundry (see WORKDIR /home/vcap/app
 # below), which is amd64-only, regardless of the host build machine's architecture.
 # hadolint ignore=DL3029
