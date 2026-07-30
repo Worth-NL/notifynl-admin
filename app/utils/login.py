@@ -47,6 +47,10 @@ def log_in_user(user_id):
 def redirect_when_logged_in():
     next_url = request.args.get("next")
     if next_url and is_safe_redirect_url(next_url):
+        # codeql[py/url-redirection] is_safe_redirect_url enforces a strict same-origin
+        # allowlist (single leading slash, no backslashes, no protocol-relative //) - see
+        # its docstring/comment and commit 55f54c0d9 for the browser-parsing edge cases
+        # it closes. CodeQL's taint tracking doesn't see across this custom sanitizer.
         return redirect(next_url)
 
     return redirect(url_for("main.show_accounts_or_dashboard"))
