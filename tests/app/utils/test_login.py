@@ -31,6 +31,10 @@ def test_is_safe_redirect_url_allows_same_origin_relative_paths(target):
         "https:///evil.com",
         "  //evil.com",
         "https://admin.notifynl.nl@evil.com/",
+        "/\t/evil.com",  # browsers strip ASCII tab before parsing, collapsing this to //evil.com
+        "/\n/evil.com",  # same, for newline
+        "/\r/evil.com",  # same, for carriage return
+        "/\t\\evil.com",  # tab-stripping and backslash-normalisation can combine
     ),
 )
 def test_is_safe_redirect_url_rejects_cross_origin_or_malformed_targets(target):

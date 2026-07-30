@@ -1,3 +1,4 @@
+import re
 from functools import wraps
 
 from cryptography.fernet import Fernet, InvalidToken
@@ -79,9 +80,17 @@ def is_safe_redirect_url(target):
     # a real browser to an external host. Rather than replicate every quirky
     # absolute-URL form a browser might recognise, only allow the one
     # unambiguously-safe shape: a path starting with exactly one slash.
+    #
+    # Browsers also strip ASCII tab/CR/LF from a URL wherever they occur
+    # before parsing it (WHATWG URL spec), including from a redirect's
+    # Location header - so e.g. "/\t/evil.com" looks like a single safe
+    # leading slash here, but collapses to "//evil.com" (protocol-relative)
+    # by the time the browser navigates to it. Strip those characters first
+    # so the check sees what the browser will actually see.
     if not target:
         return False
-    normalised = target.replace("\\", "/")
+    stripped = re.sub(r"[\t\r\n]", "", target)
+    normalised = stripped.replace("\\", "/")
     return normalised.startswith("/") and not normalised.startswith("//")
 
 
