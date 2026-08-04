@@ -2351,7 +2351,15 @@ def mock_get_template_statistics(notify_admin, mocker, service_one, fake_uuid):
 def mock_get_monthly_template_usage(notify_admin, mocker, service_one, fake_uuid):
     def _stats(service_id, year):
         return [
-            {"template_id": fake_uuid, "month": 4, "year": year, "count": 2, "name": "My first template", "type": "sms"}
+            {
+                "template_id": fake_uuid,
+                "month": 4,
+                "year": year,
+                "count": 2,
+                "name": "My first template",
+                "type": "sms",
+                "is_precompiled_letter": False,
+            }
         ]
 
     return mocker.patch("app.template_statistics_client.get_monthly_template_usage_for_service", side_effect=_stats)

@@ -1,6 +1,7 @@
 import json
 
 from flask import url_for
+from freezegun import freeze_time
 
 from tests import NotifyBeautifulSoup
 from tests.conftest import SERVICE_ONE_ID, normalize_spaces
@@ -55,6 +56,57 @@ def test_service_dashboard_skeleton(
         "sms verzonden",
         "brieven verzonden",
     ]
+
+
+@freeze_time("2016-07-01 12:00")  # 4 months into 2016 financial year
+def test_template_usage_hides_link_for_precompiled_letter_template(
+    client_request,
+    mocker,
+    fake_uuid,
+):
+    # Regression test: app/templates_nl/views/dashboard/all-template-statistics.html once
+    # linked every stat row to main.view_template unconditionally, including the service's
+    # hidden "Pre-compiled PDF" system template - which 404s, since every single-template
+    # fetch filters hidden=False. template-statistics.html's sibling widget already guards
+    # this with is_precompiled_letter; this page needed the same guard.
+    precompiled_template_id = "6ce466d0-fd6a-11e5-82f5-e0accb9d11a7"
+    mocker.patch(
+        "app.template_statistics_client.get_monthly_template_usage_for_service",
+        return_value=[
+            {
+                "template_id": fake_uuid,
+                "month": 4,
+                "year": 2016,
+                "count": 2,
+                "name": "Mijn eerste sjabloon",
+                "type": "sms",
+                "is_precompiled_letter": False,
+            },
+            {
+                "template_id": precompiled_template_id,
+                "month": 4,
+                "year": 2016,
+                "count": 1,
+                "name": "Pre-compiled PDF",
+                "type": "letter",
+                "is_precompiled_letter": True,
+            },
+        ],
+    )
+
+    page = client_request.get("main.template_usage", service_id=SERVICE_ONE_ID)
+
+    table_rows = page.select("tbody tr")
+    assert len(table_rows) == 2
+
+    normal_row, precompiled_row = table_rows
+    assert normal_row.select_one("a")["href"] == url_for(
+        "main.view_template", service_id=SERVICE_ONE_ID, template_id=fake_uuid
+    )
+    assert normalize_spaces(normal_row.text) == "Mijn eerste sjabloon Sms-bericht sjabloon 2"
+
+    assert precompiled_row.select_one("a") is None
+    assert normalize_spaces(precompiled_row.text) == "Aangeleverd als pdf Brief 1"
 
 
 def test_service_dashboard_updates_shows_correct_totals_labels(

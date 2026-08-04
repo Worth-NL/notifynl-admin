@@ -248,6 +248,7 @@ def template_usage(service_id):
                     "name": stat["name"],
                     "type": stat["type"],
                     "requested_count": stat["count"],
+                    "is_precompiled_letter": stat["is_precompiled_letter"],
                 }
                 for stat in stats
                 if calendar.month_name[int(stat["month"])] == month_name
