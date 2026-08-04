@@ -128,6 +128,7 @@ class TemplatePreviewClient:
             json=data,
             headers=self._get_outbound_headers(),
         )
+        response.raise_for_status()
 
         page_count = json.loads(response.content.decode("utf-8"))
 
