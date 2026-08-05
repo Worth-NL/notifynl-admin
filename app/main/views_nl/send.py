@@ -790,10 +790,14 @@ def fields_to_fill_in(template, prefill_current_user=False):
 
     if template.template_type == "sms":
         session["recipient"] = current_user.mobile_number
-        session["placeholders"]["telefoonnummer"] = current_user.mobile_number
+        # Key must match first_column_headings["sms"][0] (notifications_utils.recipients) -
+        # that's the untranslated key send_one_off_step/get_placeholder_form_instance use to read
+        # this back via get_normalised_placeholders_from_session() to prefill the step-0 form.
+        # A translated Dutch key here would silently miss that lookup and render an empty field.
+        session["placeholders"]["phone number"] = current_user.mobile_number
     else:
         session["recipient"] = current_user.email_address
-        session["placeholders"]["e-mailadres"] = current_user.email_address
+        session["placeholders"]["email address"] = current_user.email_address
 
     return InsensitiveSet(template.placeholders)
 
@@ -906,6 +910,12 @@ def send_one_off_to_myself(service_id, template_id):
     if template.template_type not in ("sms", "email"):
         abort(404)
 
+    # send_one_off (the normal entry point) sets this up before ever reaching
+    # send_one_off_step - fields_to_fill_in's prefill_current_user branch subscripts into
+    # session["placeholders"] directly (e.g. session["placeholders"]["e-mailadres"] = ...),
+    # which KeyErrors on a session that's never been through that normal flow.
+    session["placeholders"] = {}
+
     fields_to_fill_in(template, prefill_current_user=True)
 
     return redirect(
@@ -913,7 +923,10 @@ def send_one_off_to_myself(service_id, template_id):
             "main.send_one_off_step",
             service_id=service_id,
             template_id=template_id,
-            step_index=1,
+            # 0, not 1: step_index=1 is reserved for the inbound-SMS-reply entry point (see
+            # the step_index==0 check in send_one_off_step) - this is a one-off send like
+            # send_one_off's own redirect just below uses, so it needs the same first step.
+            step_index=0,
         )
     )
 

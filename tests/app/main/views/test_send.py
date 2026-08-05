@@ -5121,6 +5121,14 @@ def test_send_from_contact_list(
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+# Previously skipped as "[NOTIFYNL] Translation issue": the real cause was two app bugs, not a
+# genuine translation divergence - send_one_off_to_myself redirected to step_index=1 (reserved for
+# the inbound-SMS-reply entry point) instead of 0, and fields_to_fill_in wrote the prefilled
+# placeholder under a Dutch-translated session key ("e-mailadres"/"telefoonnummer") that didn't
+# match the untranslated first_column_headings key ("email address"/"phone number", from
+# notifications_utils.recipients) used to read it back - silently leaving step-0's form empty.
+# Both are now fixed in app/main/views_nl/send.py, so this fork's behaviour matches upstream and
+# these assertions are unchanged from upstream except step_index.
 def test_send_to_myself_sets_placeholder_and_redirects_for_email(
     client_request,
     fake_uuid,
@@ -5138,7 +5146,7 @@ def test_send_to_myself_sets_placeholder_and_redirects_for_email(
             "main.send_one_off_step",
             service_id=SERVICE_ONE_ID,
             template_id=fake_uuid,
-            step_index=1,
+            step_index=0,
         ),
     )
 
@@ -5147,7 +5155,6 @@ def test_send_to_myself_sets_placeholder_and_redirects_for_email(
         assert session["placeholders"] == {"email address": "test@user.gov.uk"}
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_send_to_myself_sets_placeholder_and_redirects_for_sms(
     client_request,
     fake_uuid,
@@ -5166,7 +5173,7 @@ def test_send_to_myself_sets_placeholder_and_redirects_for_sms(
             "main.send_one_off_step",
             service_id=SERVICE_ONE_ID,
             template_id=fake_uuid,
-            step_index=1,
+            step_index=0,
         ),
     )
 

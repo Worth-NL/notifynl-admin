@@ -432,6 +432,58 @@ def test_send_one_off_redirects_to_end_if_step_out_of_bounds(
     )
 
 
+def test_send_one_off_to_myself_on_a_fresh_session_redirects_to_first_step(
+    client_request,
+    mock_get_service_email_template,
+    fake_uuid,
+):
+    # Regression test: send_one_off_to_myself used to 500 the very first time a user visited
+    # it in a session, since fields_to_fill_in's prefill_current_user branch subscripts
+    # straight into session["placeholders"] (e.g. session["placeholders"]["email address"] = ...)
+    # without ever creating that dict first - unlike send_one_off, which always sets
+    # session["placeholders"] = {} before a user can reach this point normally. A pre-warmed
+    # session (as every other test here sets up manually, and as test_send.py's equivalent
+    # upstream-shared tests do) can't catch that, so this deliberately starts from a session
+    # with nothing in it at all.
+    client_request.get(
+        "main.send_one_off_to_myself",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+        _expected_status=302,
+        _expected_redirect=url_for(
+            "main.send_one_off_step",
+            service_id=SERVICE_ONE_ID,
+            template_id=fake_uuid,
+            step_index=0,
+        ),
+    )
+
+    with client_request.session_transaction() as session:
+        assert session["placeholders"] == {"email address": "test@user.gov.uk"}
+
+
+def test_send_one_off_to_myself_on_a_fresh_session_redirects_to_first_step_for_sms(
+    client_request,
+    mock_get_service_template,
+    fake_uuid,
+):
+    client_request.get(
+        "main.send_one_off_to_myself",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+        _expected_status=302,
+        _expected_redirect=url_for(
+            "main.send_one_off_step",
+            service_id=SERVICE_ONE_ID,
+            template_id=fake_uuid,
+            step_index=0,
+        ),
+    )
+
+    with client_request.session_transaction() as session:
+        assert session["placeholders"] == {"phone number": "07700 900762"}
+
+
 @pytest.mark.parametrize(
     "user",
     (
