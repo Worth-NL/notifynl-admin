@@ -4,7 +4,7 @@
 {% from "components/pill.html" import pill %}
 {% extends "withnav_template.html" %}
 {% block service_page_title %}Gebruik{% endblock %}
-{% set is_high_volume = emails_sent >= 1_000_000_000 or sms_cost >= 1_000_000 or letter_cost >= 1_000_000 %}
+{% set is_high_volume = emails_sent >= 1_000_000_000 or sms_cost >= 100_000 or letter_cost >= 100_000 %}
 {% set big_number_kwargs = {"smaller": not is_high_volume, "smallest": is_high_volume} %}
 {% block maincolumn_content %}
     {{ page_header('Gebruik', size='medium') }}
@@ -92,13 +92,13 @@
                 {% call field(align='left') %}
                   <ul class="govuk-list">
                     {% for sms in item.sms_breakdown %}
-                      <li class="tabular-numbers">
+                      <li class="govuk-!-font-tabular-numbers">
                         {{ sms.notifications_sent|message_count("sms") }}
                       </li>
                     {% endfor %}
                     {% for letter in item.letter_breakdown %}
                         {% if letter.sent %}
-                          <li class="tabular-numbers">
+                          <li class="govuk-!-font-tabular-numbers">
                             {{ letter.sent|format_thousands }} {{ letter.postage_description }} {{ letter.sent|message_count_label('letters', suffix='') }}
                           </li>
                         {% endif %}

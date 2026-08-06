@@ -4,11 +4,11 @@ from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from functools import partial
 from html import escape
-from itertools import chain
+from itertools import chain, repeat
 from math import ceil
 from numbers import Number
+from zipfile import BadZipFile
 
-import pytz
 from flask import request
 from flask_login import current_user
 from flask_wtf import FlaskForm as Form
@@ -16,14 +16,28 @@ from flask_wtf.file import FileAllowed, FileSize
 from flask_wtf.file import FileField as FileField_wtf
 from markupsafe import Markup
 from notifications_utils.countries.data import Postage
+from notifications_utils.eventlet import SoftEventletTimeout
+from notifications_utils.field import Field as UtilsField
 from notifications_utils.formatters import strip_all_whitespace
 from notifications_utils.insensitive_dict import InsensitiveDict, InsensitiveSet
-from notifications_utils.recipient_validation.email_address import validate_email_address
-from notifications_utils.recipient_validation.errors import InvalidEmailError, InvalidPhoneError
-from notifications_utils.recipient_validation.notifynl.phone_number import PhoneNumber as PhoneNumberUtils
+from notifications_utils.recipient_validation.email_address import (
+    format_email_address,
+    validate_email_address,
+)
+from notifications_utils.recipient_validation.errors import (
+    InvalidEmailError,
+    InvalidPhoneError,
+)
+from notifications_utils.recipient_validation.phone_number import (
+    PhoneNumber as PhoneNumberUtils,
+)
 from notifications_utils.recipient_validation.postal_address import PostalAddress
 from notifications_utils.safe_string import make_string_safe_for_email_local_part
-from notifications_utils.timezones import local_timezone, utc_string_to_aware_gmt_datetime
+from notifications_utils.sanitise_text import SanitiseASCII
+from notifications_utils.timezones import (
+    local_timezone,
+    utc_string_to_aware_gmt_datetime,
+)
 from ordered_set import OrderedSet
 from werkzeug.utils import cached_property
 from wtforms import (
@@ -52,6 +66,8 @@ from wtforms.validators import (
     Regexp,
     StopValidation,
 )
+from xlrd.biffh import XLRDError
+from xlrd.xldate import XLDateError
 
 from app import asset_fingerprinter, current_organisation
 from app.constants import (
@@ -75,6 +91,7 @@ from app.main.validators import (
     CharactersNotAllowed,
     CommonlyUsedPassword,
     CsvFileValidator,
+    DocumentDownloadFileValidator,
     DoesNotStartWithDoubleZero,
     FileIsVirusFree,
     IsAUKMobileNumberOrShortCode,
@@ -83,6 +100,7 @@ from app.main.validators import (
     IsNotLikeNHSNoReply,
     Length,
     MustContainAlphanumericCharacters,
+    NoBracketsInFileName,
     NoCommasInPlaceHolders,
     NoEmbeddedImagesInSVG,
     NoTextInSVG,
@@ -101,12 +119,14 @@ from app.models.branding import (
 )
 from app.models.feedback import PROBLEM_TICKET_TYPE, QUESTION_TICKET_TYPE
 from app.models.organisation import Organisation
-from app.utils import branding
+from app.models.spreadsheet import Spreadsheet
+from app.utils import branding, unicode_truncate
 from app.utils.govuk_frontend_field import (
     GovukFrontendWidgetMixin,
     render_govuk_frontend_macro,
 )
 from app.utils.image_processing import CorruptImage, ImageProcessor, WrongImageFormat
+from app.utils.interruptible_io import InterruptibleIterableList, interruptible_iter
 from app.utils.user_permissions import (
     all_ui_permissions,
     organisation_user_permission_names,
@@ -135,7 +155,7 @@ def get_next_hours_until(until):
     now = datetime.now(UTC)
     hours = ceil((until - now).total_seconds() / (60 * 60))
     return [
-        (now + timedelta(hours=i)).replace(minute=0, second=0, microsecond=0).replace(tzinfo=pytz.utc)
+        (now + timedelta(hours=i)).replace(minute=0, second=0, microsecond=0).replace(tzinfo=UTC)
         for i in range(1, hours + 1)
     ]
 
@@ -145,7 +165,7 @@ def get_next_days_until(until):
     days = int((until - now).total_seconds() / (60 * 60 * 24))
 
     return [
-        get_human_day((now + timedelta(days=i)).replace(tzinfo=pytz.utc), include_day_of_week=True).title()
+        get_human_day((now + timedelta(days=i)).replace(tzinfo=UTC), include_day_of_week=True).title()
         for i in range(days + 1)
     ]
 
@@ -405,7 +425,10 @@ class GovukIntegerField(GovukTextInputField):
 
 class HexColourCodeField(GovukTextInputField, RequiredValidatorsMixin):
     required_validators = [
-        Regexp(regex="^$|^#?(?:[0-9a-fA-F]{3}){1,2}$", message="Enter a hex colour code in the correct format"),
+        Regexp(
+            regex="^$|^#?(?:[0-9a-fA-F]{3}){1,2}$",
+            message="Enter a hex colour code in the correct format",
+        ),
     ]
     param_extensions = {
         "prefix": {
@@ -448,12 +471,22 @@ class RadioFieldWithNoneOption(FieldWithNoneOption, RadioField):
 
 
 class NestedFieldMixin:
+    CHILD_MAP_ITERATION_INTERRUPTIBLE_EVERY = 128
+
+    @cached_property
     def children(self):
+        # beginning iteration through a Field is surprisingly expensive - cache the list of options
+        options = tuple(self)
+
         # start map with root option as a single child entry
-        child_map = {None: [option for option in self if option.data == self.NONE_OPTION_VALUE]}
+        child_map = {None: [option for option in options if option.data == self.NONE_OPTION_VALUE]}
 
         # add entries for all other children
-        for option in self:
+        for option in interruptible_iter(
+            options,
+            self.CHILD_MAP_ITERATION_INTERRUPTIBLE_EVERY,
+            label="child map iteration",
+        ):
             # assign all options with a NONE_OPTION_VALUE (not always None) to the None key
             if option.data == self.NONE_OPTION_VALUE:
                 child_ids = [folder["id"] for folder in self.all_template_folders if folder["parent_id"] is None]
@@ -462,22 +495,17 @@ class NestedFieldMixin:
                 child_ids = [folder["id"] for folder in self.all_template_folders if folder["parent_id"] == option.data]
                 key = option.data
 
-            child_map[key] = [option for option in self if option.data in child_ids]
+            child_map[key] = [option for option in options if option.data in child_ids]
 
         return child_map
-
-    # to be used as the only version of .children once radios are converted
-    @cached_property
-    def _children(self):
-        return self.children()
 
     def get_items_from_options(self, field):
         items = []
 
-        for option in self._children[None]:
+        for option in self.children[None]:
             item = self.get_item_from_option(option)
-            if option.data in self._children:
-                item["children"] = self.render_children(field.name, option.label.text, self._children[option.data])
+            if option.data in self.children:
+                item["children"] = self.render_children(field.name, option.label.text, self.children[option.data])
             items.append(item)
 
         return items
@@ -493,12 +521,26 @@ class NestedFieldMixin:
         for option in options:
             item = self.get_item_from_option(option)
 
-            if len(self._children[option.data]):
-                item["children"] = self.render_children(name, option.label.text, self._children[option.data])
+            if len(self.children[option.data]):
+                item["children"] = self.render_children(name, option.label.text, self.children[option.data])
 
             params["items"].append(item)
 
         return render_govuk_frontend_macro(self.govuk_frontend_component_name, params=params)
+
+
+class InterruptibleChildRenderingNestedFieldMixin:
+    def __init__(self, *args, child_rendering_interruptible_every=32, **kwargs):
+        self.child_rendering_interruptible_dummy_iterator = interruptible_iter(
+            repeat(None),
+            child_rendering_interruptible_every,
+            label=self.__class__.__name__,
+        )
+        super().__init__(*args, **kwargs)
+
+    def render_children(self, *args, **kwargs):
+        next(self.child_rendering_interruptible_dummy_iterator)
+        return super().render_children(*args, **kwargs)
 
 
 class NestedCheckboxesField(SelectMultipleField, NestedFieldMixin):
@@ -691,10 +733,9 @@ class GovukCheckboxesField(GovukFrontendWidgetMixin, SelectMultipleField):
 
     @property
     def error_summary_id(self):
-        items = self.get_items_from_options(self)
-        if len(items) > 0:
-            return items[0]["id"]
-
+        for option in self:
+            # Stop looping through `self` as soon as we’ve found something
+            return option.id
         return self.id
 
     def prepare_params(self, **kwargs):
@@ -706,7 +747,10 @@ class GovukCheckboxesField(GovukFrontendWidgetMixin, SelectMultipleField):
             "name": self.name,
             "fieldset": {
                 "attributes": {"id": self.name},
-                "legend": {"text": self.label.text, "classes": "govuk-fieldset__legend--s"},
+                "legend": {
+                    "text": self.label.text,
+                    "classes": "govuk-fieldset__legend--s",
+                },
             },
             "asList": self.render_as_list,
             "errorMessage": self.get_error_message(),
@@ -714,6 +758,25 @@ class GovukCheckboxesField(GovukFrontendWidgetMixin, SelectMultipleField):
         }
 
         return params
+
+
+class InterruptibleItemsFieldMixin:
+    def __init__(self, *args, items_iteration_interruptible_every=32, **kwargs):
+        self.items_iteration_interruptible_every = items_iteration_interruptible_every
+        super().__init__(*args, **kwargs)
+
+    def get_items_from_options(self, field):
+        r = InterruptibleIterableList(super().get_items_from_options(field))
+        r.INTERRUPTIBLE_ITERABLE_INTERRUPTIBLE_EVERY = self.items_iteration_interruptible_every
+        r.INTERRUPTIBLE_ITERABLE_LABEL_OVERRIDE = self.__class__.__name__
+        # the returned InterruptibleIterableList *usually* survives an encounter with
+        # merge_jsonlike, but arbitrary processing steps are liable to replace it with
+        # a regular list or other Sequence, defeating its purpose
+        return r
+
+
+class InterruptibleItemsGovukCheckboxesField(InterruptibleItemsFieldMixin, GovukCheckboxesField):
+    pass
 
 
 # Wraps checkboxes rendering in HTML needed by the collapsible JS
@@ -794,10 +857,9 @@ class GovukRadiosField(GovukFrontendWidgetMixin, RadioField):
 
     @property
     def error_summary_id(self):
-        items = self.get_items_from_options(self)
-        if len(items) > 0:
-            return items[0]["id"]
-
+        for option in self:
+            # Stop looping through `self` as soon as we’ve found something
+            return option.id
         return self.id
 
     def prepare_params(self, **kwargs):
@@ -882,12 +944,18 @@ class GovukNestedRadiosField(NestedFieldMixin, GovukRadiosFieldWithNoneOption):
                     "hint": {"text": self.option_hints.get(option.data, "")},
                 }
             )
-            if len(self._children[option.data]):
-                item["children"] = self.render_children(name, option.label.text, self._children[option.data])
+            if len(self.children[option.data]):
+                item["children"] = self.render_children(name, option.label.text, self.children[option.data])
 
             params["items"].append(item)
 
         return render_govuk_frontend_macro(self.govuk_frontend_component_name, params=params)
+
+
+class InterruptibleChildRenderingGovukNestedRadiosField(
+    InterruptibleChildRenderingNestedFieldMixin, GovukNestedRadiosField
+):
+    pass
 
 
 class GovukRadiosWithImagesField(GovukRadiosField):
@@ -945,7 +1013,7 @@ def filter_by_permissions(valuelist, permissions):
 
 class AuthTypeForm(StripWhitespaceForm):
     auth_type = GovukRadiosField(
-        "Sign-in method",
+        "",
         choices=[
             ("sms_auth", format_auth_type("sms_auth")),
             ("email_auth", format_auth_type("email_auth")),
@@ -1039,7 +1107,6 @@ class JoinServiceRequestApproveForm(StripWhitespaceForm):
             (SERVICE_JOIN_REQUEST_REJECTED, "No"),
         ],
         thing="an option",
-        param_extensions={"fieldset": {"legend": {"classes": ""}}},
         default=SERVICE_JOIN_REQUEST_APPROVED,
     )
 
@@ -1163,7 +1230,7 @@ class RenameServiceForm(StripWhitespaceForm):
 
 class RenameOrganisationForm(StripWhitespaceForm):
     name = GovukTextInputField(
-        "Organisation name",
+        "Change organisation name",
         validators=[
             NotifyDataRequired(thing="your organisation name"),
             MustContainAlphanumericCharacters(thing="organisation name"),
@@ -1178,10 +1245,16 @@ class AddGPOrganisationForm(StripWhitespaceForm):
         self.same_as_service_name.label.text = f"Is your GP surgery called ‘{service_name}’?"
         self.service_name = service_name
         self.same_as_service_name.param_extensions = {
+            "fieldset": {
+                "legend": {
+                    "isPageHeading": True,
+                    "classes": "govuk-fieldset__legend--l",
+                },
+            },
             "items": [
                 {},
                 {"conditional": {"html": self.name}},
-            ]
+            ],
         }
 
     def get_organisation_name(self):
@@ -1240,7 +1313,7 @@ class OrganisationCrownStatusForm(StripWhitespaceForm):
 
 class OrganisationAgreementSignedForm(StripWhitespaceForm):
     agreement_signed = GovukRadiosField(
-        "Has this organisation signed the agreement?",
+        "Has this organisation signed the data processing and financial agreement?",
         choices=[
             ("yes", "Yes"),
             ("no", "No"),
@@ -1291,19 +1364,18 @@ class AdminOrganisationDomainsForm(StripWhitespaceForm):
 
 class CreateServiceForm(StripWhitespaceForm):
     name = GovukTextInputField(
-        "Service name",
+        "Enter a service name",
         validators=[
             DataRequired(message="Enter a service name"),
             MustContainAlphanumericCharacters(),
             Length(max=255, thing="service name"),
         ],
     )
-    organisation_type = OrganisationTypeField("Who runs this service?")
+    organisation_type = OrganisationTypeField()
 
 
 class CreateNhsServiceForm(CreateServiceForm):
     organisation_type = OrganisationTypeField(
-        "Who runs this service?",
         include_only={"nhs_central", "nhs_local", "nhs_gp"},
     )
 
@@ -1330,7 +1402,7 @@ class AdminNewOrganisationForm(
 
 class AdminServiceSMSAllowanceForm(StripWhitespaceForm):
     free_sms_allowance = GovukIntegerField(
-        "Numbers of text message fragments per year",
+        "Free text message allowance",
         things="the number of text message fragments",
         validators=[
             NotifyInputRequired(thing="a number of text messages"),
@@ -1359,7 +1431,7 @@ class AdminServiceMessageLimitForm(StripWhitespaceForm):
 
 class AdminServiceRateLimitForm(StripWhitespaceForm):
     rate_limit = GovukIntegerField(
-        "Number of messages the service can send in a rolling 60 second window",
+        "Rate limit",
         things="the number of messages",
         validators=[
             NotifyDataRequired(thing="a number of messages"),
@@ -1396,7 +1468,8 @@ class RenameTemplateForm(StripWhitespaceForm, TemplateNameMixin):
 
 class BaseTemplateForm(StripWhitespaceForm):
     template_content = GovukTextareaField(
-        "Message", validators=[NotifyDataRequired(thing="your message"), NoCommasInPlaceHolders()]
+        "Message",
+        validators=[NotifyDataRequired(thing="your message"), NoCommasInPlaceHolders()],
     )
 
     def __init__(self, *args, **kwargs):
@@ -1444,6 +1517,11 @@ class LetterAddressForm(StripWhitespaceForm):
         if address.has_too_many_lines:
             raise ValidationError(f"Address must be no more than {PostalAddress.MAX_LINES} lines long")
 
+        if not address.has_alphanumeric_character_in_address_lines_1_and_2:
+            raise ValidationError(
+                "The first 2 lines of the address must both include at least one alphanumeric character"
+            )
+
         if address.has_invalid_country_for_bfpo_address:
             raise ValidationError(
                 "The last line of a British Forces Post Office (BFPO) address cannot be the name of a country"
@@ -1467,6 +1545,10 @@ class LetterAddressForm(StripWhitespaceForm):
 
 
 class EmailTemplateForm(BaseTemplateForm, TemplateNameMixin):
+    def __init__(self, *args, email_file_filenames=None, **kwargs):
+        self.email_file_filenames = email_file_filenames or set()
+        super().__init__(*args, **kwargs)
+
     subject = GovukTextareaField("Subject", validators=[NotifyDataRequired(thing="the subject of the email")])
     has_unsubscribe_link = GovukCheckboxField(
         "Add an unsubscribe link",
@@ -1480,11 +1562,25 @@ class EmailTemplateForm(BaseTemplateForm, TemplateNameMixin):
         },
     )
 
+    def validate_subject(self, field):
+        if field.errors:
+            return
+
+        if self.email_file_filenames & UtilsField(field.data).placeholders:
+            raise ValidationError("You cannot put a file in the subject")
+
 
 class LetterTemplateForm(BaseTemplateForm, TemplateNameMixin):
-    subject = GovukTextareaField("Heading", validators=[NotifyDataRequired(thing="a main heading for your letter")])
+    subject = GovukTextareaField(
+        "Heading",
+        validators=[NotifyDataRequired(thing="a main heading for your letter")],
+    )
     template_content = GovukTextareaField(
-        "Body text", validators=[NotifyDataRequired(thing="the body text of your letter"), NoCommasInPlaceHolders()]
+        "Body text",
+        validators=[
+            NotifyDataRequired(thing="the body text of your letter"),
+            NoCommasInPlaceHolders(),
+        ],
     )
 
     def __init__(self, *args, **kwargs):
@@ -1497,10 +1593,19 @@ class LetterTemplateForm(BaseTemplateForm, TemplateNameMixin):
 class WelshLetterTemplateForm(BaseTemplateForm, TemplateNameMixin):
     subject = GovukTextareaField("Heading (Welsh)", validators=[DataRequired(message="Cannot be empty")])
     template_content = GovukTextareaField(
-        "Body text (Welsh)", validators=[DataRequired(message="Cannot be empty"), NoCommasInPlaceHolders()]
+        "Body text (Welsh)",
+        validators=[DataRequired(message="Cannot be empty"), NoCommasInPlaceHolders()],
     )
 
-    def __init__(self, *args, subject, content, letter_welsh_subject, letter_welsh_content, **kwargs):
+    def __init__(
+        self,
+        *args,
+        subject,
+        content,
+        letter_welsh_subject,
+        letter_welsh_content,
+        **kwargs,
+    ):
         # Populate subject and template_content form fields using the Welsh template values; we can discard the English
         # data for this form.
         super().__init__(*args, subject=letter_welsh_subject, content=letter_welsh_content, **kwargs)
@@ -1526,7 +1631,7 @@ class LetterTemplatePostageForm(StripWhitespaceForm):
     ]
 
     postage = GovukRadiosField(
-        "Choose the postage for this letter template",
+        "Change postage",
         choices=choices,
         thing="first class, second class or economy mail",
         validators=[DataRequired()],
@@ -1535,10 +1640,13 @@ class LetterTemplatePostageForm(StripWhitespaceForm):
 
 class LetterTemplateLanguagesForm(StripWhitespaceForm):
     languages = GovukRadiosField(
-        "This will change the language used for the date and page numbers of your letter template.",
+        "Change language",
         choices=[
             (LetterLanguageOptions.english.value, "English only"),
-            (LetterLanguageOptions.welsh_then_english.value, "Welsh followed by English"),
+            (
+                LetterLanguageOptions.welsh_then_english.value,
+                "Welsh followed by English",
+            ),
         ],
         validators=[InputRequired()],
     )
@@ -1590,6 +1698,8 @@ class ChangePasswordForm(StripWhitespaceForm):
 
 
 class CsvUploadForm(StripWhitespaceForm):
+    ALLOWED_FILE_EXTENSIONS = Spreadsheet.ALLOWED_FILE_EXTENSIONS
+
     file = FileField(
         "Add recipients",
         validators=[
@@ -1598,6 +1708,70 @@ class CsvUploadForm(StripWhitespaceForm):
             FileSize(max_size=10 * 1024 * 1024, message="The file must be smaller than 10MB"),
         ],
     )
+
+    @property
+    def safe_filename(self):
+        return unicode_truncate(SanitiseASCII.encode(self.file.data.filename), 1600)
+
+    def validate_file(self, field):
+        from flask import current_app
+
+        if field.errors:
+            return
+
+        extra = {"user_id": current_user.id, "file_name": field.data.filename}
+
+        current_app.logger.info(
+            "User %(user_id)s uploaded %(file_name)s",
+            extra,
+            extra=extra,
+        )
+
+        try:
+            self.as_csv_data = Spreadsheet.from_file(field.data, filename=field.data.filename).as_csv_data
+        except (UnicodeDecodeError, BadZipFile, XLRDError) as e:
+            current_app.logger.warning(
+                "Could not read %s",
+                field.data.filename,
+                exc_info=True,
+                extra={"file_name": field.data.filename},
+            )
+            raise ValidationError("Notify cannot read this file - try using a different file type") from e
+        except SoftEventletTimeout as e:
+            current_app.logger.warning(
+                "Timed out reading %s",
+                field.data.filename,
+                exc_info=True,
+                extra={"file_name": field.data.filename},
+            )
+            raise ValidationError(
+                "Your file took too long to process – try again, or remove any sheets, columns or "
+                "rows that are not needed"
+            ) from e
+        except XLDateError as e:
+            current_app.logger.warning(
+                "Could not parse numbers/dates in %s",
+                field.data.filename,
+                exc_info=True,
+                extra={"file_name": field.data.filename},
+            )
+            raise ValidationError("Notify cannot read this file - try saving it as a CSV instead") from e
+        except Spreadsheet.TooManyColumnsError as e:
+            current_app.logger.warning(
+                "Abandoned parsing %s",
+                field.data.filename,
+                exc_info=True,
+                extra={"file_name": field.data.filename},
+            )
+            raise ValidationError("Your file has too many columns (Notify can process up to 1,000 columns)") from e
+        except Spreadsheet.TooManyRowsError as e:
+            current_app.logger.warning(
+                "Abandoned parsing %s",
+                field.data.filename,
+                exc_info=True,
+                extra={"file_name": field.data.filename},
+            )
+            raise ValidationError("Your file has too many rows (Notify can process up to 100,000 rows at once)") from e
 
 
 class ChangeNameForm(StripWhitespaceForm):
@@ -1616,7 +1790,7 @@ class ChangeEmailForm(StripWhitespaceForm):
         super().__init__(*args, **kwargs)
 
     email_address = make_email_address_field(
-        label="Change your email address",
+        label="Enter the new email address",
         thing="an email address",
         gov_user=True,
     )
@@ -1638,7 +1812,7 @@ class ChangeNonGovEmailForm(ChangeEmailForm):
 
 
 class ChangeMobileNumberForm(StripWhitespaceForm):
-    mobile_number = valid_phone_number(label="Change your mobile number", international=True)
+    mobile_number = valid_phone_number(label="Change the mobile number", international=True)
 
 
 class ChooseTimeForm(StripWhitespaceForm):
@@ -1661,7 +1835,8 @@ class CreateKeyForm(StripWhitespaceForm):
         super().__init__(*args, **kwargs)
 
     key_name = GovukTextInputField(
-        "Name for this key", validators=[NotifyDataRequired(thing="a name for this API key")]
+        "Name for this key",
+        validators=[NotifyDataRequired(thing="a name for this API key")],
     )
 
     key_type = GovukRadiosField(
@@ -1676,7 +1851,6 @@ class CreateKeyForm(StripWhitespaceForm):
 
 class SupportType(StripWhitespaceForm):
     support_type = GovukRadiosField(
-        "How can we help you?",
         choices=[
             (PROBLEM_TICKET_TYPE, "Report a problem"),
             (QUESTION_TICKET_TYPE, "Ask a question or give feedback"),
@@ -1684,11 +1858,103 @@ class SupportType(StripWhitespaceForm):
     )
 
 
+class SupportProblemTypeForm(StripWhitespaceForm):
+    def __init__(self, *args, user_logged_in, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if user_logged_in:
+            self.problem_type.choices = [
+                ("sending-messages", "I’m having problems sending messages"),
+                ("something-else", "Something else"),
+            ]
+        else:
+            self.problem_type.choices = [
+                ("signing-in", "I cannot sign in to my account"),
+                ("sending-messages", "I’m having problems sending messages"),
+                ("something-else", "Something else"),
+            ]
+
+    problem_type = GovukRadiosField("Report a problem")
+
+
+class SupportSignInIssuesForm(StripWhitespaceForm):
+    sign_in_issue = GovukRadiosField(
+        "Tell us why you cannot sign in",
+        choices=[
+            ("no-code", "I did not receive a text message with a security code"),
+            ("mobile-number-changed", "My mobile number has changed"),
+            ("no-email-link", "I did not receive an email with a link to sign in"),
+            ("email-address-changed", "My email address has changed"),
+            ("something-else", "Something else"),
+        ],
+    )
+
+
+class SupportNoSecurityCodeForm(StripWhitespaceForm):
+    name = GovukTextInputField("Name", validators=[NotifyDataRequired(thing="your name")])
+    email_address = make_email_address_field(
+        label="Email address", gov_user=False, required=True, thing="your email address"
+    )
+    mobile_number = PhoneNumber(
+        "Mobile number",
+        validators=[
+            NotifyDataRequired(thing="your mobile number"),
+            ValidPhoneNumber(allow_international_sms=True),
+        ],
+    )
+
+
+class SupportMobileNumberChangedForm(StripWhitespaceForm):
+    name = GovukTextInputField("Name", validators=[NotifyDataRequired(thing="your name")])
+    email_address = make_email_address_field(
+        label="Email address", gov_user=False, required=True, thing="your email address"
+    )
+    old_mobile_number = PhoneNumber(
+        "Old mobile number",
+        validators=[
+            NotifyDataRequired(thing="your old mobile number"),
+            ValidPhoneNumber(allow_international_sms=True),
+        ],
+    )
+    new_mobile_number = PhoneNumber(
+        "New mobile number",
+        validators=[
+            NotifyDataRequired(thing="your new mobile number"),
+            ValidPhoneNumber(allow_international_sms=True),
+        ],
+    )
+
+
+class SupportNoEmailLinkForm(StripWhitespaceForm):
+    name = GovukTextInputField("Name", validators=[NotifyDataRequired(thing="your name")])
+    email_address = make_email_address_field(
+        label="Email address", gov_user=False, required=True, thing="your email address"
+    )
+
+
+class SupportEmailAddressChangedForm(StripWhitespaceForm):
+    name = GovukTextInputField("Name", validators=[NotifyDataRequired(thing="your name")])
+    old_email_address = make_email_address_field(
+        label="Old email address",
+        gov_user=False,
+        required=True,
+        thing="your old email address",
+    )
+    new_email_address = make_email_address_field(
+        label="New email address",
+        gov_user=False,
+        required=True,
+        thing="your new email address",
+    )
+
+
 class SupportRedirect(StripWhitespaceForm):
     who = GovukRadiosField(
-        "What do you need help with?",
         choices=[
-            ("public-sector", "I work in the public sector and need to send emails, text messages or letters"),
+            (
+                "public-sector",
+                "I work in the public sector and need to send emails, text messages or letters",
+            ),
             ("public", "I’m a member of the public with a question for the government"),
         ],
     )
@@ -1696,20 +1962,23 @@ class SupportRedirect(StripWhitespaceForm):
 
 class FeedbackOrProblem(StripWhitespaceForm):
     feedback = GovukTextareaField("Your message", validators=[NotifyDataRequired(thing="your message")])
-    name = GovukTextInputField("Name (optional)")
+    name = GovukTextInputField("Name", validators=[NotifyDataRequired(thing="your name")])
     email_address = make_email_address_field(
         label="Email address", gov_user=False, required=True, thing="your email address"
     )
 
 
-class Triage(StripWhitespaceForm):
-    severe = GovukRadiosField(
-        "Did you get one of the following errors?",
+class SupportWhatHappenedForm(StripWhitespaceForm):
+    what_happened = GovukRadiosField(
+        "What happened?",
         choices=[
-            ("yes", "Yes"),
-            ("no", "No"),
+            (
+                "technical-difficulties",
+                "I got a ‘technical difficulties’ error when I tried to send messages using the Notify website",
+            ),
+            ("api-500-response", "I got a 500 response code from the API"),
+            ("something-else", "Something else"),
         ],
-        thing="‘yes’ if it is an emergency",
     )
 
 
@@ -1775,6 +2044,17 @@ class AdminProviderRatioForm(OrderableFieldsForm):
 
 
 class ServiceContactDetailsForm(StripWhitespaceForm):
+    def __init__(self, *args, service=None, **kwargs):
+        if service and service.contact_details_type:
+            super().__init__(
+                *args,
+                contact_details_type=service.contact_details_type,
+                **{service.contact_details_type: service.contact_link},
+                **kwargs,
+            )
+        else:
+            super().__init__(*args, **kwargs)
+
     contact_details_type = GovukRadiosField(
         "Type of contact details",
         choices=[
@@ -1784,7 +2064,10 @@ class ServiceContactDetailsForm(StripWhitespaceForm):
         ],
     )
 
-    url = GovukTextInputField("URL", param_extensions={"hint": {"text": "For example, https://www.example.gov.uk"}})
+    url = GovukTextInputField(
+        "URL",
+        param_extensions={"hint": {"text": "For example, https://www.example.gov.uk"}},
+    )
     email_address = GovukEmailField("Email address")
     # This is a text field because the number provided by the user can also be a short code
     phone_number = GovukTextInputField("Phone number")
@@ -1829,6 +2112,10 @@ class ServiceContactDetailsForm(StripWhitespaceForm):
 
         return super().validate(*args, **kwargs)
 
+    @property
+    def chosen_contact_type(self):
+        return self.data[self.contact_details_type.data]
+
 
 class ServiceReplyToEmailForm(StripWhitespaceForm):
     email_address = make_email_address_field(label="Reply-to email address", thing="an email address", gov_user=False)
@@ -1864,7 +2151,7 @@ class ServiceEditInboundNumberForm(StripWhitespaceForm):
 
 
 class AdminNotesForm(StripWhitespaceForm):
-    notes = GovukTextareaField("Notes", validators=[])
+    notes = GovukTextareaField(validators=[])
 
 
 class AdminBillingDetailsForm(StripWhitespaceForm):
@@ -1877,7 +2164,10 @@ class AdminBillingDetailsForm(StripWhitespaceForm):
 
 class ServiceLetterContactBlockForm(StripWhitespaceForm):
     letter_contact_block = GovukTextareaField(
-        validators=[NotifyDataRequired(thing="a sender address"), NoCommasInPlaceHolders()]
+        validators=[
+            NotifyDataRequired(thing="a sender address"),
+            NoCommasInPlaceHolders(),
+        ]
     )
     is_default = GovukCheckboxField("Set as your default address")
 
@@ -1888,7 +2178,15 @@ class ServiceLetterContactBlockForm(StripWhitespaceForm):
 
 
 class OnOffSettingForm(StripWhitespaceForm):
-    def __init__(self, name, *args, truthy="On", falsey="Off", choices_for_error_message=None, **kwargs):
+    def __init__(
+        self,
+        name,
+        *args,
+        truthy="On",
+        falsey="Off",
+        choices_for_error_message=None,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.enabled.label.text = name
         self.enabled.choices = [
@@ -1903,7 +2201,14 @@ class OnOffSettingForm(StripWhitespaceForm):
 
 class YesNoSettingForm(OnOffSettingForm):
     def __init__(self, name, *args, **kwargs):
-        super().__init__(name, *args, truthy="Yes", falsey="No", choices_for_error_message="yes or no", **kwargs)
+        super().__init__(
+            name,
+            *args,
+            truthy="Yes",
+            falsey="No",
+            choices_for_error_message="yes or no",
+            **kwargs,
+        )
 
 
 class ServiceSwitchChannelForm(OnOffSettingForm):
@@ -1929,29 +2234,29 @@ class ServiceEmailSenderForm(StripWhitespaceForm):
     }
 
     use_custom_email_sender_name = OnOffField(
-        "Choose a sender name",
+        "Choose a ‘from’ name",
         choices_for_error_message="same or custom",
         choices=[
             (False, "Use the name of your service"),
-            (True, "Enter a custom sender name"),
+            (True, "Enter a ‘from’ name"),
         ],
     )
 
-    custom_email_sender_name = GovukTextInputField("Sender name", validators=[])
+    custom_email_sender_name = GovukTextInputField("‘From’ name", validators=[])
 
     def validate(self, *args, **kwargs):
         if self.use_custom_email_sender_name.data is True:
             self.custom_email_sender_name.validators = [
-                NotifyDataRequired(thing="a sender name"),
-                MustContainAlphanumericCharacters(thing="sender name"),
-                Length(max=255, thing="sender name"),
+                NotifyDataRequired(thing="a ‘from’ name"),
+                MustContainAlphanumericCharacters(thing="‘from’ name"),
+                Length(max=255, thing="‘from’ name"),
             ]
 
         return super().validate(*args, **kwargs)
 
     def validate_custom_email_sender_name(self, field):
         """
-        Validate that the email from name ("Sender Name" <sender.name@notifications.service.gov.uk)
+        Validate that the email from name ("‘From’ Name" <from.name@notifications.service.gov.uk)
         is under 320 characters (if it's over, SES will reject the email and we'll end up with technical errors)
         """
         if self.use_custom_email_sender_name.data is not True:
@@ -1962,20 +2267,20 @@ class ServiceEmailSenderForm(StripWhitespaceForm):
             # TODO: should probs store this value in config["NOTIFY_EMAIL_DOMAIN"] or similar
             email = validate_email_address(f"{normalised_sender_name}@notifications.service.gov.uk")
         except InvalidEmailError as e:
-            raise ValidationError("Sender name cannot include characters from a non-Latin alphabet") from e
+            raise ValidationError("‘From’ name cannot include characters from a non-Latin alphabet") from e
 
         if len(f'"{field.data}" <{email}>') > 320:
-            # This is a little white lie - the sender name _can_ be longer, provided the normalised name is short so
+            # This is a little white lie - the ‘from’ name _can_ be longer, provided the normalised name is short so
             # that the whole email is under 320 characters. 143 is chosen because a 143 char name + 143 char normalised
             # name + 34 characters of email domain, quotes, angle brackets etc = 320 characters total.
-            raise ValidationError("Sender name cannot be longer than 143 characters")
+            raise ValidationError("‘From’ name cannot be longer than 143 characters")
 
         if normalised_sender_name in self.BAD_EMAIL_LOCAL_PARTS:
-            raise ValidationError("Sender name needs to be more specific")
+            raise ValidationError("‘From’ name needs to be more specific")
 
         with suppress(InvalidEmailError):
             validate_email_address(field.data)
-            raise ValidationError("Sender name cannot be an email address")
+            raise ValidationError("‘From’ name cannot be an email address")
 
 
 class AdminSetEmailBrandingForm(StripWhitespaceForm):
@@ -2011,12 +2316,19 @@ class AdminPreviewBrandingForm(StripWhitespaceForm):
 
 class AdminEditEmailBrandingForm(StripWhitespaceForm):
     name = GovukTextInputField("Name of brand")
-    text = GovukTextInputField("Logo text", param_extensions={"hint": {"text": "Text that appears beside the logo"}})
+    text = GovukTextInputField(
+        "Logo text",
+        param_extensions={"hint": {"text": "Text that appears beside the logo"}},
+    )
     alt_text = GovukTextInputField(
-        "Alt text", param_extensions={"hint": {"text": "Text for people who cannot see the logo"}}
+        "Alt text",
+        param_extensions={"hint": {"text": "Text for people who cannot see the logo"}},
     )
     colour = HexColourCodeField("Colour")
-    file = VirusScannedFileField("Upload a PNG logo", validators=[FileAllowed(["png"], "The logo must be a PNG file")])
+    file = VirusScannedFileField(
+        "Upload a PNG logo",
+        validators=[FileAllowed(["png"], "The logo must be a PNG file")],
+    )
     brand_type = GovukRadiosField(
         "Brand type",
         choices=[
@@ -2100,15 +2412,6 @@ class AdminSetBrandingAddToBrandingPoolStepForm(StripWhitespaceForm):
     add_to_pool = GovukRadiosField(
         choices=[("yes", "Yes"), ("no", "No")],
         thing="yes or no",
-        param_extensions={
-            "fieldset": {
-                "legend": {
-                    # This removes the `govuk-fieldset__legend--s` class, thereby
-                    # making the form label font regular weight, not bold
-                    "classes": "",
-                },
-            }
-        },
     )
 
 
@@ -2228,7 +2531,11 @@ class GuestList(StripWhitespaceForm):
     )
 
     phone_numbers = ListEntryFieldList(
-        PhoneNumberInGuestList("", validators=[Optional(), ValidPhoneNumber(allow_international_sms=True)], default=""),
+        PhoneNumberInGuestList(
+            "",
+            validators=[Optional(), ValidPhoneNumber(allow_international_sms=True)],
+            default="",
+        ),
         min_entries=5,
         max_entries=5,
         label="Mobile numbers",
@@ -2315,12 +2622,23 @@ class CallbackForm(StripWhitespaceForm):
         "URL",
         validators=[
             DataRequired(message="Cannot be empty"),
-            Regexp(regex="^https.*", message="Must be a valid https URL"),
+            Regexp(
+                regex=r"^https:\/\/(?:[a-zA-Z0-9\-._~%!$&'()*+,;=]+@)?"
+                r"(?:[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"
+                r"(?::\d+)?"
+                r"(?:\/[\w\-._~%!$&'()*+,;=:@/]*)?"
+                r"(?:\?[\w\-._~%!$&'()*+,;=:@/?]*)?"
+                r"(?:#[\w\-._~%!$&'()*+,;=:@/?]*)?$",
+                message="Must be a valid https URL",
+            ),
         ],
     )
     bearer_token = GovukPasswordField(
         "Bearer token",
-        validators=[DataRequired(message="Cannot be empty"), Length(min=10, thing="the bearer token")],
+        validators=[
+            DataRequired(message="Cannot be empty"),
+            Length(min=10, thing="the bearer token"),
+        ],
     )
 
     def validate(self, *args, **kwargs):
@@ -2328,7 +2646,7 @@ class CallbackForm(StripWhitespaceForm):
 
 
 class SMSPrefixForm(StripWhitespaceForm):
-    enabled = OnOffField("")  # label is assigned on instantiation
+    enabled = OnOffField("Start text messages with service name")
 
 
 def get_placeholder_form_instance(
@@ -2542,7 +2860,6 @@ class AdminServiceAddDataRetentionForm(StripWhitespaceForm):
 
 class AdminServiceEditDataRetentionForm(StripWhitespaceForm):
     days_of_retention = GovukIntegerField(
-        label="Days of retention",
         things="a number of days",
         validators=[validators.NumberRange(min=3, max=90, message="The number of days must be between 3 and 90")],
     )
@@ -2550,7 +2867,7 @@ class AdminServiceEditDataRetentionForm(StripWhitespaceForm):
 
 class AdminReturnedLettersForm(StripWhitespaceForm):
     references = GovukTextareaField(
-        "Letter references",
+        "Submit returned letters",
         validators=[
             NotifyDataRequired(thing="the returned letter references"),
         ],
@@ -2676,7 +2993,7 @@ class TemplateAndFoldersSelectionForm(OrderableFieldsForm):
             return self.move_to_new_folder_name.data
         return None
 
-    templates_and_folders = GovukCheckboxesField(
+    templates_and_folders = InterruptibleItemsGovukCheckboxesField(
         "Choose templates or folders",
         validators=[required_for_ops("move-to-new-folder", "move-to-existing-folder")],
         choices=[],  # added to keep order of arguments, added properly in __init__
@@ -2686,8 +3003,10 @@ class TemplateAndFoldersSelectionForm(OrderableFieldsForm):
     # if no default set, it is set to None, which process_data transforms to '__NONE__'
     # this means '__NONE__' (self.ALL_TEMPLATES option) is selected when no form data has been submitted
     # set default to empty string so process_data method doesn't perform any transformation
-    move_to = GovukNestedRadiosField(
-        "Choose a folder", default="", validators=[required_for_ops("move-to-existing-folder"), Optional()]
+    move_to = InterruptibleChildRenderingGovukNestedRadiosField(
+        "Choose a folder",
+        default="",
+        validators=[required_for_ops("move-to-existing-folder"), Optional()],
     )
 
     add_new_folder_name = GovukTextInputField("Folder name", validators=[required_for_ops("add-new-folder")])
@@ -2703,7 +3022,7 @@ class TemplateAndFoldersSelectionForm(OrderableFieldsForm):
 
 
 class AdminClearCacheForm(StripWhitespaceForm):
-    model_type = GovukCheckboxesField("What do you want to clear today")
+    model_type = GovukCheckboxesField("Clear cache")
 
     def validate_model_type(self, field):
         if not field.data:
@@ -2735,7 +3054,7 @@ class AcceptAgreementForm(StripWhitespaceForm):
         )
 
     version = GovukTextInputField(
-        "Which version of the agreement do you want to accept?",
+        "Enter the version number of the agreement you want to accept",
         validators=[NotifyDataRequired(thing="a version number")],
     )
 
@@ -2786,7 +3105,6 @@ class AcceptAgreementForm(StripWhitespaceForm):
 
 class ChangeSecurityKeyNameForm(StripWhitespaceForm):
     security_key_name = GovukTextInputField(
-        "Name of key",
         validators=[
             DataRequired(message="Enter a name for this key"),
             MustContainAlphanumericCharacters(thing="the name of the key"),
@@ -2999,7 +3317,8 @@ class JoinServiceForm(StripWhitespaceForm):
 
 class CopyTemplateForm(StripWhitespaceForm, TemplateNameMixin):
     template_id = HiddenField(
-        "The template ID to copy", validators=[NotifyDataRequired(thing="the template ID to copy")]
+        "The template ID to copy",
+        validators=[NotifyDataRequired(thing="the template ID to copy")],
     )
     parent_folder_id = HiddenField("The folder ID to copy the template into")
 
@@ -3039,3 +3358,103 @@ class ProcessUnsubscribeRequestForm(StripWhitespaceForm):
 
         if field.data and self.report_completed:
             raise ValidationError("There is a problem. You have already marked the report as Completed")
+
+
+class TemplateEmailFilesUploadForm(StripWhitespaceForm):
+    def __init__(self, *args, template, **kwargs):
+        self.existing_file_names = template.filenames
+        self.placeholders_in_subject = UtilsField(template._subject).placeholders
+        super().__init__(*args, **kwargs)
+
+    allowed_file_formats = {
+        "CSV": ("csv",),
+        "image": (
+            "jpeg",
+            "jpg",
+            "png",
+        ),
+        "Microsoft Excel Spreadsheet": ("xlsx",),
+        "Microsoft Word Document": (
+            "doc",
+            "docx",
+        ),
+        "PDF": ("pdf",),
+        "text": ("json", "odt", "rtf", "txt"),
+    }
+    allowed_file_extensions = tuple(chain(*allowed_file_formats.values()))
+
+    file = VirusScannedFileField(
+        "Add a file",
+        validators=[
+            DataRequired(message="You need to upload a file to submit"),
+            DocumentDownloadFileValidator(),
+            FileSize(
+                max_size=2 * 1_024 * 1_024,
+                message="The file must be smaller than 2MB",
+            ),
+            NoBracketsInFileName(),
+        ],
+    )
+
+    def validate_file(self, field):
+        if field.errors:
+            return
+
+        if (length := len(field.data.filename)) > 100:
+            raise ValidationError(
+                f"File name cannot be longer than 100 characters (‘{field.data.filename}’ is {length} characters)"
+            )
+
+        if field.data.filename in self.existing_file_names:
+            raise ValidationError(f"Your template already has a file called ‘{field.data.filename}’")
+
+        if field.data.filename in self.placeholders_in_subject:
+            raise ValidationError(
+                f"You cannot put a file in the subject of a template "
+                f"– remove (({field.data.filename})) or rename your file"
+            )
+
+
+class TemplateEmailFileLinkTextForm(StripWhitespaceForm):
+    link_text = GovukTextInputField("Link text (optional)")
+
+
+class TemplateEmailFileRetentionPeriodForm(StripWhitespaceForm):
+    retention_period = GovukIntegerField(
+        label="Number of weeks available to recipients",
+        things="the number of weeks",
+        validators=[
+            NotifyDataRequired(thing="a number of weeks"),
+            validators.NumberRange(min=1, max=78, message="The number of weeks must be between 1 and 78"),
+        ],
+        param_extensions={"hint": {"text": "Must be between 1 and 78 weeks"}},
+    )
+
+
+class DocumentDownloadConfirmEmailAddressForm(StripWhitespaceForm):
+    def __init__(self, *args, current_user_email_address, service_name, **kwargs):
+        self.current_user_email_address = current_user_email_address
+        self.service_name = service_name
+        super().__init__(*args, **kwargs)
+
+    email_address = GovukEmailField(
+        "Email address",
+        validators=[
+            NotifyDataRequired(thing="email address"),
+        ],
+    )
+
+    def validate_email_address(self, field):
+        try:
+            validate_email_address(self.email_address.data)
+        except InvalidEmailError as e:
+            raise ValidationError("Not a valid email address") from e
+
+        if format_email_address(self.email_address.data) != format_email_address(self.current_user_email_address):
+            raise ValidationError(
+                Markup(
+                    "This is not the email address the file was sent to.<br><br>"
+                    f"To confirm the file was meant for you, enter the email address "
+                    f"{self.service_name} sent the file to."
+                )
+            )

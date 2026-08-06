@@ -46,9 +46,9 @@ def platform_admin_view_email_branding(branding_id):
 
     if request.endpoint == "main.platform_admin_confirm_archive_email_branding":
         if email_branding.is_used_by_orgs_or_services:
-            flash("Deze e-mailbranding is in gebruik. U kunt deze niet verwijderen..")
+            flash("Deze e-mailbranding is in gebruik. U kunt deze niet verwijderen.")
         else:
-            flash("Weet u zeker dat u deze e-mailbranding wilt verwijderen??", "delete")
+            flash("Weet u zeker dat u deze e-mailbranding wilt verwijderen?", "delete")
 
     return render_template(
         "views/email-branding/view-branding.html",
@@ -94,6 +94,8 @@ def platform_admin_update_email_branding(branding_id):
                 text=form.text.data,
                 colour=form.colour.data,
                 brand_type=form.brand_type.data,
+                height=form.height.data,
+                alignment=form.alignment.data,
                 updated_by_id=current_user.id,
             )
             Events.update_email_branding(
@@ -226,6 +228,8 @@ def platform_admin_create_email_branding():
                 text=form.text.data,
                 colour=form.colour.data,
                 brand_type=form.brand_type.data,
+                height=form.height.data,
+                alignment=form.alignment.data,
                 created_by_id=current_user.id,
             )
         except HTTPError as e:

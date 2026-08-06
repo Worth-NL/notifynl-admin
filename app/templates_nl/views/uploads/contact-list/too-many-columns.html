@@ -2,7 +2,7 @@
 {% from "components/banner.html" import banner_wrapper %}
 {% from "components/table.html" import list_table, text_field, row_heading %}
 {% from "components/file-upload.html" import file_upload %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 
 {% block service_page_title %}
   Fout
@@ -45,7 +45,7 @@
           Het moet precies 1 kolom bevatten, genaamd ‘e-mailadres’ of ‘telefoonnummer’.
         </p>
         <p class="govuk-body">
-          Op dit moment heeft het {{ recipients._raw_column_headers|length }} kolommen met de namen {{ recipients._raw_column_headers | formatted_list }}.
+          Op dit moment heeft het {{ recipients._raw_column_headers|length }} kolommen met de namen {{ recipients._raw_column_headers[:512] | formatted_list }}.
         </p>
 
       {% endif %}
@@ -54,7 +54,7 @@
 
 
   <div class="js-stick-at-top-when-scrolling">
-    <div class="form-group">
+    <div class="govuk-form-group">
       {{ file_upload(
         form.file,
         allowed_file_extensions=allowed_file_extensions,
@@ -65,7 +65,7 @@
     <a href="#main-content" class="govuk-link govuk-link--no-visited-state back-to-top-link">Terug naar boven</a>
   </div>
 
-    {% set column_headers = recipients._raw_column_headers if recipients.duplicate_recipient_column_headers else recipients.column_headers %}
+    {% set column_headers = recipients._raw_column_headers[:512] if recipients.duplicate_recipient_column_headers else recipients.column_headers %}
 
     <h2 class="heading-medium" id="file-preview">{{ original_file_name }}</h2>
 
@@ -76,7 +76,7 @@
         caption_visible=False,
         field_headings=[
           '<span class="govuk-visually-hidden">Rij in bestand</span> <span aria-hidden="true">1</span>'|safe
-        ] + recipients._raw_column_headers
+        ] + recipients._raw_column_headers[:512]
       ) %}
         {% call row_heading() %}
         {{ item.index + 2 }}

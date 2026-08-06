@@ -86,10 +86,16 @@
 
     {% set service_email_settings %}
       {% set email_sender_html %}
-        {% with email_sender_name = current_service.custom_email_sender_name or current_service.name %}
-          {% include "partials/preview-email-sender-name.html" %}
-        {% endwith %}
+        {% if current_service.confirmed_email_sender_name == False %}
+        <span class="govuk-hint">Niet ingesteld</span>
+        {% else %}
+          {% with email_sender_name = current_service.custom_email_sender_name or current_service.name %}
+            {% include "partials/preview-email-sender-name.html" %}
+          {% endwith %}
+        {% endif %}
       {% endset %}
+
+      {% set email_sender_classes = "govuk-summary-list__value--truncate govuk-summary-list__value--default" if current_service.confirmed_email_sender_name == False else "govuk-summary-list__value--truncate" %}
 
       {% set reply_to_email_addresses_html %}
         {{ current_service.default_email_reply_to_address or 'Niet ingesteld' }}
@@ -103,7 +109,7 @@
       {% set email_limit_html %}
         {{ "{} per dag".format(current_service.get_message_limit("email")|format_thousands) }}
         <div class="govuk-hint">
-          {{ current_service.sent_today("email")|format_thousands + " sent today" }}
+          {{ current_service.sent_today("email")|format_thousands + " vandaag verzonden" }}
         </div>
       {% endset %}
 
@@ -126,31 +132,31 @@
               }
             ] if current_user.has_permissions('manage_service') else []
           }
+        },
+        {
+          "key": {
+            "classes": "notify-summary-list__key notify-summary-list__key--35-100",
+            "text": "'Van' naam voor e-mail"
+          },
+          "value": {
+            "html": email_sender_html,
+            "classes": email_sender_classes
+          },
+          "actions": {
+            "items": [
+              {
+                "href": url_for('main.service_email_sender_change', service_id=current_service.id),
+                "text": "Wijzigen",
+                "visuallyHiddenText": "'van' naam voor e-mail",
+                "classes": "govuk-link--no-visited-state"
+              }
+            ] if current_user.has_permissions('manage_service') else []
+          }
         }
       ]%}
 
       {% if current_service.has_permission("email") %}
         {% set restricted_email_settings_rows = [
-          {
-            "key": {
-              "classes": "notify-summary-list__key notify-summary-list__key--35-100",
-              "text": "Naam afzender e-mail"
-            },
-            "value": {
-              "html": email_sender_html,
-              "classes": "govuk-summary-list__value--truncate"
-            },
-            "actions": {
-              "items": [
-                {
-                  "href": url_for('main.service_email_sender_change', service_id=current_service.id),
-                  "text": "Wijzigen",
-                  "visuallyHiddenText": "naam afzender e-mail",
-                  "classes": "govuk-link--no-visited-state"
-                }
-              ] if current_user.has_permissions('manage_service') else []
-            }
-          },
           {
             "key": {
               "classes": "notify-summary-list__key notify-summary-list__key--35-100",
@@ -219,7 +225,7 @@
           {
             "key": {
               "classes": "notify-summary-list__key notify-summary-list__key--35-100",
-              "text": "E -maillimiet",
+              "text": "E-maillimiet",
             },
             "value": {
               "text": email_limit_html,
@@ -230,7 +236,7 @@
                 {
                   "href": url_for("main.set_daily_message_limit", service_id=current_service.id, daily_limit_type="email"),
                   "text": "Wijzigen",
-                  "visuallyHiddenText": "daily {} limit".format("email"|format_notification_type|lower),
+                  "visuallyHiddenText": "dagelijkse {} limiet".format("email"|format_notification_type|lower),
                   "classes": "govuk-link--no-visited-state"
                 }
               ] if current_user.has_permissions('manage_service') else []
@@ -371,10 +377,10 @@
           {
             "key": {
               "classes": "notify-summary-list__key notify-summary-list__key--35-100",
-              "text": "Internationale sms-berichten verzenden"
+              "text": "{} limiet".format('sms'|format_notification_type)
             },
             "value": {
-              "text": "Aan" if current_service.has_permission("international_sms") else "Uit",
+              "text": text_message_limit_html,
               "classes": "govuk-summary-list__value--truncate"
             },
             "actions": {
@@ -382,7 +388,7 @@
                 {
                   "href": url_for("main.set_daily_message_limit", service_id=current_service.id, daily_limit_type="sms"),
                   "text": "Wijzigen",
-                  "visuallyHiddenText": "daily {} limit".format("sms"|format_notification_type|lower),
+                  "visuallyHiddenText": "dagelijkse {} limiet".format("sms"|format_notification_type|lower),
                   "classes": "govuk-link--no-visited-state"
                 }
               ] if current_user.has_permissions('manage_service') else []
@@ -396,10 +402,10 @@
           {
             "key": {
               "classes": "notify-summary-list__key notify-summary-list__key--35-100",
-              "text": "Send international text messages"
+              "text": "Internationale sms-berichten verzenden"
             },
             "value": {
-              "text": "On" if current_service.has_permission("international_sms") else "Off"
+              "text": "Aan" if current_service.has_permission("international_sms") else "Uit"
             },
             "actions": {
               "items": [
@@ -433,7 +439,7 @@
                 {
                   "href": url_for("main.set_per_day_international_sms_message_limit", service_id=current_service.id),
                   "text": "Wijzigen",
-                  "visuallyHiddenText": "dagelijkse limiet internationale sms {}".format("sms"|format_notification_type|lower),
+                  "visuallyHiddenText": "dagelijkse limiet internationale sms-berichten",
 
                   "classes": "govuk-link--no-visited-state"
                 }
@@ -456,7 +462,7 @@
     {% set letter_limit_html %}
       {{ "{} per dag".format(current_service.get_message_limit("letter")|format_thousands) }}
       <div class="govuk-hint">
-        {{ current_service.sent_today("letter")|format_thousands + " sent today" }}
+        {{ current_service.sent_today("letter")|format_thousands + " vandaag verzonden" }}
       </div>
     {% endset %}
 
@@ -570,7 +576,7 @@
           {
             "key": {
               "classes": "notify-summary-list__key notify-summary-list__key--35-100",
-              "text": "{} limit".format('letter'|format_notification_type),
+              "text": "{} limiet".format('letter'|format_notification_type),
             },
             "value": {
               "text": letter_limit_html,
@@ -581,7 +587,7 @@
                 {
                 "href": url_for("main.set_daily_message_limit", service_id=current_service.id, daily_limit_type="letter"),
                 "text": "Wijzigen",
-                "visuallyHiddenText": "daily {} limit".format("letter"|format_notification_type|lower),
+                "visuallyHiddenText": "dagelijkse {} limiet".format("letter"|format_notification_type|lower),
                 "classes": "govuk-link--no-visited-state"
                 }
               ] if current_user.has_permissions('manage_service') else []

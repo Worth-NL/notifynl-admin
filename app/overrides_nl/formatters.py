@@ -19,6 +19,37 @@ from notifications_utils.timezones import utc_string_to_aware_gmt_datetime
 
 from app.utils.time import is_less_than_days_ago
 
+DUTCH_WEEKDAYS = {
+    "Monday": "maandag",
+    "Tuesday": "dinsdag",
+    "Wednesday": "woensdag",
+    "Thursday": "donderdag",
+    "Friday": "vrijdag",
+    "Saturday": "zaterdag",
+    "Sunday": "zondag",
+}
+
+DUTCH_MONTHS = {
+    "January": "januari",
+    "February": "februari",
+    "March": "maart",
+    "April": "april",
+    "May": "mei",
+    "June": "juni",
+    "July": "juli",
+    "August": "augustus",
+    "September": "september",
+    "October": "oktober",
+    "November": "november",
+    "December": "december",
+}
+
+
+def _translate_weekday_and_month(formatted):
+    for english, dutch in {**DUTCH_WEEKDAYS, **DUTCH_MONTHS}.items():
+        formatted = formatted.replace(english, dutch)
+    return formatted
+
 
 def convert_to_boolean(value):
     if isinstance(value, str):
@@ -61,7 +92,7 @@ def format_time_24h(date):
 def get_human_day(time, date_prefix="", include_day_of_week=False):
     #  Add 1 minute to transform 00:00 into ‘midnight today’ instead of ‘midnight tomorrow’
     date = (utc_string_to_aware_gmt_datetime(time) - timedelta(minutes=1)).date()
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     if date == (now + timedelta(days=1)).date():
         return "morgen"
@@ -71,7 +102,7 @@ def get_human_day(time, date_prefix="", include_day_of_week=False):
         return "gisteren"
 
     date_prefix = f"{date_prefix} " if date_prefix else ""
-    day_of_week = date.strftime("%A ") if include_day_of_week else ""
+    day_of_week = DUTCH_WEEKDAYS[date.strftime("%A")] + " " if include_day_of_week else ""
     year = date.strftime(" %Y") if date.strftime("%Y") != now.strftime("%Y") else ""
 
     return f"{date_prefix}{day_of_week}{_format_datetime_short(date)}{year}"
@@ -79,17 +110,17 @@ def get_human_day(time, date_prefix="", include_day_of_week=False):
 
 def format_time(date):
     return {"0:00": "Middernacht", "12:00": "Middag"}.get(
-        utc_string_to_aware_gmt_datetime(date).strftime("%-I:%M%p"),
-        utc_string_to_aware_gmt_datetime(date).strftime("%-I:%M%p"),
+        utc_string_to_aware_gmt_datetime(date).strftime("%H:%M"),
+        utc_string_to_aware_gmt_datetime(date).strftime("%H:%M"),
     ).lower()
 
 
 def format_date(date):
-    return utc_string_to_aware_gmt_datetime(date).strftime("%A %d %B %Y")
+    return _translate_weekday_and_month(utc_string_to_aware_gmt_datetime(date).strftime("%A %d %B %Y"))
 
 
 def format_date_normal(date):
-    return utc_string_to_aware_gmt_datetime(date).strftime("%d %B %Y").lstrip("0")
+    return _translate_weekday_and_month(utc_string_to_aware_gmt_datetime(date).strftime("%d %B %Y").lstrip("0"))
 
 
 def format_date_short(date):
@@ -105,16 +136,17 @@ def format_datetime_human(date, date_prefix="op", separator="om"):
 
 
 def format_day_of_week(date):
-    return utc_string_to_aware_gmt_datetime(date).strftime("%A")
+    return DUTCH_WEEKDAYS[utc_string_to_aware_gmt_datetime(date).strftime("%A")]
 
 
 def _format_datetime_short(datetime):
-    return datetime.strftime("%d %B").lstrip("0")
+    return _translate_weekday_and_month(datetime.strftime("%d %B").lstrip("0"))
 
 
 def naturaltime_without_indefinite_article(date):
+    humanize.i18n.activate("nl_NL")
     return re.sub(
-        "an? (.*) geleden",
+        "^een (.*) geleden$",
         lambda match: f"1 {match.group(1)} geleden",
         humanize.naturaltime(date),
     )
@@ -374,8 +406,8 @@ def message_count_noun(count, message_type):
     if message_type == "letter":
         return "brief" if singular else "brieven"
 
-    if message_type and message_type.endswith("request"):
-        return message_type if singular else message_type + "s"
+    if message_type == "afmeldverzoek":
+        return "afmeldverzoek" if singular else "afmeldverzoeken"
 
     return "bericht" if singular else "berichten"
 
@@ -421,6 +453,7 @@ def character_count(count):
 
 
 def format_billions(count):
+    humanize.i18n.activate("nl_NL")
     return humanize.intword(count)
 
 
@@ -428,6 +461,38 @@ def format_yes_no(value, yes="Ja", no="Nee", none="Geen"):
     if value is None:
         return none
     return yes if value else no
+
+
+def format_pluralise(files):
+    if len(files) == 1:
+        return ""
+    return "s"
+
+
+def format_provider(provider):
+    if provider == "firetext":
+        return provider.title()
+
+    return provider.upper()
+
+
+def format_retention_period(weeks):
+    if weeks == 1:
+        return "1 week na verzenden"
+    if weeks < 9:
+        return f"{weeks} weken na verzenden"
+    delta = naturaltime_without_indefinite_article(timedelta(weeks=weeks)).removesuffix(" geleden")
+    return Markup(f"""
+        {weeks} weken na verzenden<br>
+        <span class='govuk-hint'>(ongeveer {delta})</span>
+    """)
+
+
+def format_invite_status(user_status):
+    if user_status == "pending":
+        return "(uitgenodigd)"
+    if user_status == "cancelled":
+        return "(uitnodiging geannuleerd)"
 
 
 def format_auth_type(auth_type, with_indefinite_article=False):

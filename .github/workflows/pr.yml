@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11"]
+        python-version: ["3.13"]
         node-version: ["22"]
 
     steps:
@@ -116,7 +116,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.11"]
+        python-version: ["3.13"]
         dockerfile-target: ["test"]
 
     steps:

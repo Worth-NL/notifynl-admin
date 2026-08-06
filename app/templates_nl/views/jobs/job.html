@@ -2,7 +2,7 @@
 {% from "components/banner.html" import banner %}
 {% from "components/ajax-block.html" import ajax_block %}
 {% from "components/page-header.html" import page_header %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 {% from "components/table.html" import list_table, text_field, row_heading %}
 
 {% block service_page_title %}
@@ -62,7 +62,7 @@
           {% if scheduled_recipients|length > scheduled_recipients.displayed_rows|list|length %}
             <p class="govuk-!-margin-bottom-1">Er worden alleen de eerste {{ scheduled_recipients.displayed_rows|list|length }} rijen getoond</p>
           {% endif %}
-          <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.view_job_original_file_csv', service_id=current_service.id, job_id=job.id) }}" download>Download dit bestand (CSV)</a>
+          <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.view_job_original_file_csv', service_id=current_service.id, job_id=job.id) }}">Download dit bestand (CSV)</a>
         </div>
       </div>
     {% endif %}

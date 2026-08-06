@@ -1,7 +1,51 @@
 import pytest
 from freezegun import freeze_time
 
-from tests.conftest import ORGANISATION_ID, SERVICE_ONE_ID, normalize_spaces
+from app.constants import PERMISSION_CAN_MAKE_SERVICES_LIVE
+from tests.conftest import ORGANISATION_ID, SERVICE_ONE_ID, create_user, normalize_spaces, sample_uuid
+
+
+def test_organisation_left_hand_nav_for_platform_admin_users(
+    platform_admin_user,
+    mock_get_organisation,
+    client_request,
+    mocker,
+):
+    mocker.patch("app.organisations_client.get_services_and_usage", return_value={"services": [], "updated_at": None})
+
+    client_request.login(platform_admin_user)
+
+    page = client_request.get("main.organisation_dashboard", org_id=ORGANISATION_ID)
+    nav_items = [item.text.strip() for item in page.select("nav.navigation a")]
+    assert nav_items == ["Gebruik", "Teamleden", "Instellingen", "Proefdiensten", "Facturatie"]
+
+
+@pytest.mark.parametrize(
+    "user_org_permissions, expected_nav_items",
+    [
+        ([], ["Gebruik", "Teamleden"]),
+        ([PERMISSION_CAN_MAKE_SERVICES_LIVE], ["Gebruik", "Teamleden", "Proefdiensten"]),
+    ],
+)
+def test_organisation_left_hand_nav_for_org_users(
+    mock_get_organisation,
+    client_request,
+    user_org_permissions,
+    expected_nav_items,
+    mocker,
+):
+    mocker.patch("app.organisations_client.get_services_and_usage", return_value={"services": [], "updated_at": None})
+
+    org_user = create_user(
+        id=sample_uuid(),
+        organisations=[ORGANISATION_ID],
+        organisation_permissions={ORGANISATION_ID: user_org_permissions},
+    )
+    client_request.login(org_user)
+
+    page = client_request.get("main.organisation_dashboard", org_id=ORGANISATION_ID)
+    nav_items = [item.text.strip() for item in page.select("nav.navigation a")]
+    assert nav_items == expected_nav_items
 
 
 @pytest.mark.parametrize(
@@ -16,19 +60,19 @@ from tests.conftest import ORGANISATION_ID, SERVICE_ONE_ID, normalize_spaces
             ".big-number-smallest",
         ),
         (
-            {"emails_sent": 0, "sms_cost": 999_999, "letter_cost": 0, "letters_sent": 0},
+            {"emails_sent": 0, "sms_cost": 99_999, "letter_cost": 0, "letters_sent": 0},
             ".big-number-smaller",
         ),
         (
-            {"emails_sent": 0, "sms_cost": 1_000_000, "letter_cost": 0, "letters_sent": 0},
+            {"emails_sent": 0, "sms_cost": 100_000, "letter_cost": 0, "letters_sent": 0},
             ".big-number-smallest",
         ),
         (
-            {"emails_sent": 0, "sms_cost": 0, "letter_cost": 999_999, "letters_sent": 0},
+            {"emails_sent": 0, "sms_cost": 0, "letter_cost": 99_999, "letters_sent": 0},
             ".big-number-smaller",
         ),
         (
-            {"emails_sent": 0, "sms_cost": 0, "letter_cost": 1_000_000, "letters_sent": 0},
+            {"emails_sent": 0, "sms_cost": 0, "letter_cost": 100_000, "letters_sent": 0},
             ".big-number-smallest",
         ),
     ),
@@ -152,3 +196,36 @@ def test_organisation_services_hides_search_bar_for_7_or_fewer_services(
     services = page.select(".organisation-service")
     assert len(services) == 7
     assert not page.select_one(".live-search")
+
+
+def test_view_edit_organisation_billing_details(
+    client_request,
+    platform_admin_user,
+    organisation_one,
+    mock_get_organisation,
+):
+    client_request.login(platform_admin_user)
+    page = client_request.get(
+        "main.edit_organisation_billing_details",
+        org_id=organisation_one["id"],
+    )
+    assert page.select_one("h1").text == "Organisatiefacturatiegegevens bewerken"
+
+    assert [label.text.strip() for label in page.select("label.govuk-label")] == [
+        "Contact namen",
+        "E-mailadressen voor contact",
+        "Referentie",
+        "Inkoopordernummer",
+        "Aantekeningen",
+    ]
+
+    assert [
+        form_element["name"]
+        for form_element in page.select("input.govuk-input.govuk-\\!-width-full") + page.select("textarea")
+    ] == [
+        "billing_contact_names",
+        "billing_contact_email_addresses",
+        "billing_reference",
+        "purchase_order_number",
+        "notes",
+    ]

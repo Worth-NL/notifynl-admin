@@ -2,7 +2,7 @@
 {% from "components/big-number.html" import big_number %}
 {% from "components/table.html" import list_table, field, text_field, row_heading %}
 {% from "components/page-header.html" import page_header %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 
 {% block service_page_title %}
   {{ contact_list.original_file_name }}
@@ -73,7 +73,7 @@
                 {{ big_number(
                   item.notifications_sending,
                   smallest=True,
-                  label='bezig met verzenden',
+                  label='bezig met bezorgen',
                 ) }}
               </div>
               <div class="govuk-grid-column-one-third">
@@ -128,7 +128,7 @@
           <a class="govuk-link govuk-link--destructive" href="{{ url_for('main.delete_contact_list', service_id=current_service.id, contact_list_id=contact_list.id) }}">Deze contactlijst verwijderen</a>
         </span>
       {% endif %}
-      <a class="govuk-link govuk-link--no-visited-state page-footer-right-aligned-link-without-button" download href="{{ url_for('main.download_contact_list', service_id=current_service.id, contact_list_id=contact_list.id) }}">Download deze contactlijst (<abbr title="Comma separated values">CSV</abbr>)</a>
+      <a class="govuk-link govuk-link--no-visited-state page-footer-right-aligned-link-without-button" href="{{ url_for('main.download_contact_list', service_id=current_service.id, contact_list_id=contact_list.id) }}">Download deze contactlijst (<abbr title="Comma separated values">CSV</abbr>)</a>
     </div>
   </div>
 

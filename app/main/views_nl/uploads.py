@@ -2,10 +2,8 @@ import base64
 import itertools
 import json
 import uuid
-from datetime import datetime
 from functools import partial
 from io import BytesIO
-from zipfile import BadZipFile
 
 from flask import (
     abort,
@@ -21,11 +19,8 @@ from notifications_utils.insensitive_dict import InsensitiveDict
 from notifications_utils.pdf import pdf_page_count
 from notifications_utils.recipient_validation.notifynl.postal_address import PostalAddress
 from notifications_utils.recipients import RecipientCSV
-from notifications_utils.sanitise_text import SanitiseASCII
 from pypdf.errors import PdfReadError
 from requests import RequestException
-from xlrd.biffh import XLRDError
-from xlrd.xldate import XLDateError
 
 from app import (
     current_service,
@@ -44,12 +39,7 @@ from app.s3_client.s3_letter_upload_client import (
     get_transient_letter_file_location,
     upload_letter_to_s3,
 )
-from app.utils import unicode_truncate
 from app.utils.csv import Spreadsheet, get_errors_for_csv
-from app.utils.letters import (
-    get_letter_printing_statement,
-    get_letter_validation_error,
-)
 from app.utils.pagination import (
     generate_next_dict,
     generate_previous_dict,
@@ -57,6 +47,10 @@ from app.utils.pagination import (
 )
 from app.utils.templates import get_sample_template
 from app.utils.user import user_has_permissions
+from app.utils_nl.letters import (
+    get_letter_printing_statement,
+    get_letter_validation_error,
+)
 
 
 @main.route("/services/<uuid:service_id>/uploads")
@@ -83,7 +77,6 @@ def uploads(service_id):
         jobs=listed_uploads,
         prev_page=prev_page,
         next_page=next_page,
-        now=datetime.utcnow().isoformat(),
     )
 
 
@@ -152,7 +145,7 @@ def upload_letter(service_id):
             # TODO: get page count from the sanitise response once template preview handles malformed files nicely
             page_count = pdf_page_count(BytesIO(pdf_file_bytes))
         except PdfReadError:
-            current_app.logger.info("Invalid PDF uploaded for service_id: %s", service_id)
+            current_app.logger.info("Invalid PDF uploaded for service %s", service_id, extra={"service_id": service_id})
             form.file.errors.append("Notify cannot read this PDF - save a new copy and try again")
 
         if not form.errors:
@@ -225,7 +218,7 @@ def uploaded_letter_preview(service_id, file_id):
     try:
         metadata = get_letter_metadata(service_id, file_id)
     except LetterNotFoundError:
-        current_app.logger.warning("Uploaded letter preview failed", exc_info=True)
+        current_app.logger.warning("Uploaded letter preview failed", exc_info=True, extra={"file_id": file_id})
 
         # If the file is missing it's likely because this is a duplicate
         # request, the notification already exists and the file has been
@@ -299,7 +292,7 @@ def send_uploaded_letter(service_id, file_id):
     try:
         metadata = get_letter_metadata(service_id, file_id)
     except LetterNotFoundError:
-        current_app.logger.warning("Get letter metadata failed", exc_info=True)
+        current_app.logger.warning("Get letter metadata failed", exc_info=True, extra={"file_id": file_id})
 
         # If the file is missing it's likely because this is a duplicate
         # request, the notification already exists and the file has been
@@ -346,34 +339,22 @@ def upload_contact_list(service_id):
     form = CsvUploadForm()
 
     if form.validate_on_submit():
-        try:
-            upload_id = ContactList.upload(
-                current_service.id,
-                Spreadsheet.from_file_form(form).as_dict,
+        upload_id = ContactList.upload(
+            current_service.id,
+            form.as_csv_data,
+        )
+        ContactList.set_metadata(current_service.id, upload_id, original_file_name=form.safe_filename)
+        return redirect(
+            url_for(
+                ".check_contact_list",
+                service_id=service_id,
+                upload_id=upload_id,
             )
-            file_name_metadata = unicode_truncate(SanitiseASCII.encode(form.file.data.filename), 1600)
-            ContactList.set_metadata(current_service.id, upload_id, original_file_name=file_name_metadata)
-            return redirect(
-                url_for(
-                    ".check_contact_list",
-                    service_id=service_id,
-                    upload_id=upload_id,
-                )
-            )
-        except (UnicodeDecodeError, BadZipFile, XLRDError):
-            form.file.errors = ["Notify cannot read this file - try using a different file type"]
-        except XLDateError:
-            form.file.errors = ["Notify cannot read this file - try saving it as a CSV instead"]
-    elif form.errors:
-        # just show the first error, as we don't expect the form to have more
-        # than one, since it only has one field
-        first_field_errors = list(form.errors.values())[0]
-        form.file.errors.append(first_field_errors[0])
+        )
 
     return render_template(
         "views/uploads/contact-list/upload.html",
         form=form,
-        allowed_file_extensions=Spreadsheet.ALLOWED_FILE_EXTENSIONS,
         error_summary_enabled=True,
     )
 

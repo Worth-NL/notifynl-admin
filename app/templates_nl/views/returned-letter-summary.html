@@ -1,7 +1,7 @@
 {% extends "withnav_template.html" %}
 {% from "components/table.html" import list_table, row_heading %}
 {% from "components/page-header.html" import page_header %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 
 {% block service_page_title %}
   Teruggestuurde brieven
@@ -22,6 +22,11 @@
     <p class="govuk-body">
       U ontvangt alleen een rapport als één of meer van uw brieven is teruggestuurd.
     </p>
+    {% if current_service.api_keys %}
+      <p class="govuk-body">
+        Automatiseer het herkennen van retour gezonden brieven met de Notify API. Volg&nbsp;de instructies in onze <a href="{{ url_for("main.guidance_api_documentation") }}" class="govuk-link govuk-link--no-visited-state">API-documentatie</a>.
+      </p>
+    {% endif %}
   </div>
 </div>
 <div class="dashboard-table">

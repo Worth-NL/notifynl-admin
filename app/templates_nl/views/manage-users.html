@@ -2,6 +2,8 @@
 {% from "components/tick-cross.html" import tick_cross %}
 {% from "components/live-search.html" import live_search %}
 {% from "govuk_frontend_jinja/components/button/macro.html" import govukButton %}
+{% from "govuk_frontend_jinja/components/notification-banner/macro.html" import govukNotificationBanner %}
+
 
 {% block service_page_title %}
   Teamleden
@@ -9,9 +11,34 @@
 
 {% block maincolumn_content %}
 
-  <h1 class="heading-medium">
+{% if active_gov_users_with_manage_service_permission_count < 2 %}
+    {% call govukNotificationBanner({
+      "titleText": "Rond het instellen van uw team af",
+      "classes": "govuk-!-margin-bottom-4"
+    }) %}
+      <p class="govuk-body govuk-!-font-weight-bold">
+        {% if current_user.is_gov_user %}
+          U moet een teamlid van uw organisatie toevoegen.
+        {% elif active_gov_users_with_manage_service_permission_count == 0 %}
+          U moet ten minste twee teamleden van een overheidsorganisatie toevoegen.
+        {% else %}
+          U moet een teamlid van een overheidsorganisatie toevoegen.
+        {% endif %}
+      </p>
+      <p class="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-0">
+        Geef diegene de rechten ‘Instellingen, team en gebruik beheren’.
+      </p>
+    {% endcall %}
+  {% endif %}
+
+
+  <h1 class="heading-large">
     Teamleden
   </h1>
+
+  {% if active_gov_users_with_manage_service_permission_count >= 2 %}
+    <p class="govuk-body">U moet ten minste 2 teamleden hebben met de rechten ‘Instellingen, team en gebruik beheren’.</p>
+  {% endif %}
 
   {% if show_search_box %}
     <div data-notify-module="autofocus">
@@ -37,12 +64,8 @@
                 </span>&ensp;
               {%- endif -%}
               <span class="hint">
-              {# Jinja-safe way to access an attribute form a python object that might not exist. #}
-              {# (Xobject.Xattribute | default(None)) == 'value' #}
-              {%- if user.is_invited_user and (user.status | default(None)) == 'pending' -%}
-                <span class="live-search-relevant">{{ user.email_address }}</span> (uitgenodigd)
-              {%- elif user.is_invited_user and (user.status | default(None)) == 'canceled' -%}
-                <span class="live-search-relevant">{{ user.email_address }}</span> (uitnodiging geannuleerd)
+              {%- if user.is_invited_user -%}
+                <span class="live-search-relevant">{{ user.email_address }}</span> {{ user.status|format_invite_status }}
               {%- elif user.id == current_user.id -%}
                 <span class="live-search-relevant">(jij)</span>
               {% else %}
@@ -93,14 +116,21 @@
     {% endfor %}
   </div>
 
-  {% if current_user.has_permissions('manage_service') %}
+  {% if current_user.has_permissions('manage_service', allow_org_user=True) %}
     <div class="js-stick-at-bottom-when-scrolling">
-      {{ govukButton({
-        "element": "a",
-        "text": "Nodig een teamlid uit",
-        "href": url_for('main.invite_user', service_id=current_service.id),
-        "classes": "govuk-button--secondary"
-      }) }}
+        {% if current_user.has_permissions('manage_service') %}
+          <div class="govuk-button-group govuk-button-group--align-right-desktop govuk-!-margin-bottom-0">
+            {{ govukButton({
+              "element": "a",
+              "text": "Nodig een teamlid uit",
+              "href": url_for('main.invite_user', service_id=current_service.id),
+              "classes": "govuk-button--secondary govuk-!-margin-bottom-1"
+            }) }}
+            <a class="govuk-link govuk-link--no-visited-state govuk-!-margin-bottom-1" href="{{ url_for('main.manage_users_download', service_id=current_service.id) }}">Download lijst met teamleden (CSV)</a>
+          </div>
+          {% else %}
+          <a class="govuk-link govuk-link--no-visited-state page-footer-link" href="{{ url_for('main.manage_users_download', service_id=current_service.id) }}">Download lijst met teamleden (CSV)</a>
+        {% endif %}
     </div>
   {% endif %}
 

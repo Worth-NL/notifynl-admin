@@ -9,6 +9,8 @@ GIT_COMMIT ?= $(shell git rev-parse HEAD 2> /dev/null || echo "")
 
 NOTIFY_CREDENTIALS ?= ~/.notify-credentials
 
+EXCLUDE_REQUIREMENTS_NEWER_THAN_DAYS ?= 7
+
 ## DEVELOPMENT
 
 .PHONY: bootstrap
@@ -45,10 +47,13 @@ help:
 generate-version-file: ## Generates the app version file
 	@echo -e "__git_commit__ = \"${GIT_COMMIT}\"\n__time__ = \"${DATE}\"" > ${APP_VERSION_FILE}
 
-.PHONY: test
-test: ## Run tests
+.PHONY: lint
+lint: ## Run static analysis
 	ruff check .
 	ruff format --check .
+
+.PHONY: test
+test: lint ## Run tests
 	npm test
 	py.test -n auto --maxfail=10 tests/
 
@@ -64,13 +69,21 @@ test-with-docker: ## Run tests in Docker container
 fix-imports: ## Fix imports using ruff
 	ruff --fix --select=I .
 
+.PHONY: refreeze-requirements
+refreeze-requirements: ## Update unpinned requirements
+	EXTRA_UV_PIP_COMPILE_FLAGS="--upgrade --exclude-newer $(EXCLUDE_REQUIREMENTS_NEWER_THAN_DAYS)d" make freeze-requirements
+
 .PHONY: freeze-requirements
 freeze-requirements: ## create static requirements.txt
-	uv pip compile requirements.in -o requirements.txt
+	uv pip compile requirements.in -o requirements.txt $(EXTRA_UV_PIP_COMPILE_FLAGS)
 	uv pip sync requirements.txt
 	python -c "from notifications_utils.version_tools import copy_config; copy_config()"
-	uv pip compile requirements_for_test.in -o requirements_for_test.txt
+	uv pip compile requirements_for_test.in -o requirements_for_test.txt $(EXTRA_UV_PIP_COMPILE_FLAGS)
 	uv pip sync requirements_for_test.txt
+
+.PHONY: show-outdated-requirements
+show-outdated-requirements: ## Audit requirements.in
+	python -c "from notifications_utils.version_tools import show_outdated_requirements; show_outdated_requirements()"
 
 .PHONY: bump-utils
 bump-utils:  # Bump notifications-utils package to latest version
@@ -86,12 +99,6 @@ clean:
 check-env-vars: ## Check mandatory environment variables
 	$(if ${DEPLOY_ENV},,$(error Must specify DEPLOY_ENV))
 	$(if ${DNS_NAME},,$(error Must specify DNS_NAME))
-
-.PHONY: preview
-preview: ## Set environment to preview
-	$(eval export DEPLOY_ENV=preview)
-	$(eval export DNS_NAME="notify.works")
-	@true
 
 .PHONY: staging
 staging: ## Set environment to staging

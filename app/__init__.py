@@ -27,7 +27,9 @@ from notifications_python_client.errors import HTTPError
 from notifications_utils import request_helper
 from notifications_utils.asset_fingerprinter import asset_fingerprinter
 from notifications_utils.eventlet import EventletTimeout
+from notifications_utils.file_types import format_file_type
 from notifications_utils.formatters import (
+    format_file_size,
     formatted_list,
     get_lines_with_normalised_whitespace,
 )
@@ -53,37 +55,38 @@ from app.models.organisation import Organisation
 from app.models.service import Service
 from app.models.user import AnonymousUser, User
 from app.notify_client import InviteTokenError
-from app.notify_client.api_key_api_client import api_key_api_client  # noqa
-from app.notify_client.billing_api_client import billing_api_client  # noqa
-from app.notify_client.complaint_api_client import complaint_api_client  # noqa
-from app.notify_client.contact_list_api_client import contact_list_api_client  # noqa
-from app.notify_client.email_branding_client import email_branding_client  # noqa
-from app.notify_client.events_api_client import events_api_client  # noqa
-from app.notify_client.inbound_number_client import inbound_number_client  # noqa
-from app.notify_client.invite_api_client import invite_api_client  # noqa
-from app.notify_client.job_api_client import job_api_client  # noqa
-from app.notify_client.letter_attachment_client import letter_attachment_client  # noqa
-from app.notify_client.letter_branding_client import letter_branding_client  # noqa
-from app.notify_client.letter_jobs_client import letter_jobs_client  # noqa
-from app.notify_client.letter_rate_api_client import letter_rate_api_client  # noqa
-from app.notify_client.notification_api_client import notification_api_client  # noqa
-from app.notify_client.org_invite_api_client import org_invite_api_client  # noqa
-from app.notify_client.organisations_api_client import organisations_client  # noqa
+from app.notify_client.api_key_api_client import api_key_api_client  # noqa  # noqa
+from app.notify_client.billing_api_client import billing_api_client  # noqa  # noqa
+from app.notify_client.complaint_api_client import complaint_api_client  # noqa  # noqa
+from app.notify_client.contact_list_api_client import contact_list_api_client  # noqa  # noqa
+from app.notify_client.email_branding_client import email_branding_client  # noqa  # noqa
+from app.notify_client.events_api_client import events_api_client  # noqa  # noqa
+from app.notify_client.inbound_number_client import inbound_number_client  # noqa  # noqa
+from app.notify_client.invite_api_client import invite_api_client  # noqa  # noqa
+from app.notify_client.job_api_client import job_api_client  # noqa  # noqa
+from app.notify_client.letter_attachment_client import letter_attachment_client  # noqa  # noqa
+from app.notify_client.letter_branding_client import letter_branding_client  # noqa  # noqa
+from app.notify_client.letter_jobs_client import letter_jobs_client  # noqa  # noqa
+from app.notify_client.letter_rate_api_client import letter_rate_api_client  # noqa  # noqa
+from app.notify_client.notification_api_client import notification_api_client  # noqa  # noqa
+from app.notify_client.org_invite_api_client import org_invite_api_client  # noqa  # noqa
+from app.notify_client.organisations_api_client import organisations_client  # noqa  # noqa
 from app.notify_client.performance_dashboard_api_client import (
-    performance_dashboard_api_client,  # noqa
+    performance_dashboard_api_client,  # noqa  # noqa
 )
-from app.notify_client.platform_admin_api_client import admin_api_client  # noqa
-from app.notify_client.protected_sender_id_api_client import protected_sender_id_api_client  # noqa
-from app.notify_client.provider_client import provider_client  # noqa
-from app.notify_client.report_request_api_client import report_request_api_client  # noqa
-from app.notify_client.service_api_client import service_api_client  # noqa
-from app.notify_client.sms_rate_client import sms_rate_api_client  # noqa
-from app.notify_client.status_api_client import status_api_client  # noqa
-from app.notify_client.template_folder_api_client import template_folder_api_client  # noqa
-from app.notify_client.template_statistics_api_client import template_statistics_client  # noqa
-from app.notify_client.unsubscribe_api_client import unsubscribe_api_client  # noqa
-from app.notify_client.upload_api_client import upload_api_client  # noqa
-from app.notify_client.user_api_client import user_api_client  # noqa
+from app.notify_client.platform_admin_api_client import admin_api_client  # noqa  # noqa
+from app.notify_client.protected_sender_id_api_client import protected_sender_id_api_client  # noqa  # noqa
+from app.notify_client.provider_client import provider_client  # noqa  # noqa
+from app.notify_client.report_request_api_client import report_request_api_client  # noqa  # noqa
+from app.notify_client.service_api_client import service_api_client  # noqa  # noqa
+from app.notify_client.sms_rate_client import sms_rate_api_client  # noqa  # noqa
+from app.notify_client.status_api_client import status_api_client  # noqa  # noqa
+from app.notify_client.template_email_file_client import template_email_file_client  # noqa
+from app.notify_client.template_folder_api_client import template_folder_api_client  # noqa  # noqa
+from app.notify_client.template_statistics_api_client import template_statistics_client  # noqa  # noqa
+from app.notify_client.unsubscribe_api_client import unsubscribe_api_client  # noqa  # noqa
+from app.notify_client.upload_api_client import upload_api_client  # noqa  # noqa
+from app.notify_client.user_api_client import user_api_client  # noqa  # noqa
 from app.notify_session import NotifyAdminSessionInterface
 from app.overrides_nl.formatters import (
     convert_to_boolean,
@@ -104,6 +107,7 @@ from app.overrides_nl.formatters import (
     format_day_of_week,
     format_delta,
     format_delta_days,
+    format_invite_status,
     format_list_items,
     format_notification_status,
     format_notification_status_as_field_status,
@@ -111,7 +115,10 @@ from app.overrides_nl.formatters import (
     format_notification_status_as_url,
     format_notification_type,
     format_pennies_as_currency,
+    format_pluralise,
     format_pounds_as_currency,
+    format_provider,
+    format_retention_period,
     format_thousands,
     format_time,
     format_yes_no,
@@ -139,6 +146,7 @@ from app.s3_client.logo_client import logo_client
 from app.template_previews import template_preview_client  # noqa
 from app.url_converters import (
     AgreementTypeConverter,
+    Base64UUIDConverter,
     BrandingTypeConverter,
     DailyLimitTypeConverter,
     LetterFileExtensionConverter,
@@ -146,7 +154,6 @@ from app.url_converters import (
     TemplateTypeConverter,
     TicketTypeConverter,
 )
-from app.utils import format_provider
 from app.utils.user_id import get_user_id_from_flask_login_session
 
 login_manager = LoginManager()
@@ -276,6 +283,7 @@ def init_app(application):
     application.url_map.converters["ticket_type"] = TicketTypeConverter
     application.url_map.converters["letter_file_extension"] = LetterFileExtensionConverter
     application.url_map.converters["simple_date"] = SimpleDateTypeConverter
+    application.url_map.converters["base64_uuid"] = Base64UUIDConverter
 
     # you can specify a default arg in a route decorator, that says "when you hit this route, populate the endpoint with
     # the following kwargs". However, if the `redirect_defaults` flag is set to its default value of true, we also
@@ -296,6 +304,11 @@ def reset_memos():
 
 @login_manager.user_loader
 def load_user(user_id):
+    if g.get("failsafe"):
+        # avoid doing anything that may result in a network request and therefore another exception
+        # (sadly we're not in charge of flask-login's context processor so can't stop such attempts
+        # there)
+        return None
     return User.from_id(user_id)
 
 
@@ -354,6 +367,8 @@ def make_nonce_before_request():
 #  https://www.owasp.org/index.php/List_of_useful_HTTP_headers
 def useful_headers_after_request(response):
     response.headers.add("X-Content-Type-Options", "nosniff")
+    response.headers.add("X-Frame-Options", "SAMEORIGIN")
+    response.headers.add("X-Permitted-Cross-Domain-Policies", "none")
     response.headers.add(
         "Content-Security-Policy",
         (
@@ -364,6 +379,7 @@ def useful_headers_after_request(response):
             "font-src 'self' {asset_domain} data:;"
             "img-src 'self' {asset_domain} *.notifynl.nl {logo_domain} data:;"
             "style-src 'self' {asset_domain} 'nonce-{csp_nonce}';"
+            "style-src-attr 'self' {asset_domain} 'nonce-{csp_nonce}';"
             "frame-ancestors 'self';"
             "frame-src 'self';"
             "base-uri 'self';".format(
@@ -386,7 +402,7 @@ def useful_headers_after_request(response):
     response.headers.add("Cache-Control", "no-store, no-cache, private, must-revalidate")
     for key, value in response.headers:
         response.headers[key] = SanitiseASCII.encode(value)
-    response.headers.add("Strict-Transport-Security", "max-age=31536000; preload")
+    response.headers.add("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
     response.headers.add("Referrer-Policy", "strict-origin-when-cross-origin")
     response.headers.add(
         "Cross-Origin-Embedder-Policy",
@@ -409,34 +425,49 @@ def useful_headers_after_request(response):
 
 
 def register_errorhandlers(application):  # noqa (C901 too complex)
-    def _error_response(error_code, error_page_template=None):
-        if error_page_template is None:
-            error_page_template = error_code
-        resp = make_response(render_template(f"error/{error_page_template}.html"), error_code)
+    def _error_response(error_code, *, error_page_template=None, failsafe=False):
+        template_file = f"error/{error_code}.html"
+
+        if error_code == 404 and request.view_args and "service_id" in request.view_args and g.current_service:
+            template_file = "error/404-service-page.html"
+
+        if error_page_template:
+            template_file = f"error/{error_page_template}.html"
+
+        if failsafe:
+            # signal that any e.g. context processors should avoid doing things (like making external requests)
+            # that may result in more errors, which we would have trouble catching.
+            g.failsafe = True
+
+        resp = make_response(render_template(template_file), error_code)
         return useful_headers_after_request(resp)
 
     @application.errorhandler(HTTPError)
     def render_http_error(error):
+        extra = {
+            "url": error.response.url if isinstance(error.response, requests.Response) else "unknown",
+            "status_code": error.status_code,
+            "error_message": error.message,
+        }
         application.logger.warning(
-            "API %(api)s failed with status=%(status)s, message='%(message)s'",
-            {
-                "api": error.response.url if isinstance(error.response, requests.Response) else "unknown",
-                "status": error.status_code,
-                "message": error.message,
-            },
+            "API %(url)s failed with status %(status_code)s: %(error_message)s",
+            extra,
+            extra=extra,
         )
         error_code = error.status_code
         if error_code not in [401, 404, 403, 410]:
             # probably a 500 or 503.
             # it might be a 400, which we should handle as if it's an internal server error. If the API might
             # legitimately return a 400, we should handle that within the view or the client that calls it.
+            extra = {
+                "url": error.response.url if isinstance(error.response, requests.Response) else "unknown",
+                "status_code": error.status_code,
+                "error_message": error.message,
+            }
             application.logger.exception(
-                "API %(api)s failed with status=%(status)s message='%(message)s'",
-                {
-                    "api": error.response.url if isinstance(error.response, requests.Response) else "unknown",
-                    "status": error.status_code,
-                    "message": error.message,
-                },
+                "API %(url)s failed with status=%(status_code)s: %(error_message)s",
+                extra,
+                extra=extra,
             )
             error_code = 500
         return _error_response(error_code)
@@ -484,7 +515,7 @@ def register_errorhandlers(application):  # noqa (C901 too complex)
         application.logger.warning(
             "csrf.invalid_token: Aborting request, user_id: %(user_id)s",
             {"user_id": session["user_id"]},
-            extra={"user_id": session["user_id"]},  # include as a distinct field in the log output
+            extra={"user_id": session["user_id"]},
         )
 
         return _error_response(400, error_page_template=500)
@@ -513,12 +544,12 @@ def register_errorhandlers(application):  # noqa (C901 too complex)
         # We want the Flask in browser stacktrace
         if current_app.config.get("DEBUG", None):
             raise error
-        return _error_response(500)
+        return _error_response(500, failsafe=True)
 
     @application.errorhandler(EventletTimeout)
     def eventlet_timeout(error):
         application.logger.exception(error)
-        return _error_response(504, error_page_template=500)
+        return _error_response(504, error_page_template=500, failsafe=True)
 
 
 def setup_blueprints(application):
@@ -581,12 +612,18 @@ def add_template_filters(application):
         format_day_of_week,
         format_delta,
         format_delta_days,
+        format_file_size,
+        format_file_type,
+        format_invite_status,
         format_notification_status,
         format_notification_type,
         format_notification_status_as_time,
         format_notification_status_as_field_status,
         format_notification_status_as_url,
+        format_pluralise,
         format_pounds_as_currency,
+        format_provider,
+        format_retention_period,
         formatted_list,
         get_lines_with_normalised_whitespace,
         nl2br,
@@ -624,8 +661,6 @@ def init_jinja(application):
             jinja2.PrefixLoader({"govuk_frontend_jinja": jinja2.PackageLoader("govuk_frontend_jinja")}),
         ]
     )
-
-    application.jinja_env.filters["format_provider"] = format_provider
     application.jinja_env.add_extension("jinja2.ext.do")
     application.jinja_env.undefined = NotifyJinjaUndefined
 

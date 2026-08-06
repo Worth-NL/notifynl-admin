@@ -3,7 +3,7 @@
 
 {% set page_title = 'We konden uw rapport niet maken' %}
 {% block per_page_title %}
-  Error: {{ page_title }}
+  Fout: {{ page_title }}
 {% endblock %}
 
 {% block maincolumn_content %}
@@ -13,7 +13,7 @@
       <h1 class='banner-title'>
         {{ page_title}}
       </h1>
-      <p class="govuk-body error-text-colour govuk-!-font-weight-bold">Please <a class="govuk-link govuk-link--no-visited-state error-text-colour" href="{{ url_for('main.feedback', ticket_type='ask-question-give-feedback') }}">contactondersteuning</a>.</p>
+      <p class="govuk-body error-text-colour govuk-!-font-weight-bold">Neem contact op met <a class="govuk-link govuk-link--no-visited-state error-text-colour" href="{{ url_for('main.feedback', ticket_type='ask-question-give-feedback') }}">ondersteuning</a>.</p>
       {% endcall %}
     </div>
   </div>

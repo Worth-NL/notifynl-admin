@@ -1,7 +1,7 @@
 {% extends "withnav_template.html" %}
 {% from "components/table.html" import list_table, field %}
 {% from "components/page-header.html" import page_header %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 
 {% block service_page_title %}
   Teruggestuurde brieven voor {{ reported_at|format_date_normal }}
@@ -16,8 +16,14 @@
 
 {{ page_header('Teruggestuurde brieven voor {}'.format(reported_at|format_date_normal)) }}
 
+{% if orphaned_count %}
+<p class="govuk-body">
+  Uw rapport mist {{ orphaned_count|format_thousands }} brie{% if orphaned_count > 1 %}ven{% else %}f{% endif %}, omdat {% if orphaned_count > 1 %}deze te lang geleden zijn{% else %}deze te lang geleden is{% endif %} verzonden.
+</p>
+{% endif %}
+
 <p class="bottom-gutter">
-  <a download href="{{ url_for('main.returned_letters_report', service_id=current_service.id, reported_at=reported_at) }}" class="govuk-link heading-small">Download dit rapport (<abbr title="Comma separated values">CSV</abbr>)</a>
+  <a href="{{ url_for('main.returned_letters_report', service_id=current_service.id, reported_at=reported_at) }}" class="govuk-link govuk-link--no-visited-state heading-small">Download dit rapport (<abbr title="Comma separated values">CSV</abbr>)</a>
 </p>
 
 <div class="dashboard-table">

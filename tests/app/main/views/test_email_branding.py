@@ -190,7 +190,6 @@ def test_edit_email_branding_shows_the_correct_branding_info(
     assert page.select_one("#logo-img > img")["src"].endswith("/example.png")
     assert page.select_one("#name").attrs.get("value") == "Organisation name"
     assert page.select_one("#file").attrs.get("accept") == ".png"
-    assert page.select_one("#text").attrs.get("value") == "Organisation text"
     assert page.select_one("#colour").attrs.get("value") == "f00"
 
 
@@ -203,7 +202,6 @@ def test_create_email_branding_does_not_show_any_branding_info(client_request, p
     assert page.select_one("#logo-img > img") is None
     assert page.select_one("#name").attrs.get("value") is None
     assert page.select_one("#file").attrs.get("accept") == ".png"
-    assert page.select_one("#text").attrs.get("value") is None
     assert page.select_one("#colour").attrs.get("value") is None
 
 
@@ -218,7 +216,6 @@ def test_create_email_branding_can_be_populated_from_querystring(client_request,
     )
 
     assert page.select_one("#name")["value"] == "Example name"
-    assert page.select_one("#text")["value"] == "Example text"
     assert page.select_one("#colour")["value"] == "Example colour"
     assert page.select_one("#brand_type input")["value"] == "both"
 
@@ -280,6 +277,8 @@ def test_create_new_email_branding_without_logo(
         text=data["text"],
         colour=data["colour"],
         brand_type=data["brand_type"],
+        height=None,
+        alignment="left",
         created_by_id=fake_uuid,
     )
     assert mock_save_temporary.call_args_list == []
@@ -446,6 +445,8 @@ def test_create_new_email_branding_when_branding_saved(
         text=data["text"],
         colour=data["colour"],
         brand_type=data["brand_type"],
+        height=None,
+        alignment="left",
         created_by_id=fake_uuid,
     )
 
@@ -550,6 +551,8 @@ def test_update_existing_branding(
         text=data["text"],
         colour=data["colour"],
         brand_type=data["brand_type"],
+        height=None,
+        alignment="left",
         updated_by_id=data["updated_by_id"],
     )
     assert mock_create_update_email_branding_event.call_args_list == [
@@ -605,6 +608,8 @@ def test_update_existing_branding_does_not_reupload_logo_if_unchanged(
         text=data["text"],
         colour=data["colour"],
         brand_type=data["brand_type"],
+        height=None,
+        alignment="left",
         updated_by_id=data["updated_by_id"],
     )
     assert not mock_save_permanent.called
@@ -834,29 +839,29 @@ def test_create_email_branding_government_identity_logo_form(client_request, pla
         (
             "Department for Business & Trade",
             "https://static.example.com/images/branding/insignia/"
-            "Department for Business & Trade.png?ec972edf4b61fe0a0064da65b0e2564b",
+            "Department for Business & Trade.png?037794106095c182ff58655a47fe3bca",
         ),
         (
             "Foreign, Commonwealth & Development Office",
             "https://static.example.com/images/branding/insignia/"
-            "Foreign, Commonwealth & Development Office.png?5f774527e45c4f03ca4a1167acdc0826",
+            "Foreign, Commonwealth & Development Office.png?890210781ce4936bb44462036e150b50",
         ),
         (
             "HM Coastguard",
-            "https://static.example.com/images/branding/insignia/HM Coastguard.png?75bec666533897525a3545570d04e3d4",
+            "https://static.example.com/images/branding/insignia/HM Coastguard.png?0ec1ded403c571998e3006be299758ed",
         ),
         (
             "HM Government",
-            "https://static.example.com/images/branding/insignia/HM Government.png?9e4dcaacf920fab30add8dcb87bda726",
+            "https://static.example.com/images/branding/insignia/HM Government.png?5bbdca1f88c78d6157a9ed4395b25a1d",
         ),
         (
             "HM Revenue & Customs",
             "https://static.example.com/images/branding/insignia/"
-            "HM Revenue & Customs.png?6378474ceb33424b4e508a32ca4b6315",
+            "HM Revenue & Customs.png?306230d3421662dacc0c2e185bc6a57b",
         ),
         (
             "Home Office",
-            "https://static.example.com/images/branding/insignia/Home Office.png?cc928b18d70992c0b85e01c6af30dcc2",
+            "https://static.example.com/images/branding/insignia/Home Office.png?884afa68c8f5c63a505fdcb9dd206663",
         ),
         (
             "Ministry of Defence",
@@ -865,11 +870,11 @@ def test_create_email_branding_government_identity_logo_form(client_request, pla
         ),
         (
             "Scotland Office",
-            "https://static.example.com/images/branding/insignia/Scotland Office.png?9da8a4c042f1b0f0631bb4ff98330dde",
+            "https://static.example.com/images/branding/insignia/Scotland Office.png?533396a821d92cd7841183c66861539d",
         ),
         (
             "Wales Office",
-            "https://static.example.com/images/branding/insignia/Wales Office.png?82e7cde43c4448c6f0ddaa481fa7bb2a",
+            "https://static.example.com/images/branding/insignia/Wales Office.png?b40fcf5cd279e5fd6349513df1bc0384",
         ),
     ]
 
@@ -939,7 +944,7 @@ def test_create_email_branding_government_identity_colour(client_request, platfo
             "background: " + input["value"] + ";"
         )
         assert page.select_one("label[for=" + input["id"] + "] img")["src"] == (
-            "https://static.example.com/images/branding/insignia/HM Government.png?9e4dcaacf920fab30add8dcb87bda726"
+            "https://static.example.com/images/branding/insignia/HM Government.png?5bbdca1f88c78d6157a9ed4395b25a1d"
         )
 
 

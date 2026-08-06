@@ -29,10 +29,6 @@ from app.main.overrides_nl.forms import (
     RequiredDateFilterForm,
 )
 from app.notify_client.platform_admin_api_client import admin_api_client
-from app.statistics_utils import (
-    get_formatted_percentage,
-    get_formatted_percentage_two_dp,
-)
 from app.utils.csv import Spreadsheet
 from app.utils.pagination import (
     generate_next_dict,
@@ -40,7 +36,7 @@ from app.utils.pagination import (
     get_page_from_request,
 )
 from app.utils.user import user_is_platform_admin
-from app.utils.user_permissions import all_ui_permissions, translate_permissions_from_db_to_ui
+from app.utils_nl.user_permissions import all_ui_permissions, translate_permissions_from_db_to_ui
 
 COMPLAINT_THRESHOLD = 0.02
 FAILURE_THRESHOLD = 3
@@ -80,71 +76,6 @@ def platform_admin_search():
         organisations=organisations,
         error_summary_enabled=True,
     )
-
-
-def is_over_threshold(number, total, threshold):
-    percentage = number / total * 100 if total else 0
-    return percentage > threshold
-
-
-def get_status_box_data(stats, key, label, threshold=FAILURE_THRESHOLD):
-    return {
-        "number": f"{stats['failures'][key]:,}",
-        "label": label,
-        "failing": is_over_threshold(stats["failures"][key], stats["total"], threshold),
-        "percentage": get_formatted_percentage(stats["failures"][key], stats["total"]),
-    }
-
-
-def get_tech_failure_status_box_data(stats):
-    stats = get_status_box_data(stats, "technical-failure", "technical failures", ZERO_FAILURE_THRESHOLD)
-    stats.pop("percentage")
-    return stats
-
-
-def make_columns(global_stats, complaints_number):
-    return [
-        # email
-        {
-            "black_box": {"number": global_stats["email"]["total"], "notification_type": "email"},
-            "other_data": [
-                get_tech_failure_status_box_data(global_stats["email"]),
-                get_status_box_data(global_stats["email"], "permanent-failure", "permanent failures"),
-                get_status_box_data(global_stats["email"], "temporary-failure", "temporary failures"),
-                {
-                    "number": complaints_number,
-                    "label": "complaints",
-                    "failing": is_over_threshold(
-                        complaints_number, global_stats["email"]["total"], COMPLAINT_THRESHOLD
-                    ),
-                    "percentage": get_formatted_percentage_two_dp(complaints_number, global_stats["email"]["total"]),
-                    "url": url_for("main.platform_admin_list_complaints"),
-                },
-            ],
-            "test_data": {"number": global_stats["email"]["test-key"], "label": "test emails"},
-        },
-        # sms
-        {
-            "black_box": {"number": global_stats["sms"]["total"], "notification_type": "sms"},
-            "other_data": [
-                get_tech_failure_status_box_data(global_stats["sms"]),
-                get_status_box_data(global_stats["sms"], "permanent-failure", "permanent failures"),
-                get_status_box_data(global_stats["sms"], "temporary-failure", "temporary failures"),
-            ],
-            "test_data": {"number": global_stats["sms"]["test-key"], "label": "test text messages"},
-        },
-        # letter
-        {
-            "black_box": {"number": global_stats["letter"]["total"], "notification_type": "letter"},
-            "other_data": [
-                get_tech_failure_status_box_data(global_stats["letter"]),
-                get_status_box_data(
-                    global_stats["letter"], "virus-scan-failed", "virus scan failures", ZERO_FAILURE_THRESHOLD
-                ),
-            ],
-            "test_data": {"number": global_stats["letter"]["test-key"], "label": "test letters"},
-        },
-    ]
 
 
 @main.route("/platform-admin/reports")
@@ -191,7 +122,9 @@ def live_services_csv():
         200,
         {
             "Content-Type": "text/csv; charset=utf-8",
-            "Content-Disposition": f'inline; filename="{format_date_numeric(datetime.now())} live services report.csv"',
+            "Content-Disposition": (
+                f'attachment; filename="{format_date_numeric(datetime.now())} live services report.csv"'
+            ),
         },
     )
 
@@ -263,9 +196,9 @@ def get_billing_report():
         try:
             result = billing_api_client.get_data_for_billing_report(start_date, end_date)
         except HTTPError as e:
-            message = "Date must be in a single financial year."
-            if e.status_code == 400 and e.message == message:
-                flash(message)
+            api_error_message = "Date must be in a single financial year."
+            if e.status_code == 400 and e.message == api_error_message:
+                flash("De datum moet binnen één financieel jaar vallen.")
                 return render_template("views/platform-admin/get-billing-report.html", form=form)
             else:
                 raise e
@@ -297,7 +230,7 @@ def get_billing_report():
                 },
             )
         else:
-            flash("No results for dates")
+            flash("Geen resultaten voor deze datums")
     return render_template(
         "views/platform-admin/get-billing-report.html",
         form=form,
@@ -325,9 +258,9 @@ def get_dvla_billing_report():
         try:
             result = billing_api_client.get_data_for_dvla_billing_report(start_date, end_date)
         except HTTPError as e:
-            message = "Date must be in a single financial year."
-            if e.status_code == 400 and e.message == message:
-                flash(message)
+            api_error_message = "Date must be in a single financial year."
+            if e.status_code == 400 and e.message == api_error_message:
+                flash("De datum moet binnen één financieel jaar vallen.")
                 return render_template("views/platform-admin/get-dvla-billing-report.html", form=form)
             else:
                 raise e
@@ -355,7 +288,7 @@ def get_dvla_billing_report():
                 },
             )
         else:
-            flash("No results for dates")
+            flash("Geen resultaten voor deze datums")
     return render_template("views/platform-admin/get-dvla-billing-report.html", form=form)
 
 
@@ -410,7 +343,7 @@ def get_volumes_by_service():
                 },
             )
         else:
-            flash("No results for dates")
+            flash("Geen resultaten voor deze datums")
     return render_template(
         "views/platform-admin/volumes-by-service-report.html",
         form=form,
@@ -461,7 +394,7 @@ def get_daily_volumes():
                 },
             )
         else:
-            flash("No results for dates")
+            flash("Geen resultaten voor deze datums")
     return render_template(
         "views/platform-admin/daily-volumes-report.html",
         form=form,
@@ -510,7 +443,7 @@ def get_daily_sms_provider_volumes():
                 },
             )
         else:
-            flash("No results for dates")
+            flash("Geen resultaten voor deze datums")
     return render_template(
         "views/platform-admin/daily-sms-provider-volumes-report.html",
         form=form,
@@ -622,6 +555,11 @@ def clear_cache():
         "service_join_request": [
             "service-join-request-????????-????-????-????-????????????",
         ],
+        "rate_limits": [
+            "????????-????-????-????-????????????-tokens-normal",
+            "????????-????-????-????-????????????-tokens-team",
+            "????????-????-????-????-????????????-tokens-test",
+        ],
     }
 
     form = AdminClearCacheForm()
@@ -711,52 +649,6 @@ def get_url_for_notify_record(uuid_):
     return None
 
 
-def sum_service_usage(service):
-    total = 0
-    for notification_type in service["statistics"].keys():
-        total += service["statistics"][notification_type]["requested"]
-    return total
-
-
-def filter_and_sort_services(services, trial_mode_services=False):
-    return [
-        service
-        for service in sorted(
-            services,
-            key=lambda service: (service["active"], sum_service_usage(service), service["created_at"]),
-            reverse=True,
-        )
-        if service["restricted"] == trial_mode_services
-    ]
-
-
-def create_global_stats(services):
-    stats = {
-        "email": {"delivered": 0, "failed": 0, "requested": 0},
-        "sms": {"delivered": 0, "failed": 0, "requested": 0},
-        "letter": {"delivered": 0, "failed": 0, "requested": 0},
-    }
-    for service in services:
-        for msg_type, status in itertools.product(("sms", "email", "letter"), ("delivered", "failed", "requested")):
-            stats[msg_type][status] += service["statistics"][msg_type][status]
-
-    for stat in stats.values():
-        stat["failure_rate"] = get_formatted_percentage(stat["failed"], stat["requested"])
-    return stats
-
-
-def format_stats_by_service(services):
-    for service in services:
-        yield {
-            "id": service["id"],
-            "name": service["name"],
-            "stats": service["statistics"],
-            "restricted": service["restricted"],
-            "created_at": service["created_at"],
-            "active": service["active"],
-        }
-
-
 @main.route("/platform-admin/reports/users-list", methods=["GET", "POST"])
 @user_is_platform_admin
 def platform_admin_users_list():
@@ -781,7 +673,7 @@ def platform_admin_users_list():
     ).get("data", [])
 
     if not results:
-        flash("No results for filters selected")
+        flash("Geen resultaten voor de geselecteerde filters")
         return render_template("views/platform-admin/users-list.html", form=form, error_summary_enabled=True)
 
     column_names = {
@@ -820,7 +712,7 @@ def platform_admin_users_list():
         200,
         {
             "Content-Type": "text/csv; charset=utf-8",
-            "Content-Disposition": f'inline; filename="{format_date_numeric(datetime.now())}_users_list.csv"',
+            "Content-Disposition": f'attachment; filename="{format_date_numeric(datetime.now())}_users_list.csv"',
         },
     )
 

@@ -2,7 +2,7 @@
 {% from "components/page-header.html" import page_header %}
 {% from "components/page-footer.html" import page_footer %}
 {% from "components/form.html" import form_wrapper %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 
 {% block service_page_title %}
   Wijzig afzendadres
@@ -37,7 +37,7 @@
       }) }}
 
     {% if form.is_default.data %}
-      <p class="form-group">
+      <p class="govuk-body">
         Dit is momenteel het standaardadres voor {{ current_service.name }}.
       </p>
     {% else %}

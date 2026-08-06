@@ -3,12 +3,10 @@
 {% from "components/page-footer.html" import sticky_page_footer %}
 {% from "components/live-search.html" import live_search %}
 {% from "components/form.html" import form_wrapper %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
-
-{% set page_title = "Accepteer onze verwerkersovereenkomst en financiële voorwaarden" %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 
 {% block per_page_title %}
-  {{ page_title }}
+  {{ form.organisations.label.text }} – Accepteer onze verwerkersovereenkomst en financiële voorwaarden
 {% endblock %}
 
 {% block backLink %}
@@ -16,11 +14,9 @@
 {% endblock %}
 
 {% block maincolumn_content %}
-  {{ page_header(page_title) }}
+  <span class="govuk-caption-xl">Accepteer onze verwerkersovereenkomst en financiële voorwaarden</span>
+  {{ page_header(form.organisations.label.text) }}
   {% call form_wrapper() %}
-    <p class="govuk-body">
-      {{ form.organisations.label.text }}
-    </p>
     {{ live_search(
       target_selector='.govuk-radios__item',
       show=True,

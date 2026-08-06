@@ -1,0 +1,54 @@
+{% extends "withoutnav_template.html" %}
+{% from "components/govuk-page-header.html" import govuk_page_header %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
+{% from "govuk_frontend_jinja/components/details/macro.html" import govukDetails %}
+{% from "govuk_frontend_jinja/components/button/macro.html" import govukButton %}
+
+{% set defaultMainTopMarginClass = True %}
+
+{% set heading = 'Uw dienst start in proefmodus' %}
+
+{% block backLink %}
+  {{ govukBackLink({ "href": url_for('main.your_services') }) }}
+{% endblock %}
+
+{% block per_page_title %}
+  {{ heading }}
+{% endblock %}
+
+{% block maincolumn_content %}
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+    {{ govuk_page_header(heading) }}
+    <p class="govuk-body">In proefmodus gelden er beperkingen op:</p>
+    <ul class="govuk-list govuk-list--bullet">
+        <li>naar wie u berichten kunt versturen</li>
+        <li>hoeveel berichten u per dag kunt versturen</li>
+    </ul>
+    <p class="govuk-body">Om deze beperkingen op te heffen, moet u uw dienst live laten gaan.</p>
+
+    {% set how_to_make_service_live_html %}
+      <p class="govuk-body">Wanneer u klaar bent met het testen van uw dienst:</p>
+      <ol class="govuk-list govuk-list--number">
+        <li>Ga naar de pagina <b class="govuk-!-font-weight-bold">Maak uw dienst live</b>.</li>
+        <li>Voltooi de taken.</li>
+        <li>Selecteer <b class="govuk-!-font-weight-bold">Stuur een verzoek om live te gaan</b>.</li>
+      </ol>
+      <p class="govuk-body">Het kan tot één werkdag duren voordat uw dienst live gaat.</p>
+      <p class="govuk-body">Dit is zodat we kunnen controleren of u voldoet aan onze <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.terms_of_use') }}" target="_blank">gebruiksvoorwaarden (opent in nieuw tabblad)</a>.</p>
+    {% endset %}
+
+    {{ govukDetails({
+      "summaryText": "Hoe laat ik mijn dienst live gaan?",
+      "html": how_to_make_service_live_html
+    }) }}
+
+    {{ govukButton({
+      "text": "Doorgaan",
+      "href": url_for('main.name_service')
+    }) }}
+
+    </div>
+  </div>
+
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "withnav_template.html" %}
+{% from "components/page-header.html" import page_header %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
+{% from "govuk_frontend_jinja/components/summary-list/macro.html" import govukSummaryList %}
+{% from "components/form.html" import form_wrapper %}
+{% from "components/page-footer.html" import page_footer %}
+{% from "components/banner.html" import banner %}
+
+{%  set title = template_email_file.filename %}
+{% block service_page_title %}
+   {{ title }}
+{% endblock %}
+
+{% block backLink %}
+  {{ govukBackLink({ "href": url_for('main.template_email_files', service_id=current_service.id, template_id=template_id) }) }}
+{% endblock %}
+
+{% block maincolumn_content %}
+    {% if delete %}
+    <div class="govuk-!-margin-bottom-6">
+      {{ banner(
+        'Weet u zeker dat u dit bestand wilt verwijderen?',
+        type='dangerous',
+        delete_button='Ja, verwijderen',
+        action=url_for('main.manage_a_template_email_file', service_id = service_id, template_id = template_id, template_email_file_id=template_email_file.id, delete = "true")
+      ) }}
+    </div>
+    {% endif %}
+
+    {{ page_header(title) }}
+    {%  set file_data = [
+            {
+          "key": {
+            "classes": "notify-summary-list__key notify-summary-list__key--35-100",
+            "text": "Linktekst"
+          },
+          "value": {
+            "text": template_email_file.link_text or "Niet ingesteld",
+            "classes": "govuk-summary-list__value--default" if not template_email_file.link_text else "govuk-summary-list__value--truncate",
+          },
+          "actions": {
+            "items": [
+              {
+                "href": url_for("main.change_link_text", service_id=current_service.id,
+                template_id=template_id,
+                template_email_file_id=template_email_file.id),
+                "text": "Wijzigen",
+                "visuallyHiddenText": "linktekst voor het bestand",
+                "classes": "govuk-link--no-visited-state",
+              }
+            ]
+          }
+        },
+        {
+          "key": {
+            "classes": "notify-summary-list__key notify-summary-list__key--35-100",
+            "text": "Beschikbaar voor"
+          },
+          "value": {
+            "text": template_email_file.retention_period | format_retention_period
+          },
+          "actions": {
+            "items": [
+              {
+                "href": url_for("main.change_data_retention_period", service_id=current_service.id,
+                template_id=template_id,template_email_file_id=template_email_file.id),
+                "text": "Wijzigen",
+                "visuallyHiddenText": "hoe lang het bestand beschikbaar is nadat het is verstuurd",
+                "classes": "govuk-link--no-visited-state",
+              }
+            ]
+          }
+        },
+        {
+          "key": {
+            "classes": "notify-summary-list__key notify-summary-list__key--35-100",
+            "text": "Vraag ontvanger om e-mailadres"
+          },
+          "value": {
+            "text": template_email_file.validate_users_email | format_yes_no,
+          },
+          "actions": {
+            "items": [
+              {
+                "href": url_for("main.change_email_validation", service_id=current_service.id,
+                template_id=template_id,template_email_file_id=template_email_file.id),
+                "text": "Wijzigen",
+              "visuallyHiddenText": "of de ontvanger om een e-mailadres moet worden gevraagd",
+                "classes": "govuk-link--no-visited-state",
+              }
+            ]
+          },
+        }
+         ]%}
+
+    {{ govukSummaryList({
+      "classes": "notify-summary-list",
+      "rows": file_data
+         })
+    }}
+{% if template_email_file.pending %}
+  {% call form_wrapper(action=url_for('main.make_file_live',service_id=service_id,template_id=template_id,template_email_file_id=template_email_file.id,)) %}
+    {{ page_footer("Toevoegen aan sjabloon") }}
+  {% endcall %}
+{% else %}
+  {{ page_footer(
+      delete_link_text="Dit bestand verwijderen",
+      delete_link=url_for('main.manage_a_template_email_file', service_id = service_id, template_id = template_id, template_email_file_id=template_email_file.id, delete = "true"),
+    )}}
+{% endif %}
+{% endblock %}

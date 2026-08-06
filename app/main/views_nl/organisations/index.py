@@ -12,6 +12,7 @@ from app import (
     org_invite_api_client,
     organisations_client,
 )
+from app.constants import PERMISSION_CAN_MAKE_SERVICES_LIVE
 from app.main import main
 from app.main.overrides_nl.forms import (
     AddGPOrganisationForm,
@@ -40,7 +41,7 @@ from app.models.user import InvitedOrgUser
 from app.s3_client.s3_mou_client import get_mou
 from app.utils.csv import Spreadsheet
 from app.utils.user import user_has_permissions, user_is_platform_admin
-from app.utils.user_permissions import organisation_user_permission_options
+from app.utils_nl.user_permissions import organisation_user_permission_options
 
 
 @main.route("/organisations", methods=["GET"])
@@ -191,7 +192,7 @@ def download_organisation_usage_report(org_id):
         {
             "Content-Type": "text/csv; charset=utf-8",
             "Content-Disposition": (
-                'inline;filename="{} ogranisatieverbruik {} - gegenereerd op {}.csv"'.format(
+                'attachment;filename="{} ogranisatieverbruik {} - gegenereerd op {}.csv"'.format(
                     current_organisation.name, selected_year, datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
                 )
             ),
@@ -200,7 +201,7 @@ def download_organisation_usage_report(org_id):
 
 
 @main.route("/organisations/<uuid:org_id>/trial-services", methods=["GET"])
-@user_is_platform_admin
+@user_has_permissions(org_permissions=[PERMISSION_CAN_MAKE_SERVICES_LIVE])
 def organisation_trial_mode_services(org_id):
     return render_template(
         "views/organisations/organisation/trial-mode-services.html",
@@ -233,7 +234,7 @@ def invite_org_user(org_id):
             permissions=list(form.permissions),
         )
 
-        flash(f"Invite sent to {invited_org_user.email_address}", "default_with_tick")
+        flash(f"Uitnodiging verstuurd naar {invited_org_user.email_address}", "default_with_tick")
         return redirect(url_for(".manage_org_users", org_id=org_id))
 
     return render_template(

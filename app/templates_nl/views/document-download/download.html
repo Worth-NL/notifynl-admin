@@ -1,0 +1,21 @@
+{% extends "document-download-template.html" %}
+
+{% block per_page_title %}
+  Download uw bestand
+{% endblock %}
+
+{% block main_content %}
+
+  <p class="govuk-body">
+    Dit bestand is te downloaden tot {{ template_email_file.expiry_date|format_date_normal }}.
+  </p>
+
+  <p class="govuk-body">
+    Zorg ervoor dat u het bestand opslaat op een plek waar u het kunt terugvinden.
+  </p>
+
+  <p class="govuk-body">
+    <a href="{{download_link}}" class="govuk-link govuk-link--no-visited-state" rel="noreferrer">Download dit {{ template_email_file.extension|format_file_type }} ({{ template_email_file.size|format_file_size }}) naar uw apparaat</a>
+  </p>
+
+{% endblock %}

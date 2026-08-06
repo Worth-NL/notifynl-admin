@@ -12,20 +12,51 @@
 {% block content_column_content %}
   <h1 class="heading-large">Teamleden en rechten</h1>
 
-  <p class="govuk-body">Notify stelt u in staat om verschillende rechten toe te wijzen aan elk lid van uw team.</p>
+  <p class="govuk-body">Ga naar de pagina {{ service_link(current_service, 'main.manage_users', 'teamleden') }} om collega’s uit te nodigen voor uw dienst.</p>
 
-  <p class="govuk-body">Ga naar de {{ service_link(current_service, 'main.manage_users', 'teamleden') }} pagina om:</p>
+  <p class="govuk-body">U kunt teamleden uitnodigen die geen overheids-e-mailadres hebben.</p>
+
+  <p class="govuk-body">Met NotifyNL kunt u voor elk teamlid andere rechten instellen.</p>
+
+  <p class="govuk-body">Kies uit de volgende rechten:</p>
   <ul class="govuk-list govuk-list--bullet">
-    <li>mensen uit te nodigen voor uw dienst</li>
-    <li>te bepalen wie berichten mag zien, toevoegen, bewerken en verzenden</li>
-    <li>andere teamleden toe te staan om uw dienstinstellingen te wijzigen</li>
-    <li>het e-mailadres en telefoonnummer van een teamlid bij te werken</li>
-    <li>de aanmeldmethode van elk teamlid te wijzigen</li>
-    <li>teamleden te verwijderen die niet meer werkzaam zijn</li>
+    <li>instellingen, team en gebruik beheren</li>
+    <li>dashboard bekijken</li>
+    <li>berichten versturen</li>
+    <li>sjablonen toevoegen en bewerken</li>
+    <li>API-integratie beheren</li>
   </ul>
-  <p class="govuk-body">
-    U moet minimaal één teamlid toevoegen met de rechten ‘instellingen, team en gebruik beheren’.
-    Deze persoon is verantwoordelijk voor uw dienst als u zich niet kunt aanmelden bij Notify.
-  </p>
-  <p class="govuk-body">U kunt teamleden uitnodigen die geen e-mailadres van de overheid hebben.</p>
+
+  <p class="govuk-body">Elke dienst die u toevoegt heeft ten minste 2 teamleden nodig met de rechten ‘instellingen, team en gebruik beheren’.</p>
+
+  <h2 class="heading-medium">Als u de rechten ‘instellingen beheren’ heeft</h2>
+
+  <p class="govuk-body">Teamleden met de rechten ‘instellingen, team en gebruik beheren’ zijn verantwoordelijk voor:</p>
+
+  <h3 class="heading-small">De dienst</h3>
+  <ul class="govuk-list govuk-list--bullet">
+    <li>De e-mail-, sms- en briefinstellingen beheren</li>
+    <li>E-mail- of briefhuisstijl toevoegen</li>
+    <li>Wijzigingen in dagelijkse berichtenlimieten aanvragen</li>
+    <li>De bewaartermijn van gegevens wijzigen</li>
+    <li>Bepalen wanneer de dienst live gaat en wanneer deze wordt verwijderd</li>
+  </ul>
+
+  <h3 class="heading-small">Teamleden</h3>
+  <ul class="govuk-list govuk-list--bullet">
+    <li>Teamleden toevoegen aan de dienst</li>
+    <li>Ervoor zorgen dat teamleden de juiste rechten hebben</li>
+    <li>Teamleden helpen als zij geen toegang meer hebben tot hun NotifyNL-account</li>
+    <li>Teamleden verwijderen die NotifyNL niet langer mogen gebruiken</li>
+    <li>Belangrijke informatie delen met uw team, bijvoorbeeld prijsstijgingen of wijzigingen in de gratis sms-limiet</li>
+  </ul>
+
+  <h3 class="heading-small">Gebruik</h3>
+  <ul class="govuk-list govuk-list--bullet">
+    <li>Het aantal verzonden e-mails, sms-berichten en brieven bijhouden</li>
+    <li>Controleren hoeveel gratis sms-berichten uw dienst nog over heeft</li>
+    <li>Bijhouden wat uw dienst heeft uitgegeven</li>
+  </ul>
+
+  <p class="govuk-body">U bent ook het aanspreekpunt voor alles wat met facturering te maken heeft.</p>
 {% endblock %}

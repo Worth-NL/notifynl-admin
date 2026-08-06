@@ -145,8 +145,6 @@ def test_your_services_should_show_your_services_page_if_no_services(
 ):
     mock_get_orgs_and_services.return_value = {"organisations": [], "services": []}
     page = client_request.get("main.your_services")
-    no_live_service = page.select("nav ul")[1].select("li")
-    no_live_trial_mode = page.select("nav ul")[2].select("li")
 
     links = page.select("main#main-content a")
     assert len(links) == 1
@@ -154,9 +152,8 @@ def test_your_services_should_show_your_services_page_if_no_services(
     assert normalize_spaces(page.select_one("h1").text) == "Your services"
     assert normalize_spaces(add_service_link.text) == "Add a new service"
     assert add_service_link["href"] == url_for("main.add_service")
-    assert [normalize_spaces(h2.text) for h2 in page.select("main h2")] == ["Live services", "Trial mode services"]
-    assert normalize_spaces(no_live_service[0].text) == "No live services"
-    assert normalize_spaces(no_live_trial_mode[0].text) == "No trial mode services"
+    assert normalize_spaces(page.select("main p")) == "You are not a member of any services yet"
+    assert page.select_one("main h2")["class"][0] == "govuk-visually-hidden"
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
@@ -193,8 +190,7 @@ def test_your_services_should_show_join_service_button(
             {"organisations": [], "services": []},
             [
                 "Platform admin",
-                "Live services",
-                "Trial mode services",
+                "Services",
             ],
         ),
         (
@@ -221,7 +217,6 @@ def test_your_services_should_show_join_service_button(
             [
                 "Platform admin",
                 "Live services",
-                "Trial mode services",
             ],
         ),
         (
@@ -238,7 +233,6 @@ def test_your_services_should_show_join_service_button(
             },
             [
                 "Platform admin",
-                "Live services",
                 "Trial mode services",
             ],
         ),
@@ -277,8 +271,7 @@ def test_your_services_should_show_organisations_link_for_platform_admin(
         (
             {"organisations": [], "services": []},
             [
-                "Live services",
-                "Trial mode services",
+                "Services",
             ],
             "Your services",
         ),
@@ -302,11 +295,7 @@ def test_your_services_should_show_organisations_link_for_platform_admin(
                 ],
                 "services": [],
             },
-            [
-                "Organisations",
-                "Live services",
-                "Trial mode services",
-            ],
+            ["Organisations", "Services"],
             "Your organisations and services",
         ),
         (
@@ -323,7 +312,6 @@ def test_your_services_should_show_organisations_link_for_platform_admin(
             },
             [
                 "Live services",
-                "Trial mode services",
             ],
             "Your services",
         ),
@@ -340,7 +328,6 @@ def test_your_services_should_show_organisations_link_for_platform_admin(
                 ],
             },
             [
-                "Live services",
                 "Trial mode services",
             ],
             "Your services",
@@ -460,7 +447,7 @@ def test_should_not_show_back_to_service_if_user_doesnt_belong_to_service(
         _test_page_title=False,
     )
 
-    assert normalize_spaces(page.select_one(".govuk-service-navigation + .govuk-width-container").text).startswith(
+    assert normalize_spaces(page.select_one("body > .govuk-width-container").text).startswith(
         normalize_spaces(expected_page_text)
     )
 
@@ -483,3 +470,35 @@ def test_should_show_your_services_navigation_link_if_user_belongs_to_service(
     )
 
     assert normalize_spaces(page.select_one(".govuk-service-navigation__list a:first-child").text) == "Your services"
+
+
+@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
+def test_should_show_notification_banner_when_newly_activated_user(
+    client_request,
+    mocker,
+    mock_get_orgs_and_services,
+    api_user_active,
+):
+    api_user_active["current_session_id"] = str(uuid.UUID(int=1))
+    mocker.patch("app.user_api_client.get_user", return_value=api_user_active)
+    mock_get_orgs_and_services.return_value = {"organisations": [], "services": []}
+    mocker.patch(
+        "app.organisations_client.get_organisation_by_domain",
+        return_value=organisation_json(can_ask_to_join_a_service=True),
+    )
+
+    with client_request.session_transaction() as session:
+        session["user_details"] = {"email_address": api_user_active["email_address"], "id": api_user_active["id"]}
+        # user's only just created their account so no session in the cookie
+        session.pop("current_session_id", None)
+
+    page = client_request.post(
+        "main.verify",
+        _data={"sms_code": "12345"},
+        _follow_redirects=True,
+    )
+    banner = page.select(".banner-default")
+    banner_title = page.select_one(".banner-title")
+
+    assert len(banner) == 1
+    assert normalize_spaces(banner_title.text) == "You have created a GOV.UK Notify account"

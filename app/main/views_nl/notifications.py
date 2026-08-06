@@ -34,9 +34,9 @@ from app.utils import (
     set_status_filters,
 )
 from app.utils.csv import generate_notifications_csv
-from app.utils.letters import get_letter_validation_error
 from app.utils.templates import get_template
 from app.utils.user import user_has_permissions
+from app.utils_nl.letters import get_letter_validation_error
 
 
 @main.route("/services/<uuid:service_id>/notification/<uuid:notification_id>")
@@ -150,7 +150,7 @@ def cancel_letter(service_id, notification_id):
                 raise e
         return redirect(url_for("main.view_notification", service_id=service_id, notification_id=notification_id))
 
-    flash("Are you sure you want to cancel sending this letter?", "cancel")
+    flash("Weet u zeker dat u het versturen van deze brief wilt annuleren?", "cancel")
     return view_notification(service_id, notification_id)
 
 
@@ -171,6 +171,7 @@ def view_letter_notification_as_preview(service_id, notification_id, filetype, w
             values=notification.personalisation,
             page=request.args.get("page"),
             service=current_service,
+            date=notification.created_at,
         )
 
     image_data = get_letter_file_data(service_id, notification_id, filetype, with_metadata)

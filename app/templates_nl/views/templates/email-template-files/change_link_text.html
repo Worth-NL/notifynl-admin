@@ -1,0 +1,45 @@
+{% extends "withnav_template.html" %}
+{% from "components/page-header.html" import page_header %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
+{% from "components/page-footer.html" import page_footer %}
+{% from "components/form.html" import form_wrapper %}
+
+{% set title = 'Linktekst toevoegen' %}
+{% block service_page_title %}
+  {{ title }}
+{% endblock %}
+
+{% block backLink %}
+  {{ govukBackLink({ "href":url_for("main.manage_a_template_email_file", service_id=current_service.id,
+                template_id=template.id,
+                template_email_file_id=template_email_file.id)})
+          }}
+{% endblock %}
+
+{% block maincolumn_content %}
+  {{ page_header(title) }}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-five-sixths">
+      <p class="govuk-body">
+        Laat dit leeg om de volledige URL in de e-mail voor {{ template_email_file.filename }} weer te geven.
+      </p>
+      <p class="govuk-body">
+        Als de ontvanger niet verwacht een e-mail van u te ontvangen, raden we aan dit leeg te laten.
+      </p>
+      <p class="govuk-body">
+        De linktekst moet de ontvanger vertellen welke actie hij of zij moet ondernemen en waar de link naartoe leidt.
+      </p>
+      <p class="govuk-body">
+        Gebruik nooit ‘klik hier’, ‘klik op deze link’, ‘deze link’ of ‘meer’, omdat deze buiten hun context geen betekenis hebben.
+      </p>
+    </div>
+  </div>
+  {% call form_wrapper() %}
+    {{ form.link_text(param_extensions={
+      "label": {"text": "Linktekst (optioneel)"},
+      "classes": "govuk-!-width-full"
+    }) }}
+    {{ page_footer('Doorgaan') }}
+
+  {% endcall %}
+{% endblock %}

@@ -6,7 +6,7 @@
       <h2 class="heading-small govuk-!-margin-bottom-2">E-mails</h2>
       {{ big_number_with_status(
         statistics['email']['requested'],
-        statistics['email']['requested']|message_count_label('e-mail', suffix='verstuurd'),
+        statistics['email']['requested']|message_count_label('email', suffix='verstuurd'),
         statistics['email']['failed'],
         statistics['email']['failed_percentage'],
         statistics['email']['show_warning'],
@@ -34,7 +34,7 @@
 
       {{ big_number_with_status(
         statistics['letter']['requested'],
-        statistics['letter']['requested']|message_count_label('brief', suffix='verstuurd'),
+        statistics['letter']['requested']|message_count_label('letter', suffix='verstuurd'),
         statistics['letter']['failed'],
         statistics['letter']['failed_percentage'],
         statistics['letter']['show_warning'],

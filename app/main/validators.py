@@ -1,5 +1,6 @@
 import re
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 from flask import current_app, render_template
 from notifications_utils.clients.zendesk.zendesk_client import NotifySupportTicket, NotifyTicketType
@@ -223,7 +224,11 @@ class IsNotAPotentiallyMaliciousSenderID:
     def __call__(self, form, field):
         if protected_sender_id_api_client.get_check_sender_id(sender_id=field.data):
             create_phishing_senderid_zendesk_ticket(senderID=field.data)
-            current_app.logger.warning("User tried to set sender id to potentially malicious one: %s", field.data)
+            current_app.logger.warning(
+                "User tried to set sender id to potentially malicious one: %s",
+                field.data,
+                extra={"sender_id": field.data},
+            )
             raise ValidationError(
                 f"Text message sender ID cannot be ‘{field.data}’ - this is to protect recipients from phishing scams"
             )
@@ -380,3 +385,19 @@ class Length(WTFormsLength):
                 self.message = f"{sentence_case(thing)} must be at least {min} {unit} long"
             else:
                 self.message = f"{sentence_case(thing)} cannot be longer than {max} {unit}"
+
+
+class NoBracketsInFileName:
+    def __call__(self, form, field):
+        if "(" in field.data.filename or ")" in field.data.filename:
+            raise ValidationError("File name cannot contain brackets")
+
+
+class DocumentDownloadFileValidator:
+    def __init__(self, message="Not an allowed file format"):
+        self.message = message
+
+    def __call__(self, form, field):
+        extension = Path(field.data.filename).suffix
+        if extension.lower().lstrip(".") not in form.allowed_file_extensions:
+            raise ValidationError(f"{extension} is not an allowed file format" if extension else self.message)

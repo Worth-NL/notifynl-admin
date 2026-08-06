@@ -1,4 +1,4 @@
-import { isSupported } from 'govuk-frontend';
+import { locationReplace } from '../utils/location.mjs';
 
 // This new way of writing Javascript components is based on the GOV.UK Frontend skeleton Javascript coding standard
 // that uses ES2015 Classes -
@@ -48,7 +48,7 @@ class CheckReportStatus {
     if (status === this.reportReadyStatus || status === this.reportFailedStatus) {
       this.updatePageText();
       setTimeout(() => {
-        location.replace(location.pathname);
+        locationReplace(location.pathname);
       }, this.redirectDelay);
     } else {
       setTimeout(this.runCheck.bind(this), this.fetchInterval);

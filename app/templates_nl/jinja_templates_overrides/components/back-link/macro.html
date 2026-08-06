@@ -1,0 +1,8 @@
+{% macro govukBackLink(params) %}
+{% from "govuk_frontend_jinja/macros/attributes.html" import govukAttributes -%}
+
+<a href="{{ params.href | default('#', true) }}" class="govuk-back-link {%- if params.classes %} {{ params.classes }}{% endif %}"
+  {{- govukAttributes(params.attributes) }}>
+  {{- params.html | safe if params.html else (params.text | default("Terug", true)) -}}
+</a>
+{% endmacro %}

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from flask import (
     abort,
@@ -25,6 +25,7 @@ from app import (
 )
 from app.constants import SIGN_IN_METHOD_TEXT_OR_EMAIL
 from app.event_handlers import Events
+from app.extensions import redis_client
 from app.main import json_updates, main
 from app.main.overrides_nl.forms import (
     AdminBillingDetailsForm,
@@ -129,7 +130,7 @@ def service_email_sender_change(service_id):
     if form.validate_on_submit():
         new_sender = form.custom_email_sender_name.data if form.use_custom_email_sender_name.data else None
 
-        current_service.update(custom_email_sender_name=new_sender)
+        current_service.update(custom_email_sender_name=new_sender, confirmed_email_sender_name=True)
 
         return redirect(url_for(".service_settings", service_id=service_id))
 
@@ -144,11 +145,16 @@ def service_email_sender_change(service_id):
 @main.post("/services/<uuid:service_id>/service-settings/email-sender/preview-address")
 @user_has_permissions("manage_service")
 def service_email_sender_preview(service_id):
+    custom_sender_selected = request.form.get("use_custom_email_sender_name")
+    if custom_sender_selected == "True":
+        sender = request.form.get("custom_email_sender_name")
+    else:
+        sender = current_service.name
+
     return jsonify(
         {
             "html": render_template(
-                "partials/preview-email-sender-name.html",
-                email_sender_name=request.form.get("custom_email_sender_name"),
+                "partials/preview-email-sender-name.html", email_sender_name=sender, rich_preview=True
             )
         }
     )
@@ -222,6 +228,8 @@ def service_switch_live(service_id):
 
     if form.validate_on_submit():
         current_service.update_status(live=form.enabled.data)
+        if not current_service.has_email_templates and not bool(current_service.volume_email):
+            current_service.force_permission("email", on=False)
         return redirect(url_for(".service_settings", service_id=service_id))
 
     return render_template(
@@ -307,28 +315,15 @@ def archive_service(service_id):
 @main.route("/services/<uuid:service_id>/service-settings/send-files-by-email", methods=["GET", "POST"])
 @user_has_permissions("manage_service")
 def send_files_by_email_contact_details(service_id):
-    form = ServiceContactDetailsForm()
-    contact_details = None
-
-    if request.method == "GET":
-        contact_details = current_service.contact_link
-        if contact_details:
-            contact_type = check_contact_details_type(contact_details)
-            field_to_update = getattr(form, contact_type)
-
-            form.contact_details_type.data = contact_type
-            field_to_update.data = contact_details
+    form = ServiceContactDetailsForm(service=current_service)
 
     if form.validate_on_submit():
-        contact_type = form.contact_details_type.data
-
-        current_service.update(contact_link=form.data[contact_type])
+        current_service.update(contact_link=form.chosen_contact_type)
         return redirect(url_for(".service_settings", service_id=current_service.id))
 
     return render_template(
         "views/service-settings/send-files-by-email.html",
         form=form,
-        contact_details=contact_details,
         error_summary_enabled=True,
     )
 
@@ -438,7 +433,7 @@ def get_service_verify_reply_to_address_partials(service_id, notification_id):
                     current_service.id, email_address=notification["to"], is_default=is_default
                 )
     seconds_since_sending = (
-        utc_string_to_aware_gmt_datetime(datetime.utcnow().isoformat())
+        utc_string_to_aware_gmt_datetime(datetime.now(UTC))
         - utc_string_to_aware_gmt_datetime(notification["created_at"])
     ).seconds
     if notification["status"] in FAILURE_STATUSES or (
@@ -537,7 +532,7 @@ def service_delete_email_reply_to(service_id, reply_to_email_id):
 
 
 @main.route("/services/<uuid:service_id>/service-settings/set-inbound-number", methods=["GET", "POST"])
-@user_has_permissions("manage_service")
+@user_is_platform_admin
 def service_set_inbound_number(service_id):
     available_inbound_numbers = inbound_number_client.get_available_inbound_sms_numbers()
     inbound_numbers_value_and_label = [(number["id"], number["number"]) for number in available_inbound_numbers["data"]]
@@ -563,8 +558,6 @@ def service_set_inbound_number(service_id):
 @user_has_permissions("manage_service")
 def service_set_sms_prefix(service_id):
     form = SMSPrefixForm(enabled=current_service.prefix_sms)
-
-    form.enabled.label.text = f"Start all text messages with ‘{current_service.name}:’"
 
     if form.validate_on_submit():
         current_service.update(prefix_sms=form.enabled.data)
@@ -731,7 +724,11 @@ def service_receive_text_messages_stop(service_id):
 
             except Exception as e:
                 current_app.logger.error(
-                    "Error removing inbound number %s for service %s: %s", inbound_number, service_id, e
+                    "Error removing inbound number %s for service %s: %s",
+                    inbound_number,
+                    service_id,
+                    e,
+                    extra={"inbound_number": inbound_number, "service_id": service_id},
                 )
                 form.removal_options.errors.append("Failed to remove number from service")
 
@@ -792,6 +789,28 @@ def service_set_channel(service_id, channel):
         sms_rate=SMSRate(),
         letter_rates=LetterRates().rates,
     )
+
+
+@main.route("/services/<uuid:service_id>/service-settings/set-email/on", methods=["POST"])
+@user_has_permissions("manage_service")
+def enable_email_channel(service_id):
+    channel = "email"
+
+    if current_service.has_email_reply_to_address and current_service.confirmed_email_sender_name:
+        current_service.force_permission(channel, on=True)
+        return redirect(url_for(".service_settings", service_id=service_id))
+    else:
+        flash(
+            Markup(
+                """
+                    <h2 class='govuk-heading-m'>There is a problem</h2>
+                    <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
+                        Some of the tasks on this page are incomplete
+                    </p>
+                """
+            )
+        )
+        return redirect(url_for(".service_set_channel", service_id=service_id, channel=channel))
 
 
 @main.route("/services/<uuid:service_id>/service-settings/set-auth-type", methods=["GET", "POST"])
@@ -1101,7 +1120,7 @@ def set_per_minute_rate_limit(service_id):
 
     if form.validate_on_submit():
         current_service.update(rate_limit=form.rate_limit.data)
-
+        redis_client.delete_by_pattern(f"{current_service.id}-tokens*")
         return redirect(url_for(".service_settings", service_id=service_id))
 
     return render_template("views/service-settings/set-rate-limit.html", form=form, error_summary_enabled=True)
@@ -1354,15 +1373,6 @@ def edit_service_billing_details(service_id):
 
 def convert_dictionary_to_wtforms_choices_format(dictionary, value, label):
     return [(item[value], item[label]) for item in dictionary]
-
-
-def check_contact_details_type(contact_details):
-    if contact_details.startswith("http"):
-        return "url"
-    elif "@" in contact_details:
-        return "email_address"
-    else:
-        return "phone_number"
 
 
 def handle_reply_to_email_address_http_error(raised_exception, form):

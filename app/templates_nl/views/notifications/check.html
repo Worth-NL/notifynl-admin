@@ -1,7 +1,7 @@
 {% extends "withnav_template.html" %}
 {% from "components/banner.html" import banner_wrapper %}
 {% from "components/page-header.html" import page_header %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 {% from "govuk_frontend_jinja/components/button/macro.html" import govukButton %}
 
 {% block service_page_title %}
@@ -82,7 +82,7 @@
         {{ govukButton({ "text": button_text }) }}
       {% endif %}
       {% if template.template_type == 'letter' %}
-        <a href="{{ url_for('no_cookie.check_notification_preview', service_id=current_service.id, template_id=template.id, filetype='pdf') }}" download class="govuk-link govuk-link--no-visited-state page-footer-right-aligned-link{% if error %}-without-button{% endif %}">Download als PDF</a>
+        <a href="{{ url_for('no_cookie.check_notification_preview', service_id=current_service.id, template_id=template.id, filetype='pdf') }}" class="govuk-link govuk-link--no-visited-state page-footer-right-aligned-link{% if error %}-without-button{% endif %}">Download als PDF</a>
       {% endif %}
     </form>
   </div>

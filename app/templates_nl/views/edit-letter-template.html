@@ -2,7 +2,7 @@
 {% from "components/page-header.html" import page_header %}
 {% from "components/page-footer.html" import sticky_page_footer %}
 {% from "components/form.html" import form_wrapper %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 
 {% set heading %}
   {% if heading_action == 'Edit' %}
@@ -64,7 +64,7 @@
             }
           }) }}
           {{ sticky_page_footer(
-            'Opslaan'
+            'Opslaan en voorbeeld bekijken'
           ) }}
 
         </div>

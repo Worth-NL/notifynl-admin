@@ -6,6 +6,7 @@ from flask import url_for
 from freezegun import freeze_time
 
 from app.main.views_nl.index import REDIRECTS
+from app.models.feedback import PROBLEM_TICKET_TYPE, QUESTION_TICKET_TYPE
 from tests.conftest import SERVICE_ONE_ID, normalize_spaces, sample_uuid
 
 
@@ -59,11 +60,12 @@ def test_robots(client_request):
     (
         ("sign_in", {}),
         ("support", {}),
+        ("support_what_do_you_want_to_do", {}),
+        ("support_problem", {}),
+        ("support_what_happened", {}),
         ("support_public", {}),
-        ("triage", {}),
-        ("feedback", {"ticket_type": "ask-question-give-feedback"}),
-        ("feedback", {"ticket_type": "general"}),
-        ("feedback", {"ticket_type": "report-problem"}),
+        ("feedback", {"ticket_type": QUESTION_TICKET_TYPE}),
+        ("feedback", {"ticket_type": PROBLEM_TICKET_TYPE, "severe": "no"}),
         ("bat_phone", {}),
         ("thanks", {}),
         ("register", {}),
@@ -89,6 +91,22 @@ def test_hiding_pages_from_search_engines(
 
 
 @pytest.mark.parametrize(
+    "endpoint, kwargs",
+    (
+        ("feedback_guidance_ticket_type", {}),
+        ("triage", {}),
+        ("triage", {"ticket_type": PROBLEM_TICKET_TYPE}),
+        pytest.param("index", {}, marks=pytest.mark.xfail(raises=AssertionError)),
+    ),
+)
+def test_hiding_pages_that_redirect_from_search_engines(client_request, endpoint, kwargs):
+    client_request.logout()
+    response = client_request.get_response(f"main.{endpoint}", _expected_status=301, **kwargs)
+    assert "X-Robots-Tag" in response.headers
+    assert response.headers["X-Robots-Tag"] == "noindex"
+
+
+@pytest.mark.parametrize(
     "view",
     [
         "accessibility_statement",
@@ -101,15 +119,22 @@ def test_hiding_pages_from_search_engines(
         "guidance_formatting",
         "guidance_how_to_pay",
         "guidance_letter_branding",
+        "guidance_links_and_URLs",
+        "guidance_optional_content",
+        "guidance_personalisation",
         "guidance_pricing_letters",
         "guidance_pricing_text_messages",
         "guidance_pricing",
+        "guidance_qr_codes",
         "guidance_receive_text_messages",
         "guidance_reply_to_email_address",
+        "guidance_returned_letters",
         "guidance_roadmap",
         "guidance_schedule_messages",
         "guidance_security",
         "guidance_send_files_by_email",
+        "guidance_sign_in_method",
+        "guidance_team_members_and_permissions",
         "guidance_templates",
         "guidance_text_message_sender",
         "guidance_unsubscribe_links",
@@ -186,6 +211,7 @@ def test_guidance_pages_link_to_service_pages_when_signed_in(
         ("/integration_testing", "main.guidance_api_documentation", {}),
         ("/integration-testing", "main.guidance_api_documentation", {}),
         ("/roadmap", "main.guidance_roadmap", {}),
+        ("/support/general", "main.support", {}),
         ("/terms", "main.terms_of_use", {}),
         ("/using-notify/guidance/message-status", "main.guidance_message_status", {}),
         ("/using-notify/guidance/message-status/sms", "main.guidance_message_status", {"notification_type": "sms"}),
@@ -360,14 +386,12 @@ def test_sms_price(
     expected_rate = "1.97"
     assert (
         normalize_spaces(home_page.select(".product-page-section")[4].select(".govuk-grid-column-one-half")[1].text)
-        == f"Text messages Up to 30,000 free text messages a year, then {expected_rate} pence per message"
+        == f"Text messages Up to 20,000 free text messages a year, then {expected_rate} pence per message"
     )
 
-    assert (
-        f"When a service has used its annual allowance, it costs "
-        f"{expected_rate} pence (plus VAT) for each text message you "
-        f"send."
-    ) in normalize_spaces(text_message_pricing_page.text)
+    assert f"A single, 160-character text message costs {expected_rate} pence (plus VAT)." in normalize_spaces(
+        text_message_pricing_page.text
+    )
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -388,3 +412,11 @@ def test_trial_mode_sending_limits(client_request):
     page = client_request.get("main.guidance_trial_mode")
 
     assert normalize_spaces("There’s a daily limit of 50 emails and 50 text messages.") in page.text
+
+
+def test_email_template_sets_correct_additional_header(client_request):
+    response = client_request.get_response("main.email_template")
+    csp = response.headers.get("Content-Security-Policy", "")
+
+    assert response.headers.get("X-Frame-Options") == "SAMEORIGIN"
+    assert "style-src-elem 'self' static.example.com 'unsafe-inline';" in csp
