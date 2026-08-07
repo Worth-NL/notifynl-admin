@@ -55,6 +55,7 @@ def test_service_dashboard_skeleton(
         "e-mail verzonden",
         "sms verzonden",
         "brieven verzonden",
+        "berichtenbox verzonden",
     ]
 
 

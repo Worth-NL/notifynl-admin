@@ -45,6 +45,13 @@
   }
 }
 
+.loading-indicator--4 {
+  &::after {
+    animation-delay: -2.4s;
+    animation-duration: 3s;
+  }
+}
+
 .loading-indicator--vertically-centered {
   position: relative;
   top: -0.3em;
