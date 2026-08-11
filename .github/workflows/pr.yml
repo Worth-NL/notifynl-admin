@@ -222,13 +222,31 @@ jobs:
           token: ${{ secrets.RELEASE_TOKEN }}
         name: Checkout Worth-NL/notifynl-charts-private
 
-      - uses: bwvolleyball/k8s-toolkit@v1.0.0
-        with:
-          config: ${{ secrets.K8S_CONFIG }}
+      # K8S_CONFIG is stored base64-encoded (shared with the other submodules'
+      # workflows, which still use bwvolleyball/k8s-toolkit and decode it
+      # internally). azure/k8s-set-context's `kubeconfig` method expects raw
+      # kubeconfig YAML, not base64, so decode it here first.
+      - name: Decode kubeconfig
+        id: decode-kubeconfig
+        run: |
+          {
+            echo "content<<KUBECONFIG_EOF"
+            echo "${{ secrets.K8S_CONFIG }}" | base64 -d
+            echo "KUBECONFIG_EOF"
+          } >> "$GITHUB_OUTPUT"
 
-      - run: helm dependency build
+      - uses: azure/k8s-set-context@v4
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ steps.decode-kubeconfig.outputs.content }}
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: v4.2.2
+
+      - name: Helm chart dependency build
+        run: helm dependency build
         working-directory: ${{ github.workspace }}/notifynl-full
-        name: Helm chart dependency build
 
       - name: Deploy new tag
         run: helm upgrade --install notifynl notifynl-full/ -n ${{ vars.NAMESPACE }} --reuse-values --set apps.admin.image.tag=${{ needs.build.outputs.tag }} --wait --timeout 300s
