@@ -118,6 +118,8 @@ jobs:
   docker-test:
     runs-on: ubuntu-latest
 
+    needs: unit-test
+
     strategy:
       matrix:
         python-version: ["3.13"]
