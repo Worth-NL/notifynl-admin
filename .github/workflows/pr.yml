@@ -215,6 +215,10 @@ jobs:
       name: Test
       url: https://admin.test.notifynl.nl
 
+    permissions:
+      contents: read
+      pull-requests: write
+
     env:
       HELM_SET_ARGS: >-
         --set apps.admin.image.tag=${{ needs.build.outputs.tag }}
@@ -278,6 +282,48 @@ jobs:
           $HELM_SET_ARGS \
           --rollback-on-failure \
           --timeout 300s
+
+      - name: Comment on PR if deployment fails
+        if: failure() && (steps.helm-dry-run.outcome == 'failure' || steps.helm-deploy.outcome == 'failure') && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const dryRunFailed = "${{ steps.helm-dry-run.outcome }}" === "failure";
+            const body = dryRunFailed
+              ? [
+                  "⚠️ **Test environment deployment blocked (pre-flight check failed)**",
+                  "",
+                  "- Environment: `Test`",
+                  "- Image tag: `${{ needs.build.outputs.tag }}`",
+                  "",
+                  "The pre-flight `helm upgrade --dry-run=server` check failed, so the real deploy never ran — **the cluster was not touched**, nothing to clean up.",
+                  "",
+                  "Check the workflow logs for the Helm error output. Most likely cause: `notifynl-full` added a new value with no chart default that this release doesn't have set yet — seed it once with a manual `helm upgrade --set <key>=<value>`, and future deploys will carry it forward automatically."
+                ].join("\n")
+              : [
+                  "❌ **Test environment deployment failed**",
+                  "",
+                  "- Environment: `Test`",
+                  "- Image tag: `${{ needs.build.outputs.tag }}`",
+                  "",
+                  "The pre-flight check passed but the real deploy failed — the cluster may be in a partial state.",
+                  "",
+                  "Check the workflow logs for the Helm error output.",
+                  "",
+                  "Check the test env k8s state/logs.",
+                  "",
+                  "Check if the helm release needs a rollback.",
+                  "",
+                  "Most likely issues:",
+                  "- Package visibility",
+                  "- ghcr.io credentials expiration or change"
+                ].join("\n");
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            })
 
   detect-static-changes:
     if: github.event.pull_request.draft == false
