@@ -336,6 +336,7 @@ EXCLUDED_ENDPOINTS = set(
             "service_set_inbound_number",
             "service_set_international_letters",
             "service_set_international_sms",
+            "service_set_letter_address_placement",
             "service_set_letters",
             "service_set_messagebox_channel",
             "service_set_permission",
