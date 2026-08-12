@@ -50,6 +50,7 @@ class Service(JSONModel):
     email_message_limit: int
     international_sms_message_limit: int
     sms_message_limit: int
+    letter_address_placement: str
     letter_message_limit: int
     messagebox_message_limit: int
     rate_limit: int

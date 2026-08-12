@@ -36,6 +36,7 @@ from app.main.overrides_nl.forms import (
     AdminServiceEditDataRetentionForm,
     AdminServiceInboundNumberArchive,
     AdminServiceInboundNumberForm,
+    AdminServiceLetterAddressPlacementForm,
     AdminServiceMessageLimitForm,
     AdminServiceRateLimitForm,
     AdminServiceSMSAllowanceForm,
@@ -664,6 +665,21 @@ def service_set_international_letters(service_id):
         return redirect(url_for(".service_settings", service_id=service_id))
     return render_template(
         "views/service-settings/set-international-letters.html",
+        form=form,
+    )
+
+
+@main.route("/services/<uuid:service_id>/service-settings/set-letter-address-placement", methods=["GET", "POST"])
+@user_has_permissions("manage_service")
+def service_set_letter_address_placement(service_id):
+    form = AdminServiceLetterAddressPlacementForm(
+        letter_address_placement=current_service.letter_address_placement,
+    )
+    if form.validate_on_submit():
+        current_service.update(letter_address_placement=form.letter_address_placement.data)
+        return redirect(url_for(".service_settings", service_id=service_id))
+    return render_template(
+        "views/service-settings/set-letter-address-placement.html",
         form=form,
     )
 

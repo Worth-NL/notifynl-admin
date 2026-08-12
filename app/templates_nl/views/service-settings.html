@@ -568,6 +568,25 @@
               ] if current_user.has_permissions('manage_service') else []
             }
           },
+          {
+            "key": {
+              "classes": "notify-summary-list__key notify-summary-list__key--35-100",
+              "text": "Adresplaatsing op de brief"
+            },
+            "value": {
+              "text": current_service.letter_address_placement
+            },
+            "actions": {
+              "items": [
+                {
+                  "href": url_for('main.service_set_letter_address_placement', service_id=current_service.id),
+                  "text": "Wijzigen",
+                  "visuallyHiddenText": "adresplaatsing op de brief",
+                  "classes": "govuk-link--no-visited-state"
+                }
+              ] if current_user.has_permissions('manage_service') else []
+            }
+          },
         ] %}
       {% endif %}
       <!-- only show limit page for live services -->

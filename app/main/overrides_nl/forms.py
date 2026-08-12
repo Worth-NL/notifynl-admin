@@ -2595,6 +2595,27 @@ class AdminServiceInboundNumberArchive(StripWhitespaceForm):
     )
 
 
+class AdminServiceLetterAddressPlacementForm(StripWhitespaceForm):
+    letter_address_placement = GovukRadiosField(
+        "Adresplaatsing op de brief",
+        choices=[("50mm", "50mm (standaard)"), ("60mm", "60mm (Pingen)")],
+        validators=[DataRequired(message="Selecteer een optie")],
+        param_extensions={
+            "items": [
+                {"hint": {"text": "De standaardpositie van het adresvenster op de envelop."}},
+                {
+                    "hint": {
+                        "text": (
+                            "Vereist door Pingen. Dit is de juiste keuze, tenzij voor deze dienst een "
+                            "aangepaste printstraat-integratie is geconfigureerd."
+                        )
+                    }
+                },
+            ]
+        },
+    )
+
+
 class CallbackForm(StripWhitespaceForm):
     url = GovukTextInputField(
         "URL",

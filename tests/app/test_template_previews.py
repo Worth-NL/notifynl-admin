@@ -55,7 +55,7 @@ def test_get_preview_for_templated_letter_makes_request(
 ):
     request_mock_returns = Mock(content="a", status_code="b", headers={"content-type": "image/png"})
     request_mock = mocker.patch("app.template_preview_client.requests_session.post", return_value=request_mock_returns)
-    service = mocker.Mock(spec=Service, letter_branding=letter_branding)
+    service = mocker.Mock(spec=Service, letter_branding=letter_branding, letter_address_placement="60mm")
     template = mock_get_service_letter_template("123", "456")["data"]
 
     response = template_preview_client.get_preview_for_templated_letter(
@@ -74,6 +74,7 @@ def test_get_preview_for_templated_letter_makes_request(
         "values": None,
         "filename": expected_filename,
         "date": expected_date_string_in_json,
+        "letter_address_placement": "60mm",
     }
     headers = {
         "Authorization": "Token my-secret-key",
@@ -100,7 +101,9 @@ def test_get_preview_for_templated_letter_allows_service_branding_to_be_overridd
     load_service_before_request()
 
     request_mock = mocker.patch("app.template_preview_client.requests_session.post")
-    service = mocker.Mock(spec=Service, letter_branding=LetterBranding({"filename": "hm-government"}))
+    service = mocker.Mock(
+        spec=Service, letter_branding=LetterBranding({"filename": "hm-government"}), letter_address_placement="60mm"
+    )
 
     template_preview_client.get_preview_for_templated_letter(
         db_template=create_notification(template_type="letter")["template"],
@@ -119,7 +122,9 @@ def test_get_preview_for_templated_letter_from_notification_has_correct_args(
 ):
     request_mock_returns = Mock(content="a", status_code="b", headers={"content-type": "image/png"})
     request_mock = mocker.patch("app.template_preview_client.requests_session.post", return_value=request_mock_returns)
-    service = mocker.Mock(spec=Service, letter_branding=LetterBranding({"filename": "hm-government"}))
+    service = mocker.Mock(
+        spec=Service, letter_branding=LetterBranding({"filename": "hm-government"}), letter_address_placement="60mm"
+    )
 
     notification = create_notification(
         service_id="abcd",
@@ -144,6 +149,7 @@ def test_get_preview_for_templated_letter_from_notification_has_correct_args(
         "values": {"name": "Jo"},
         "filename": "hm-government",
         "date": None,
+        "letter_address_placement": "60mm",
     }
     headers = {
         "Authorization": "Token my-secret-key",
