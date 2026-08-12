@@ -1,6 +1,6 @@
 # This file was automatically copied from notifications-utils@115.3.1
 
-exclude-newer = "7 days"
+exclude-newer = "5 days"
 
 [pip]
 generate-hashes = true
