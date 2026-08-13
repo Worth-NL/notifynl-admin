@@ -59,6 +59,34 @@ def test_service_dashboard_skeleton(
     ]
 
 
+def test_service_dashboard_skeleton_shows_messagebox_placeholder_for_messagebox_service(
+    client_request,
+    service_one,
+    mock_get_service_templates,
+    mock_has_no_jobs,
+    mock_get_unsubscribe_requests_statistics,
+    mock_get_inbound_sms_summary,
+    mock_get_returned_letter_statistics_with_no_returned_letters,
+):
+    # Regression test: app/templates_nl/views/dashboard/_totals-lazy.html once only reserved
+    # 3 loading tiles (email/sms/letter), unlike its sibling _usage-lazy.html which already
+    # reserves a 4th spot for messagebox - so for a service with the messagebox permission, the
+    # Berichtenbox totals tile used to pop in only once the AJAX call resolved, shifting the rest
+    # of the page down.
+    service_one["permissions"] = ["email", "sms", "letter", "messagebox"]
+
+    page = client_request.get("main.service_dashboard", service_id=SERVICE_ONE_ID)
+
+    totals = page.select_one("[data-key=totals]")
+
+    assert [normalize_spaces(column.text) for column in totals.select(".big-number-with-status")] == [
+        "e-mails verstuurd mislukt – Onbekend %",
+        "SMS-berichten verstuurd mislukt – Onbekend %",
+        "brieven verstuurd mislukt – Onbekend %",
+        "berichten verstuurd mislukt – Onbekend %",
+    ]
+
+
 @freeze_time("2016-07-01 12:00")  # 4 months into 2016 financial year
 def test_template_usage_hides_link_for_precompiled_letter_template(
     client_request,
