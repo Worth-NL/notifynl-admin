@@ -111,6 +111,27 @@
                 "showReuseMessage": false,
                 "close": true
             }
+        },
+        {
+            "label": "Compile NL requirements",
+            "type": "shell",
+            "command": "uv pip compile requirements_nl.in -o requirements_nl.txt",
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "close": true
+            }
+        },
+        {
+            "label": "Compile NL test requirements",
+            "type": "shell",
+            "command": "uv pip compile requirements_nl_test.in -o requirements_nl_test.txt",
+            "problemMatcher": [],
+            "dependsOn": ["Compile NL requirements"],
+            "presentation": {
+                "showReuseMessage": false,
+                "close": true
+            }
         }
     ]
 }
