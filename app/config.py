@@ -193,7 +193,14 @@ class Sandbox(CloudFoundryConfig):
 NL_PREFIX = "notifynl"
 
 
-class DevNL(Config):
+class ConfigNL(Config):
+    # Falls back to API_HOST_NAME so an image with this fallback deployed
+    # ahead of a chart release that actually sets API_HOST_NAME_INTERNAL
+    # doesn't regress -- see notifynl-full's configmaps.yaml.
+    API_HOST_NAME_INTERNAL = os.environ.get("API_HOST_NAME_INTERNAL", os.environ.get("API_HOST_NAME"))
+
+
+class DevNL(ConfigNL):
     NOTIFY_ENVIRONMENT = "development"
 
     SERVER_NAME = os.getenv("SERVER_NAME")
@@ -227,7 +234,7 @@ class DevNL(Config):
     REDIS_ENABLED = os.environ.get("REDIS_ENABLED") == "1"
 
 
-class TestNL(Config):
+class TestNL(ConfigNL):
     NOTIFY_ENVIRONMENT = "test"
 
     S3_BUCKET_CSV_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-csv-upload"
@@ -243,7 +250,7 @@ class TestNL(Config):
     S3_BUCKET_TEMPLATE_EMAIL_FILES = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-template-email-files"
 
 
-class AccNL(Config):
+class AccNL(ConfigNL):
     NOTIFY_ENVIRONMENT = "acceptance"
 
     S3_BUCKET_CSV_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-csv-upload"
@@ -259,7 +266,7 @@ class AccNL(Config):
     S3_BUCKET_TEMPLATE_EMAIL_FILES = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-template-email-files"
 
 
-class ProdNL(Config):
+class ProdNL(ConfigNL):
     NOTIFY_ENVIRONMENT = "production"
 
     S3_BUCKET_CSV_UPLOAD = f"{NL_PREFIX}-{NOTIFY_ENVIRONMENT}-csv-upload"
