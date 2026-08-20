@@ -2521,13 +2521,13 @@ def test_organisation_billing_page_when_the_agreement_is_not_signed(
             True,
             200,
             "crown.pdf",
-            "GOV.UK Notify data processing and financial agreement.pdf",
+            "NotifyNL data processing and financial agreement.pdf",
         ),
         (
             False,
             200,
             "non-crown.pdf",
-            "GOV.UK Notify data processing and financial agreement (non-crown).pdf",
+            "NotifyNL data processing and financial agreement (non-crown).pdf",
         ),
         (
             None,

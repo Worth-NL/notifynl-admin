@@ -133,13 +133,13 @@ def test_unknown_gps_and_trusts_are_redirected(
             True,
             200,
             "crown.pdf",
-            "GOV.UK Notify data processing and financial agreement.pdf",
+            "NotifyNL data processing and financial agreement.pdf",
         ),
         (
             False,
             200,
             "non-crown.pdf",
-            "GOV.UK Notify data processing and financial agreement (non-crown).pdf",
+            "NotifyNL data processing and financial agreement (non-crown).pdf",
         ),
         (
             None,
