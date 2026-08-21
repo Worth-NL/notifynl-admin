@@ -37,8 +37,14 @@ jobs:
          # pip's resolver, so they're excluded before pip-audit ever sees the file.
          grep -v '@ git+' requirements_nl.txt > /tmp/requirements_nl_filtered.txt
          grep -v '@ git+' requirements_nl_test.txt > /tmp/requirements_nl_test_filtered.txt
+         # --disable-pip: both filtered files are fully hash-pinned, so pip-audit can read
+         # name/version/hash directly instead of shelling out to `pip install --dry-run`.
+         # That dry-run install otherwise tries to resolve transitive deps of the packages
+         # we DO keep (e.g. celery pulling in kombu>=5.6.0, in other NL services) from PyPI
+         # to satisfy them, which has no hash and crashes pip's hash-checking mode —
+         # --disable-pip skips resolution entirely and audits exactly what's pinned here.
          pip-audit -r /tmp/requirements_nl_filtered.txt -r /tmp/requirements_nl_test_filtered.txt \
-           --format=markdown --output=/tmp/pip-audit-raw.md
+           --disable-pip --format=markdown --output=/tmp/pip-audit-raw.md
          exit_code=$?
          {
            echo "_Advisory only — this check never blocks merging. pip-audit has no severity data (see"
