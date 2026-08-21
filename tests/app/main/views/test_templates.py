@@ -2287,6 +2287,7 @@ def test_letter_branding_preview_image(
             "values": None,
             "filename": "example",
             "date": None,
+            "letter_address_placement": "60mm",
         },
         headers={
             "Authorization": "Token my-secret-key",

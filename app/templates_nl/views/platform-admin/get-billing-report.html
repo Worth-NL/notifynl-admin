@@ -31,7 +31,7 @@
     ) %}
       {% for column_heading, description in [
         ('sms cost', 'De totale kosten van verzonden sms-berichten nadat een dienst zijn gratis tegoed heeft gebruikt.'),
-        ('sms chargeable units', 'Het aantal verzonden fragmenten nadat een dienst zijn gratis tegoed heeft gebruikt. Dit aantal houdt rekening met de kostvermenigvuldiger voor <a class="govuk-link govuk-link--no-visited-state" href="https://www.notifications.service.gov.uk/pricing#international-numbers">internationale sms-berichten</a>.' | safe),
+        ('sms chargeable units', ('Het aantal verzonden fragmenten nadat een dienst zijn gratis tegoed heeft gebruikt. Dit aantal houdt rekening met de kostvermenigvuldiger voor <a class="govuk-link govuk-link--no-visited-state" href="' + url_for('main.guidance_pricing_text_messages') + '">internationale sms-berichten</a>.') | safe),
         ('letter cost', 'De totale kosten van door een dienst verzonden brieven.'),
         ('letter breakdown', 'Het aantal door een dienst verzonden brieven, gegroepeerd op posttarief en eenheidsprijs.'),
         ('purchase order number, contact names, contact email addresses and billing reference', 'Deze gegevens voegen wij handmatig toe op basis van informatie die we van diensten ontvangen. U kunt helpen door deze gegevens toe te voegen op de instellingenpagina van de dienst.'),

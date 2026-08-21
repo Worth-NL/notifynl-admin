@@ -113,6 +113,7 @@ from app.overrides_nl.formatters import (
     format_notification_status_as_field_status,
     format_notification_status_as_time,
     format_notification_status_as_url,
+    format_notification_status_text,
     format_notification_type,
     format_pennies_as_currency,
     format_pluralise,
@@ -150,6 +151,7 @@ from app.url_converters import (
     BrandingTypeConverter,
     DailyLimitTypeConverter,
     LetterFileExtensionConverter,
+    NotificationTypeConverter,
     SimpleDateTypeConverter,
     TemplateTypeConverter,
     TicketTypeConverter,
@@ -279,6 +281,7 @@ def init_app(application):
     application.url_map.converters["agreement_type"] = AgreementTypeConverter
     application.url_map.converters["template_type"] = TemplateTypeConverter
     application.url_map.converters["daily_limit_type"] = DailyLimitTypeConverter
+    application.url_map.converters["notification_type"] = NotificationTypeConverter
     application.url_map.converters["branding_type"] = BrandingTypeConverter
     application.url_map.converters["ticket_type"] = TicketTypeConverter
     application.url_map.converters["letter_file_extension"] = LetterFileExtensionConverter
@@ -620,6 +623,7 @@ def add_template_filters(application):
         format_notification_status_as_time,
         format_notification_status_as_field_status,
         format_notification_status_as_url,
+        format_notification_status_text,
         format_pluralise,
         format_pounds_as_currency,
         format_provider,

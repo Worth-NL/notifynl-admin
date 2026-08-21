@@ -29,12 +29,14 @@ from app.extensions import redis_client
 from app.main import json_updates, main
 from app.main.overrides_nl.forms import (
     AdminBillingDetailsForm,
+    AdminMessageboxSettingsForm,
     AdminNotesForm,
     AdminPreviewBrandingForm,
     AdminServiceAddDataRetentionForm,
     AdminServiceEditDataRetentionForm,
     AdminServiceInboundNumberArchive,
     AdminServiceInboundNumberForm,
+    AdminServiceLetterAddressPlacementForm,
     AdminServiceMessageLimitForm,
     AdminServiceRateLimitForm,
     AdminServiceSMSAllowanceForm,
@@ -667,6 +669,21 @@ def service_set_international_letters(service_id):
     )
 
 
+@main.route("/services/<uuid:service_id>/service-settings/set-letter-address-placement", methods=["GET", "POST"])
+@user_has_permissions("manage_service")
+def service_set_letter_address_placement(service_id):
+    form = AdminServiceLetterAddressPlacementForm(
+        letter_address_placement=current_service.letter_address_placement,
+    )
+    if form.validate_on_submit():
+        current_service.update(letter_address_placement=form.letter_address_placement.data)
+        return redirect(url_for(".service_settings", service_id=service_id))
+    return render_template(
+        "views/service-settings/set-letter-address-placement.html",
+        form=form,
+    )
+
+
 @main.route("/services/<uuid:service_id>/service-settings/receive-text-messages", methods=["GET"])
 @user_has_permissions("manage_service")
 def service_receive_text_messages(service_id):
@@ -811,6 +828,24 @@ def enable_email_channel(service_id):
             )
         )
         return redirect(url_for(".service_set_channel", service_id=service_id, channel=channel))
+
+
+@main.route("/services/<uuid:service_id>/service-settings/set-messagebox", methods=["GET", "POST"])
+@user_has_permissions("manage_service")
+def service_set_messagebox_channel(service_id):
+    form = ServiceSwitchChannelForm(channel="messagebox", enabled=current_service.has_permission("messagebox"))
+
+    if form.validate_on_submit():
+        current_service.force_permission(
+            "messagebox",
+            on=form.enabled.data,
+        )
+        return redirect(url_for(".service_settings", service_id=service_id))
+
+    return render_template(
+        "views/service-settings/set-messagebox.html",
+        form=form,
+    )
 
 
 @main.route("/services/<uuid:service_id>/service-settings/set-auth-type", methods=["GET", "POST"])
@@ -1113,6 +1148,22 @@ def set_per_day_message_limit(service_id, notification_type):
     return render_template("views/service-settings/set-message-limit.html", form=form, error_summary_enabled=True)
 
 
+@main.route("/services/<uuid:service_id>/service-settings/set-message-limit/messagebox", methods=["GET", "POST"])
+@user_is_platform_admin
+def set_per_day_messagebox_message_limit(service_id):
+    form = AdminServiceMessageLimitForm(
+        message_limit=current_service.get_message_limit("messagebox"),
+        notification_type="messagebox",
+    )
+
+    if form.validate_on_submit():
+        current_service.update(messagebox_message_limit=form.message_limit.data)
+
+        return redirect(url_for(".service_settings", service_id=service_id))
+
+    return render_template("views/service-settings/set-message-limit.html", form=form, error_summary_enabled=True)
+
+
 @main.route("/services/<uuid:service_id>/service-settings/set-rate-limit", methods=["GET", "POST"])
 @user_is_platform_admin
 def set_per_minute_rate_limit(service_id):
@@ -1340,6 +1391,24 @@ def edit_service_notes(service_id):
 
     return render_template(
         "views/service-settings/edit-service-notes.html",
+        form=form,
+    )
+
+
+@main.route("/services/<uuid:service_id>/messagebox-settings", methods=["GET", "POST"])
+@user_has_permissions("manage_service")
+def edit_service_messagebox_settings(service_id):
+    form = AdminMessageboxSettingsForm(oin=current_service.oin)
+
+    if form.validate_on_submit():
+        if form.oin.data == current_service.oin:
+            return redirect(url_for(".service_settings", service_id=service_id))
+
+        current_service.update(oin=form.oin.data)
+        return redirect(url_for(".service_settings", service_id=service_id))
+
+    return render_template(
+        "views/service-settings/edit-service-messagebox-settings.html",
         form=form,
     )
 

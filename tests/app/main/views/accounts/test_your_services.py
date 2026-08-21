@@ -501,4 +501,4 @@ def test_should_show_notification_banner_when_newly_activated_user(
     banner_title = page.select_one(".banner-title")
 
     assert len(banner) == 1
-    assert normalize_spaces(banner_title.text) == "You have created a GOV.UK Notify account"
+    assert normalize_spaces(banner_title.text) == "U heeft een NotifyNL-account aangemaakt"

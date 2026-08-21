@@ -1,3 +1,4 @@
+import { readFileSync, existsSync } from 'node:fs';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
@@ -40,6 +41,14 @@ const govukFrontendAssetPaths = {
   fonts: `${paths.govuk_frontend}govuk/assets/fonts/**/*`,
   manifest: `${paths.govuk_frontend}govuk/assets/manifest.json`,
 };
+
+// this repo uses .env rather than environment.sh; whichever entry point invokes rollup
+// (VS Code, make, or a raw `npm run build`/`npm run watch`), fall back to reading it directly
+// so /static/ prefixes in built CSS aren't stripped as if for a production CDN build
+if (!process.env.NOTIFY_ENVIRONMENT && existsSync('.env')) {
+  const match = readFileSync('.env', 'utf8').match(/^NOTIFY_ENVIRONMENT=(.*)$/m);
+  if (match) process.env.NOTIFY_ENVIRONMENT = match[1].trim();
+}
 
 const isDevelopment = Boolean(process.env.NOTIFY_ENVIRONMENT === 'development')
 

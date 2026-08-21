@@ -43,4 +43,20 @@
       ) }}
     </div>
   </div>
+  {% if current_service.has_permission('messagebox') %}
+    <div class="govuk-grid-row">
+      <div id="total-messagebox" class="govuk-grid-column-one-third">
+        {{ big_number_with_status(
+          loading_indicator(4),
+          999|message_count_label('messagebox', suffix='verstuurd'),
+          whitespace,
+          whitespace + hidden_label,
+          False,
+          failure_link=url_for("main.view_notifications", service_id=current_service.id, message_type='messagebox', status='failed'),
+          link=url_for("main.view_notifications", service_id=current_service.id, message_type='messagebox', status='sending,delivered,failed'),
+          smaller=True,
+        ) }}
+      </div>
+    </div>
+  {% endif %}
 </div>

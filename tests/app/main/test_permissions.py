@@ -356,8 +356,13 @@ def test_routes_require_types(client_request):
         for param in re.findall("<([^>]*)>", rule.rule):
             if ":" not in param:
                 pytest.fail(f"Should be <type:{param}> in {rule.rule}, where type is string, template_type, uuid, etc")
+            # match against the variable name only - matching the whole "converter:name" string
+            # can false-positive when a converter's own name coincides with a variable-naming
+            # convention it isn't related to (e.g. the notification_type converter vs. variables
+            # named notification_type)
+            _, var_name = param.split(":", 1)
             for partial_param, required_types in partial_param_name_to_types.items():
-                if partial_param in param and not param.startswith(
+                if partial_param in var_name and not param.startswith(
                     tuple(f"{required_type}:" for required_type in required_types)
                 ):
                     pytest.fail(

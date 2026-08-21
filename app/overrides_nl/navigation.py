@@ -324,6 +324,7 @@ class MainNavigation(Navigation):
             "service_set_inbound_number",
             "service_set_international_letters",
             "service_set_international_sms",
+            "service_set_letter_address_placement",
             "service_set_letters",
             "service_set_reply_to_email",
             "service_set_sms_prefix",

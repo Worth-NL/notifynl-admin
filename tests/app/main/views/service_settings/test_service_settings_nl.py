@@ -332,3 +332,49 @@ def test_view_edit_service_billing_details(
         "purchase_order_number",
         "notes",
     ]
+
+
+def test_service_set_letter_address_placement_prefills_form_with_current_value(
+    client_request,
+    service_one,
+):
+    service_one["letter_address_placement"] = "50mm"
+
+    page = client_request.get("main.service_set_letter_address_placement", service_id=SERVICE_ONE_ID)
+
+    assert page.select_one('input[name="letter_address_placement"][value="50mm"]').has_attr("checked")
+    assert not page.select_one('input[name="letter_address_placement"][value="60mm"]').has_attr("checked")
+
+
+@pytest.mark.parametrize("letter_address_placement", ["50mm", "60mm"])
+def test_service_set_letter_address_placement_updates_service_and_redirects(
+    client_request,
+    service_one,
+    mock_update_service,
+    letter_address_placement,
+):
+    client_request.post(
+        "main.service_set_letter_address_placement",
+        service_id=SERVICE_ONE_ID,
+        _data={"letter_address_placement": letter_address_placement},
+        _expected_status=302,
+        _expected_redirect=f"/services/{SERVICE_ONE_ID}/service-settings",
+    )
+
+    mock_update_service.assert_called_once_with(SERVICE_ONE_ID, letter_address_placement=letter_address_placement)
+
+
+def test_service_set_letter_address_placement_rejects_invalid_value(
+    client_request,
+    service_one,
+    mock_update_service,
+):
+    page = client_request.post(
+        "main.service_set_letter_address_placement",
+        service_id=SERVICE_ONE_ID,
+        _data={"letter_address_placement": "not-a-real-choice"},
+        _expected_status=200,
+    )
+
+    assert not mock_update_service.called
+    assert page.select_one(".govuk-error-summary")

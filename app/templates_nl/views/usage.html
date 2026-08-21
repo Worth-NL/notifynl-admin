@@ -44,6 +44,12 @@
                 <div class="keyline-block">{{ big_number(letter_sent, 'verzonden', **big_number_kwargs) }}</div>
             </div>
         </div>
+        <div class='govuk-grid-row'>
+            <div class='govuk-grid-column-one-third'>
+                <h2 class='heading-small'>Berichtenbox</h2>
+                <div class="keyline-block">{{ big_number(messageboxes_sent, 'verzonden', **big_number_kwargs) }}</div>
+            </div>
+        </div>
         {# total costs row
           <div class='govuk-grid-row'>
             <div class='govuk-grid-column-one-third'>

@@ -91,10 +91,11 @@ def activate_user(user_id):
     if user.default_organisation.can_ask_to_join_a_service:
         message = Markup(
             """
-            <h2 class="banner-title">You have created a GOV.UK Notify account</h2>
-            <p class="govuk-body">Now add or join a service to start sending messages.</p>
-            <p class="govuk-body">To update your sign-in details, go to
-                <a href={} class="govuk-link govuk-link--no-visited-state">your account</a>.
+            <h2 class="banner-title">U heeft een NotifyNL-account aangemaakt</h2>
+            <p class="govuk-body">Voeg nu een dienst toe of sluit u aan bij een dienst om
+                berichten te gaan versturen.</p>
+            <p class="govuk-body">Om uw inloggegevens te wijzigen, gaat u naar
+                <a href={} class="govuk-link govuk-link--no-visited-state">uw account</a>.
             </p>
             """.format(url_for("main.your_account"))
         )

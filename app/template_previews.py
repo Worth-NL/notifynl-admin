@@ -56,6 +56,7 @@ class TemplatePreviewClient:
             "values": values,
             "filename": branding_filename or (service.letter_branding.filename if service else None),
             "date": date.isoformat() if date else None,
+            "letter_address_placement": service.letter_address_placement if service else None,
         }
         response = self.requests_session.post(
             "{}/preview.{}{}".format(
