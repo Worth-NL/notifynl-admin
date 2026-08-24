@@ -748,6 +748,10 @@ def test_uploaded_letter_preview_redirects_if_file_not_in_s3(
     )
 
 
+@pytest.mark.skip(
+    reason="[NOTIFYNL] Moved to test_upload_letter_nl.py - the letter_address_placement "
+    "assertion below is NL-specific (the field doesn't exist upstream)"
+)
 @pytest.mark.parametrize(
     "invalid_pages, page_requested, overlay_expected",
     (

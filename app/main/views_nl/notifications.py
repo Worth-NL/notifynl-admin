@@ -56,7 +56,12 @@ def view_notification(service_id, notification_id):
             if notification.status == "validation-failed":
                 invalid_pages = metadata.get("invalid_pages")
                 invalid_pages = json.loads(invalid_pages) if invalid_pages else invalid_pages
-                error_message = get_letter_validation_error(metadata.get("message"), invalid_pages, page_count)
+                error_message = get_letter_validation_error(
+                    metadata.get("message"),
+                    invalid_pages,
+                    page_count,
+                    letter_address_placement=current_service.letter_address_placement,
+                )
         except PdfReadError:
             return render_template(
                 "views/notifications/invalid_precompiled_letter.html", created_at=notification.created_at

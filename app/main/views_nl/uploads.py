@@ -243,7 +243,12 @@ def uploaded_letter_preview(service_id, file_id):
     if invalid_pages:
         invalid_pages = json.loads(invalid_pages)
 
-    error_message = get_letter_validation_error(error_shortcode, invalid_pages, page_count)
+    error_message = get_letter_validation_error(
+        error_shortcode,
+        invalid_pages,
+        page_count,
+        letter_address_placement=current_service.letter_address_placement,
+    )
 
     form = LetterUploadPostageForm(postage_zone=postal_address.postage)
 
