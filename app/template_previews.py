@@ -82,14 +82,15 @@ class TemplatePreviewClient:
         )
         return response.content, response.status_code, self.get_allowed_headers(response.headers)
 
-    def get_png_for_invalid_pdf_page(self, pdf_file, page, is_an_attachment=False):
+    def get_png_for_invalid_pdf_page(self, pdf_file, page, is_an_attachment=False, letter_address_placement=None):
         pdf_page = extract_page_from_pdf(BytesIO(pdf_file), int(page) - 1)
 
+        query_string = f"?page_number={page}&is_an_attachment={is_an_attachment}"
+        if letter_address_placement:
+            query_string += f"&letter_address_placement={letter_address_placement}"
+
         response = self.requests_session.post(
-            "{}/precompiled/overlay.png{}".format(
-                self.api_host,
-                f"?page_number={page}&is_an_attachment={is_an_attachment}",
-            ),
+            f"{self.api_host}/precompiled/overlay.png{query_string}",
             data=pdf_page,
             headers=self._get_outbound_headers(),
         )
@@ -135,7 +136,9 @@ class TemplatePreviewClient:
 
         return page_count
 
-    def sanitise_letter(self, pdf_file, *, upload_id, allow_international_letters, is_an_attachment=False):
+    def sanitise_letter(
+        self, pdf_file, *, upload_id, allow_international_letters, is_an_attachment=False, letter_address_placement=None
+    ):
         url = "{host_url}/precompiled/sanitise?allow_international_letters={allow_intl}&upload_id={upload_id}".format(
             host_url=self.api_host,
             allow_intl="true" if allow_international_letters else "false",
@@ -143,6 +146,8 @@ class TemplatePreviewClient:
         )
         if is_an_attachment:
             url = url + "&is_an_attachment=true"
+        if letter_address_placement:
+            url = url + f"&letter_address_placement={letter_address_placement}"
         return self.requests_session.post(
             url,
             data=pdf_file,
