@@ -748,6 +748,10 @@ def test_uploaded_letter_preview_redirects_if_file_not_in_s3(
     )
 
 
+@pytest.mark.skip(
+    reason="[NOTIFYNL] Moved to test_upload_letter_nl.py - the letter_address_placement "
+    "assertion below is NL-specific (the field doesn't exist upstream)"
+)
 @pytest.mark.parametrize(
     "invalid_pages, page_requested, overlay_expected",
     (
@@ -792,7 +796,9 @@ def test_uploaded_letter_preview_image_shows_overlay_when_content_outside_printa
     )
 
     if overlay_expected:
-        template_preview_mock_invalid.assert_called_once_with("pdf_file", page_requested)
+        template_preview_mock_invalid.assert_called_once_with(
+            "pdf_file", page_requested, letter_address_placement="60mm"
+        )
         assert template_preview_mock_valid.called is False
     else:
         template_preview_mock_valid.assert_called_once_with("pdf_file", page_requested)

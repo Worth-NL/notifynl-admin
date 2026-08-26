@@ -1,7 +1,7 @@
 import pytest
 from freezegun import freeze_time
 
-from app.utils_nl.letters import get_letter_printing_statement, printing_today_or_tomorrow
+from app.utils_nl.letters import get_letter_printing_statement, get_letter_validation_error, printing_today_or_tomorrow
 
 
 @pytest.mark.parametrize(
@@ -85,3 +85,27 @@ def test_get_letter_printing_statement_for_letter_that_has_been_sent(created_at,
     statement = get_letter_printing_statement("delivered", created_at)
 
     assert statement == f"Geprint {expected_print_day} om 17:30 uur"
+
+
+@pytest.mark.parametrize(
+    "letter_address_placement, expected_label",
+    (
+        ("50mm", "50mm"),
+        ("60mm", "60mm (standaard)"),
+    ),
+)
+def test_get_letter_validation_error_for_address_placement_mismatch_interpolates_configured_placement(
+    notify_admin, letter_address_placement, expected_label
+):
+    with notify_admin.test_request_context():
+        error = get_letter_validation_error(
+            "address-placement-mismatch",
+            letter_address_placement=letter_address_placement,
+        )
+
+    assert expected_label in error["detail"]
+    assert expected_label in error["summary"]
+    # The Pingen/"standaard" settings-page branding must not leak into this message - see
+    # AdminServiceLetterAddressPlacementForm.choices for where "Pingen" is intentionally kept.
+    assert "Pingen" not in error["detail"]
+    assert "Pingen" not in error["summary"]

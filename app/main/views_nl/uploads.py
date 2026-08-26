@@ -158,6 +158,7 @@ def upload_letter(service_id):
                     BytesIO(pdf_file_bytes),
                     upload_id=upload_id,
                     allow_international_letters=current_service.has_permission("international_letters"),
+                    letter_address_placement=current_service.letter_address_placement,
                 )
                 response.raise_for_status()
             except RequestException as ex:
@@ -242,7 +243,12 @@ def uploaded_letter_preview(service_id, file_id):
     if invalid_pages:
         invalid_pages = json.loads(invalid_pages)
 
-    error_message = get_letter_validation_error(error_shortcode, invalid_pages, page_count)
+    error_message = get_letter_validation_error(
+        error_shortcode,
+        invalid_pages,
+        page_count,
+        letter_address_placement=current_service.letter_address_placement,
+    )
 
     form = LetterUploadPostageForm(postage_zone=postal_address.postage)
 
@@ -278,7 +284,9 @@ def view_letter_upload_as_preview(service_id, file_id):
     invalid_pages = json.loads(metadata.get("invalid_pages", "[]"))
 
     if metadata.get("message") == "content-outside-printable-area" and page in invalid_pages:
-        return template_preview_client.get_png_for_invalid_pdf_page(pdf_file, page)
+        return template_preview_client.get_png_for_invalid_pdf_page(
+            pdf_file, page, letter_address_placement=current_service.letter_address_placement
+        )
     else:
         return template_preview_client.get_png_for_valid_pdf_page(pdf_file, page)
 

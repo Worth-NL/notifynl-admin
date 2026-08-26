@@ -181,10 +181,24 @@ LETTER_VALIDATION_MESSAGES = {
         "detail": "De eerste 2 regels moeten beide minstens één alfanumeriek teken bevatten.",
         "summary": ("De validatie is mislukt omdat regel 1 en 2 van het adres geen alfanumeriek teken bevatten."),
     },
+    "address-placement-mismatch": {
+        "title": "De positie van het adres komt niet overeen met uw instelling",
+        "detail": (
+            "Het adres op deze brief staat niet op de positie die voor uw dienst is ingesteld "
+            "({letter_address_placement}). Pas de lay-out van uw brief aan, of wijzig de "
+            "ingestelde adrespositie bij uw brief-instellingen."
+        ),
+        "summary": (
+            "De validatie is mislukt omdat de positie van het adres niet overeenkomt met de voor "
+            "uw dienst ingestelde adrespositie ({letter_address_placement})."
+        ),
+    },
 }
 
+LETTER_ADDRESS_PLACEMENT_LABELS = {"50mm": "50mm", "60mm": "60mm (standaard)"}
 
-def get_letter_validation_error(validation_message, invalid_pages=None, page_count=None):
+
+def get_letter_validation_error(validation_message, invalid_pages=None, page_count=None, letter_address_placement=None):
     if not invalid_pages:
         invalid_pages = []
     if validation_message not in LETTER_VALIDATION_MESSAGES:
@@ -196,6 +210,8 @@ def get_letter_validation_error(validation_message, invalid_pages=None, page_cou
         invalid_pages, before_each="", after_each="", prefix="pagina", prefix_plural="pagina’s", conjunction="en"
     )
 
+    letter_address_placement = LETTER_ADDRESS_PLACEMENT_LABELS.get(letter_address_placement, letter_address_placement)
+
     return {
         "title": LETTER_VALIDATION_MESSAGES[validation_message]["title"],
         "detail": LETTER_VALIDATION_MESSAGES[validation_message]["detail"].format(
@@ -203,12 +219,14 @@ def get_letter_validation_error(validation_message, invalid_pages=None, page_cou
             invalid_pages_are_or_is=invalid_pages_are_or_is,
             page_count=page_count,
             letter_spec_guidance=url_for("main.guidance_upload_a_letter"),
+            letter_address_placement=letter_address_placement,
         ),
         "summary": LETTER_VALIDATION_MESSAGES[validation_message]["summary"].format(
             invalid_pages=invalid_pages,
             invalid_pages_are_or_is=invalid_pages_are_or_is,
             page_count=page_count,
             letter_spec_guidance=url_for("main.guidance_upload_a_letter"),
+            letter_address_placement=letter_address_placement,
         ),
     }
 

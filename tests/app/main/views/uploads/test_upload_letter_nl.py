@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 
-from flask import url_for
+import pytest
+from flask import make_response, url_for
 from requests import RequestException
 
 from app.s3_client.s3_letter_upload_client import LetterMetadata
@@ -132,3 +133,60 @@ def test_post_upload_letter_shows_letter_preview_for_valid_file(
         assert img["src"] == url_for(
             ".view_letter_upload_as_preview", service_id=SERVICE_ONE_ID, file_id=fake_uuid, page=page_no
         )
+
+
+@pytest.mark.parametrize(
+    "invalid_pages, page_requested, overlay_expected",
+    (
+        ("[1, 2]", 1, True),
+        ("[1, 2]", 2, True),
+        ("[1, 2]", 3, False),
+        ("[]", 1, False),
+    ),
+)
+def test_uploaded_letter_preview_image_shows_overlay_when_content_outside_printable_area_on_a_page(
+    client_request,
+    fake_uuid,
+    invalid_pages,
+    page_requested,
+    overlay_expected,
+    mocker,
+):
+    # Moved here from tests/app/main/views/uploads/test_upload_letter.py: this test exercises
+    # app.main.views_nl.uploads (the only registered "upload a letter" blueprint), and its
+    # letter_address_placement="60mm" assertion is NL-specific (the field doesn't exist
+    # upstream) - see .claude/rules/tests.md.
+    mocker.patch(
+        "app.main.views_nl.uploads.get_letter_pdf_and_metadata",
+        return_value=(
+            "pdf_file",
+            {
+                "message": "content-outside-printable-area",
+                "invalid_pages": invalid_pages,
+            },
+        ),
+    )
+    template_preview_mock_valid = mocker.patch(
+        "app.template_preview_client.get_png_for_valid_pdf_page",
+        return_value=make_response("page.html", 200),
+    )
+    template_preview_mock_invalid = mocker.patch(
+        "app.template_preview_client.get_png_for_invalid_pdf_page",
+        return_value=make_response("page.html", 200),
+    )
+
+    client_request.get_response(
+        "main.view_letter_upload_as_preview",
+        file_id=fake_uuid,
+        service_id=SERVICE_ONE_ID,
+        page=page_requested,
+    )
+
+    if overlay_expected:
+        template_preview_mock_invalid.assert_called_once_with(
+            "pdf_file", page_requested, letter_address_placement="60mm"
+        )
+        assert template_preview_mock_valid.called is False
+    else:
+        template_preview_mock_valid.assert_called_once_with("pdf_file", page_requested)
+        assert template_preview_mock_invalid.called is False
