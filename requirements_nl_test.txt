@@ -810,7 +810,7 @@ moto==5.1.0 \
 notifications-python-client==10.0.0 \
     --hash=sha256:0f152a4d23b7f7b827dae6b45ac63568a2bc56044b1aa57b66bc68b137c40e57
     # via -r requirements_nl.txt
-notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@a34be543f17663b29357041bc6192ebb19bb19ae
+notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@9aa1d4e0fc925acfa99201ec670a42376fd1d81f
     # via -r requirements_nl.txt
 notifynl-frontend-jinja @ git+https://github.com/Worth-NL/LandRegistry-frontend-jinja@08ff37bf48cafc08477d735cae51c2a7b938e8c4
     # via -r requirements_nl.txt
