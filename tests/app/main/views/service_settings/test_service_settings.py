@@ -500,6 +500,9 @@ def test_letter_contact_block_shows_none_if_not_set(
     assert "govuk-summary-list__value--default" in div.attrs["class"][1]
 
 
+@pytest.mark.skip(
+    reason="[NOTIFYNL] contact_block is now always rendered as a single line - see test_service_settings_nl.py"
+)
 def test_escapes_letter_contact_block(
     client_request,
     service_one,
@@ -2871,6 +2874,9 @@ def test_default_box_shows_on_non_default_sender_details_while_editing(
         assert normalize_spaces(page.select_one("form p").text) == (default_message)
 
 
+@pytest.mark.skip(
+    reason="[NOTIFYNL] contact_block is now always rendered as a single line - see test_service_settings_nl.py"
+)
 def test_sender_details_are_escaped(client_request, mocker, fake_uuid):
     letter_contact_block = create_letter_contact_block(contact_block="foo\n\n<br>\n\nbar")
     mocker.patch("app.service_api_client.get_letter_contacts", return_value=[letter_contact_block])

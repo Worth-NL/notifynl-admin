@@ -31,7 +31,6 @@ from app import (
     format_delta,
     letter_attachment_client,
     letter_branding_client,
-    nl2br,
     service_api_client,
     template_folder_api_client,
     template_preview_client,
@@ -1068,7 +1067,7 @@ def get_template_sender_form_dict(service_id, template):
     if not service_senders:
         context["no_senders"] = True
 
-    context["value_and_label"] = [(sender["id"], nl2br(sender[sender_format])) for sender in service_senders]
+    context["value_and_label"] = [(sender["id"], sender[sender_format].strip()) for sender in service_senders]
     context["value_and_label"].insert(0, ("", "Blank"))  # Add blank option to start of list
 
     context["current_choice"] = template.get_raw("service_letter_contact") or ""
