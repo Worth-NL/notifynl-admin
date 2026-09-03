@@ -20,7 +20,6 @@ from notifications_utils.recipients import RecipientCSV, first_column_headings
 from app import (
     current_service,
     job_api_client,
-    nl2br,
     notification_api_client,
     service_api_client,
     template_preview_client,
@@ -261,7 +260,7 @@ def get_sender_context(sender_details, template_type):
         if context["default_id"] == context.get("receives_text_message", None):
             context["default_and_receives"] = context["default_id"]
 
-    context["value_and_label"] = [(sender["id"], nl2br(sender[sender_format])) for sender in sender_details]
+    context["value_and_label"] = [(sender["id"], sender[sender_format].strip()) for sender in sender_details]
     return context
 
 

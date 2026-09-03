@@ -19,20 +19,12 @@
     <div class="govuk-grid-column-full">
       {% call form_wrapper() %}
         {{ form.letter_contact_block(param_extensions={
-          "classes": "govuk-!-width-one-half govuk-textarea-highlight__textbox",
-          "rows": "10",
-          "attributes": {
-            "data-notify-module": "enhanced-textbox",
-            "data-highlight-placeholders": "true"
-          },
+          "classes": "govuk-!-width-one-half",
           "label": {
             "text": "Dit wordt het afzendadres op uw brieven"
           },
           "hint": {
-            "text": "Maximaal 10 regels"
-          },
-          "formGroup": {
-            "classes": "govuk-textarea-highlight",
+            "text": "Bijvoorbeeld: Gemeente Voorbeeld, Postbus 123, 1234 AB Voorbeeldstad"
           }
         }) }}
         {% if not first_contact_block %}

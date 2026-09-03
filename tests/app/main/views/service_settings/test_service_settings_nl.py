@@ -7,6 +7,7 @@ from tests.conftest import (
     SERVICE_ONE_ID,
     create_active_user_no_settings_permission,
     create_active_user_with_permissions,
+    create_letter_contact_block,
     create_platform_admin_user,
     create_reply_to_email_address,
     normalize_spaces,
@@ -52,6 +53,33 @@ def test_api_ids_dont_show_on_option_pages_with_a_single_sender(
 
     assert normalize_spaces(rows[index].text) == expected_output
     assert len(rows) == index + 1
+
+
+def test_letter_contact_block_is_single_line_and_escaped_in_settings_summary(
+    client_request,
+    service_one,
+    mocker,
+    single_reply_to_email_address,
+    single_sms_sender,
+    injected_letter_contact_block,
+    mock_get_service_settings_page_common,
+):
+    service_one["permissions"] = ["letter"]
+    page = client_request.get("main.service_settings", service_id=SERVICE_ONE_ID)
+    div = str(page.select(".service-letter-settings .govuk-summary-list__value")[2])
+    assert "<br" not in div
+    assert "<script>" not in div
+
+
+def test_letter_contact_block_is_single_line_and_escaped_in_sender_list(client_request, mocker, fake_uuid):
+    letter_contact_block = create_letter_contact_block(contact_block="foo\n\n<script>bad</script>\n\nbar")
+    mocker.patch("app.service_api_client.get_letter_contacts", return_value=[letter_contact_block])
+
+    page = client_request.get("main.service_letter_contact_details", service_id=SERVICE_ONE_ID)
+
+    row = str(page.select(".user-list-item")[1])
+    assert "<br" not in row
+    assert "<script>" not in row
 
 
 @pytest.mark.parametrize(

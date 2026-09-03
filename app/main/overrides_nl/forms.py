@@ -2139,15 +2139,14 @@ class AdminMessageboxSettingsForm(StripWhitespaceForm):
 
 
 class ServiceLetterContactBlockForm(StripWhitespaceForm):
-    letter_contact_block = GovukTextareaField(
+    letter_contact_block = GovukTextInputField(
         validators=[NotifyDataRequired(thing="een verzendadres"), NoCommasInPlaceHolders()]
     )
     is_default = GovukCheckboxField("Maak dit uw standaardadres")
 
     def validate_letter_contact_block(self, field):
-        line_count = field.data.strip().count("\n")
-        if line_count >= 10:
-            raise ValidationError(f"Dit adres is {line_count + 1} regels lang - het maximum is tien regels")
+        if "\n" in field.data or "\r" in field.data:
+            raise ValidationError("Het adres mag niet meer dan één regel bevatten")
 
 
 class OnOffSettingForm(StripWhitespaceForm):

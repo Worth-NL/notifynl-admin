@@ -956,7 +956,7 @@ def service_add_letter_contact(service_id):
     if form.validate_on_submit():
         new_letter_contact = service_api_client.add_letter_contact(
             current_service.id,
-            contact_block=form.letter_contact_block.data.replace("\r", "") or None,
+            contact_block=form.letter_contact_block.data or None,
             is_default=first_contact_block if first_contact_block else form.is_default.data,
         )
         if from_template:
@@ -999,7 +999,7 @@ def service_edit_letter_contact(service_id, letter_contact_id):
     if form.validate_on_submit():
         current_service.edit_letter_contact_block(
             id=letter_contact_id,
-            contact_block=form.letter_contact_block.data.replace("\r", "") or None,
+            contact_block=form.letter_contact_block.data or None,
             is_default=letter_contact_block["is_default"] or form.is_default.data,
         )
         return redirect(url_for(".service_letter_contact_details", service_id=service_id))
