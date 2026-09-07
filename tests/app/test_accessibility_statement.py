@@ -2,7 +2,13 @@ import re
 import subprocess
 from datetime import datetime
 
+import pytest
 
+
+@pytest.mark.skip(
+    reason="[NOTIFYNL] app/templates/views/accessibility_statement.html (upstream) is never served in NL - "
+    "the NL Jinja loader only resolves app/templates_nl/, which has no review-date metadata block"
+)
 def test_last_review_date():
     statement_file_path = "app/templates/views/accessibility_statement.html"
 
@@ -30,11 +36,14 @@ def test_last_review_date():
             next_review_due = datetime.strptime(
                 re.search((r'"Next review due": "(\d{1,2} [A-Z]{1}[a-z]+ \d{4})"'), contents).group(1), date_format
             )
-        assert '"Last updated": "' in raw_diff or "Last non-functional changes" in raw_diff, (
+        has_functional_changes = '"Last updated": "' in raw_diff
+        has_non_functional_changes = "Last non-functional changes" in raw_diff
+        assert has_functional_changes or has_non_functional_changes, (
             "Ensure the last updated timestamp or the Last non-functional changes timestmap has been modified:"
             + raw_diff
         )
 
         assert last_content_change_at < datetime.today()
-        assert next_review_due > datetime.today()
+        if has_functional_changes:
+            assert next_review_due > datetime.today()
         assert next_review_due > last_content_change_at

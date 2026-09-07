@@ -16,7 +16,11 @@ def _attach_current_user(data):
 class NotifyAdminAPIClient(BaseAPIClient):
     def __init__(self, app):
         try:
-            base_url = app.config["API_HOST_NAME"]
+            # .get(), not [] -- the upstream Test/Development/Sandbox config
+            # classes never define API_HOST_NAME_INTERNAL (only NotifyNL's
+            # ConfigNL and its subclasses do), so this falls back to the
+            # same value they've always used.
+            base_url = app.config.get("API_HOST_NAME_INTERNAL", app.config["API_HOST_NAME"])
         except RuntimeError as e:
             raise RuntimeError(
                 "Could not teardown fixtures after test run. Try: \n"

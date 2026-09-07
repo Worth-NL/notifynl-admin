@@ -1,0 +1,34 @@
+{% extends "content_template.html" %}
+
+{# Used by the content_template.html layout, prefixes the "navigation" accessible name #}
+{% set navigation_label_prefix = 'Notify gebruiken' %}
+
+{% block per_page_title %}
+  Retour gezonden brieven
+{% endblock %}
+
+{% block content_column_content %}
+
+  <h1 class="heading-large">Retour gezonden brieven</h1>
+  <p class="govuk-body">Elke brief die wij versturen bevat het adres van onze drukkerij op de achterkant van de envelop. U kunt het retouradres niet aanpassen.</p>
+  <p class="govuk-body">Niet bezorgde brieven worden teruggestuurd naar onze drukkerij en vernietigd.</p>
+  <p class="govuk-body">U kunt een rapport van retour gezonden brieven zien op het dashboard.</p>
+  <h2 id="identify-returned-letters" class="heading-medium">Retour gezonden brieven herkennen</h2>
+  <p class="govuk-body">Om u te helpen bij het herkennen van retour gezonden brieven, toont het rapport onder andere:
+  </p>
+  <ul class="govuk-list govuk-list--bullet">
+    <li>template-ID</li>
+    <li>datum waarop de brief is verzonden</li>
+    <li>een referentie voor elke brief als u een van de volgende gebruikt:
+      <ul class="govuk-list govuk-list--bullet">
+        <li>een kolom genaamd ‘reference’ in de lijst met adressen die u uploadt</li>
+        <li>het <code class="lang-py">reference</code>-argument bij het aanroepen van de Notify API</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h2 id="automate-identifying-returned-letters" class="heading-medium">Automatisch herkennen van retour gezonden brieven</h2>
+  <p class="govuk-body">Gebruik de Notify API om het rapport van retour gezonden brieven op te halen en de brieven te identificeren. Volg de instructies in onze <a class="govuk-link govuk-link--no-visited-state" href="https://docs.notifynl.nl/using-notifynl/using-notifynl/api-documentation">API-documentatie</a>.</p>
+  <p class="govuk-body">U heeft een ontwikkelaar nodig in uw team om dit voor u in te stellen.</p>
+
+{% endblock %}

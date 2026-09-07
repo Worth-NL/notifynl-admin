@@ -7,23 +7,10 @@ const emailPreviewConfirmationURL = '/services/6658542f-0cad-491f-bec8-ab8457700
 const letterPageURL = '/services/6658542f-0cad-491f-bec8-ab8457700ead/service-settings/set-letter-branding';
 const letterPreviewConfirmationURL = '/services/6658542f-0cad-491f-bec8-ab8457700ead/service-settings/preview-letter-branding';
 
-let locationMock;
-
 beforeAll(() => {
-
-  // mock calls to window.location
-  locationMock = new helpers.LocationMock();
-
   // default to the email page, the pathname can be changed inside specific tests
-  window.location.pathname = emailPageURL;
+  history.replaceState(history.state, null, emailPageURL);
   document.body.classList.add('govuk-frontend-supported');
-
-});
-
-afterAll(() => {
-
-  // reset window.location to its original state
-  locationMock.reset();
 
 });
 
@@ -70,11 +57,11 @@ describe('Preview pane', () => {
           <div class="govuk-grid-column-full">
             <div data-notify-module="autofocus">
               <div class="live-search js-header" data-notify-module="live-search" data-targets=".govuk-radios__item">
-                <div class="form-group">
-                  <label class="form-label" for="search">
+                <div class="govuk-form-group">
+                  <label class="govuk-label for="search">
                       Search branding styles by name
                   </label>
-                  <input autocomplete="off" class="form-control form-control-1-1 " id="search" name="search" required="" rows="8" type="search" value="">
+                  <input autocomplete="off" class="govuk-input govuk-!-width-full" id="search" name="search" required="" rows="8" type="search" value="">
                 </div>
               </div>
             </div>
@@ -169,7 +156,7 @@ describe('Preview pane', () => {
     beforeEach(() => {
 
       // set page URL and page type to 'letter'
-      window.location.pathname = letterPreviewConfirmationURL;
+      history.replaceState(history.state, null, letterPreviewConfirmationURL);
       form.setAttribute('data-preview-type', 'letter');
 
     });

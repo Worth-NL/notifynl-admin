@@ -14,11 +14,26 @@
 
   <h1 class="heading-large">Letter pricing</h1>
 
-    {{ content_metadata(
-      data={
-        "Last updated": letter_rates.last_updated | format_date_normal
-      }
-    ) }}
+  {{ content_metadata(
+    data={
+      "Last updated": letter_rates.last_updated | format_date_normal
+    }
+  ) }}
+
+  {% set date_new_letter_rates_go_live = "2026-05-03" %}
+  {% if letter_rates.last_updated | format_date_numeric < date_new_letter_rates_go_live %}
+    <div class="govuk-inset-text">
+      <p class="govuk-body">
+        Royal Mail is increasing its rates.
+      </p>
+      <p class="govuk-body">
+        On 3 May 2026, international letter prices will go up by between 6 and 8 pence (not including VAT).
+      </p>
+      <p class="govuk-body">
+        The exact difference will depend on the number of pages in your letter.
+      </p>
+    </div>
+  {% endif %}
 
   <p class="govuk-body">The cost of sending a letter depends on the postage you choose and how many sheets of paper you need.</p>
 
@@ -34,7 +49,7 @@
 
 <p class="govuk-body">Prices do not include VAT.</p>
 
-  <div>
+  <div class="fullscreen-content" data-notify-module="fullscreen-table">
     {% call mapping_table(
       caption='Letter pricing. Prices do not include VAT.',
       field_headings=['Paper'] + letter_rates.post_classes.values()|list,
@@ -52,6 +67,18 @@
     {% endcall %}
   </div>
 
+<h2 class="heading-small">Save money with economy mail</h2>
+
+<p class="govuk-body">Royal Mail’s economy mail service is up to 9 pence cheaper than second class and takes between 3 and 6 working days to arrive.</p>
+
 <p class="govuk-body">See <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_delivery_times', _anchor='letters') }}">delivery times</a>.</p>
+
+<h2 class="heading-small">Tracked delivery</h2>
+
+<p class="govuk-body">GOV.UK Notify does not offer a tracked delivery service.</p>
+
+<h2 class="heading-small">International letters</h2>
+
+<p class="govuk-body">GOV.UK Notify checks for international addresses and will automatically charge you the correct postage.</p>
 
 {% endblock %}

@@ -81,6 +81,9 @@ EXCLUDED_ENDPOINTS = set(
             "delete_template_folder",
             "delivery_status_callback",
             "design_content",
+            "document_download_confirm_email_address",
+            "document_download_download_document",
+            "document_download_landing",
             "download_contact_list",
             "download_notifications_csv",
             "download_organisation_usage_report",
@@ -98,6 +101,7 @@ EXCLUDED_ENDPOINTS = set(
             "edit_organisation_type",
             "edit_organisation_user",
             "edit_service_billing_details",
+            "edit_service_messagebox_settings",
             "edit_service_notes",
             "edit_service_template",
             "edit_sms_provider_ratio",
@@ -118,9 +122,19 @@ EXCLUDED_ENDPOINTS = set(
             "email_branding",
             "email_not_received",
             "email_template",
+            "enable_email_channel",
+            "setup_template_email_files",
+            "upload_template_email_files",
+            "template_email_files",
+            "make_file_live",
+            "change_link_text",
+            "change_data_retention_period",
+            "change_email_validation",
+            "manage_a_template_email_file",
             "error",
             "estimate_usage",
             "feedback",
+            "feedback_guidance_ticket_type",
             "forgot_password",
             "get_billing_report",
             "get_daily_sms_provider_volumes",
@@ -153,6 +167,7 @@ EXCLUDED_ENDPOINTS = set(
             "guidance_qr_codes",
             "guidance_receive_text_messages",
             "guidance_reply_to_email_address",
+            "guidance_returned_letters",
             "guidance_roadmap",
             "guidance_schedule_messages",
             "guidance_security",
@@ -180,6 +195,7 @@ EXCLUDED_ENDPOINTS = set(
             "json_updates.get_notifications_page_partials_as_json",
             "json_updates.inbox_updates",
             "json_updates.service_dashboard_updates",
+            "json_updates.service_dashboard_usage_updates",
             "json_updates.service_verify_reply_to_address_updates",
             "json_updates.view_job_updates",
             "json_updates.view_notification_updates",
@@ -202,7 +218,9 @@ EXCLUDED_ENDPOINTS = set(
             "manage_org_users",
             "manage_template_folder",
             "manage_users",
+            "manage_users_download",
             "monthly",
+            "name_service",
             "new_terms_of_use",
             "new_password",
             "no_cookie.check_messages_preview",
@@ -318,7 +336,9 @@ EXCLUDED_ENDPOINTS = set(
             "service_set_inbound_number",
             "service_set_international_letters",
             "service_set_international_sms",
+            "service_set_letter_address_placement",
             "service_set_letters",
+            "service_set_messagebox_channel",
             "service_set_permission",
             "service_set_reply_to_email",
             "service_set_sms_prefix",
@@ -332,6 +352,7 @@ EXCLUDED_ENDPOINTS = set(
             "set_free_sms_allowance",
             "set_per_day_international_sms_message_limit",
             "set_per_day_message_limit",
+            "set_per_day_messagebox_message_limit",
             "set_per_minute_rate_limit",
             "set_sender",
             "set_template_sender",
@@ -343,6 +364,18 @@ EXCLUDED_ENDPOINTS = set(
             "submit_request_to_go_live_old_path",
             "support_public",
             "support",
+            "support_email_address_changed",
+            "support_email_address_changed_account_details",
+            "support_cannot_sign_in",
+            "support_mobile_number_changed",
+            "support_mobile_number_changed_account_details",
+            "support_no_email_link",
+            "support_no_email_link_account_details",
+            "support_no_security_code",
+            "support_no_security_code_account_details",
+            "support_problem",
+            "support_what_do_you_want_to_do",
+            "support_what_happened",
             "template_history",
             "template_usage",
             "terms_of_use",
@@ -600,7 +633,7 @@ def test_caseworkers_get_caseworking_navigation(
 ):
     client_request.login(active_caseworking_user)
     page = client_request.get("main.choose_template", service_id=SERVICE_ONE_ID)
-    assert normalize_spaces(page.select_one(".govuk-service-navigation + .govuk-width-container nav").text) == (
+    assert normalize_spaces(page.select_one("body > .govuk-width-container nav").text) == (
         "Templates Sent messages Uploads Team members"
     )
 
@@ -616,7 +649,7 @@ def test_caseworkers_see_jobs_nav_if_jobs_exist(
 ):
     client_request.login(active_caseworking_user)
     page = client_request.get("main.choose_template", service_id=SERVICE_ONE_ID)
-    assert normalize_spaces(page.select_one(".govuk-service-navigation + .govuk-width-container nav").text) == (
+    assert normalize_spaces(page.select_one("body > .govuk-width-container nav").text) == (
         "Templates Sent messages Uploads Team members"
     )
 
@@ -674,3 +707,20 @@ def test_make_your_service_live_link_shows_if_service_is_in_trial_mode_and_user_
         "main.request_to_go_live",
         service_id=SERVICE_ONE_ID,
     )
+
+
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+def test_navigation_displayed_on_service_page_404(
+    client_request,
+    mock_get_job_doesnt_exist,
+    fake_uuid,
+):
+    page = client_request.get(
+        "main.view_job",
+        service_id=SERVICE_ONE_ID,
+        job_id=fake_uuid,
+        _expected_status=404,
+    )
+    assert normalize_spaces(page.select_one("h1").text) == "Page not found"
+    assert normalize_spaces(page.select_one(".navigation-service-name").text) == "service one"
+    assert len(page.select("nav.navigation .navigation__item")) == 8

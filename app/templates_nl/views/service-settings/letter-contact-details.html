@@ -2,7 +2,7 @@
 {% from "components/copy-to-clipboard.html" import copy_to_clipboard %}
 {% from "components/page-header.html" import page_header %}
 {% from "govuk_frontend_jinja/components/button/macro.html" import govukButton %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 
 {% block service_page_title %}
   Afzenderadressen
@@ -40,7 +40,7 @@
         <div class="govuk-grid-row">
           <div class="govuk-grid-column-three-quarters">
             <p class="govuk-body">
-              {{ item.contact_block | nl2br }}
+              {{ item.contact_block }}
             </p>
             <p class="govuk-body hint">
               {%- if item.is_default -%}

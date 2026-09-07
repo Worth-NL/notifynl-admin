@@ -1,6 +1,6 @@
 {% extends "withnav_template.html" %}
 {% from "components/page-header.html" import page_header %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 {% from "govuk_frontend_jinja/components/inset-text/macro.html" import govukInsetText %}
 {% from "components/form.html" import form_wrapper %}
 {% from "components/page-footer.html" import page_footer %}
@@ -58,7 +58,7 @@
             <p class="hint">Dit nummer is nooit gebruikt</p>
             {% else %}
             <p class="govuk-body">Dit nummer is voor het laatst gebruikt
-                <time class="timeago" datetime="{{ recent_use_date}}">
+                <time data-notify-module="update-relative-time" datetime="{{ recent_use_date}}">
                     {{ recent_use_date|format_delta }}
                 </time>
             </p>

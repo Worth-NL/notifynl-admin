@@ -84,7 +84,7 @@ def test_register_creates_new_user_and_redirects_to_continue_page(
         _follow_redirects=True,
     )
 
-    assert page.select("main p")[0].text == "An email has been sent to notfound@example.gov.uk."
+    assert page.select("main p")[0].text == "We’ve sent an email to notfound@example.gov.uk"
 
     mock_send_verify_email.assert_called_with(ANY, user_data["email_address"])
     mock_register_user.assert_called_with(
@@ -543,3 +543,18 @@ def test_register_from_invite_form_doesnt_show_mobile_number_field_if_email_auth
 
     assert page.select_one("input[name=auth_type]")["value"] == "email_auth"
     assert page.select_one("input[name=mobile_number]") is None
+
+
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+def test_registration_continue_page(client_request, fake_uuid):
+    with client_request.session_transaction() as session:
+        session["user_details"] = {"email": "user@gov.uk", "id": fake_uuid}
+
+    page = client_request.get("main.registration_continue")
+
+    assert normalize_spaces(page.select_one("h1").text) == "Check your inbox"
+    assert "We’ve sent an email to user@gov.uk" in page.text
+
+
+def test_registration_continue_without_user_details_in_session_redirects(client_request):
+    client_request.get("main.registration_continue", _expected_redirect=url_for("main.show_accounts_or_dashboard"))

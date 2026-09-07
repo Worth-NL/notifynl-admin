@@ -2,6 +2,7 @@
 {% from "components/govuk-page-header.html" import govuk_page_header %}
 {% from "components/page-footer.html" import page_footer %}
 {% from "components/form.html" import form_wrapper %}
+{% from "govuk_frontend_jinja/components/details/macro.html" import govukDetails %}
 
 {% block per_page_title %}
   Ondersteuning
@@ -17,8 +18,10 @@
 
   {% call form_wrapper() %}
     {% if current_user.is_authenticated %}
+      <h2 class="govuk-heading-m">Wat wilt u doen?</h2>
       {{ form.support_type }}
     {% else %}
+      <h2 class="govuk-heading-m">Waarbij heeft u hulp nodig?</h2>
       {{ form.who }}
     {% endif %}
     {{ page_footer('Doorgaan') }}
@@ -26,13 +29,14 @@
 
 <div class="govuk-grid-row">
   <div class="govuk-grid-column-two-thirds">
-
-    <h2 class="heading-medium">Wat is een noodgeval?</h2>
-    <p class="govuk-body">Een probleem is alleen een noodgeval als uw dienst live is en:</p>
-    <ul class="govuk-list govuk-list--bullet">
-      <li>u een foutmelding ‘technische storing’ krijgt bij het uploaden van een bestand</li>
-      <li>u een 500-responsecode krijgt bij het versturen van berichten via de API</li>
-    </ul>
+      {% set emergency_criteria %}
+      <p class="govuk-body">Een probleem is alleen een noodgeval als uw dienst live is en:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>u een foutmelding ‘technische storing’ krijgt bij het versturen van berichten via de NotifyNL website</li>
+        <li>u een 500-responsecode krijgt bij het versturen van berichten via de API</li>
+      </ul>
+      {% endset %}
+      {{ govukDetails({"summaryText": "Wat is een noodgeval?", "html": emergency_criteria}) }}
   </div>
 </div>
 

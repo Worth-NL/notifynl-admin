@@ -20,7 +20,7 @@ See the LICENSE and NOTICE files for details.
 
 ### Python version
 
-At the moment we run Python 3.11 in production.
+We run Python 3.13 in production.
 
 ### NodeJS & NPM
 
@@ -94,10 +94,10 @@ make bootstrap
 make test
 
 # run the js tests
-npx jest
+npm test:js
 
 # run a single js test
-npx jest <pathToAJavascriptTestfile>
+npm run test:js -- <pathToAJavascriptTestfile>
 
 # continuously run js tests
 npm run test-watch

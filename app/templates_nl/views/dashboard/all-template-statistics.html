@@ -41,10 +41,19 @@
             field_headings_visible=False
           ) %}
             {% call row_heading() %}
+              {% if item.is_precompiled_letter %}
+              <span class="template-statistics-table-template-name">
+              Aangeleverd als pdf
+              </span>
+              <span class="template-statistics-table-hint">
+                Brief
+              </span>
+              {% else %}
               <a class="govuk-link govuk-link--no-visited-state template-statistics-table-template-name" href="{{ url_for('main.view_template', service_id=current_service.id, template_id=item.id) }}">{{ item.name }}</a>
               <span class="template-statistics-table-hint">
                 {{ 1|message_count_label(item.type, suffix='sjabloon')|capitalize }}
               </span>
+              {% endif %}
             {% endcall %}
             {{ spark_bar_field(item.requested_count, most_used_template_count) }}
           {% endcall %}

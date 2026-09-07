@@ -35,6 +35,6 @@ Open deze link om de nieuwe e-mailhuisstijl te selecteren voor {{ current_servic
 
 Deze service heeft organisatiebranding gevraagd.
 
-{% endif %}Maak dit logo aan: {{ create_logo_url }}
+Maak dit logo aan: {{ create_logo_url }}
 
 Pas branding toe op deze service: {{ url_for('main.service_set_branding', service_id=current_service.id, branding_type='email', _external=True) }}

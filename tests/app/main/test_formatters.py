@@ -1,8 +1,7 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from functools import partial
 
 import pytest
-import pytz
 from flask import url_for
 from freezegun import freeze_time
 
@@ -11,9 +10,12 @@ from app.formatters import (
     format_notification_status_as_url,
     format_pennies_as_currency,
     format_pounds_as_currency,
+    format_retention_period,
     message_finished_processing_notification,
     sentence_case,
 )
+from tests import NotifyBeautifulSoup
+from tests.conftest import normalize_spaces
 
 
 @pytest.mark.parametrize(
@@ -30,8 +32,8 @@ from app.formatters import (
         ("temporary-failure", "sms", partial(url_for, "main.guidance_message_status", notification_type="sms")),
         ("permanent-failure", "sms", partial(url_for, "main.guidance_message_status", notification_type="sms")),
         ("technical-failure", "sms", partial(url_for, "main.guidance_message_status", notification_type="sms")),
-        # Letter statuses are never linked
-        ("technical-failure", "letter", lambda: None),
+        # Failed letter statuses are linked
+        ("technical-failure", "letter", partial(url_for, "main.guidance_message_status", notification_type="letter")),
         ("cancelled", "letter", lambda: None),
         ("accepted", "letter", lambda: None),
         ("received", "letter", lambda: None),
@@ -155,17 +157,37 @@ def test_sentence_case(sentence, sentence_case_sentence):
     "processing_started, data_retention_period, expected_message",
     [
         (
-            datetime(2020, 1, 4, 1, 0, 0),
+            datetime(2020, 1, 4, 1, 0, 0, tzinfo=UTC),
             7,
             "No messages to show",
         ),
         (
-            datetime(2020, 1, 2, 1, 0, 0),
+            datetime(2020, 1, 2, 1, 0, 0, tzinfo=UTC),
             7,
             "These messages have been deleted because they were sent more than 7 days ago",
         ),
     ],
 )
 def test_message_finished_processing_notification(processing_started, data_retention_period, expected_message):
-    message = message_finished_processing_notification(pytz.utc.localize(processing_started), data_retention_period)
+    message = message_finished_processing_notification(processing_started, data_retention_period)
     assert message == expected_message
+
+
+@pytest.mark.parametrize(
+    "weeks, expected, expected_hint",
+    (
+        (1, "1 week after sending", None),
+        (2, "2 weeks after sending", None),
+        (8, "8 weeks after sending", None),
+        (9, "9 weeks after sending (about 2 months)", "(about 2 months)"),
+        (26, "26 weeks after sending (about 6 months)", "(about 6 months)"),  # Default for new files
+        (52, "52 weeks after sending (about a year)", "(about a year)"),
+        (78, "78 weeks after sending (about 1 year, 6 months)", "(about 1 year, 6 months)"),  # Maximum
+    ),
+)
+def test_format_retention_period(weeks, expected, expected_hint):
+    snippet = NotifyBeautifulSoup(format_retention_period(weeks))
+    assert normalize_spaces(snippet) == expected
+
+    hint = snippet.select_one(".govuk-hint")
+    assert normalize_spaces(hint) == expected_hint

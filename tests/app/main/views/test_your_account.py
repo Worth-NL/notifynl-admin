@@ -145,8 +145,11 @@ def test_should_redirect_after_name_change(
 def test_should_show_email_page(
     client_request,
 ):
-    page = client_request.get("main.your_account_email")
-    assert page.select_one("h1").text.strip() == "Change your email address"
+    page = client_request.get("main.your_account_email", _test_page_title=False)
+    assert normalize_spaces(page.select_one("title").text).startswith(
+        "Enter your new email address – Change your email address"
+    )
+    assert page.select_one("h1").text.strip() == "Enter your new email address"
     # template is shared with "Change your mobile number" but we don't want to show Delete mobile number link
     assert "Delete your number" not in page.text
 
@@ -221,8 +224,9 @@ def test_should_show_authenticate_after_email_change(
     with client_request.session_transaction() as session:
         session["new-email"] = "new_notify@notify.gov.uk"
 
-    page = client_request.get("main.your_account_email_authenticate")
+    page = client_request.get("main.your_account_email_authenticate", _test_page_title=False)
 
+    assert normalize_spaces(page.select_one("title").text).startswith("Enter your password – Change your email address")
     assert "Change your email address" in page.text
     assert "Confirm" in page.text
 
@@ -249,6 +253,7 @@ def test_should_render_change_email_continue_after_authenticate_email(
         _data={"password": "12345"},
         _expected_status=200,
     )
+    assert normalize_spaces(page.select_one("title").text).startswith("Check your inbox – Change your email address")
     assert "Click the link in the email to confirm the change to your email address." in page.text
 
 
@@ -276,7 +281,12 @@ def test_should_redirect_to_user_profile_when_user_confirms_email_link(
 def test_should_show_mobile_number_page(
     client_request,
 ):
-    page = client_request.get("main.your_account_mobile_number")
+    page = client_request.get("main.your_account_mobile_number", _test_page_title=False)
+
+    assert normalize_spaces(page.select_one("title").text).startswith(
+        "Enter your new mobile number – Change your mobile number"
+    )
+    assert normalize_spaces(page.select_one("h1").text) == "Enter your new mobile number"
     assert "Change your mobile number" in page.text
     assert "Delete your number" not in page.text
 
@@ -286,7 +296,11 @@ def test_change_your_mobile_number_page_shows_delete_link_if_user_on_email_auth(
     client_request, api_user_active_email_auth
 ):
     client_request.login(api_user_active_email_auth)
-    page = client_request.get("main.your_account_mobile_number")
+    page = client_request.get("main.your_account_mobile_number", _test_page_title=False)
+    assert normalize_spaces(page.select_one("title").text).startswith(
+        "Enter your new mobile number – Change your mobile number"
+    )
+    assert normalize_spaces(page.select_one("h1").text) == "Enter your new mobile number"
     assert "Change your mobile number" in page.text
     assert "Delete your number" in page.text
 
@@ -295,7 +309,7 @@ def test_change_your_mobile_number_page_shows_delete_link_if_user_on_email_auth(
 def test_change_your_mobile_number_page_doesnt_show_delete_link_if_user_has_no_mobile_number(client_request, mocker):
     user = create_user(id=fake_uuid, auth_type="email_auth", mobile_number=None)
     mocker.patch("app.user_api_client.get_user", return_value=user)
-    page = client_request.get("main.your_account_mobile_number")
+    page = client_request.get("main.your_account_mobile_number", _test_page_title=False)
     assert "Change your mobile number" in page.text
     assert "Delete your number" not in page.text
 
@@ -361,8 +375,10 @@ def test_should_show_authenticate_after_mobile_number_change(
 
     page = client_request.get(
         "main.your_account_mobile_number_authenticate",
+        _test_page_title=False,
     )
 
+    assert normalize_spaces(page.select_one("title").text).startswith("Enter your password – Change your mobile number")
     assert "Change your mobile number" in page.text
     assert "Confirm" in page.text
 
@@ -391,8 +407,11 @@ def test_should_show_confirm_after_mobile_number_change(
 ):
     with client_request.session_transaction() as session:
         session["new-mob-password-confirmed"] = True
-    page = client_request.get("main.your_account_mobile_number_confirm")
+    page = client_request.get("main.your_account_mobile_number_confirm", _test_page_title=False)
 
+    assert normalize_spaces(page.select_one("title").text).startswith(
+        "Enter your text message code – Change your mobile number"
+    )
     assert "Change your mobile number" in page.text
     assert "Confirm" in page.text
 
@@ -570,7 +589,7 @@ def test_should_show_security_keys_page(
     cred_2_lhs = cred_2.select_one("td.table-field-left-aligned")
 
     assert normalize_spaces(cred_1_lhs.text) == "Test credential Last used 4 years ago"
-    assert normalize_spaces(cred_2_lhs.text) == "Another test credential Never used (registered 1 year, 4 months ago)"
+    assert normalize_spaces(cred_2_lhs.text) == "Another test credential Never used (registered 1 year, 5 months ago)"
     manage_link = cred_1.select_one("td.table-field-right-aligned a")
     assert normalize_spaces(manage_link.text) == "Manage"
     assert manage_link["href"] == url_for(".your_account_manage_security_key", key_id=webauthn_credential["id"])

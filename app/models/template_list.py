@@ -1,6 +1,7 @@
 from werkzeug.utils import cached_property
 
 from app import format_notification_type
+from app.utils.interruptible_io import InterruptibleIterableMixin
 
 
 class TemplateList:
@@ -82,7 +83,7 @@ class TemplateList:
         return [
             template
             for template in self.all_templates
-            if ({template_type} & {"all", template["template_type"]}) and template.get("folder") == template_folder_id
+            if template_type in ("all", template["template_type"]) and template.get("folder") == template_folder_id
         ]
 
     def _get_template_folders(self, template_type, parent_folder_id):
@@ -199,6 +200,12 @@ class UserTemplateList(TemplateList):
         return user_folders
 
 
+# why not just mix this in to `UserTemplateList`? we always want to apply it "on top" of any
+# __iter__ implementations that subclasses or wrapper classes might override
+class InterruptibleUserTemplateList(InterruptibleIterableMixin, UserTemplateList):
+    pass
+
+
 class ServiceTemplateList(UserTemplateList):
     """
     Represents a list of templates and folders for a service,
@@ -263,6 +270,10 @@ class UserTemplateLists:
     @property
     def templates_to_show(self):
         return bool(self.services)
+
+
+class InterruptibleUserTemplateLists(InterruptibleIterableMixin, UserTemplateLists):
+    pass
 
 
 class TemplateListItem:

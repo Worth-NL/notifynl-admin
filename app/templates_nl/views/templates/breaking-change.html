@@ -1,9 +1,12 @@
 {% extends "withnav_template.html" %}
+
+{% from "components/confirm-breaking-change.html" import confirm_breaking_change %}
+{% from "components/form.html" import form_wrapper %}
+{% from "components/list.html" import list_of_code_snippets %}
 {% from "components/page-header.html" import page_header %}
 {% from "components/page-footer.html" import page_footer %}
-{% from "components/list.html" import list_of_placeholders, list_of_code_snippets %}
-{% from "components/form.html" import form_wrapper %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 
 {% block service_page_title %}
   Wijzigingen bevestigen
@@ -13,22 +16,85 @@
   {{ govukBackLink({ "href": url_for(".edit_service_template", service_id=current_service.id, template_id=new_template.id) }) }}
 {% endblock %}
 
+{% set email_files_removed = template_change.email_filenames_removed %}
+
 {% block maincolumn_content %}
 
-  {{ page_header('Wijzigingen bevestigen') }}
+  {{ page_header("Wijzigingen bevestigen") }}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-five-sixths">
-      {% if template_change.placeholders_removed %}
+      {% set confirm_button = "Wijzigingen in sjabloon opslaan" %}
+
+      <!-- Only regular placeholders got added (placeholders being removed only is not a breaking change) -->
+      {% if template_change.placeholders_added and not email_files_removed %}
+
+        {% if template_change.placeholders_removed %}
+          {{ confirm_breaking_change(
+            name="placeholder",
+            list_of_changes=template_change.placeholders_removed,
+            with_confirm_step=False
+          ) }}
+        {% endif %}
+
+        {{ confirm_breaking_change(
+          name="placeholder",
+          list_of_changes=template_change.placeholders_added,
+          with_confirm_step=False,
+          action={"present": "toevoegen", "past": "hebt toegevoegd"}
+        ) }}
+
         <p class="govuk-body">
-          U heeft {{ list_of_placeholders(template_change.placeholders_removed) }} verwijderd
+          Zorg ervoor dat uw API-aanroepen {{ list_of_code_snippets(template_change.placeholders_added) }} bevatten voordat u berichten verstuurt.
         </p>
+
+      <!-- Only email files got removed -->
+      {% elif email_files_removed and not template_change.placeholders_added %}
+        {% set confirm_button = "Ja, verwijderen" %}
+
+        {{ confirm_breaking_change(
+          name="bestand",
+          list_of_changes=email_files_removed,
+          with_confirm_step=True
+        ) }}
+
+      <!-- Both regular placeholders added and email files removed -->
+      {% elif email_files_removed and template_change.placeholders_added %}
+
+        {% set confirm_button = "Wijzigingen in sjabloon bevestigen" %}
+
+        <h2 class="heading-medium">{{ "Bestand" if email_files_removed|length == 1 else "Bestanden" }} verwijderen</h2>
+          {{ confirm_breaking_change(
+            name="bestand",
+            list_of_changes=email_files_removed,
+            with_confirm_step=False
+          ) }}
+
+        {% if template_change.placeholders_removed %}
+          <h2 class="heading-medium">{{ "Placeholder" if template_change.placeholders_removed|length == 1 else "Placeholders" }} verwijderen</h2>
+            {{ confirm_breaking_change(
+              name="placeholder",
+              list_of_changes=template_change.placeholders_removed,
+              with_confirm_step=False
+            ) }}
+        {% endif %}
+
+        <h2 class="heading-medium">{{ "Placeholder" if template_change.placeholders_added|length == 1 else "Placeholders" }} toevoegen</h2>
+        {{ confirm_breaking_change(
+          name="placeholder",
+          list_of_changes=template_change.placeholders_added,
+          with_confirm_step=False,
+          action={"present": "toevoegen", "past": "hebt toegevoegd"}
+        ) }}
+
+        <p class="govuk-body">
+          Bevestig dat u:
+          <ul class="govuk-list govuk-list--bullet">
+          <li>{% if email_files_removed|length == 1 %} dit bestand {% else %} deze bestanden {% endif %} wilt verwijderen.
+          <li>eventuele API-aanroepen voor dit sjabloon zult aanpassen zodat deze {{
+          list_of_code_snippets(template_change.placeholders_added) }} bevatten voordat u berichten verstuurt.
+          </ul>
       {% endif %}
-      <p class="govuk-body">
-        U heeft {{ list_of_placeholders(template_change.placeholders_added) }} toegevoegd
-      </p>
-      <p class="govuk-body">
-        Zorg ervoor dat uw API-aanroepen {{ list_of_code_snippets(template_change.placeholders_added) }} bevatten voordat u berichten verstuurt.
-      </p>
+
     </div>
   </div>
 
@@ -41,7 +107,7 @@
     <input type="hidden" name="template_id" value="{{ new_template.id }}" />
 
     <input type="hidden" name="confirm" value="true" />
-    {{ page_footer('Wijzigingen in sjabloon opslaan') }}
+    {{ page_footer(confirm_button) }}
   {% endcall %}
 
 {% endblock %}

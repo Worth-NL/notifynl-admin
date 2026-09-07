@@ -16,6 +16,10 @@
   ) }}
 
   <p class="govuk-body">
+    Only public sector organisations can accept our data processing and financial agreement.
+  </p>
+
+  <p class="govuk-body">
     GOV.UK Notify is available to teams from:
   </p>
   <ul class="govuk-list govuk-list--bullet">
@@ -24,7 +28,7 @@
     <li>the armed forces</li>
     <li>the NHS</li>
     <li><a class="govuk-link govuk-link--no-visited-state" href="#gp">GP surgeries</a></li>
-    <li><a class="govuk-link govuk-link--no-visited-state" href="#gp">pharmacies</a></li>
+    <li><a class="govuk-link govuk-link--no-visited-state" href="#pharmacies">hospital pharmacies</a></li>
     <li>the emergency services</li>
     <li>state-funded schools</li>
   </ul>
@@ -39,8 +43,11 @@
   </p>
   <ul class="govuk-list govuk-list--bullet">
     <li>charities</li>
+    <li><a class="govuk-link govuk-link--no-visited-state" href="#pharmacies">community pharmacies</a></li>
     <li>hospices</li>
     <li>housing associations</li>
+    <li>local councillors</li>
+    <li>members of parliament (MPs)</li>
     <li><a class="govuk-link govuk-link--no-visited-state" href="#public">members of the public</a></li>
     <li>universities</li>
   </ul>
@@ -53,14 +60,29 @@
     Someone from the public sector organisation you’re working with needs to create an account and add the service first. Then they can invite you to join as a team member.
   </p>
 
-<h2 class="govuk-heading-m" id="gp">GP surgeries and pharmacies</h2>
+<h2 class="govuk-heading-m" id="gp">GP surgeries</h2>
   <p class="govuk-body">
-    NHS-funded GP surgeries and pharmacies can use GOV.UK Notify, but they:
+    NHS-funded GP surgeries can use GOV.UK Notify, but they:
   </p>
   <ul class="govuk-list govuk-list--bullet">
     <li>do not get an <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_pricing_text_messages') }}">annual allowance of free text messages</a></li>
     <li>cannot send any text messages in <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_trial_mode') }}">trial mode</a></li>
   </ul>
+
+<h2 class="govuk-heading-m" id="pharmacies">Pharmacies</h2>
+  <p class="govuk-body">
+    The only pharmacies that can use GOV.UK Notify are:
+  </p>
+  <ul class="govuk-list govuk-list--bullet">
+    <li>hospital pharmacies funded by an Integrated Care Board (ICB) or NHS Trust</li>
+    <li>military pharmacies, owned and run by the Ministry of Defence (MoD)</li>
+  </ul>
+  <p class="govuk-body">
+    Community pharmacies cannot use GOV.UK Notify because they are privately owned.
+  </p>
+  <p class="govuk-body">
+    NHS Trusts and ICBs cannot accept our data processing and financial agreement on behalf of a community pharmacy.
+  </p>
 
   <h2 class="govuk-heading-m" id="public">Members of the public</h2>
   <p class="govuk-body">

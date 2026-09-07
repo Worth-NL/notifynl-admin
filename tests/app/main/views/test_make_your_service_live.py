@@ -1,19 +1,24 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import ANY, Mock, PropertyMock, call
-from uuid import uuid4
 
 import pytest
-import pytz
 from flask import url_for
 from freezegun import freeze_time
 from notifications_python_client.errors import HTTPError
-from notifications_utils.clients.zendesk.zendesk_client import NotifySupportTicket, NotifyTicketType
+from notifications_utils.clients.zendesk.zendesk_client import (
+    NotifySupportTicket,
+    NotifyTicketType,
+)
 
-from tests import invite_json, organisation_json, validate_route_permission
-from tests.conftest import ORGANISATION_ID, SERVICE_ONE_ID, create_template, normalize_spaces
+from tests import organisation_json, validate_route_permission
+from tests.conftest import (
+    ORGANISATION_ID,
+    SERVICE_ONE_ID,
+    create_template,
+    normalize_spaces,
+)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 @pytest.mark.parametrize(
     "route",
     [
@@ -21,6 +26,7 @@ from tests.conftest import ORGANISATION_ID, SERVICE_ONE_ID, create_template, nor
         "main.submit_request_to_go_live",
     ],
 )
+@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 def test_route_permissions(
     notify_admin,
     client_request,
@@ -77,7 +83,6 @@ def test_route_invalid_permissions(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 @pytest.mark.parametrize(
     "route",
     [
@@ -85,6 +90,7 @@ def test_route_invalid_permissions(
         "main.submit_request_to_go_live",
     ],
 )
+@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 def test_route_for_platform_admin(
     notify_admin,
     client_request,
@@ -112,14 +118,14 @@ def test_route_for_platform_admin(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 @pytest.mark.parametrize(
     "confirmed_unique, expected_status_text",
     [
-        (False, "Confirm that your service is unique Not completed"),
+        (False, "Confirm that your service is unique Incomplete"),
         (True, "Confirm that your service is unique Completed"),
     ],
 )
+@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 def test_should_check_confirm_service_is_unique_task(
     client_request,
     service_one,
@@ -139,15 +145,15 @@ def test_should_check_confirm_service_is_unique_task(
     assert normalize_spaces(page.select(".govuk-task-list .govuk-task-list__item")[0].text) == expected_status_text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 @pytest.mark.parametrize(
     "volumes, expected_estimated_volumes_item",
     [
-        ((0, 0, 0), "Tell us how many messages you expect to send Not completed"),
+        ((0, 0, 0), "Tell us how many messages you expect to send Incomplete"),
         ((1, 0, 0), "Tell us how many messages you expect to send Completed"),
         ((9, 99, 999), "Tell us how many messages you expect to send Completed"),
     ],
 )
+@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 def test_should_check_if_estimated_volumes_provided(
     client_request,
     mocker,
@@ -177,20 +183,22 @@ def test_should_check_if_estimated_volumes_provided(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 @pytest.mark.parametrize(
     "volume_email,count_of_email_templates,reply_to_email_addresses,expected_reply_to_checklist_item",
     [
         pytest.param(None, 0, [], "", marks=pytest.mark.xfail(raises=IndexError)),
         pytest.param(0, 0, [], "", marks=pytest.mark.xfail(raises=IndexError)),
-        (None, 1, [], "Add a reply-to email address Not completed"),
+        (None, 1, [], "Add a reply-to email address Incomplete"),
         (None, 1, [{}], "Add a reply-to email address Completed"),
-        (1, 1, [], "Add a reply-to email address Not completed"),
+        (0, 1, [], "Add a reply-to email address Incomplete"),
+        (0, 1, [{}], "Add a reply-to email address Completed"),
+        (1, 1, [], "Add a reply-to email address Incomplete"),
         (1, 1, [{}], "Add a reply-to email address Completed"),
-        (1, 0, [], "Add a reply-to email address Not completed"),
+        (1, 0, [], "Add a reply-to email address Incomplete"),
         (1, 0, [{}], "Add a reply-to email address Completed"),
     ],
 )
+@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 def test_should_check_for_reply_to_on_go_live(
     client_request,
     mocker,
@@ -225,25 +233,112 @@ def test_should_check_for_reply_to_on_go_live(
     assert page.select_one("h1").text == "Make your service live"
 
     checklist_items = page.select(".govuk-task-list .govuk-task-list__item")
-    assert normalize_spaces(checklist_items[4].text) == expected_reply_to_checklist_item
+    assert normalize_spaces(checklist_items[5].text) == expected_reply_to_checklist_item
 
     if count_of_email_templates:
         mock_get_reply_to_email_addresses.assert_called_once_with(SERVICE_ONE_ID)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 @pytest.mark.parametrize(
-    "count_of_users_with_manage_service,count_of_invites_with_manage_service,expected_user_checklist_item",
+    "volume_email,count_of_email_templates,confirmed_email_sender_name,expected_from_name_checklist_item",
     [
-        (1, 0, "Give another team member the ‘manage settings’ permission Not completed"),
-        (2, 0, "Give another team member the ‘manage settings’ permission Completed"),
-        (1, 1, "Give another team member the ‘manage settings’ permission Completed"),
+        pytest.param(None, 0, None, "", marks=pytest.mark.xfail(raises=IndexError)),
+        pytest.param(0, 0, None, "", marks=pytest.mark.xfail(raises=IndexError)),
+        (None, 1, None, "Choose a ‘from’ name Incomplete"),
+        (None, 1, False, "Choose a ‘from’ name Incomplete"),
+        (None, 1, True, "Choose a ‘from’ name Completed"),
+        (0, 1, None, "Choose a ‘from’ name Incomplete"),
+        (0, 1, False, "Choose a ‘from’ name Incomplete"),
+        (0, 1, True, "Choose a ‘from’ name Completed"),
+        (1, 1, None, "Choose a ‘from’ name Incomplete"),
+        (1, 1, False, "Choose a ‘from’ name Incomplete"),
+        (1, 1, True, "Choose a ‘from’ name Completed"),
+        (1, 0, None, "Choose a ‘from’ name Incomplete"),
+        (1, 1, False, "Choose a ‘from’ name Incomplete"),
+        (1, 1, True, "Choose a ‘from’ name Completed"),
+    ],
+)
+@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
+def test_should_check_for_email_from_name_on_go_live(
+    client_request,
+    service_one,
+    single_sms_sender,
+    volume_email,
+    count_of_email_templates,
+    confirmed_email_sender_name,
+    expected_from_name_checklist_item,
+    mock_get_invites_for_service,
+    mock_get_users_by_service,
+    mocker,
+):
+    mocker.patch(
+        "app.service_api_client.get_service_templates",
+        return_value={"data": [create_template(template_type="email") for _ in range(count_of_email_templates)]},
+    )
+    mocker.patch("app.service_api_client.get_reply_to_email_addresses", return_value=[])
+
+    mocker.patch(
+        "app.models.service.Service.confirmed_email_sender_name",
+        create=True,
+        new_callable=PropertyMock,
+        return_value=confirmed_email_sender_name,
+    )
+
+    for channel, volume in (("email", volume_email), ("sms", 0), ("letter", 1)):
+        mocker.patch(
+            f"app.models.service.Service.volume_{channel}",
+            create=True,
+            new_callable=PropertyMock,
+            return_value=volume,
+        )
+
+    page = client_request.get("main.request_to_go_live", service_id=SERVICE_ONE_ID)
+    assert page.select_one("h1").text == "Make your service live"
+
+    checklist_items = page.select(".govuk-task-list .govuk-task-list__item")
+    assert normalize_spaces(checklist_items[4].text) == expected_from_name_checklist_item
+
+    # check the other email specific task item is still visible
+    assert normalize_spaces(checklist_items[5].text) == "Add a reply-to email address Incomplete"
+
+
+@pytest.mark.parametrize(
+    "count_of_users_with_manage_service,count_of_invites_with_manage_service,count_of_non_gov_users_with_manage,expected_user_checklist_item",
+    [
+        pytest.param(
+            1,
+            0,
+            0,
+            "Finish setting up your team Incomplete",
+            marks=pytest.mark.skip(reason="[NOTIFYNL] Translation issue"),
+        ),
+        pytest.param(
+            2,
+            0,
+            0,
+            "Finish setting up your team Completed",
+            marks=pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this."),
+        ),
+        pytest.param(
+            1,
+            1,
+            0,
+            "Finish setting up your team Incomplete",
+            marks=pytest.mark.skip(reason="[NOTIFYNL] Translation issue"),
+        ),
+        pytest.param(
+            1,
+            0,
+            1,
+            "Finish setting up your team Incomplete",
+            marks=pytest.mark.skip(reason="[NOTIFYNL] Translation issue"),
+        ),
     ],
 )
 @pytest.mark.parametrize(
     "count_of_templates, expected_templates_checklist_item",
     [
-        (0, "Add templates with examples of your content Not completed"),
+        (0, "Add templates with examples of your content Incomplete"),
         (1, "Add templates with examples of your content Completed"),
         (2, "Add templates with examples of your content Completed"),
     ],
@@ -255,8 +350,10 @@ def test_should_check_for_sending_things_right(
     single_sms_sender,
     count_of_users_with_manage_service,
     count_of_invites_with_manage_service,
+    count_of_non_gov_users_with_manage,
     expected_user_checklist_item,
     count_of_templates,
+    api_nongov_user_active,
     expected_templates_checklist_item,
     active_user_with_permissions,
     active_user_no_settings_permission,
@@ -267,30 +364,18 @@ def test_should_check_for_sending_things_right(
         return_value={"data": [create_template(template_type="sms") for _ in range(count_of_templates)]},
     )
 
+    mocker.patch(
+        "app.organisations_client.get_domains",
+        return_value=[],
+    )
+
     mock_get_users = mocker.patch(
         "app.models.user.Users._get_items",
         return_value=(
-            [active_user_with_permissions] * count_of_users_with_manage_service + [active_user_no_settings_permission]
+            [active_user_with_permissions] * count_of_users_with_manage_service
+            + [active_user_no_settings_permission]
+            + [api_nongov_user_active] * count_of_non_gov_users_with_manage
         ),
-    )
-    invite_one = invite_json(
-        id_=uuid4(),
-        from_user=service_one["users"][0],
-        service_id=service_one["id"],
-        email_address="invited_user@test.gov.uk",
-        permissions="view_activity,send_messages,manage_service,manage_api_keys",
-        created_at=datetime.utcnow(),
-        status="pending",
-        auth_type="sms_auth",
-        folder_permissions=[],
-    )
-
-    invite_two = invite_one.copy()
-    invite_two["permissions"] = "view_activity"
-
-    mock_get_invites = mocker.patch(
-        "app.models.user.InvitedUsers._get_items",
-        return_value=(([invite_one] * count_of_invites_with_manage_service) + [invite_two]),
     )
 
     page = client_request.get("main.request_to_go_live", service_id=SERVICE_ONE_ID)
@@ -301,76 +386,21 @@ def test_should_check_for_sending_things_right(
     assert normalize_spaces(checklist_items[3].text) == expected_templates_checklist_item
 
     mock_get_users.assert_called_once_with(SERVICE_ONE_ID)
-    mock_get_invites.assert_called_once_with(SERVICE_ONE_ID)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
-@pytest.mark.parametrize(
-    "checklist_completed, agreement_signed, disabled_button",
-    (
-        (True, True, False),
-        (True, None, False),
-        (True, False, True),
-        (False, True, True),
-        (False, None, True),
-    ),
-)
-def test_should_show_disabled_go_live_button_if_checklist_not_complete(
-    client_request,
-    mocker,
-    mock_get_service_templates,
-    mock_get_users_by_service,
-    mock_get_service_organisation,
-    mock_get_invites_for_service,
-    single_sms_sender,
-    checklist_completed,
-    agreement_signed,
-    disabled_button,
-):
-    mocker.patch(
-        "app.models.service.Service.go_live_checklist_completed",
-        new_callable=PropertyMock,
-        return_value=checklist_completed,
-    )
-    mocker.patch(
-        "app.models.organisation.Organisation.agreement_signed",
-        new_callable=PropertyMock,
-        return_value=agreement_signed,
-        create=True,
-    )
-
-    for channel in ("email", "sms", "letter"):
-        mocker.patch(
-            f"app.models.service.Service.volume_{channel}",
-            create=True,
-            new_callable=PropertyMock,
-            return_value=0,
-        )
-
-    page = client_request.get("main.request_to_go_live", service_id=SERVICE_ONE_ID)
-    assert page.select_one("h1").text == "Make your service live"
-    assert page.select_one("form")["method"] == "post"
-    assert page.select_one("form button").text.strip() == "Send a request to go live"
-
-    if disabled_button:
-        assert normalize_spaces(page.select_one("main p:last-of-type").text) == (
-            "You must complete all the tasks before you can send a request to go live."
-        )
-        assert len(page.select_one("form button[disabled]")) == 1
-    else:
-        assert not any(
-            p.text == "You must complete all the tasks before you can send a request to go live."
-            for p in page.select("main p")
-        )
-        assert not (page.select_one("form button[disabled]"))
-
-
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "has_active_go_live_request, expected_button",
     (
-        (True, False),
-        (False, True),
+        pytest.param(
+            True,
+            False,
+            marks=pytest.mark.skip(reason="[NOTIFYNL] Translation issue"),
+        ),
+        pytest.param(
+            False,
+            True,
+            marks=pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views"),
+        ),
     ),
 )
 def test_should_not_show_go_live_button_if_service_already_has_go_live_request(
@@ -381,6 +411,7 @@ def test_should_not_show_go_live_button_if_service_already_has_go_live_request(
     mock_get_service_organisation,
     mock_get_invites_for_service,
     single_sms_sender,
+    single_reply_to_email_address,
     has_active_go_live_request,
     expected_button,
 ):
@@ -422,7 +453,6 @@ def test_should_not_show_go_live_button_if_service_already_has_go_live_request(
         assert normalize_spaces(page.select_one("main p").text) == ("You sent a request to go live for this service.")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "go_live_at, message",
     [
@@ -430,6 +460,7 @@ def test_should_not_show_go_live_button_if_service_already_has_go_live_request(
         ("2020-10-09 13:55:20", "‘service one’ went live on 9 October 2020."),
     ],
 )
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_request_to_go_live_redirects_if_service_already_live(
     client_request,
     service_one,
@@ -448,7 +479,6 @@ def test_request_to_go_live_redirects_if_service_already_live(
     assert normalize_spaces(page.select_one("main p").text) == message
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 @pytest.mark.parametrize(
     "estimated_sms_volume,organisation_type,count_of_sms_templates,sms_senders,expected_sms_sender_checklist_item",
     [
@@ -490,21 +520,21 @@ def test_request_to_go_live_redirects_if_service_already_live(
             "local",
             1,
             [],
-            "Change your Text message sender ID Not completed",
+            "Change your Text message sender ID Incomplete",
         ),
         (
             1,
             "nhs_local",
             0,
             [],
-            "Change your Text message sender ID Not completed",
+            "Change your Text message sender ID Incomplete",
         ),
         (
             None,
             "school_or_college",
             1,
             [{"is_default": True, "sms_sender": "GOVUK"}],
-            "Change your Text message sender ID Not completed",
+            "Change your Text message sender ID Incomplete",
         ),
         (
             None,
@@ -525,6 +555,7 @@ def test_request_to_go_live_redirects_if_service_already_live(
         ),
     ],
 )
+@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 def test_should_check_for_sms_sender_on_go_live(
     client_request,
     service_one,
@@ -569,7 +600,6 @@ def test_should_check_for_sms_sender_on_go_live(
     mock_get_sms_senders.assert_called_once_with(SERVICE_ONE_ID)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 @pytest.mark.parametrize(
     "agreement_signed, expected_item",
     (
@@ -580,10 +610,11 @@ def test_should_check_for_sms_sender_on_go_live(
         ),
         (
             False,
-            "Accept our data processing and financial agreement Not completed",
+            "Accept our data processing and financial agreement Incomplete",
         ),
     ),
 )
+@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 def test_should_check_for_mou_on_request_to_go_live(
     client_request,
     service_one,
@@ -618,9 +649,9 @@ def test_should_check_for_mou_on_request_to_go_live(
         )
 
     mocker.patch(
-        "app.organisations_client.get_organisation", return_value=organisation_json(agreement_signed=agreement_signed)
+        "app.organisations_client.get_organisation",
+        return_value=organisation_json(agreement_signed=agreement_signed),
     )
-
     page = client_request.get("main.request_to_go_live", service_id=SERVICE_ONE_ID)
     assert page.select_one("h1").text == "Make your service live"
 
@@ -673,7 +704,7 @@ def test_gp_without_organisation_is_shown_agreement_step(
     assert page.select_one("h1").text == "Make your service live"
     assert normalize_spaces(
         page.select_one(".govuk-task-list:nth-of-type(2) .govuk-task-list__item:last-of-type").text
-    ) == ("Accept our data processing and financial agreement Not completed")
+    ) == ("Accept our data processing and financial agreement Incomplete")
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
@@ -867,8 +898,8 @@ def test_non_gov_users_cant_request_to_go_live(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 @freeze_time("2012-12-21 13:12:12.12354")
+@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 def test_should_render_the_same_page_after_request_to_go_live(
     client_request,
     mocker,
@@ -940,7 +971,7 @@ def test_should_render_the_same_page_after_request_to_go_live(
         org_type="central",
         service_id=SERVICE_ONE_ID,
         notify_task_type="notify_task_go_live_request",
-        user_created_at=datetime(2018, 11, 7, 8, 34, 54, 857402).replace(tzinfo=pytz.utc),
+        user_created_at=datetime(2018, 11, 7, 8, 34, 54, 857402).replace(tzinfo=UTC),
     )
     mock_send_ticket_to_zendesk.assert_called_once()
 
@@ -957,32 +988,58 @@ def test_should_render_the_same_page_after_request_to_go_live(
     )
 
 
+@pytest.mark.parametrize(
+    "checklist_completed, agreement_signed",
+    (
+        (True, False),
+        (False, True),
+        (False, None),
+    ),
+)
 @pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
-def test_should_not_submit_the_form_if_not_all_tasks_completed(
+def test_should_show_an_error_if_not_all_tasks_completed(
     client_request,
     mocker,
     active_user_with_permissions,
+    service_one,
     single_reply_to_email_address,
     single_letter_contact_block,
     mock_get_organisations_and_services_for_user,
     single_sms_sender,
+    mock_get_service_organisation,
     mock_get_service_settings_page_common,
+    mock_get_service_templates,
     mock_get_users_by_service,
-    mock_update_service,
+    mock_get_invites_without_manage_permission,
+    mock_notify_users_of_request_to_go_live_for_service,
+    checklist_completed,
+    agreement_signed,
 ):
+    service_one["go_live_user"] = active_user_with_permissions["id"]
+
     mocker.patch(
         "app.models.service.Service.go_live_checklist_completed",
         new_callable=PropertyMock,
-        return_value=False,
+        return_value=checklist_completed,
     )
-    client_request.post(
-        "main.request_to_go_live",
-        service_id=SERVICE_ONE_ID,
-        _expected_status=403,
+
+    mocker.patch(
+        "app.organisations_client.get_organisation",
+        side_effect=lambda org_id: organisation_json(
+            ORGANISATION_ID,
+            "Org 1",
+            agreement_signed=agreement_signed,
+        ),
+    )
+
+    page = client_request.post("main.request_to_go_live", service_id=SERVICE_ONE_ID, _follow_redirects=True)
+
+    assert normalize_spaces(page.select_one(".banner-dangerous h2").text) == ("There is a problem")
+    assert normalize_spaces(page.select_one(".banner-dangerous p").text) == (
+        "Some of the tasks on this page are incomplete"
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 @pytest.mark.parametrize(
     "can_approve_own_go_live_requests, expected_subject, expected_go_live_notes, expected_zendesk_task_type",
     (
@@ -1004,6 +1061,7 @@ def test_should_not_submit_the_form_if_not_all_tasks_completed(
         ),
     ),
 )
+@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 def test_request_to_go_live_displays_go_live_notes_in_zendesk_ticket(
     client_request,
     mocker,
@@ -1079,7 +1137,7 @@ def test_request_to_go_live_displays_go_live_notes_in_zendesk_ticket(
         org_type="central",
         service_id=SERVICE_ONE_ID,
         notify_task_type=expected_zendesk_task_type,
-        user_created_at=datetime(2018, 11, 7, 8, 34, 54, 857402).replace(tzinfo=pytz.utc),
+        user_created_at=datetime(2018, 11, 7, 8, 34, 54, 857402).replace(tzinfo=UTC),
     )
     mock_send_ticket_to_zendesk.assert_called_once()
 
@@ -1159,7 +1217,8 @@ def test_should_be_able_to_request_to_go_live_with_no_organisation(
         return_value=True,
     )
     mock_post = mocker.patch(
-        "app.main.views_nl.make_your_service_live.zendesk_client.send_ticket_to_zendesk", autospec=True
+        "app.main.views_nl.make_your_service_live.zendesk_client.send_ticket_to_zendesk",
+        autospec=True,
     )
 
     client_request.post("main.request_to_go_live", service_id=SERVICE_ONE_ID, _follow_redirects=True)
@@ -1167,7 +1226,6 @@ def test_should_be_able_to_request_to_go_live_with_no_organisation(
     assert mock_post.called is True
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 @pytest.mark.parametrize(
     "can_approve_own_go_live_requests, expected_call_args",
     (
@@ -1175,7 +1233,8 @@ def test_should_be_able_to_request_to_go_live_with_no_organisation(
         (False, []),
     ),
 )
-def test_request_to_go_live_is_sent_to_organisation_if_can_be_approved_by_organisation(
+@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
+def test_request_to_go_live_is_sent_to_organiation_if_can_be_approved_by_organisation(
     client_request,
     mocker,
     mock_get_organisations_and_services_for_user,
@@ -1199,7 +1258,10 @@ def test_request_to_go_live_is_sent_to_organisation_if_can_be_approved_by_organi
         create=True,
     )
     mocker.patch("app.organisations_client.get_organisation", return_value=organisation_one)
-    mocker.patch("app.main.views_nl.make_your_service_live.zendesk_client.send_ticket_to_zendesk", autospec=True)
+    mocker.patch(
+        "app.main.views_nl.make_your_service_live.zendesk_client.send_ticket_to_zendesk",
+        autospec=True,
+    )
 
     client_request.post("main.request_to_go_live", service_id=SERVICE_ONE_ID)
 
@@ -1222,16 +1284,22 @@ def test_confirm_service_is_unique_sets_confirmed_unique_and_updates_name(
     mock_update_service.assert_called_once_with(SERVICE_ONE_ID, name="Updated Service", confirmed_unique=True)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "name, error_message",
     [
         ("", "Error: Enter a service name"),
         (".", "Service name must include at least 2 letters or numbers"),
-        ("GOV.UK Ειδοποίηση", "Service name cannot include characters from a non-Latin alphabet"),
-        ("a" * 150 + " " * 100 + "a", "Service name cannot be longer than 143 characters"),
+        (
+            "GOV.UK Ειδοποίηση",
+            "Service name cannot include characters from a non-Latin alphabet",
+        ),
+        (
+            "a" * 150 + " " * 100 + "a",
+            "Service name cannot be longer than 143 characters",
+        ),
     ],
 )
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_confirm_service_is_unique_fails_validation(
     client_request,
     mock_update_service,

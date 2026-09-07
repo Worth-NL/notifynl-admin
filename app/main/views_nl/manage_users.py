@@ -1,11 +1,14 @@
+from datetime import UTC, datetime
+
 from flask import abort, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user
+from markupsafe import Markup
 from notifications_python_client.errors import HTTPError
 
 from app import current_service, service_api_client
 from app.constants import SERVICE_JOIN_REQUEST_APPROVED, SERVICE_JOIN_REQUEST_REJECTED
 from app.event_handlers import Events
-from app.formatters import redact_mobile_number
+from app.formatters import format_date_numeric, redact_mobile_number
 from app.main import main
 from app.main.overrides_nl.forms import (
     ChangeEmailForm,
@@ -17,14 +20,21 @@ from app.main.overrides_nl.forms import (
     SearchUsersForm,
 )
 from app.models.service import Service, ServiceJoinRequest
+from app.models.spreadsheet import Spreadsheet
 from app.models.user import InvitedUser, User
+from app.overrides_nl.formatters import format_auth_type, format_invite_status, format_yes_no
 from app.utils.user import is_gov_user, user_has_permissions
-from app.utils.user_permissions import permission_options, translate_permissions_from_ui_to_db
+from app.utils_nl.user_permissions import permission_options, translate_permissions_from_ui_to_db
 
 
 @main.route("/services/<uuid:service_id>/users")
 @user_has_permissions(allow_org_user=True)
 def manage_users(service_id):
+    active_users_with_manage_service_permission = current_service.active_users_with_permission("manage_service")
+    active_gov_users_with_manage_service_permission = [
+        user for user in active_users_with_manage_service_permission if user.is_gov_user
+    ]
+
     return render_template(
         "views/manage-users.html",
         users=current_service.team_members,
@@ -32,6 +42,44 @@ def manage_users(service_id):
         show_search_box=(len(current_service.team_members) > 7),
         form=SearchUsersForm(),
         permissions=permission_options,
+        extra_spacing_around_flash_messages=False,
+        active_gov_users_with_manage_service_permission_count=len(active_gov_users_with_manage_service_permission),
+    )
+
+
+@main.route("/services/<uuid:service_id>/users.csv")
+@user_has_permissions("manage_service", allow_org_user=True)
+def manage_users_download(service_id):
+    rows = [
+        [
+            "E-mailadres",
+            "Naam",
+        ]
+        + list(dict(permission_options).values())
+        + [
+            "Aanmeldmethode",
+        ],
+    ] + [
+        [
+            user.email_address,
+            format_invite_status(user.status) if user.is_invited_user else user.name,
+        ]
+        + [
+            format_yes_no(user.has_permission_for_service(current_service.id, permission))
+            for permission in dict(permission_options)
+        ]
+        + [
+            format_auth_type(user.auth_type),
+        ]
+        for user in sorted(current_service.team_members)
+    ]
+    return (
+        Spreadsheet.from_rows(rows).as_csv_data,
+        200,
+        {
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": (f'attachment; filename="Teamleden {format_date_numeric(datetime.now(UTC))}.csv"'),
+        },
     )
 
 
@@ -241,12 +289,52 @@ def edit_user_permissions(service_id, user_id):
     form = PermissionsForm.from_user_and_service(user, current_service)
 
     if form.validate_on_submit():
-        user.set_permissions(
-            service_id,
-            permissions=form.permissions,
-            folder_permissions=form.folder_permissions.data,
-            set_by_id=current_user.id,
-        )
+        try:
+            user.set_permissions(
+                service_id,
+                permissions=form.permissions,
+                folder_permissions=form.folder_permissions.data,
+                set_by_id=current_user.id,
+            )
+        except HTTPError as e:
+            if e.status_code == 400 and "Cannot change user permissions" in e.message:
+                service_description = "Een dienst" if current_user.platform_admin else "Uw dienst"
+                org_description = (
+                    "van uw organisatie"
+                    if current_user.is_gov_user and not current_user.platform_admin
+                    else "van een overheidsorganisatie"
+                )
+                action_to_take = (
+                    "Vraag de gebruiker om nieuwe teamleden toe te voegen of de rechten van hun team bij te werken."
+                    if current_user.platform_admin
+                    else "Voeg nieuwe teamleden toe of werk de rechten van uw team bij en probeer het daarna opnieuw."
+                )
+
+                flash(
+                    Markup(
+                        f"""
+                        <h2 class='govuk-heading-m'>U kunt de rechten van dit teamlid niet wijzigen</h2>
+                        <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
+                            {service_description} heeft ten minste 2 teamleden nodig:
+                        </p>
+                        <ul class='govuk-list govuk-list--bullet error-text-colour govuk-!-font-weight-bold'>
+                            <li>{org_description}</li>
+                            <li>met de rechten ‘Instellingen, team en gebruik beheren’</li>
+                        </ul>
+                        <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
+                            {action_to_take}
+                        </p>
+                        """
+                    )
+                )
+                return render_template(
+                    "views/edit-user-permissions.html",
+                    user=user,
+                    form=form,
+                )
+            else:
+                raise e
+
         # Only change the auth type if this is supported for a service. If a user logs in with a
         # security key, we generally don't want them to be able to use something less secure.
         if current_service.has_permission("email_auth") and not user.webauthn_auth:
@@ -267,9 +355,45 @@ def remove_user_from_service(service_id, user_id):
     try:
         service_api_client.remove_user_from_service(service_id, user_id)
     except HTTPError as e:
-        msg = "U kunt de laatste gebruiker van een organisatie niet verwijderen"
-        if e.status_code == 400 and msg in e.message:
-            flash(msg, "info")
+        if e.status_code == 400 and "User cannot be removed from the service" in e.message:
+            if current_user.platform_admin:
+                flash(
+                    Markup(
+                        """
+                        <h2 class='govuk-heading-m'>U kunt dit teamlid niet verwijderen</h2>
+                        <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
+                            Een dienst heeft ten minste 2 teamleden nodig:
+                        </p>
+                        <ul class='govuk-list govuk-list--bullet error-text-colour govuk-!-font-weight-bold'>
+                            <li>van een overheidsorganisatie</li>
+                            <li>met de rechten ‘Instellingen, team en gebruik beheren’</li>
+                        </ul>
+                        <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
+                            Vraag de gebruiker om nieuwe teamleden toe te voegen of
+                            de rechten van hun team bij te werken.
+                        </p>
+                        """
+                    )
+                )
+            else:
+                org_description = "van uw organisatie" if current_user.is_gov_user else "van een overheidsorganisatie"
+                flash(
+                    Markup(
+                        f"""
+                        <h2 class='govuk-heading-m'>U kunt dit teamlid niet verwijderen</h2>
+                        <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
+                            Uw dienst heeft ten minste 2 teamleden nodig:
+                        </p>
+                        <ul class='govuk-list govuk-list--bullet error-text-colour govuk-!-font-weight-bold'>
+                            <li>{org_description}</li>
+                            <li>met de rechten ‘Instellingen, team en gebruik beheren’</li>
+                        </ul>
+                        <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
+                            Voeg nieuwe teamleden toe of werk de rechten van uw team bij en probeer het daarna opnieuw.
+                        </p>
+                        """
+                    )
+                )
             return redirect(url_for(".manage_users", service_id=service_id))
         else:
             abort(500, e)

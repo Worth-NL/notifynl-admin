@@ -1,0 +1,31 @@
+{% from "components/list.html" import list_of_placeholders %}
+
+{% macro confirm_breaking_change(
+    name, list_of_changes, with_confirm_step=False, action={"present": "verwijderen", "past": "hebt verwijderd"}
+) %}
+    {% if list_of_changes|length == 1 %}
+        <p class="govuk-body">
+            U {{action.past}} de {{ name + " " + list_of_placeholders(list_of_changes) }}.
+        </p>
+        {% if with_confirm_step %}
+            <p class="govuk-body">
+                Weet u zeker dat u deze {{name}} wilt {{action.present}}?
+            </p>
+        {% endif %}
+
+    {% else %}
+        <p class="govuk-body">
+            U {{action.past}} de {{name}}s:
+        </p>
+        <ul class="govuk-list govuk-list--bullet">
+            {% for change_item in list_of_changes %}
+            <li><span class='placeholder'>(({{change_item}}))</span></li>
+            {% endfor %}
+        </ul>
+        {% if with_confirm_step %}
+            <p class="govuk-body">
+                Weet u zeker dat u deze {{name}}s wilt {{action.present}}?
+            </p>
+        {% endif %}
+    {% endif %}
+{% endmacro %}

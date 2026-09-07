@@ -1,0 +1,30 @@
+{% extends "withnav_template.html" %}
+{% from "components/page-header.html" import page_header %}
+{% from "components/page-footer.html" import page_footer %}
+{% from "components/form.html" import form_wrapper %}
+{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+
+{% block service_page_title %}
+  Berichtenbox-instellingen wijzigen
+{% endblock %}
+
+{% block backLink %}
+  {{ govukBackLink({ "href": url_for('main.service_settings', service_id=current_service.id) }) }}
+{% endblock %}
+
+{% block maincolumn_content %}
+
+    {{ page_header('Berichtenbox-instellingen wijzigen') }}
+    {% call form_wrapper() %}
+      {{ form.oin(param_extensions={
+        "classes": "govuk-input--width-10 govuk-input--extra-letter-spacing",
+        "attributes": {
+          "maxlength": "20",
+          "pattern": "[0-9]*",
+          "inputmode": "numeric"
+        }
+      }) }}
+      {{ page_footer('Opslaan') }}
+    {% endcall %}
+
+{% endblock %}

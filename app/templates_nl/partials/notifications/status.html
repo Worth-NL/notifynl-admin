@@ -6,9 +6,7 @@
     {% if status_url %}
       <a class="govuk-link govuk-link--destructive" href="{{ status_url }}">
     {% endif %}
-    {{ notification.status|format_notification_status(
-      notification.template.template_type
-    ) }}
+    {{ notification|format_notification_status_text }}
     {% if status_url %}
       </a>
     {% endif %}

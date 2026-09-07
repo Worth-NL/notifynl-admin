@@ -66,6 +66,7 @@ def test_displays_org_branding(client_request, mock_get_email_branding):
     )  # brand text is set
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] org banner brand text not yet implemented")
 def test_displays_org_branding_with_banner(client_request, mock_get_email_branding_with_org_banner_brand_type):
     page = client_request.get("main.email_template", branding_style="1", _test_page_title=False)
 

@@ -16,3 +16,32 @@
 </div>
 
 {{ template|string }}
+
+{% if template.template_type == "email" %}
+  <h2 class="govuk-visually-hidden">Added Files</h2>
+  <div class="govuk-!-margin-bottom-2">
+    <div class="js-stick-at-bottom-when-scrolling">
+      <span class="email-files-selected-counter">
+      {% if template.email_files | length == 0 %}
+        No files added
+      {% elif template.email_files | length == 1 %}
+        1 file added
+      {% else %}
+        {{ template.email_files | length }} files added
+      {% endif %}
+
+      </span>
+
+        {{ govukButton({
+          "text": "Manage files" if template.email_files else "Attach files",
+          "href": url_for(
+            '.template_email_files',
+            service_id=current_service.id,
+            template_id=template.id
+          ),
+          "classes": "govuk-button--secondary attach-files__button",
+        }) }}
+      </div>
+    </div>
+
+  {% endif %}

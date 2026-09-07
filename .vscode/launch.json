@@ -21,9 +21,10 @@
       "name": "Admin watch",
       "type": "node",
       "request": "launch",
+      "envFile": "${workspaceFolder}/.env",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "watch"],
-      "preLaunchTask": "NPM Admin build"
+      "preLaunchTask": "NPM Admin install"
     }
   ],
   "compounds": [

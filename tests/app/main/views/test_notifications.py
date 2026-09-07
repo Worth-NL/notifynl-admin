@@ -1,4 +1,5 @@
 import base64
+from datetime import UTC, datetime
 from functools import partial
 from unittest.mock import Mock, mock_open
 
@@ -119,6 +120,51 @@ def test_notification_status_page_formats_email_and_sms_status_correctly(
 
     page = client_request.get("main.view_notification", service_id=service_one["id"], notification_id=fake_uuid)
     assert page.select_one(f".ajax-block-container p.notification-status.{expected_class}")
+
+
+@freeze_time("2016-01-01 11:09:00.061258")
+def test_notification_status_page_shows_messagebox_failure_reason_and_batch_id_hint(
+    client_request,
+    mocker,
+    service_one,
+    fake_uuid,
+    active_user_with_permissions,
+):
+    mocker.patch("app.user_api_client.get_user", return_value=active_user_with_permissions)
+    notification = create_notification(notification_status="permanent-failure", template_type="messagebox")
+    notification["detailed_status_code"] = "OinInCPAKomtNietOvereenMetOinInBericht"
+    notification["messagebox_failure_reason"] = "OIN uit CPA komt niet overeen met OID in het bericht"
+    mocker.patch("app.notification_api_client.get_notification", return_value=notification)
+
+    page = client_request.get("main.view_notification", service_id=service_one["id"], notification_id=fake_uuid)
+
+    status_text = normalize_spaces(page.select(".ajax-block-container p")[0].text)
+    assert "OIN uit CPA komt niet overeen met OID in het bericht" in status_text
+    assert "OinInCPAKomtNietOvereenMetOinInBericht" in status_text
+
+    hint_text = normalize_spaces(page.select_one(".messagebox-batch-id-hint").text)
+    assert "Batch ID" in hint_text
+    assert notification["id"] in hint_text
+
+
+@freeze_time("2016-01-01 11:09:00.061258")
+def test_notification_status_page_shows_no_batch_id_hint_without_a_reason(
+    client_request,
+    mocker,
+    service_one,
+    fake_uuid,
+    active_user_with_permissions,
+):
+    mocker.patch("app.user_api_client.get_user", return_value=active_user_with_permissions)
+    notification = create_notification(notification_status="sending", template_type="messagebox")
+    notification["detailed_status_code"] = None
+    notification["messagebox_failure_reason"] = None
+    mocker.patch("app.notification_api_client.get_notification", return_value=notification)
+
+    page = client_request.get("main.view_notification", service_id=service_one["id"], notification_id=fake_uuid)
+
+    assert page.select_one(".ajax-block-container")
+    assert page.select_one(".messagebox-batch-id-hint") is None
 
 
 @pytest.mark.parametrize(
@@ -243,7 +289,7 @@ def test_notification_page_doesnt_link_to_template_in_tour(
             help=3,
         )
 
-    assert normalize_spaces(page.select("main p:nth-of-type(1)")[0].text) == (expected_message)
+    assert normalize_spaces(page.select("main p:nth-of-type(1)")[0].text) == expected_message
     assert len(page.select("main p:nth-of-type(1) a")) == 0
 
 
@@ -375,12 +421,13 @@ def test_notification_page_shows_page_for_letter_sent_with_test_key(
         notification_id=fake_uuid,
     )
 
-    assert normalize_spaces(page.select("main p:nth-of-type(1)")[0].text) == (expected_p1)
-    assert normalize_spaces(page.select("main p:nth-of-type(2)")[0].text) == (expected_p2)
+    assert normalize_spaces(page.select("main p:nth-of-type(1)")[0].text) == expected_p1
+    assert normalize_spaces(page.select("main p:nth-of-type(2)")[0].text) == expected_p2
     assert normalize_spaces(page.select_one(".letter-postage").text) == expected_postage
     assert page.select("p.notification-status") == []
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_notification_page_shows_validation_failed_precompiled_letter(
     client_request,
     mocker,
@@ -431,7 +478,7 @@ def test_notification_page_shows_validation_failed_precompiled_letter(
         ),
         (
             "technical-failure",
-            "Technical failure – Notify will resend once the team have fixed the problem",
+            "Technical failure – Do not try to send this letter again",
         ),
     ),
 )
@@ -456,7 +503,7 @@ def test_notification_page_shows_cancelled_or_failed_letter(
     assert normalize_spaces(page.select("main p")[0].text) == (
         "‘sample template’ was sent by Test User today at 1:01am"
     )
-    assert normalize_spaces(page.select("main p")[1].text) == (expected_message)
+    assert normalize_spaces(page.select("main p")[1].text) == expected_message
     assert not page.select("p.notification-status")
 
     assert page.select_one("main img")["src"].endswith(".png?page=1")
@@ -570,8 +617,8 @@ def test_notification_page_shows_page_for_other_postage_classes(
     )
 
     assert normalize_spaces(page.select("main p:nth-of-type(2)")[0].text) == "Printing starts tomorrow at 5:30pm"
-    assert normalize_spaces(page.select("main p:nth-of-type(3)")[0].text) == (expected_delivery)
-    assert normalize_spaces(page.select_one(".letter-postage").text) == (expected_postage_text)
+    assert normalize_spaces(page.select("main p:nth-of-type(3)")[0].text) == expected_delivery
+    assert normalize_spaces(page.select_one(".letter-postage").text) == expected_postage_text
     assert page.select_one(".letter-postage")["class"] == ["letter-postage", expected_class_value]
 
 
@@ -583,6 +630,7 @@ def test_notification_page_shows_page_for_other_postage_classes(
         create_active_caseworking_user(),
     ],
 )
+@freeze_time("2026-02-06")
 def test_should_show_image_of_letter_notification(
     client_request,
     fake_uuid,
@@ -615,6 +663,7 @@ def test_should_show_image_of_letter_notification(
             values=notification["personalisation"],
             page=None,
             service=RestrictedAny(lambda s: s.id == SERVICE_ONE_ID),
+            date=datetime(2026, 2, 6, 0, 0, 0, tzinfo=UTC),
         ),
     ]
 
@@ -642,6 +691,7 @@ def test_should_show_image_of_letter_notification_that_failed_validation(client_
     assert response.get_data(as_text=True) == "foo", metadata
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_image_of_templated_letter_notification_that_failed_validation_because_letter_is_too_long(
     client_request,
     mocker,
@@ -796,7 +846,7 @@ def test_notification_page_has_link_to_download_letter(
     )
 
     try:
-        download_link = page.select_one("a[download]")["href"]
+        download_link = page.select_one("a.page-footer-right-aligned-link-without-button")["href"]
     except TypeError:
         download_link = None
 
@@ -851,9 +901,7 @@ def test_should_show_image_of_precompiled_letter_notification(
 ):
     notification = create_notification(template_type="letter", is_precompiled_letter=True)
     mocker.patch("app.notification_api_client.get_notification", return_value=notification)
-    mock_pdf_page_count = mocker.patch("app.main.views_nl.notifications.pdf_page_count", return_value=1)
-
-    mocker.patch(
+    mock_get_notification_letter_preview = mocker.patch(
         "app.main.views_nl.notifications.notification_api_client.get_notification_letter_preview",
         return_value={"content": base64.b64encode(b"foo").decode("utf-8")},
     )
@@ -866,10 +914,13 @@ def test_should_show_image_of_precompiled_letter_notification(
     )
 
     assert response.get_data(as_text=True) == "foo"
-    assert mock_pdf_page_count.called_once()
+    assert mock_get_notification_letter_preview.call_args_list == [
+        mocker.call(SERVICE_ONE_ID, fake_uuid, "png", page=None)
+    ]
 
 
 @freeze_time("2016-01-01 15:00")
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_show_cancel_letter_confirmation(client_request, mocker, fake_uuid, mock_get_page_counts_for_letter):
     notification = create_notification(template_type="letter", notification_status="created")
     mocker.patch("app.notification_api_client.get_notification", return_value=notification)

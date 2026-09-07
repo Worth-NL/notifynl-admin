@@ -24,8 +24,13 @@ UNSUPPORTED_ATTESTATION_OBJECT = base64.b64decode(
 
 def test_from_registration_verifies_response(webauthn_dev_server):
     registration_response = {
-        "clientDataJSON": CLIENT_DATA_JSON,
-        "attestationObject": ATTESTATION_OBJECT,
+        "id": b"test-credential-id",
+        "rawId": b"test-credential-id",
+        "type": "public-key",
+        "response": {
+            "clientDataJSON": CLIENT_DATA_JSON,
+            "attestationObject": ATTESTATION_OBJECT,
+        },
     }
 
     credential = WebAuthnCredential.from_registration(SESSION_STATE, registration_response)
@@ -41,8 +46,13 @@ def test_from_registration_verifies_response(webauthn_dev_server):
 
 def test_from_registration_encodes_as_unicode(webauthn_dev_server):
     registration_response = {
-        "clientDataJSON": CLIENT_DATA_JSON,
-        "attestationObject": ATTESTATION_OBJECT,
+        "id": b"test-credential-id",
+        "rawId": b"test-credential-id",
+        "type": "public-key",
+        "response": {
+            "clientDataJSON": CLIENT_DATA_JSON,
+            "attestationObject": ATTESTATION_OBJECT,
+        },
     }
 
     credential = WebAuthnCredential.from_registration(SESSION_STATE, registration_response)
@@ -53,10 +63,52 @@ def test_from_registration_encodes_as_unicode(webauthn_dev_server):
     assert isinstance(serialized_credential["registration_response"], str)
 
 
+def test_serialize_returns_valid_typeddict(webauthn_dev_server):
+    # Create a test credential with known values
+    from datetime import datetime
+
+    now = datetime.now()
+
+    credential = WebAuthnCredential(
+        {
+            "id": "123",
+            "name": "Test Key",
+            "credential_data": "test_credential_data",
+            "registration_response": "test_response",
+            "created_at": now,
+            "updated_at": now,
+            "logged_in_at": None,  # Test the Optional case
+        }
+    )
+
+    # Get serialized form
+    serialized = credential.serialize()
+
+    # Verify it matches our TypedDict structure
+    assert set(serialized.keys()) == {"name", "credential_data", "registration_response"}
+
+    assert isinstance(serialized.get("name"), str)
+    assert isinstance(serialized.get("credential_data"), str)
+    assert isinstance(serialized.get("registration_response"), str)
+
+    assert serialized.get("name") == "Test Key"
+    assert serialized.get("credential_data") == "test_credential_data"
+    assert serialized.get("registration_response") == "test_response"
+    assert serialized.get("id") is None  # Not included in TypedDict
+    assert serialized.get("created_at") is None  # Not included in TypedDict
+    assert serialized.get("updated_at") is None  # Not included in TypedDict
+    assert serialized.get("logged_in_at") is None  # Not included in TypedDict
+
+
 def test_from_registration_handles_library_errors(notify_admin):
     registration_response = {
-        "clientDataJSON": CLIENT_DATA_JSON,
-        "attestationObject": ATTESTATION_OBJECT,
+        "id": b"test-credential-id",
+        "rawId": b"test-credential-id",
+        "type": "public-key",
+        "response": {
+            "clientDataJSON": CLIENT_DATA_JSON,
+            "attestationObject": ATTESTATION_OBJECT,
+        },
     }
 
     with pytest.raises(RegistrationError) as exc_info:
@@ -67,8 +119,13 @@ def test_from_registration_handles_library_errors(notify_admin):
 
 def test_from_registration_handles_unsupported_keys(webauthn_dev_server):
     registration_response = {
-        "clientDataJSON": CLIENT_DATA_JSON,
-        "attestationObject": UNSUPPORTED_ATTESTATION_OBJECT,
+        "id": b"test-credential-id",
+        "rawId": b"test-credential-id",
+        "type": "public-key",
+        "response": {
+            "clientDataJSON": CLIENT_DATA_JSON,
+            "attestationObject": UNSUPPORTED_ATTESTATION_OBJECT,
+        },
     }
 
     with pytest.raises(RegistrationError) as exc_info:

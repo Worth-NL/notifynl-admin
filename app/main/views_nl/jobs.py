@@ -19,13 +19,13 @@ from app import (
 )
 from app.formatters import get_time_left, message_count_noun
 from app.main import json_updates, main
-from app.models.job import Job
+from app.models_nl.job import Job
 from app.notify_client.job_api_client import JobApiClient
 from app.s3_client.s3_csv_client import s3download
 from app.utils import parse_filter_args, set_status_filters
 from app.utils.csv import generate_notifications_csv
-from app.utils.letters import get_letter_printing_statement, printing_today_or_tomorrow
 from app.utils.user import user_has_permissions
+from app.utils_nl.letters import get_letter_printing_statement, printing_today_or_tomorrow
 
 
 @main.route("/services/<uuid:service_id>/jobs")
@@ -137,7 +137,7 @@ def cancel_letter_job(service_id, job_id):
 
         # reduce to just == FINISHED_ALL_NOTIFICATIONS_CREATED_JOB_STATUS once api support rolled out
         if job.status not in JobApiClient.FINISHED_JOB_STATUSES or job.notifications_created < job.notification_count:
-            flash("We zijn deze brieven nog aan het verwerken, probeer het over een minuut opnieuw.", "try again")
+            flash("We zijn deze brieven nog aan het verwerken, probeer het over 5 minuten opnieuw.", "try again")
             return view_job(service_id, job_id)
         try:
             number_of_letters = job.cancel()

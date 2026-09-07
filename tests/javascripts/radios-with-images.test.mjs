@@ -7,7 +7,7 @@ describe('Radios with images', () => {
   let radios;
 
   beforeEach(() => {
-    // add class to mimic IRL 
+    // add class to mimic IRL
     document.body.classList.add('govuk-frontend-supported');
     // set up DOM
     document.body.innerHTML =
@@ -73,8 +73,8 @@ describe('Radios with images', () => {
     // start the module
     const $radiosWithImagesArray = document.querySelectorAll('[data-notify-module="radios-with-images"]');
     if ($radiosWithImagesArray.length > 0) {
-      $radiosWithImagesArray.forEach((el) => new RadiosWithImages(el)); 
-    } 
+      $radiosWithImagesArray.forEach((el) => new RadiosWithImages(el));
+    }
 
     expect(document.querySelector('#banner-0').checked).toBe(false);
     expect(document.querySelector('#banner-1').checked).toBe(false);
@@ -88,6 +88,19 @@ describe('Radios with images', () => {
     expect(document.querySelector('#banner-1').checked).toBe(true);
   });
 
+  test('Clicking the image for a disabled radio input should not select it', () => {
+    document.querySelector('#banner-1').disabled = true;
+
+    // start the module
+    const $radiosWithImagesArray = document.querySelectorAll('[data-notify-module="radios-with-images"]');
+    if ($radiosWithImagesArray.length > 0) {
+      $radiosWithImagesArray.forEach((el) => new RadiosWithImages(el));
+    }
+
+    document.querySelector('#banner-1-description').click();
+    expect(document.querySelector('#banner-1').checked).toBe(false);
+  });
+
   test('Images should get pointer cursors', () => {
     expect(document.querySelector('#banner-0-description').style.cursor).toBe('');
     expect(document.querySelector('#banner-1-description').style.cursor).toBe('');
@@ -95,10 +108,23 @@ describe('Radios with images', () => {
     // start the module
     const $radiosWithImagesArray = document.querySelectorAll('[data-notify-module="radios-with-images"]');
     if ($radiosWithImagesArray.length > 0) {
-      $radiosWithImagesArray.forEach((el) => new RadiosWithImages(el)); 
-    } 
+      $radiosWithImagesArray.forEach((el) => new RadiosWithImages(el));
+    }
 
     expect(document.querySelector('#banner-0-description').style.cursor).toBe('pointer');
     expect(document.querySelector('#banner-1-description').style.cursor).toBe('pointer');
+  });
+
+  test('Image for a disabled radio input should get a not-allowed cursor', () => {
+    document.querySelector('#banner-1').disabled = true;
+
+    // start the module
+    const $radiosWithImagesArray = document.querySelectorAll('[data-notify-module="radios-with-images"]');
+    if ($radiosWithImagesArray.length > 0) {
+      $radiosWithImagesArray.forEach((el) => new RadiosWithImages(el));
+    }
+
+    expect(document.querySelector('#banner-0-description').style.cursor).toBe('pointer');
+    expect(document.querySelector('#banner-1-description').style.cursor).toBe('not-allowed');
   });
 });

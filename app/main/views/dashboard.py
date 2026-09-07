@@ -1,5 +1,5 @@
 import calendar
-from datetime import datetime
+from datetime import UTC, datetime
 from functools import partial
 from itertools import groupby
 
@@ -20,7 +20,7 @@ from app.extensions import redis_client
 from app.formatters import format_date_numeric, format_datetime_numeric, format_phone_number_human_readable
 from app.main import json_updates, main
 from app.main.forms import SearchNotificationsForm
-from app.models.notification import InboundSMSMessages, Notifications
+from app.models.notification import InboundSMSMessages, InterruptibleNotifications
 from app.statistics_utils import get_formatted_percentage
 from app.utils import (
     DELIVERED_STATUSES,
@@ -57,14 +57,33 @@ def service_dashboard(service_id):
     return render_template(
         "views/dashboard/dashboard.html",
         updates_url=url_for("json_updates.service_dashboard_updates", service_id=service_id),
-        partials=get_dashboard_partials(service_id),
+        partials=get_dashboard_partials_lazy(),
     )
 
 
 @json_updates.route("/services/<uuid:service_id>/dashboard.json")
 @user_has_permissions("view_activity")
 def service_dashboard_updates(service_id):
-    return jsonify(**get_dashboard_partials(service_id))
+    return jsonify(**get_dashboard_partials())
+
+
+@json_updates.route("/services/<uuid:service_id>/dashboard-usage.json")
+@user_has_permissions("manage_service")
+def service_dashboard_usage_updates(service_id):
+    free_sms_allowance = billing_api_client.get_free_sms_fragment_limit_for_year(
+        current_service.id,
+        get_current_financial_year(),
+    )
+    yearly_usage = billing_api_client.get_annual_usage_for_service(
+        current_service.id,
+        get_current_financial_year(),
+    )
+    return jsonify(
+        usage=render_template(
+            "views/dashboard/_usage.html",
+            **get_annual_usage_breakdown(yearly_usage, free_sms_allowance),
+        )
+    )
 
 
 def make_cache_key(query_hash, service_id):
@@ -282,7 +301,7 @@ def _get_notifications_dashboard_partials_data(service_id, message_type):
     if message_type is not None:
         service_data_retention_days = current_service.get_days_of_retention(message_type)
 
-    notifications = Notifications(
+    notifications = InterruptibleNotifications(
         service_id=service_id,
         page=page,
         template_type=[message_type] if message_type else [],
@@ -452,7 +471,7 @@ def inbox_download(service_id):
         mimetype="text/csv",
         headers={
             "Content-Disposition": (
-                f'inline; filename="Received text messages {format_date_numeric(datetime.utcnow().isoformat())}.csv"'
+                f'attachment; filename="Received text messages {format_date_numeric(datetime.now(UTC))}.csv"'
             )
         },
     )
@@ -524,20 +543,23 @@ def aggregate_notifications_stats(template_statistics):
     return notifications
 
 
-def get_dashboard_partials(service_id):
-    all_statistics = template_statistics_client.get_template_statistics_for_service(service_id, limit_days=7)
+def get_dashboard_partials_lazy():
+    return {
+        "upcoming": render_template("views/dashboard/_upcoming.html"),
+        "inbox": render_template("views/dashboard/_inbox.html"),
+        "totals": render_template("views/dashboard/_totals-lazy.html"),
+        "template-statistics": render_template("views/dashboard/template-statistics-lazy.html"),
+        "usage": render_template("views/dashboard/_usage-lazy.html"),
+    }
+
+
+def get_dashboard_partials():
+    all_statistics = template_statistics_client.get_template_statistics_for_service(current_service.id, limit_days=7)
     template_statistics = aggregate_template_usage(all_statistics)
     stats = aggregate_notifications_stats(all_statistics)
 
-    dashboard_totals = (get_dashboard_totals(stats),)
-    free_sms_allowance = billing_api_client.get_free_sms_fragment_limit_for_year(
-        current_service.id,
-        get_current_financial_year(),
-    )
-    yearly_usage = billing_api_client.get_annual_usage_for_service(
-        service_id,
-        get_current_financial_year(),
-    )
+    dashboard_totals = get_dashboard_totals(stats)
+
     return {
         "upcoming": render_template(
             "views/dashboard/_upcoming.html",
@@ -547,17 +569,13 @@ def get_dashboard_partials(service_id):
         ),
         "totals": render_template(
             "views/dashboard/_totals.html",
-            service_id=service_id,
-            statistics=dashboard_totals[0],
+            service_id=current_service.id,
+            statistics=dashboard_totals,
         ),
         "template-statistics": render_template(
             "views/dashboard/template-statistics.html",
             template_statistics=template_statistics,
             most_used_template_count=max([row["count"] for row in template_statistics] or [0]),
-        ),
-        "usage": render_template(
-            "views/dashboard/_usage.html",
-            **get_annual_usage_breakdown(yearly_usage, free_sms_allowance),
         ),
     }
 
@@ -599,7 +617,7 @@ def format_monthly_stats_to_list(historical_stats):
         (
             dict(
                 date=key,
-                future=yyyy_mm_to_datetime(key) > datetime.utcnow(),
+                future=yyyy_mm_to_datetime(key) > datetime.now(UTC),
                 name=yyyy_mm_to_datetime(key).strftime("%B"),
                 **aggregate_status_types(value),
             )
@@ -610,7 +628,7 @@ def format_monthly_stats_to_list(historical_stats):
 
 
 def yyyy_mm_to_datetime(string):
-    return datetime(int(string[0:4]), int(string[5:7]), 1)
+    return datetime(int(string[0:4]), int(string[5:7]), 1, tzinfo=UTC)
 
 
 def aggregate_status_types(counts_dict):
@@ -691,6 +709,8 @@ def get_monthly_usage_breakdown_for_letters(monthly_letters):
 def get_monthly_usage_postage_description(row):
     if row["postage"] in ("netherlands"):
         return f"{row['postage']} class"
+    elif row["postage"] == "economy":
+        return "economy mail"
     return "international"
 
 

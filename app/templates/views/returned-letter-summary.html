@@ -22,6 +22,11 @@
     <p class="govuk-body">
       You’ll only get a report if one or more of your letters is returned.
     </p>
+    {% if current_service.api_keys %}
+      <p class="govuk-body">
+        Automate identifying the returned letters using the Notify API. Follow&nbsp;the instructions in our <a href="{{ url_for("main.guidance_api_documentation") }}" class="govuk-link govuk-link--no-visited-state">API documentation</a>.
+      </p>
+    {% endif %}
   </div>
 </div>
 <div class="dashboard-table">

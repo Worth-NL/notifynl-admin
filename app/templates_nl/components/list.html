@@ -1,5 +1,6 @@
 {% macro list_of_placeholders(placeholders) %}
   {{ placeholders | formatted_list(
+    conjunction='en',
     before_each="<span class='placeholder'>((",
     after_each='))</span>',
     separator=' '
@@ -8,6 +9,7 @@
 
 {% macro list_of_code_snippets(variables) %}
   {{ variables | formatted_list(
+    conjunction='en',
     before_each="<code>",
     after_each='</code>',
     separator=', '

@@ -1,0 +1,276 @@
+from flask import abort, flash, redirect, render_template, request, url_for
+from notifications_utils.field import PlainTextField
+from notifications_utils.insensitive_dict import InsensitiveSet
+
+from app import current_service, current_user, service_api_client
+from app.main import main
+from app.main.forms import (
+    OnOffSettingForm,
+    ServiceContactDetailsForm,
+    TemplateEmailFileLinkTextForm,
+    TemplateEmailFileRetentionPeriodForm,
+    TemplateEmailFilesUploadForm,
+)
+from app.models.template_email_file import TemplateEmailFile
+from app.utils.user import user_has_permissions
+
+
+@main.route("/services/<uuid:service_id>/templates/<uuid:template_id>/files", methods=["GET"])
+@user_has_permissions("manage_templates")
+def template_email_files(template_id, service_id):
+    template = current_service.get_template_with_user_permission_or_403(
+        template_id,
+        current_user,
+        must_be_of_type="email",
+    )
+    if not current_service.contact_link:
+        return redirect(
+            url_for(
+                "main.setup_template_email_files",
+                service_id=current_service.id,
+                template_id=template.id,
+            )
+        )
+    if not template.email_files:
+        return redirect(
+            url_for(
+                "main.upload_template_email_files",
+                service_id=current_service.id,
+                template_id=template.id,
+            )
+        )
+    return render_template(
+        "views/templates/email-template-files/files-list.html", template=template, data=template.email_files
+    )
+
+
+@main.route("/services/<uuid:service_id>/templates/<uuid:template_id>/files/setup", methods=["GET", "POST"])
+@user_has_permissions("manage_templates")
+def setup_template_email_files(template_id, service_id):
+    template = current_service.get_template_with_user_permission_or_403(
+        template_id,
+        current_user,
+        must_be_of_type="email",
+    )
+    form = ServiceContactDetailsForm(service=current_service)
+    if current_user.has_permissions("manage_service") and form.validate_on_submit():
+        current_service.update(contact_link=form.chosen_contact_type)
+        return redirect(url_for(".template_email_files", service_id=current_service.id, template_id=template.id))
+
+    return render_template(
+        "views/templates/email-template-files/setup.html",
+        template=template,
+        form=form,
+        error_summary_enabled=True,
+    )
+
+
+@main.route(
+    "/services/<uuid:service_id>/templates/<uuid:template_id>/files/<uuid:template_email_file_id>",
+    methods=["GET", "POST"],
+)
+@user_has_permissions("manage_templates")
+def manage_a_template_email_file(service_id, template_id, template_email_file_id):
+    template = current_service.get_template_with_user_permission_or_403(
+        template_id,
+        current_user,
+        must_be_of_type="email",
+    )
+    delete = bool(request.args.get("delete"))
+    template_email_file = TemplateEmailFile.get_by_id(
+        template_email_file_id=template_email_file_id, service_id=service_id, template=template
+    )
+    if request.method == "POST" and delete:
+        new_content = PlainTextField(
+            template.content,
+            {template_email_file.filename: ""},
+            html="passthrough",
+        )
+        service_api_client.update_service_template(
+            service_id=service_id,
+            template_id=template_id,
+            content=str(new_content).strip(),
+            archive_email_file_ids=[template_email_file.id],
+        )
+        flash(f"‘{template_email_file.filename}’ has been removed", "default_with_tick")
+        return redirect(url_for("main.view_template", service_id=current_service.id, template_id=template.id))
+
+    return render_template(
+        "views/templates/email-template-files/email_file.html",
+        template_email_file=template_email_file,
+        service_id=service_id,
+        template_id=template_id,
+        delete=delete,
+    )
+
+
+@main.route(
+    "/services/<uuid:service_id>/templates/<uuid:template_id>/files/<uuid:template_email_file_id>/make-live",
+    methods=["POST"],
+)
+@user_has_permissions("manage_templates")
+def make_file_live(service_id, template_id, template_email_file_id):
+    template = current_service.get_template_with_user_permission_or_403(
+        template_id,
+        current_user,
+        must_be_of_type="email",
+    )
+    template_email_file = TemplateEmailFile.get_by_id(
+        template_email_file_id=template_email_file_id, service_id=service_id, template=template
+    )
+    if template_email_file.filename not in InsensitiveSet(template.placeholders):
+        new_content = template.content + f"\n\n(({template_email_file.filename}))"
+        service_api_client.update_service_template(
+            service_id=service_id,
+            template_id=template_id,
+            content=new_content,
+        )
+    template_email_file.update(pending=False)
+    flash(f"‘{template_email_file.filename}’ added to template", "default_with_tick")
+    return redirect(url_for("main.view_template", service_id=current_service.id, template_id=template.id))
+
+
+@main.route("/services/<uuid:service_id>/templates/<uuid:template_id>/files/upload", methods=["GET", "POST"])
+@user_has_permissions("manage_templates")
+def upload_template_email_files(template_id, service_id):
+    template = current_service.get_template_with_user_permission_or_403(
+        template_id,
+        current_user,
+        must_be_of_type="email",
+    )
+    if not current_service.contact_link:
+        abort(403)
+    form = TemplateEmailFilesUploadForm(template=template)
+    if form.validate_on_submit():
+        template_email_file_id = TemplateEmailFile.create(
+            filename=form.file.data.filename,
+            file_contents=form.file.data,
+            template_id=template.id,
+        )
+
+        return redirect(
+            url_for(
+                "main.manage_a_template_email_file",
+                service_id=service_id,
+                template_id=template_id,
+                template_email_file_id=template_email_file_id,
+            )
+        )
+
+    return render_template(
+        "views/templates/email-template-files/upload.html",
+        template=template,
+        form=form,
+        error_summary_enabled=True,
+    )
+
+
+@main.route(
+    "/services/<uuid:service_id>/templates/<uuid:template_id>/files/<uuid:template_email_file_id>/change-link-text",
+    methods=["GET", "POST"],
+)
+@user_has_permissions("manage_templates")
+def change_link_text(service_id, template_id, template_email_file_id):
+    template = current_service.get_template_with_user_permission_or_403(
+        template_id,
+        current_user,
+        must_be_of_type="email",
+    )
+    template_email_file = TemplateEmailFile.get_by_id(
+        template_email_file_id=template_email_file_id, service_id=service_id, template=template
+    )
+    form = TemplateEmailFileLinkTextForm(link_text=template_email_file.link_text)
+
+    if form.validate_on_submit():
+        template_email_file.update(link_text=form.link_text.data)
+        return redirect(
+            url_for(
+                "main.manage_a_template_email_file",
+                service_id=service_id,
+                template_id=template_id,
+                template_email_file_id=template_email_file_id,
+            )
+        )
+
+    return render_template(
+        "views/templates/email-template-files/change_link_text.html",
+        template=template,
+        form=form,
+        template_email_file=template_email_file,
+    )
+
+
+@main.route(
+    "/services/<uuid:service_id>/templates/<uuid:template_id>/files/<uuid:template_email_file_id>/change-data-retention",
+    methods=["GET", "POST"],
+)
+@user_has_permissions("manage_templates")
+def change_data_retention_period(service_id, template_id, template_email_file_id):
+    template = current_service.get_template_with_user_permission_or_403(
+        template_id,
+        current_user,
+        must_be_of_type="email",
+    )
+    template_email_file = TemplateEmailFile.get_by_id(
+        template_email_file_id=template_email_file_id, service_id=service_id, template=template
+    )
+    form = TemplateEmailFileRetentionPeriodForm(retention_period=template_email_file.retention_period)
+
+    if form.validate_on_submit():
+        template_email_file.update(retention_period=form.retention_period.data)
+        return redirect(
+            url_for(
+                "main.manage_a_template_email_file",
+                service_id=service_id,
+                template_id=template_id,
+                template_email_file_id=template_email_file_id,
+            )
+        )
+
+    return render_template(
+        "views/templates/email-template-files/change_retention_period.html",
+        template=template,
+        form=form,
+        template_email_file=template_email_file,
+        error_summary_enabled=True,
+    )
+
+
+@main.route(
+    "/services/<uuid:service_id>/templates/<uuid:template_id>/files/<uuid:template_email_file_id>/change-email-validation",
+    methods=["GET", "POST"],
+)
+@user_has_permissions("manage_templates")
+def change_email_validation(service_id, template_id, template_email_file_id):
+    template = current_service.get_template_with_user_permission_or_403(
+        template_id,
+        current_user,
+        must_be_of_type="email",
+    )
+    template_email_file = TemplateEmailFile.get_by_id(
+        template_email_file_id=template_email_file_id, service_id=service_id, template=template
+    )
+    form = OnOffSettingForm(
+        "Ask recipient for their email address",
+        truthy="Yes",
+        falsey="No",
+        enabled=template_email_file.validate_users_email,
+    )
+
+    if form.validate_on_submit():
+        template_email_file.update(validate_users_email=form.enabled.data)
+        return redirect(
+            url_for(
+                "main.manage_a_template_email_file",
+                service_id=service_id,
+                template_id=template_id,
+                template_email_file_id=template_email_file_id,
+            )
+        )
+
+    return render_template(
+        "views/templates/email-template-files/change_email_validation.html",
+        template=template,
+        form=form,
+        template_email_file=template_email_file,
+    )

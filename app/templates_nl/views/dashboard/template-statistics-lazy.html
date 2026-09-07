@@ -1,0 +1,46 @@
+{% from "components/table.html" import list_table, row_heading, field %}
+{% from "components/show-more.html" import show_more %}
+
+<div class="ajax-block-container">
+    <div class='template-statistics-table'>
+      {% call(item, row_number) list_table(
+        [1],
+        caption="Per template",
+        caption_visible=True,
+        empty_message='',
+        field_headings=[
+          'Template',
+          'Verzonden berichten'
+        ],
+        field_headings_visible=False
+      ) %}
+
+        {% call row_heading() %}
+          <span class="template-statistics-table-template-name" aria-label="Gegevens laden voor sjablonen">
+            <span class="spark-bar">
+              <span class="spark-bar-bar" style="width: 100%">
+                &nbsp;
+              </span>
+            </span>
+          </span>
+          <span class="template-statistics-table-hint">
+            &nbsp;
+          </span>
+        {% endcall %}
+
+        {% call field() %}
+          <span class="spark-bar" aria-label="Gegevens laden voor verzonden berichten">
+            <span class="spark-bar-bar" style="width: 100%">
+              &nbsp;
+            </span>
+          </span>
+        {% endcall %}
+
+      {% endcall %}
+      {{ show_more(
+        url_for('main.template_usage', service_id=current_service.id),
+        'Bekijk templates per maand',
+        with_border=False
+      ) }}
+    </div>
+</div>

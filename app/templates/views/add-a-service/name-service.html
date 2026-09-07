@@ -1,0 +1,77 @@
+{% extends "withoutnav_template.html" %}
+{% from "components/govuk-page-header.html" import govuk_page_header %}
+{% from "components/page-footer.html" import page_footer %}
+{% from "components/form.html" import form_wrapper %}
+{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "govuk_frontend_jinja/components/details/macro.html" import govukDetails %}
+
+{% set heading = 'Name your service' %}
+
+{% block backLink %}
+  {{ govukBackLink({ "href": url_for('main.add_service') }) }}
+{% endblock %}
+
+{% block per_page_title %}
+  {{ heading }}
+{% endblock %}
+
+{% block maincolumn_content %}
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+       {{ govuk_page_header(heading) }}
+      <p class="govuk-body">Choose a name that you think the GOV.UK Notify team will understand.</p>
+      <p class="govuk-body">Later, when you make your service live, we’ll use the name to check that you’ve met our <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.terms_of_use') }}" target="_blank">terms of use (opens in new tab)</a>.</p>
+      <p class="govuk-body">Do not include:</p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>acronyms, initialisms or abbreviations</li>
+        <li>your own name or the name of someone on your team</li>
+      </ul>
+    
+    {% call form_wrapper() %}
+      {{ form.name(
+        param_extensions={
+          "label":{
+            "classes": "govuk-!-font-weight-bold"
+          },
+          "hint": {
+            "text": "You can change this before you make your service live",
+          } 
+        }) 
+      }}
+
+      {% if not default_organisation_type %}
+        {{ form.organisation_type(
+          param_extensions={
+              "fieldset": {
+                "legend": {
+                  "text": "Who runs this service?",
+                  "classes": "govuk-fieldset__legend--m"
+                }
+              }
+            }
+        ) }}
+      {% endif %}
+
+      {% set who_can_see_my_service_name_html %}  
+        <p class="govuk-body">The only people that can see your service name are:</p>
+        <ul class="govuk-list govuk-list--bullet">
+          <li>you</li>
+          <li>the Notify team</li>
+          <li>anyone in your organisation who uses Notify</li>
+        </ul>
+        <p class="govuk-body">Your recipients will not see your service name unless you choose to share it with them.</p>
+      {% endset %} 
+
+      {{ govukDetails({
+        "summaryText": "Who can see my service name?",
+        "html": who_can_see_my_service_name_html
+      }) }}
+
+      {{ page_footer('Save and continue') }}
+
+    {% endcall %}
+
+    </div>
+  </div>
+
+{% endblock %}

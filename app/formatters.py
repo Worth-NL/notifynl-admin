@@ -61,7 +61,7 @@ def format_time_24h(date):
 def get_human_day(time, date_prefix="", include_day_of_week=False):
     #  Add 1 minute to transform 00:00 into ‘midnight today’ instead of ‘midnight tomorrow’
     date = (utc_string_to_aware_gmt_datetime(time) - timedelta(minutes=1)).date()
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     if date == (now + timedelta(days=1)).date():
         return "tomorrow"
@@ -121,7 +121,7 @@ def naturaltime_without_indefinite_article(date):
 
 
 def format_delta(date):
-    delta = (datetime.now(UTC)) - (utc_string_to_aware_gmt_datetime(date))
+    delta = datetime.now(UTC) - utc_string_to_aware_gmt_datetime(date)
     if delta < timedelta(seconds=30):
         return "just now"
     if delta < timedelta(seconds=60):
@@ -243,6 +243,7 @@ def format_notification_status_as_url(status, notification_type):
     if notification_type not in {
         "email",
         "sms",
+        "letter",
     }:
         return None
 
@@ -312,7 +313,7 @@ def get_time_left(created_at, service_data_retention_days=7):
     if not isinstance(created_at, datetime):
         created_at = dateutil.parser.parse(created_at)
     return ago.human(
-        (datetime.now(UTC))
+        datetime.now(UTC)
         - (created_at.replace(hour=0, minute=0, second=0) + timedelta(days=service_data_retention_days + 1)),
         future_tense="Data available for {}",
         past_tense="Data no longer available",  # No-one should ever see this
@@ -420,6 +421,12 @@ def character_count(count):
     return f"{format_thousands(count)} characters"
 
 
+def format_pluralise(files):
+    if len(files) == 1:
+        return ""
+    return "s"
+
+
 def format_billions(count):
     return humanize.intword(count)
 
@@ -472,3 +479,29 @@ def format_phone_number_human_readable(number):
         # if there was a validation error, we want to shortcut out here, but still display the number on the front end
         return number
     return phone_number.get_human_readable_format()
+
+
+def format_provider(provider):
+    if provider == "firetext":
+        return provider.title()
+
+    return provider.upper()
+
+
+def format_retention_period(weeks):
+    if weeks == 1:
+        return "1 week after sending"
+    if weeks < 9:
+        return f"{weeks} weeks after sending"
+    delta = humanize.naturaltime(timedelta(weeks=weeks)).replace(" ago", "")
+    return Markup(f"""
+        {weeks} weeks after sending<br>
+        <span class='govuk-hint'>(about {delta})</span>
+    """)
+
+
+def format_invite_status(user_status):
+    if user_status == "pending":
+        return "(invited)"
+    if user_status == "cancelled":
+        return "(cancelled invite)"

@@ -1,0 +1,25 @@
+{% extends "document-download-template.html" %}
+{% from "components/error-summary.html" import errorSummary %}
+{% from "components/form.html" import form_wrapper %}
+{% from "components/page-footer.html" import page_footer %}
+
+{% block per_page_title %}
+  Confirm your email address
+{% endblock %}
+
+{% block extra_banner_content %}
+  <p class="govuk-body">
+    To continue, enter the email address you use to sign in to Notify.
+  </p>
+{% endblock %}
+
+{% block main_content %}
+
+  {{ errorSummary(form) }}
+
+  <p class="govuk-body">For security, we need to confirm the email address the file was sent to before you can download it.</p>
+  {% call form_wrapper() %}
+    {{ form.email_address(param_extensions={"classes": "govuk-!-width-full"}) }}
+    {{ page_footer('Continue') }}
+  {% endcall %}
+{% endblock %}

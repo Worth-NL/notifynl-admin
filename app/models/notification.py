@@ -14,6 +14,7 @@ from app.models.api_key import APIKey
 from app.notify_client.notification_api_client import notification_api_client
 from app.notify_client.service_api_client import service_api_client
 from app.utils import DELIVERED_STATUSES, FAILURE_STATUSES
+from app.utils.interruptible_io import InterruptibleIterableMixin
 from app.utils.letters import get_letter_printing_statement
 from app.utils.templates import EmailPreviewTemplate
 
@@ -38,6 +39,9 @@ class Notification(JSONModel):
     created_by_email_address: str
     job_name: str
     api_key_name: str
+    detailed_status_code: str
+    messagebox_stadium: str
+    messagebox_failure_reason: str
 
     __sort_attribute__ = "created_at"
 
@@ -115,6 +119,9 @@ class Notification(JSONModel):
                 ).subject
             )
 
+        if self.template["template_type"] == "messagebox":
+            return ""
+
     @cached_property
     def job(self):
         from app.models.job import Job
@@ -178,6 +185,10 @@ class Notifications(ModelList):
         self.items = resp["notifications"]
         self.prev = resp.get("links", {}).get("prev", None)
         self.next = resp.get("links", {}).get("next", None)
+
+
+class InterruptibleNotifications(InterruptibleIterableMixin, Notifications):
+    pass
 
 
 class NotificationForCSV(Notification):

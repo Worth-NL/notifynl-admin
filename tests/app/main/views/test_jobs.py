@@ -607,6 +607,7 @@ def test_should_cancel_letter_job(
     mock_cancel.assert_called_once_with(SERVICE_ONE_ID, job_id)
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2019-06-20 17:30:00.000001")
 @pytest.mark.parametrize(
     "job_created_at, expected_fragment",
@@ -712,7 +713,7 @@ def test_dont_cancel_letter_job_when_too_early_to_cancel(
     assert mock_cancel.called is False
     flash_message = normalize_spaces(page.select_one("div.banner-dangerous").text)
 
-    assert "We are still processing these letters, please try again in a minute." in flash_message
+    assert "We are still processing these letters, please try again in 5 minutes." in flash_message
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")

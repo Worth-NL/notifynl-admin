@@ -2,7 +2,7 @@
 {% from "components/banner.html" import banner_wrapper %}
 {% from "components/page-header.html" import page_header %}
 {% from "components/page-footer.html" import page_footer %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 {% from "components/file-upload.html" import file_upload %}
 
 {% block errorPrefix %}
@@ -22,7 +22,7 @@
     {% include "partials/check/letter-validation-failed-banner.html" %}
     <div class="bottom-gutter-1-2">
       <div class="js-stick-at-top-when-scrolling">
-        <div class="form-group">
+        <div class="govuk-form-group">
           {{ file_upload(
             re_upload_form.file,
             allowed_file_extensions=['pdf'],

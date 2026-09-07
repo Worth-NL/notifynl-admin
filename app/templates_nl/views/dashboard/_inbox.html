@@ -34,7 +34,7 @@
       {{ current_service.unsubscribe_requests_count|format_thousands }}
     </span>
     <span class="banner-dashboard-count-label">
-        e-mail {{ current_service.unsubscribe_requests_count | message_count_label('uitschrijfverzoek', suffix='') }}
+        e-mail {{ current_service.unsubscribe_requests_count | message_count_label('afmeldverzoek', suffix='') }}
     </span>
     <span class="banner-dashboard-meta">
       nieuwste rapport {{ current_service.datetime_of_latest_unsubscribe_request|format_delta_days }}

@@ -10,8 +10,11 @@ from flask import session as flask_session
 from flask import url_for
 from flask.testing import FlaskClient
 from flask_login import login_user
+from notifications_utils.template import Template
 
 from app.models.user import User
+
+UUID4_REGEX_PATTERN = r"[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[89ab][0-9a-f]{3}\-[0-9a-f]{12}"
 
 
 class TestClient(FlaskClient):
@@ -120,7 +123,7 @@ def user_json(
         "permissions": permissions,
         "auth_type": auth_type,
         "failed_login_count": failed_login_count,
-        "logged_in_at": logged_in_at or datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f"),
+        "logged_in_at": logged_in_at or datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S.%f"),
         "state": state,
         "platform_admin": platform_admin,
         "current_session_id": current_session_id,
@@ -145,7 +148,7 @@ def invited_user(
         "from_user": from_user,
         "email_address": email_address,
         "status": status,
-        "created_at": created_at or datetime.utcnow(),
+        "created_at": created_at or datetime.now(UTC),
         "auth_type": auth_type,
     }
     if service:
@@ -164,8 +167,10 @@ def service_json(
     users=None,
     email_message_limit=1000,
     letter_message_limit=1000,
+    letter_address_placement="60mm",
     international_sms_message_limit=500,
     sms_message_limit=1000,
+    messagebox_message_limit=1000,
     active=True,
     restricted=True,
     reply_to_email_address=None,
@@ -184,6 +189,7 @@ def service_json(
     organisation_id=None,
     rate_limit=3000,
     notes=None,
+    oin=None,
     billing_contact_email_addresses=None,
     billing_contact_names=None,
     billing_reference=None,
@@ -191,6 +197,7 @@ def service_json(
     has_active_go_live_request=False,
     go_live_user=None,
     confirmed_unique=False,
+    confirmed_email_sender_name=None,
 ):
     if users is None:
         users = []
@@ -206,6 +213,8 @@ def service_json(
         "international_sms_message_limit": international_sms_message_limit,
         "sms_message_limit": sms_message_limit,
         "letter_message_limit": letter_message_limit,
+        "messagebox_message_limit": messagebox_message_limit,
+        "letter_address_placement": letter_address_placement,
         "rate_limit": rate_limit,
         "active": active,
         "restricted": restricted,
@@ -216,7 +225,7 @@ def service_json(
         "organisation_type": organisation_type,
         "email_branding": email_branding,
         "branding": branding,
-        "created_at": created_at or str(datetime.utcnow()),
+        "created_at": created_at or str(datetime.now(UTC)),
         "letter_branding": None,
         "letter_contact_block": letter_contact_block,
         "permissions": permissions,
@@ -230,6 +239,7 @@ def service_json(
         "count_as_live": True,
         "organisation": organisation_id,
         "notes": notes,
+        "oin": oin,
         "billing_contact_email_addresses": billing_contact_email_addresses,
         "billing_contact_names": billing_contact_names,
         "billing_reference": billing_reference,
@@ -237,6 +247,7 @@ def service_json(
         "has_active_go_live_request": has_active_go_live_request,
         "go_live_user": go_live_user,
         "confirmed_unique": confirmed_unique,
+        "confirmed_email_sender_name": confirmed_email_sender_name,
     }
 
 
@@ -280,7 +291,7 @@ def organisation_json(
         "name": "Test Organisation" if name is False else name,
         "active": active,
         "users": users,
-        "created_at": created_at or str(datetime.utcnow()),
+        "created_at": created_at or str(datetime.now(UTC)),
         "email_branding_id": email_branding_id,
         "letter_branding_id": letter_branding_id,
         "organisation_type": organisation_type,
@@ -328,6 +339,7 @@ def template_json(
     letter_welsh_content=None,
     updated_at=None,
     has_unsubscribe_link=None,
+    email_files=None,
 ):
     template = {
         "id": id_,
@@ -336,7 +348,7 @@ def template_json(
         "content": content,
         "service": service_id,
         "version": version,
-        "updated_at": updated_at or datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f"),
+        "updated_at": updated_at or datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S.%f"),
         "archived": archived,
         "service_letter_contact": service_letter_contact,
         "reply_to": reply_to,
@@ -349,6 +361,7 @@ def template_json(
         "letter_welsh_subject": letter_welsh_subject,
         "letter_welsh_content": letter_welsh_content,
         "has_unsubscribe_link": has_unsubscribe_link,
+        "email_files": email_files or [],
     }
     if content is None:
         template["content"] = "template content"
@@ -375,7 +388,7 @@ def template_version_json(service_id, id_, created_by, version=1, created_at=Non
         created_by["email_address"],
     )
     if created_at is None:
-        created_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")
+        created_at = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S.%f")
     template["created_at"] = created_at
     template["version"] = version
     return template
@@ -421,7 +434,7 @@ def inbound_sms_json():
                 "user_number": phone_number,
                 "notify_number": "07900000002",
                 "content": f"message-{index + 1}",
-                "created_at": (datetime.utcnow() - timedelta(minutes=60 * hours_ago, seconds=index)).isoformat(),
+                "created_at": (datetime.now(UTC) - timedelta(minutes=60 * hours_ago, seconds=index)).isoformat(),
                 "id": str(uuid.uuid4()),
             }
             for index, hours_ago, phone_number in (
@@ -538,11 +551,11 @@ def notification_json(  # noqa: C901
         else:
             to = "07123456789"
     if sent_at is None:
-        sent_at = str(datetime.utcnow().time())
+        sent_at = str(datetime.now(UTC).time())
     if created_at is None:
         created_at = datetime.now(UTC).isoformat()
     if updated_at is None:
-        updated_at = str((datetime.utcnow() + timedelta(minutes=1)).time())
+        updated_at = str((datetime.now(UTC) + timedelta(minutes=1)).time())
     if status is None:
         status = "delivered"
     links = {}
@@ -612,11 +625,11 @@ def single_notification_json(
     if template is None:
         template = template_json(service_id=service_id, id_=str(generate_uuid()))
     if sent_at is None:
-        sent_at = str(datetime.utcnow())
+        sent_at = str(datetime.now(UTC))
     if created_at is None:
-        created_at = str(datetime.utcnow())
+        created_at = str(datetime.now(UTC))
     if updated_at is None:
-        updated_at = str(datetime.utcnow() + timedelta(minutes=1))
+        updated_at = str(datetime.now(UTC) + timedelta(minutes=1))
     if status is None:
         status = "delivered"
     job_payload = None
@@ -742,3 +755,15 @@ def contact_list_json(
         "has_jobs": has_jobs,
         "template_type": template_type,
     }
+
+
+class ConcreteImplementation:
+    template_type = None
+
+    # Can’t instantiate and test templates unless they implement __str__
+    def __str__(self):
+        pass
+
+
+class ConcreteTemplate(ConcreteImplementation, Template):
+    pass

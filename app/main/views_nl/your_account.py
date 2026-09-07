@@ -109,6 +109,7 @@ def your_account_email_confirm(token):
         current_app.config["SECRET_KEY"],
         current_app.config["DANGEROUS_SALT"],
         current_app.config["EMAIL_EXPIRY_SECONDS"],
+        current_app.config["TOKEN_SECRET_KEY"],
     )
     token = Token(token_data)
     user = User.from_id(token.user_id)
@@ -130,7 +131,7 @@ def your_account_mobile_number():
         return redirect(url_for(".your_account_mobile_number_authenticate"))
 
     if request.endpoint == "main.your_account_confirm_delete_mobile_number":
-        flash("Are you sure you want to delete your mobile number from Notify?", "delete")
+        flash("Weet u zeker dat u uw mobiele telefoonnummer uit NotifyNL wilt verwijderen?", "delete")
 
     return render_template(
         "views/your-account/change.html",
@@ -198,7 +199,7 @@ def your_account_mobile_number_confirm():
         current_user.update(mobile_number=mobile_number)
         return redirect(url_for(".your_account"))
 
-    return render_template("views/your-account/confirm.html", form_field=form.sms_code, thing="mobile number")
+    return render_template("views/your-account/confirm.html", form_field=form.sms_code)
 
 
 @main.route("/your-account/password", methods=["GET", "POST"])
@@ -316,7 +317,7 @@ def your_account_manage_security_key(key_id):
         return redirect(url_for(".your_account_security_keys"))
 
     if request.endpoint == "main.your_account_confirm_delete_security_key":
-        flash("Are you sure you want to delete this security key?", "delete")
+        flash("Weet u zeker dat u deze beveiligingssleutel wilt verwijderen?", "delete")
 
     return render_template(
         "views/your-account/manage-security-key.html",
@@ -337,7 +338,7 @@ def your_account_delete_security_key(key_id):
     except HTTPError as e:
         message = "Cannot delete last remaining webauthn credential for user"
         if e.message == message:
-            flash("You cannot delete your last security key.")
+            flash("U kunt uw laatste beveiligingssleutel niet verwijderen.")
             return redirect(url_for(".your_account_manage_security_key", key_id=key_id))
         else:
             raise e

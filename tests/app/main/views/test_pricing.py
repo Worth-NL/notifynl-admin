@@ -33,19 +33,16 @@ def test_guidance_pricing_letters(client_request, mock_get_letter_rates):
     "valid_from, expected_last_updated",
     (
         ("2040-04-01T12:00:00", "Last updated 1 April 2040"),
-        ("2025-04-01T12:00:00", "Last updated 1 April 2025"),
+        ("2026-04-01T12:00:00", "Last updated 1 April 2026"),
     ),
 )
 @pytest.mark.parametrize(
     "rate, expected_first_paragraph, expected_second_paragraph",
     (
         (
-            0.0233,
-            "Each unique service you add has an annual allowance of free text messages.",
-            (
-                "When a service has used its annual allowance, it costs 2.33 pence (plus VAT) "
-                "for each text message you send."
-            ),
+            0.024,
+            "A single, 160-character text message costs 2.4 pence (plus VAT).",
+            "Find out how text message pricing works.",
         ),
     ),
 )

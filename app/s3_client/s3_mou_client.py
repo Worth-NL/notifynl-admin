@@ -1,5 +1,7 @@
 import botocore
 from flask import current_app
+from notifications_utils.eventlet import EventletTimeout
+from notifications_utils.exception_handling import extract_reraise_chained_exception
 
 from app.s3_client import get_s3_object
 
@@ -7,18 +9,18 @@ from app.s3_client import get_s3_object
 def get_mou(organisation_is_crown):
     bucket = current_app.config["S3_BUCKET_MOU"]
     filename = "crown.pdf" if organisation_is_crown else "non-crown.pdf"
-    attachment_filename = "GOV.UK Notify data processing and financial agreement{}.pdf".format(
+    attachment_filename = "NotifyNL data processing and financial agreement{}.pdf".format(
         "" if organisation_is_crown else " (non-crown)"
     )
     try:
         key = get_s3_object(bucket, filename)
-        return {
-            "path_or_file": key.get()["Body"],
-            "download_name": attachment_filename,
-            "as_attachment": True,
-        }
+        with extract_reraise_chained_exception(EventletTimeout):
+            return {
+                "path_or_file": key.get()["Body"],
+                "download_name": attachment_filename,
+                "as_attachment": True,
+            }
     except botocore.exceptions.ClientError as exception:
-        current_app.logger.error(
-            "Unable to download s3 file %(bucket)s/%(filename)s", {"bucket": bucket, "filename": filename}
-        )
+        extra = {"s3_bucket": bucket, "s3_key": filename}
+        current_app.logger.error("Unable to download s3 file %(s3_bucket)s/%(s3_key)s", extra, extra=extra)
         raise exception

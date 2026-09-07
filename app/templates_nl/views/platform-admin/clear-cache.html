@@ -8,12 +8,19 @@
 
 {% block platform_admin_content %}
 
-  <h1 class="heading-medium">
-    Cache wissen
-  </h1>
-
   {% call form_wrapper() %}
-    {{ form.model_type }}
+    {{ form.model_type(
+      param_extensions={
+        "hint": {"text": "Wat wilt u vandaag opschonen?"},
+        "formGroup": {"classes": "govuk-!-margin-top-3"},
+        "fieldset": {
+          "legend": {
+            "isPageHeading": True,
+            "classes": "govuk-fieldset__legend--m"
+          }
+        }
+      }
+    ) }}
     {{ page_footer('Wissen') }}
   {% endcall %}
 

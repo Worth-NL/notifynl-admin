@@ -1,11 +1,20 @@
+from datetime import UTC, datetime
+
 from flask import abort, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user
+from markupsafe import Markup
 from notifications_python_client.errors import HTTPError
 
 from app import current_service, service_api_client
 from app.constants import SERVICE_JOIN_REQUEST_APPROVED, SERVICE_JOIN_REQUEST_REJECTED
 from app.event_handlers import Events
-from app.formatters import redact_mobile_number
+from app.formatters import (
+    format_auth_type,
+    format_date_numeric,
+    format_invite_status,
+    format_yes_no,
+    redact_mobile_number,
+)
 from app.main import main
 from app.main.forms import (
     ChangeEmailForm,
@@ -17,6 +26,7 @@ from app.main.forms import (
     SearchUsersForm,
 )
 from app.models.service import Service, ServiceJoinRequest
+from app.models.spreadsheet import Spreadsheet
 from app.models.user import InvitedUser, User
 from app.utils.user import is_gov_user, user_has_permissions
 from app.utils.user_permissions import permission_options, translate_permissions_from_ui_to_db
@@ -25,6 +35,11 @@ from app.utils.user_permissions import permission_options, translate_permissions
 @main.route("/services/<uuid:service_id>/users")
 @user_has_permissions(allow_org_user=True)
 def manage_users(service_id):
+    active_users_with_manage_service_permission = current_service.active_users_with_permission("manage_service")
+    active_gov_users_with_manage_service_permission = [
+        user for user in active_users_with_manage_service_permission if user.is_gov_user
+    ]
+
     return render_template(
         "views/manage-users.html",
         users=current_service.team_members,
@@ -32,6 +47,46 @@ def manage_users(service_id):
         show_search_box=(len(current_service.team_members) > 7),
         form=SearchUsersForm(),
         permissions=permission_options,
+        extra_spacing_around_flash_messages=False,
+        active_gov_users_with_manage_service_permission_count=len(active_gov_users_with_manage_service_permission),
+    )
+
+
+@main.route("/services/<uuid:service_id>/users.csv")
+@user_has_permissions("manage_service", allow_org_user=True)
+def manage_users_download(service_id):
+    rows = [
+        [
+            "Email address",
+            "Name",
+        ]
+        + list(dict(permission_options).values())
+        + [
+            "Sign in method",
+        ],
+    ] + [
+        [
+            user.email_address,
+            format_invite_status(user.status) if user.is_invited_user else user.name,
+        ]
+        + [
+            format_yes_no(user.has_permission_for_service(current_service.id, permission))
+            for permission in dict(permission_options)
+        ]
+        + [
+            format_auth_type(user.auth_type),
+        ]
+        for user in sorted(current_service.team_members)
+    ]
+    return (
+        Spreadsheet.from_rows(rows).as_csv_data,
+        200,
+        {
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": (
+                f'attachment; filename="Team members {format_date_numeric(datetime.now(UTC))}.csv"'
+            ),
+        },
     )
 
 
@@ -241,12 +296,50 @@ def edit_user_permissions(service_id, user_id):
     form = PermissionsForm.from_user_and_service(user, current_service)
 
     if form.validate_on_submit():
-        user.set_permissions(
-            service_id,
-            permissions=form.permissions,
-            folder_permissions=form.folder_permissions.data,
-            set_by_id=current_user.id,
-        )
+        try:
+            user.set_permissions(
+                service_id,
+                permissions=form.permissions,
+                folder_permissions=form.folder_permissions.data,
+                set_by_id=current_user.id,
+            )
+        except HTTPError as e:
+            if e.status_code == 400 and "Cannot change user permissions" in e.message:
+                service_description = "A service" if current_user.platform_admin else "Your service"
+                org_description = (
+                    "your" if current_user.is_gov_user and not current_user.platform_admin else "a public sector"
+                )
+                action_to_take = (
+                    "Ask the user to add new team members or update the permissions for their team."
+                    if current_user.platform_admin
+                    else "Add new team members or update the permissions for your team, then try again."
+                )
+
+                flash(
+                    Markup(
+                        f"""
+                        <h2 class='govuk-heading-m'>You cannot change this team member’s permissions</h2>
+                        <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
+                            {service_description} needs at least 2 team members:
+                        </p>
+                        <ul class='govuk-list govuk-list--bullet error-text-colour govuk-!-font-weight-bold'>
+                            <li>from {org_description} organisation</li>
+                            <li>with the ‘manage settings, team and usage’ permission</li>
+                        </ul>
+                        <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
+                            {action_to_take}
+                        </p>
+                        """
+                    )
+                )
+                return render_template(
+                    "views/edit-user-permissions.html",
+                    user=user,
+                    form=form,
+                )
+            else:
+                raise e
+
         # Only change the auth type if this is supported for a service. If a user logs in with a
         # security key, we generally don't want them to be able to use something less secure.
         if current_service.has_permission("email_auth") and not user.webauthn_auth:
@@ -267,9 +360,43 @@ def remove_user_from_service(service_id, user_id):
     try:
         service_api_client.remove_user_from_service(service_id, user_id)
     except HTTPError as e:
-        msg = "You cannot remove the only user for a service"
-        if e.status_code == 400 and msg in e.message:
-            flash(msg, "info")
+        if e.status_code == 400 and "User cannot be removed from the service" in e.message:
+            if current_user.platform_admin:
+                flash(
+                    Markup(
+                        """
+                        <h2 class='govuk-heading-m'>You cannot remove this team member</h2>
+                        <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
+                            A service needs at least 2 team members:
+                        </p>
+                        <ul class='govuk-list govuk-list--bullet error-text-colour govuk-!-font-weight-bold'>
+                            <li>from a public sector organisation</li>
+                            <li>with the ‘manage settings, team and usage’ permission</li>
+                        </ul>
+                        <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
+                            Ask the user to add new team members or update the permissions for their team.
+                        </p>
+                        """
+                    )
+                )
+            else:
+                flash(
+                    Markup(
+                        f"""
+                        <h2 class='govuk-heading-m'>You cannot remove this team member</h2>
+                        <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
+                            Your service needs at least 2 team members:
+                        </p>
+                        <ul class='govuk-list govuk-list--bullet error-text-colour govuk-!-font-weight-bold'>
+                            <li>from {"your" if current_user.is_gov_user else "a public sector"} organisation</li>
+                            <li>with the ‘manage settings, team and usage’ permission</li>
+                        </ul>
+                        <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
+                            Add new team members or update the permissions for your team, then try again.
+                        </p>
+                        """
+                    )
+                )
             return redirect(url_for(".manage_users", service_id=service_id))
         else:
             abort(500, e)

@@ -1,6 +1,4 @@
-from fido2 import cbor
-from fido2.webauthn import AuthenticatorData, CollectedClientData
-from flask import abort, current_app, flash, redirect, request, session, url_for
+from flask import abort, current_app, flash, jsonify, redirect, request, session, url_for
 from flask_login import current_user
 
 from app.main import main
@@ -31,22 +29,27 @@ def webauthn_begin_register():
     )
 
     session["webauthn_registration_state"] = state
-    return cbor.encode(registration_data)
+    return jsonify(dict(registration_data))
 
 
 @main.route("/webauthn/register", methods=["POST"])
 @user_is_logged_in
 def webauthn_complete_register():
     if "webauthn_registration_state" not in session:
-        return cbor.encode("No registration in progress"), 400
+        return jsonify("No registration in progress"), 400
 
     try:
         credential = WebAuthnCredential.from_registration(
             session.pop("webauthn_registration_state"),
-            cbor.decode(request.get_data()),
+            request.get_json(),
         )
     except RegistrationError as e:
-        current_app.logger.info("User %s could not register a new webauthn token - %s", current_user.id, e)
+        current_app.logger.info(
+            "User %s could not register a new webauthn token - %s",
+            current_user.id,
+            e,
+            extra={"user_id": current_user.id},
+        )
         abort(400)
 
     current_user.create_webauthn_credential(credential)
@@ -57,7 +60,7 @@ def webauthn_complete_register():
         "default_with_tick",
     )
 
-    return cbor.encode("")
+    return jsonify("")
 
 
 @main.route("/webauthn/authenticate", methods=["GET"])
@@ -83,7 +86,7 @@ def webauthn_begin_authentication():
         user_verification="discouraged",  # don't ask for PIN
     )
     session["webauthn_authentication_state"] = state
-    return cbor.encode(authentication_data)
+    return jsonify(dict(authentication_data))
 
 
 @main.route("/webauthn/authenticate", methods=["POST"])
@@ -102,7 +105,7 @@ def webauthn_complete_authentication():
     webauthn_credential_used_for_login = _verify_webauthn_authentication(user_to_login)
     redirect = _complete_webauthn_login_attempt(user_to_login, webauthn_credential_used_for_login.id)
 
-    return cbor.encode({"redirect_url": redirect.location}), 200
+    return jsonify({"redirect_url": redirect.location}), 200
 
 
 def _verify_webauthn_authentication(user):
@@ -111,16 +114,13 @@ def _verify_webauthn_authentication(user):
     we're trying to log in.
     """
     state = session.pop("webauthn_authentication_state")
-    request_data = cbor.decode(request.get_data())
+    request_data = request.get_json()
 
     try:
         attested_credential_data = current_app.webauthn_server.authenticate_complete(
             state=state,
             credentials=user.webauthn_credentials.as_cbor,
-            credential_id=request_data["credentialId"],
-            client_data=CollectedClientData(request_data["clientDataJSON"]),
-            auth_data=AuthenticatorData(request_data["authenticatorData"]),
-            signature=request_data["signature"],
+            response=request_data,
         )
 
         # find the cred used - Fido2Server returns the attested credential that it matched with the login request,
@@ -139,7 +139,9 @@ def _verify_webauthn_authentication(user):
         # couldn't be authenticated, something went wrong along the way, probably:
         # * The browser didn't implement the webauthn standard correctly, and let something through it shouldn't have
         # * The key itself is in some way corrupted, or of lower security standard
-        current_app.logger.info("User %s could not sign in using their webauthn token - %s", user.id, exc)
+        current_app.logger.info(
+            "User %s could not sign in using their webauthn token - %s", user.id, exc, extra={"user_id": user.id}
+        )
         user.complete_webauthn_login_attempt(is_successful=False)
         abort(403)
 

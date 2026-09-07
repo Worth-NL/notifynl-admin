@@ -1,4 +1,5 @@
 import uuid
+from unittest.mock import PropertyMock
 
 import pytest
 from flask import url_for
@@ -7,15 +8,49 @@ from tests.conftest import SERVICE_ONE_ID, normalize_spaces
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
-def test_returned_letter_summary(client_request, mocker):
+@pytest.mark.parametrize(
+    "service_has_api_keys, expected_paragraphs",
+    (
+        (
+            False,
+            [
+                "Reports are published once a month.",
+                "You’ll only get a report if one or more of your letters is returned.",
+            ],
+        ),
+        (
+            True,
+            [
+                "Reports are published once a month.",
+                "You’ll only get a report if one or more of your letters is returned.",
+                (
+                    "Automate identifying the returned letters using the Notify API. "
+                    "Follow the instructions in our API documentation."
+                ),
+            ],
+        ),
+    ),
+)
+def test_returned_letter_summary(
+    client_request,
+    service_has_api_keys,
+    expected_paragraphs,
+    mocker,
+):
     summary_data = [{"returned_letter_count": 1234, "reported_at": "2019-12-24"}]
     mock = mocker.patch("app.service_api_client.get_returned_letter_summary", return_value=summary_data)
+    mocker.patch(
+        "app.models.service.Service.api_keys",
+        new_callable=PropertyMock,
+        return_value=service_has_api_keys,
+    )
 
     page = client_request.get("main.returned_letter_summary", service_id=SERVICE_ONE_ID)
 
     mock.assert_called_once_with(SERVICE_ONE_ID)
 
     assert page.select_one("h1").string.strip() == "Returned letters"
+    assert [normalize_spaces(p.text) for p in page.select("main p.govuk-body")] == expected_paragraphs
     assert normalize_spaces(page.select_one(".table-field").text) == "24 December 2019 1,234 letters"
     assert page.select_one(".table-field a")["href"] == url_for(
         ".returned_letters",
@@ -25,7 +60,7 @@ def test_returned_letter_summary(client_request, mocker):
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
-def test_returned_letter_summary_with_one_letter(client_request, mocker):
+def test_returned_letter_summary_with_one_letter(client_request, mock_get_api_keys, mocker):
     summary_data = [{"returned_letter_count": 1, "reported_at": "2019-12-24"}]
     mock = mocker.patch("app.service_api_client.get_returned_letter_summary", return_value=summary_data)
 
@@ -39,28 +74,32 @@ def test_returned_letter_summary_with_one_letter(client_request, mocker):
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_returned_letters_page(client_request, mocker):
-    data = [
-        {
-            "notification_id": uuid.uuid4(),
-            "client_reference": client_reference,
-            "created_at": "2019-12-24 13:30",
-            "email_address": "test@gov.uk",
-            "template_name": template_name,
-            "template_id": uuid.uuid4(),
-            "template_version": None,
-            "original_file_name": original_file_name,
-            "job_row_number": None,
-            "uploaded_letter_file_name": uploaded_letter_file_name,
-        }
-        for client_reference, template_name, original_file_name, uploaded_letter_file_name in (
-            ("ABC123", "Example template", None, None),
-            (None, "Example template", "Example spreadsheet.xlsx", None),
-            (None, "Example template", None, None),
-            ("DEF456", None, None, "Example precompiled.pdf"),
-            (None, None, None, "Example one-off.pdf"),
-            ("XYZ999", None, None, None),
-        )
-    ]
+    data = {
+        "returned_letters": [
+            {
+                "notification_id": uuid.uuid4(),
+                "client_reference": client_reference,
+                "created_at": "2019-12-24 13:30",
+                "email_address": "test@gov.uk",
+                "template_name": template_name,
+                "template_id": uuid.uuid4(),
+                "template_version": None,
+                "original_file_name": original_file_name,
+                "job_row_number": None,
+                "uploaded_letter_file_name": uploaded_letter_file_name,
+            }
+            for client_reference, template_name, original_file_name, uploaded_letter_file_name in (
+                ("ABC123", "Example template", None, None),
+                (None, "Example template", "Example spreadsheet.xlsx", None),
+                (None, "Example template", None, None),
+                ("DEF456", None, None, "Example precompiled.pdf"),
+                (None, None, None, "Example one-off.pdf"),
+                ("XYZ999", None, None, None),
+            )
+        ],
+        "orphaned_count": 123,
+    }
+
     mocker.patch("app.service_api_client.get_returned_letters", return_value=data)
 
     page = client_request.get(
@@ -82,32 +121,48 @@ def test_returned_letters_page(client_request, mocker):
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
-    "number_of_letters, expected_message",
+    "orphaned_count, orphaned_expected_message",
     (
+        pytest.param(0, None),
+        pytest.param(1, "Your report is missing 1 letter because it was sent too long ago."),
+        pytest.param(4321, "Your report is missing 4,321 letters because they were sent too long ago."),
+    ),
+)
+@pytest.mark.parametrize(
+    "number_of_letters, more_expected_message",
+    (
+        pytest.param(50, None),
         pytest.param(51, "Only showing the first 50 of 51 rows"),
         pytest.param(1234, "Only showing the first 50 of 1,234 rows"),
     ),
 )
 def test_returned_letters_page_with_many_letters(
     client_request,
-    mocker,
+    orphaned_count,
+    orphaned_expected_message,
     number_of_letters,
-    expected_message,
+    more_expected_message,
+    mocker,
 ):
-    data = [
-        {
-            "notification_id": uuid.uuid4(),
-            "client_reference": None,
-            "created_at": "2019-12-24 13:30",
-            "email_address": "test@gov.uk",
-            "template_name": "Example template",
-            "template_id": uuid.uuid4(),
-            "template_version": None,
-            "original_file_name": None,
-            "job_row_number": None,
-            "uploaded_letter_file_name": None,
-        }
-    ] * number_of_letters
+    data = {
+        "returned_letters": [
+            {
+                "notification_id": uuid.uuid4(),
+                "client_reference": None,
+                "created_at": "2019-12-24 13:30",
+                "email_address": "test@gov.uk",
+                "template_name": "Example template",
+                "template_id": uuid.uuid4(),
+                "template_version": None,
+                "original_file_name": None,
+                "job_row_number": None,
+                "uploaded_letter_file_name": None,
+            }
+        ]
+        * number_of_letters,
+        "orphaned_count": orphaned_count,
+    }
+
     mocker.patch("app.service_api_client.get_returned_letters", return_value=data)
 
     page = client_request.get(
@@ -116,37 +171,54 @@ def test_returned_letters_page_with_many_letters(
         reported_at="2019-12-24",
     )
 
-    assert len(data) == number_of_letters
     assert len(page.select("tbody tr")) == 50
-    assert normalize_spaces(page.select_one(".table-show-more-link").text) == (expected_message)
-    assert page.select_one("a[download]").text == "Download this report (CSV)"
-    assert page.select_one("a[download]")["href"] == url_for(
+
+    download_link = page.select_one("main a")
+    assert normalize_spaces(download_link.text) == "Download this report (CSV)"
+    assert download_link["href"] == url_for(
         ".returned_letters_report",
         service_id=SERVICE_ONE_ID,
         reported_at="2019-12-24",
     )
 
+    orphaned_paras = [e for e in page.select("p.govuk-body") if "missing" in e.text]
+    if orphaned_expected_message is None:
+        assert orphaned_paras == []
+    else:
+        assert [normalize_spaces(e.text) for e in orphaned_paras] == [orphaned_expected_message]
+
+    show_more_links = [e for e in page.select(".table-show-more-link") if "Only showing" in e.text]
+    if more_expected_message is None:
+        assert show_more_links == []
+    else:
+        assert [normalize_spaces(e.text) for e in show_more_links] == [more_expected_message]
+
 
 def test_returned_letters_reports(client_request, mocker):
-    data = [
-        {
-            "notification_id": "12345678",
-            "client_reference": "2344567",
-            "created_at": "2019-12-24 13:30",
-            "email_address": "test@gov.uk",
-            "template_name": "First letter template",
-            "template_id": "3445667",
-            "template_version": 2,
-            "original_file_name": None,
-            "job_row_number": None,
-            "uploaded_letter_file_name": "test_letter.pdf",
-        }
-    ]
+    data = {
+        "returned_letters": [
+            {
+                "notification_id": "12345678",
+                "client_reference": "2344567",
+                "created_at": "2019-12-24 13:30",
+                "email_address": "test@gov.uk",
+                "template_name": "First letter template",
+                "template_id": "3445667",
+                "template_version": 2,
+                "original_file_name": None,
+                "job_row_number": None,
+                "uploaded_letter_file_name": "test_letter.pdf",
+            }
+        ],
+        "orphaned_count": 123,
+    }
     mock = mocker.patch("app.service_api_client.get_returned_letters", return_value=data)
 
     response = client_request.get_response(
         "main.returned_letters_report", service_id=SERVICE_ONE_ID, reported_at="2019-12-24"
     )
+    assert response.headers["Content-Type"] == "text/csv; charset=utf-8"
+    assert response.headers["Content-Disposition"] == ('attachment; filename="2019-12-24 returned letters.csv"')
 
     report = response.get_data(as_text=True)
     mock.assert_called_once_with(SERVICE_ONE_ID, "2019-12-24")

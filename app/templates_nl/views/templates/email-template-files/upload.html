@@ -1,0 +1,42 @@
+{% extends "withnav_template.html" %}
+{% from "components/page-header.html" import page_header %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
+{% from "components/file-upload.html" import file_upload %}
+
+{% set title = "Bestand toevoegen" %}
+{% block service_page_title %}
+  {{ title }}
+{% endblock %}
+
+{% block backLink %}
+  {{ govukBackLink({ "href": url_for('main.view_template', service_id=current_service.id, template_id=template.id) }) }}
+{% endblock %}
+
+{% block maincolumn_content %}
+
+  {{ page_header(title) }}
+
+  <p class="govuk-body">
+    Upload een bestand en stuur uw ontvangers een e-mail met een link om het te downloaden.
+  </p>
+
+  <div class="govuk-!-margin-bottom-6">
+    {{ file_upload(
+      form.file,
+      allowed_file_extensions=form.allowed_file_extensions,
+    ) }}
+  </div>
+
+  <p class="govuk-body">
+    U kunt de volgende bestandstypen uploaden:
+  </p>
+  <ul class="govuk-list govuk-list--bullet">
+    {% for label, extensions in form.allowed_file_formats.items() %}
+      <li>{{ label }} (.{{ extensions|join(", .") }})</li>
+    {% endfor %}
+  </ul>
+  <p class="govuk-body">
+    Uw bestand moet kleiner zijn dan 2MB.
+  </p>
+
+{% endblock %}

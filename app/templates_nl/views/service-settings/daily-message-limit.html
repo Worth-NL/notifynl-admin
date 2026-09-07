@@ -1,7 +1,7 @@
 {% extends "withnav_template.html" %}
 {% from "components/ajax-block.html" import ajax_block %}
 {% from "components/page-header.html" import page_header %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 
 {% set page_title = "Dagelijkse {} limiet ".format(1|message_count_noun(daily_limit_type)) %}
 
@@ -20,7 +20,7 @@
     <div class="govuk-grid-column-five-sixths">
         {{ page_header(page_title) }}
         <p class="govuk-body">
-            U kunt naartoe sturen{{ current_service.get_message_limit(daily_limit_type)|message_count(daily_limit_type) }} per dag.
+            U kunt tot <span class="govuk-!-font-tabular-numbers">{{ current_service.get_message_limit(daily_limit_type)|message_count(daily_limit_type) }}</span> per dag versturen.
         </p>
 
         {{ ajax_block(partials, updates_url, 'remaining_limit') }}

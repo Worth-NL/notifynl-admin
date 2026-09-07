@@ -1,23 +1,8 @@
-// Extra CSS overlaying elements
-.form-control-1-1 {
-  width: 100%;
-}
-
-.form-control-5em {
-
-  width: 100%;
-
-  @include govuk-media-query($from: tablet) {
-    width: 5em;
-  }
-
-}
-
 .column-main {
 
   .heading-large,
-  > .heading-medium,
-  > .heading-with-aside--heading-medium {
+  >.heading-medium,
+  >.heading-with-aside--heading-medium {
     margin: govuk-spacing(3) 0 govuk-spacing(4) 0;
     word-wrap: break-word;
 
@@ -75,7 +60,7 @@ td {
   margin-bottom: govuk-spacing(6);
 
   @include govuk-media-query($from: tablet) {
-    > .heading-medium {
+    >.heading-medium {
       margin: 0 govuk-spacing(6) 0 0;
     }
   }
@@ -84,7 +69,7 @@ td {
 // TODO: refactor all this when GOVUK Elements typography is removed
 .heading-aside {
   @include govuk-font(16);
-  color: $govuk-secondary-text-colour;
+  color: govuk-functional-colour(secondary-text);
   margin: 0;
   width: 100%; // force wrapping
 
@@ -93,18 +78,8 @@ td {
   }
 }
 
-.form-label {
-  margin-bottom: 5px;
-}
-
 .hint {
-  color: $govuk-secondary-text-colour;
-
-  .form-label + & {
-    display: block;
-    margin-top: -5px;
-    margin-bottom: 5px;
-  }
+  color: govuk-functional-colour(secondary-text);
 }
 
 .spreadsheet {
@@ -117,7 +92,7 @@ td {
 
   th,
   tbody th.table-field {
-    background: govuk-colour("light-grey");
+    background: govuk-colour('black', $variant: "tint-95");
     font-weight: bold;
     text-align: center;
   }
@@ -127,10 +102,11 @@ td {
     background: govuk-colour("white");
   }
 
-  th, td {
+  th,
+  td {
     padding-left: 10px;
     padding-right: 10px;
-    border: 1px solid $govuk-border-colour;
+    border: 1px solid govuk-functional-colour(border);
   }
 
   td,
@@ -153,7 +129,7 @@ td {
     z-index: 1000;
 
     .table-field-heading-first {
-      background: govuk-colour("light-grey");
+      background: govuk-colour('black', $variant: "tint-95");
     }
 
   }
@@ -180,16 +156,14 @@ td {
 
 }
 
-.tabular-numbers {
-  @include govuk-font(19, $tabular: true);
-}
-
 summary::-moz-details-marker {
   display: none;
 }
+
 summary::-ms-details-marker {
   display: none;
 }
+
 summary::-o-details-marker {
   display: none;
 }
@@ -211,19 +185,13 @@ details .arrow {
   margin-top: 5px;
 }
 
-.multiple-choice input:disabled+label {
-  opacity: 1;
-  color: $govuk-secondary-text-colour;
-  cursor: default;
-}
-
 .heading-inline {
   display: inline-block;
 }
 
 .bordered-text-box {
   padding: 5px;
-  outline: 2px solid $govuk-input-border-colour;
+  outline: 2px solid govuk-functional-colour(input-border);
   max-width: 100%;
 }
 
@@ -240,23 +208,4 @@ details .arrow {
 // used on notifications page for download csv report
 .form--inline {
   display: inline-flex;
-}
-
-@keyframes live-pulse {
-  0%   {
-    background: govuk-colour("red");
-    box-shadow: inset 0 0 0 2px govuk-colour("red"), inset 0 0 0 4px govuk-colour("white");
-  }
-  40%   {
-    background: govuk-colour("red");
-    box-shadow: inset 0 0 0 2px govuk-colour("red"), inset 0 0 0 4px govuk-colour("white");
-  }
-  50% {
-    background: govuk-colour("white");
-    box-shadow: inset 0 0 0 2px govuk-colour("red"), inset 0 0 0 2px govuk-colour("white");
-  }
-  100% {
-    background: govuk-colour("white");
-    box-shadow: inset 0 0 0 2px govuk-colour("red"), inset 0 0 0 4px govuk-colour("white");
-  }
 }

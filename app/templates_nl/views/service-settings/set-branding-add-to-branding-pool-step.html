@@ -1,8 +1,7 @@
 {% extends "withnav_template.html" %}
-{% from "components/page-header.html" import page_header %}
 {% from "components/page-footer.html" import page_footer %}
 {% from "components/form.html" import form_wrapper %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 
 {% set page_title = "‘{}’ branding toepassen".format(branding_name) %}
 
@@ -15,8 +14,6 @@
 {% endblock %}
 
 {% block maincolumn_content %}
-    {{ page_header(page_title) }}
-
     {% call form_wrapper() %}
       {% set hint_1 %}
         <ul class="govuk-list govuk-hint govuk-!-margin-bottom-0">
@@ -29,15 +26,20 @@
           <li class="govuk-!-margin-bottom-0">Deze branding alleen toepassen op ‘{{current_service.name}}’</li>
         </ul>
       {% endset %}
-      {% set label_text %}
+      {% set hint_text %}
         Moeten andere teams binnen {{current_service.organisation.name}} de mogelijkheid hebben om deze branding te gebruiken?
       {% endset %}
 
       {{
         form.add_to_pool(
           param_extensions={
+            "hint": {"text": hint_text},
             "fieldset": {
-              "legend": {"text": label_text}
+              "legend": {
+                "text": page_title,
+                "isPageHeading": True,
+                "classes": "govuk-fieldset__legend--l"
+              }
             },
             "items": [
               {"hint": {"html": hint_1} },

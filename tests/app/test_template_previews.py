@@ -1,4 +1,5 @@
 import base64
+from datetime import UTC, datetime
 from unittest.mock import Mock
 
 import pytest
@@ -31,6 +32,14 @@ from tests.conftest import create_notification
     "letter_branding, expected_filename",
     [(LetterBranding({"filename": "hm-government"}), "hm-government"), (LetterBranding.from_id(None), None)],
 )
+@pytest.mark.parametrize(
+    "date_kwargs, expected_date_string_in_json",
+    (
+        ({}, None),
+        ({"date": None}, None),
+        ({"date": datetime(2021, 2, 3, 4, 5, 6, tzinfo=UTC)}, "2021-02-03T04:05:06+00:00"),
+    ),
+)
 def test_get_preview_for_templated_letter_makes_request(
     client_request,
     mocker,
@@ -39,18 +48,20 @@ def test_get_preview_for_templated_letter_makes_request(
     expected_url,
     letter_branding,
     expected_filename,
+    date_kwargs,
+    expected_date_string_in_json,
     mock_get_service_letter_template,
     mock_onwards_request_headers,
 ):
     request_mock_returns = Mock(content="a", status_code="b", headers={"content-type": "image/png"})
     request_mock = mocker.patch("app.template_preview_client.requests_session.post", return_value=request_mock_returns)
-    service = mocker.Mock(spec=Service, letter_branding=letter_branding)
+    service = mocker.Mock(spec=Service, letter_branding=letter_branding, letter_address_placement="60mm")
     template = mock_get_service_letter_template("123", "456")["data"]
 
     response = template_preview_client.get_preview_for_templated_letter(
         db_template=template,
         service=service,
-        **extra_kwargs,
+        **(extra_kwargs | date_kwargs),
     )
 
     assert response[0] == "a"
@@ -62,6 +73,8 @@ def test_get_preview_for_templated_letter_makes_request(
         "template": template,
         "values": None,
         "filename": expected_filename,
+        "date": expected_date_string_in_json,
+        "letter_address_placement": "60mm",
     }
     headers = {
         "Authorization": "Token my-secret-key",
@@ -88,7 +101,9 @@ def test_get_preview_for_templated_letter_allows_service_branding_to_be_overridd
     load_service_before_request()
 
     request_mock = mocker.patch("app.template_preview_client.requests_session.post")
-    service = mocker.Mock(spec=Service, letter_branding=LetterBranding({"filename": "hm-government"}))
+    service = mocker.Mock(
+        spec=Service, letter_branding=LetterBranding({"filename": "hm-government"}), letter_address_placement="60mm"
+    )
 
     template_preview_client.get_preview_for_templated_letter(
         db_template=create_notification(template_type="letter")["template"],
@@ -107,7 +122,9 @@ def test_get_preview_for_templated_letter_from_notification_has_correct_args(
 ):
     request_mock_returns = Mock(content="a", status_code="b", headers={"content-type": "image/png"})
     request_mock = mocker.patch("app.template_preview_client.requests_session.post", return_value=request_mock_returns)
-    service = mocker.Mock(spec=Service, letter_branding=LetterBranding({"filename": "hm-government"}))
+    service = mocker.Mock(
+        spec=Service, letter_branding=LetterBranding({"filename": "hm-government"}), letter_address_placement="60mm"
+    )
 
     notification = create_notification(
         service_id="abcd",
@@ -131,6 +148,8 @@ def test_get_preview_for_templated_letter_from_notification_has_correct_args(
         "template": notification["template"],
         "values": {"name": "Jo"},
         "filename": "hm-government",
+        "date": None,
+        "letter_address_placement": "60mm",
     }
     headers = {
         "Authorization": "Token my-secret-key",
@@ -262,7 +281,7 @@ def test_page_count_returns_none_for_non_letter_templates(notify_admin, template
     [
         (None, ({"template_type": "letter"}, "json", None)),
         (
-            ({"foo": "bar"}),
+            {"foo": "bar"},
             ({"template_type": "letter"}, "json", {"foo": "bar"}),
         ),
     ],

@@ -3,7 +3,7 @@
 {% from "components/page-header.html" import page_header %}
 {% from "components/page-footer.html" import page_footer %}
 {% from "components/form.html" import form_wrapper %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 
 {% block per_page_title %}
   {{ '{} e-mailbranding'.format('Bijwerken' if email_branding else 'Toevoegen')}}
@@ -23,15 +23,17 @@
         </div>
       {% endif %}
       <p class="govuk-body">
-        Logo’s moeten PNG-bestanden zijn, 108 px hoog
+        Logo’s moeten PNG-bestanden zijn en maximaal 300px hoog zijn
       </p>
       {{ file_upload(form.file, allowed_file_extensions=['png'], button_text='{} logo'.format('Bijwerken' if email_branding else 'Uploaden')) }}
       {% call form_wrapper() %}
-        <div class="form-group govuk-!-margin-top-3">
+        <div class="govuk-!-margin-top-3">
           {{ form.name }}
-          {{ form.text }}
+          {# {{ form.text }} #}
           {{ form.alt_text }}
           {{ form.colour }}
+          {{ form.height }}
+          {{ form.alignment }}
           {{ form.brand_type }}
           {{ page_footer(
             'Opslaan',

@@ -1,0 +1,55 @@
+{% extends "withnav_template.html" %}
+{% from "components/page-header.html" import page_header %}
+{% from "components/page-footer.html" import page_footer %}
+{% from "components/form.html" import form_wrapper %}
+{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+
+
+{% set title = "Send files by email" %}
+{% block service_page_title %}
+  {{ title }}
+{% endblock %}
+
+{% block backLink %}
+  {{ govukBackLink({ "href": url_for('main.view_template', service_id=current_service.id, template_id=template.id) }) }}
+{% endblock %}
+
+{% block maincolumn_content %}
+
+  {{ page_header(title) }}
+
+  <p class="govuk-body">
+    Upload a file, then send your recipients an email with a link to download it.
+  </p>
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-five-sixths">
+      <h2 class="heading-medium">
+        Before you can send files by email
+      </h2>
+      <p class="govuk-body">
+        Add contact details for your service so your recipients can get in touch if there’s a problem. For example, if the link to download the file you sent them has expired.
+      </p>
+      {% if current_user.has_permissions("manage_service") %}
+        {% call form_wrapper() %}
+
+          {{ form.contact_details_type(param_extensions={
+            "items": [
+            { "conditional": { "html": form.url(param_extensions={ "label": { "classes": "govuk-visually-hidden" }, "classes": "govuk-!-width-full" }) } },
+            { "conditional": { "html": form.email_address(param_extensions={ "label": { "classes": "govuk-visually-hidden" }, "classes": "govuk-!-width-full" }) } },
+            { "conditional": { "html": form.phone_number(param_extensions={ "label": { "classes": "govuk-visually-hidden" } }) } }
+            ]
+          }) }}
+
+          {{ page_footer('Save') }}
+        {% endcall %}
+      {% else %}
+        <p class="govuk-body">
+          Ask a team member with the ‘Manage settings, team and usage’ permission to set this up for you.
+        </p>
+      {% endif %}
+    </div>
+  </div>
+
+
+{% endblock %}

@@ -4,9 +4,9 @@
 // Based on the error colour in:
 // https://github.com/alphagov/govuk-frontend/blob/v4.2.0/src/govuk/settings/_colours-applied.scss
 // with :hover and :active variants based on those for links
-$govuk-destructive-link-colour: $govuk-error-colour;
+$govuk-destructive-link-colour: govuk-functional-colour(error);
 $govuk-destructive-link-hover-colour: #990a00;
-$govuk-destructive-link-active-colour: $govuk-text-colour;
+$govuk-destructive-link-active-colour: govuk-functional-colour(text);
 
 // Gives access to the Sass variables used in the GOVUK Frontend typographic styles
 // See: https://frontend.design-system.service.gov.uk/sass-api-reference/#govuk-typography-scale
@@ -22,7 +22,7 @@ $govuk-destructive-link-active-colour: $govuk-text-colour;
 }
 
 // Extends footer column styles to allow 4 columns
-@include mq ($from: desktop) {
+ @media #{govuk-from-breakpoint(desktop)} {
   .govuk-footer__list--columns-4 {
     // TODO: Move support for legacy properties to something like Post-CSS's auto-prefixer
     -webkit-column-count: 4;
@@ -90,7 +90,7 @@ $govuk-grid-widths: map.merge($govuk-grid-widths, $notify-grid-widths);
   margin: 10px -1.6em 0 0;
   position: relative;
   left: 10px;
-  color: $govuk-secondary-text-colour;
+  color: govuk-functional-colour(secondary-text);
   font-weight: bold;
   pointer-events: none;
 
@@ -112,7 +112,7 @@ $govuk-grid-widths: map.merge($govuk-grid-widths, $notify-grid-widths);
 // summary-lists on Notify
 .notify-summary-list {
 
-  border-top: 1px solid $govuk-border-colour;
+  border-top: 1px solid govuk-functional-colour(border);
   padding-top: govuk-spacing(3);
 
   @include govuk-media-query($from: tablet) {
@@ -143,7 +143,7 @@ $govuk-grid-widths: map.merge($govuk-grid-widths, $notify-grid-widths);
 }
 
 .govuk-summary-list__value--default {
-  color: $govuk-secondary-text-colour;
+  color: govuk-functional-colour(secondary-text);
 }
 
 .govuk-summary-list__value--truncate {
@@ -153,7 +153,7 @@ $govuk-grid-widths: map.merge($govuk-grid-widths, $notify-grid-widths);
 }
 
 .notify-hint--paragraph {
-  color: $govuk-text-colour;
+  color: govuk-functional-colour(text);
   padding-top: govuk-spacing(3);
   margin-bottom: govuk-spacing(6);
 }
@@ -224,7 +224,7 @@ $govuk-grid-widths: map.merge($govuk-grid-widths, $notify-grid-widths);
   }
 }
 
-// variants of govuk-frontend width override classes 
+// variants of govuk-frontend width override classes
 // that remains static across all breakpoiunts
 
 /* stylelint-disable declaration-no-important */
@@ -244,7 +244,7 @@ $govuk-grid-widths: map.merge($govuk-grid-widths, $notify-grid-widths);
 // used on /organisations/<id>/settings/letter-branding/add
 // aused on /organisations/<id>/settings/add-nhs-local-organisation for NHS services
 // used on /services/<id>/service-settings/link-service-to-organisation
-// used on /services/>id>/service-settings/(set-email/letter)-branding 
+// used on /services/>id>/service-settings/(set-email/letter)-branding
 .govuk-checkboxes__item[hidden],
 .govuk-radios__item[hidden] {
   display: none;
@@ -254,7 +254,7 @@ $govuk-grid-widths: map.merge($govuk-grid-widths, $notify-grid-widths);
 // used on notifications page for download csv report
 .govuk-button--as-link {
   background-color: transparent;
-  color: $govuk-link-colour;
+  color: govuk-functional-colour(link);
   font-weight: 700;
   padding: 0;
   margin:0;
@@ -268,7 +268,7 @@ $govuk-grid-widths: map.merge($govuk-grid-widths, $notify-grid-widths);
   text-decoration-skip: none;
   &:hover {
     background-color: transparent;
-    color: $govuk-link-hover-colour;
+    color: govuk-functional-colour(link-hover);
     text-decoration: underline;
     text-decoration-thickness: max(3px, .1875rem, .12em);
   }
@@ -287,5 +287,45 @@ $govuk-grid-widths: map.merge($govuk-grid-widths, $notify-grid-widths);
 .govuk-button-group--flex-start {
   @include govuk-media-query($until: tablet) {
     align-items: start;
+  }
+}
+
+// extend govuk-button-group from Design System
+// to allow right link to be right aligned
+.govuk-button-group--align-right-desktop {
+  @include govuk-media-query($from: desktop) {
+    .govuk-link {
+      margin-left: auto;
+    }
+  }
+}
+
+
+
+// used with nested checkboxes and radios
+// exampel use on templates page
+$govuk-touch-target-gutter: 4px;
+$govuk-checkboxes-size: 40px;
+$govuk-touch-target-size: ($govuk-checkboxes-size + $govuk-touch-target-gutter);
+.govuk-form-group--nested {
+
+  $border-thickness: $govuk-touch-target-size - $govuk-checkboxes-size;
+  position: relative;
+
+  // To equalise the spacing between the line and the top/bottom of
+  // the radio
+  margin-top: govuk-spacing(1) + ($border-thickness / 2);
+  margin-bottom: govuk-spacing(1) * -1;
+  padding-left: $govuk-checkboxes-size + govuk-spacing(3); //padding of the checkbox label
+  flex-basis: 100%;
+
+  &:before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: $govuk-checkboxes-size / 2;
+    width: $border-thickness;
+    height: 100%;
+    background: govuk-functional-colour(border);
   }
 }

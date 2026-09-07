@@ -24,7 +24,9 @@ class EmailBrandingClient(NotifyAdminAPIClient):
         return resp["name"]
 
     @cache.delete("email_branding")
-    def create_email_branding(self, *, logo, name, alt_text, text, colour, brand_type, created_by_id: str):
+    def create_email_branding(
+        self, *, logo, name, alt_text, text, colour, brand_type, created_by_id: str, height=None, alignment=None
+    ):
         data = {
             "logo": logo or None,
             "name": name,
@@ -32,6 +34,8 @@ class EmailBrandingClient(NotifyAdminAPIClient):
             "text": text or None,
             "colour": colour or None,
             "brand_type": brand_type,
+            "height": height or None,
+            "alignment": alignment or None,
             "created_by": created_by_id,
         }
         return self.post(url="/email-branding", data=data)["data"]
@@ -39,7 +43,20 @@ class EmailBrandingClient(NotifyAdminAPIClient):
     @cache.delete("email_branding")
     @cache.delete("email_branding-{branding_id}")
     @cache.delete_by_pattern("organisation-*-email-branding-pool")
-    def update_email_branding(self, *, branding_id, logo, name, alt_text, text, colour, brand_type, updated_by_id: str):
+    def update_email_branding(
+        self,
+        *,
+        branding_id,
+        logo,
+        name,
+        alt_text,
+        text,
+        colour,
+        brand_type,
+        updated_by_id: str,
+        height=None,
+        alignment=None,
+    ):
         data = {
             "logo": logo or None,
             "name": name,
@@ -47,6 +64,8 @@ class EmailBrandingClient(NotifyAdminAPIClient):
             "text": text or None,
             "colour": colour or None,
             "brand_type": brand_type,
+            "height": height or None,
+            "alignment": alignment or None,
             "updated_by": updated_by_id,
         }
         return self.post(url=f"/email-branding/{branding_id}", data=data)

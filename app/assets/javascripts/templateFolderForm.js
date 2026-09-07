@@ -112,7 +112,7 @@
 
     this.addCancelButton = function(state) {
       let selector = `[value=${state.key}]`;
-      let $cancel = this.makeButton('Annuleren', {
+      let $cancel = this.makeButton('Cancel', {
         'onclick': () => {
 
           // clear existing data
@@ -131,7 +131,7 @@
 
     this.addClearButton = function(state) {
       let selector = 'button[value=add-new-template]';
-      let $clear = this.makeButton('Wissen', {
+      let $clear = this.makeButton('Clear', {
         'onclick': () => {
 
           // uncheck all templates and folders
@@ -157,11 +157,11 @@
                       // space, enter or no keyCode (must be mouse input)
                       if ([13, 32, undefined].indexOf(event.keyCode) > -1) {
                         event.preventDefault();
-                        if (opts.hasOwnProperty('onclick')) { opts.onclick(); }
+                        if (Object.prototype.hasOwnProperty.call(opts, 'onclick')) { opts.onclick(); }
                       }
                     });
 
-        if (opts.hasOwnProperty('nonvisualText')) {
+        if (Object.prototype.hasOwnProperty.call(opts, 'nonvisualText')) {
           $btn.append(`<span class="govuk-visually-hidden"> ${opts.nonvisualText}</span>`);
         }
 
@@ -197,7 +197,7 @@
     };
 
     this.selectionStatus = {
-      'default': 'Niets geselecteerd',
+      'default': 'Nothing selected',
       'selected': numSelected => {
         const getString = key => {
           if (numSelected[key] === 0) {
@@ -217,7 +217,7 @@
         if (numSelected.folders > 0) {
           results.push(getString('folders'));
         }
-        return results.join(', ') + ' geselecteerd';
+        return results.join(', ') + ' selected';
       },
       'update': numSelected => {
         let message = (numSelected.total > 0) ? this.selectionStatus.selected(numSelected) : this.selectionStatus.default;
@@ -278,9 +278,14 @@
       if (['move-to-existing-folder', 'add-new-template'].indexOf(this.currentState) !== -1) {
         mode = 'dialog';
       }
-      GOVUK.stickAtBottomWhenScrolling.setMode(mode);
-      // make sticky JS recalculate its cache of the element's position
-      GOVUK.stickAtBottomWhenScrolling.recalculate();
+      // stickAtBottomWhenScrolling lives in the ESM bundle, which loads as a deferred
+      // module script - it can still be undefined here if this (classic, non-deferred)
+      // script's ready handler wins the race and runs first.
+      if (GOVUK.stickAtBottomWhenScrolling) {
+        GOVUK.stickAtBottomWhenScrolling.setMode(mode);
+        // make sticky JS recalculate its cache of the element's position
+        GOVUK.stickAtBottomWhenScrolling.recalculate();
+      }
 
       if (currentStateObj && ('setFocus' in currentStateObj) && !this.formHasError()) {
         scrollTop = $(window).scrollTop();
@@ -293,9 +298,9 @@
       <div id="nothing_selected">
         <div class="js-stick-at-bottom-when-scrolling">
           <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-right-3 govuk-!-margin-bottom-1" value="add-new-template" ${!this.$singleNotificationChannel ? 'aria-expanded="false"' : ''}>
-            Nieuw sjabloon
+            New template
           </button>
-          <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-1" value="add-new-folder" aria-expanded="false">Nieuwe map</button>
+          <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-1" value="add-new-folder" aria-expanded="false">New folder</button>
           <div class="checkbox-list-selected-counter">
             <span class="checkbox-list-selected-counter__count" aria-hidden="true">
               ${this.selectionStatus.default}
@@ -309,9 +314,9 @@
       <div id="items_selected">
         <div class="js-stick-at-bottom-when-scrolling">
           <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-right-3 govuk-!-margin-bottom-1" value="move-to-existing-folder" aria-expanded="false">
-            Verplaats<span class="govuk-visually-hidden"> de selectie naar de map</span>
+            Move<span class="govuk-visually-hidden"> selection to folder</span>
           </button>
-          <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-1" value="move-to-new-folder" aria-expanded="false">Toevoegen aan een nieuwe map</button>
+          <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-1" value="move-to-new-folder" aria-expanded="false">Add to new folder</button>
           <div class="checkbox-list-selected-counter" aria-hidden="true">
             <span class="checkbox-list-selected-counter__count" aria-hidden="true">
               ${this.selectionStatus.selected(1)}

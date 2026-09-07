@@ -1,9 +1,9 @@
 {% extends "withoutnav_template.html" %}
 {% from "components/page-header.html" import page_header %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 
 {% block per_page_title %}
-  Een probleem melden buiten kantooruren
+  Stuur ons een e-mail
 {% endblock %}
 
 {% block backLink %}
@@ -12,46 +12,36 @@
 
 {% block maincolumn_content %}
 
-    {{ page_header('Een probleem melden buiten kantooruren')}}
+    {{ page_header('Stuur ons een e-mail')}}
     <div class="govuk-grid-row">
       <div class="govuk-grid-column-two-thirds">
         <p class="govuk-body">
-          Controleer eerst de
-          <a class="govuk-link govuk-link--no-visited-state" href="https://status.notifynl.nl">statuspagina van NotifyNL</a>.
-        </p>
-        <p class="govuk-body">
-          U hoeft geen contact met ons op te nemen als uw probleem al op die pagina staat.
-        </p>
-        <p class="govuk-body">
-          Staat uw probleem niet op de statuspagina? Neem dan contact met ons op via ons nood-e-mailadres.
-        </p>
-        <p class="govuk-body">
-          Dit is het e-mailadres dat wij naar uw servicemanager hebben gestuurd toen uw dienst is geactiveerd.
+          U vindt ons nood-e-mailadres in de e-mail die wij naar u (of een van uw teamleden) hebben gestuurd toen uw dienst is geactiveerd.
         </p>
         <p class="govuk-body">
           Als u contact opneemt via ons nood-e-mailadres, reageren wij binnen 30 minuten.
         </p>
 
-        <h2 class="heading-medium">Gebruik ons nood-e-mailadres niet als</h2>
+        <h2 class="heading-medium">Gebruik ons nood-e-mailadres niet</h2>
 
         <ul class="govuk-list govuk-list--bullet">
         <li>
-          u geen foutmelding ‘technische storing’ kreeg bij het uploaden van een bestand
+          als u geen foutmelding ‘technische storing’ kreeg bij het versturen van berichten via de NotifyNL website
         </li>
         <li>
-          u geen 500-responsecode kreeg bij gebruik van de API
+          als u geen 500-responsecode kreeg bij gebruik van de API
         </li>
         <li>
-          uw dienst nog in de testfase is
+          als uw dienst nog in de testfase is
+        </li>
+        <li>
+          als uw probleem al op de <a class="govuk-link govuk-link--no-visited-state" href="https://status.notifynl.nl">statuspagina</a> staat.
         </li>
       </ul>
 
-        <p class="bottom-gutter-2">
-          Vul in dat geval <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.feedback', ticket_type='report-problem', severe='no') }}">ons ondersteuningsformulier</a> in.
-        </p>
-        <p class="govuk-body">
-          U ontvangt uiterlijk de volgende werkdag een reactie.
-        </p>
+      <p class="bottom-gutter-2">
+        Vul in plaats daarvan <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.feedback', ticket_type='report-problem', category='problem-sending', severe='no') }}">ons ondersteuningsformulier</a> in.
+      </p>
       </div>
     </div>
 

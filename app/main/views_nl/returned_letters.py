@@ -19,7 +19,10 @@ def returned_letter_summary(service_id):
 @user_has_permissions("view_activity")
 def returned_letters(service_id, reported_at):
     page_size = 50
-    returned_letters = service_api_client.get_returned_letters(service_id, reported_at)
+    response = service_api_client.get_returned_letters(service_id, reported_at)
+
+    returned_letters = response["returned_letters"]
+    orphaned_count = response["orphaned_count"]
     count_of_returned_letters = len(returned_letters)
 
     return render_template(
@@ -29,13 +32,15 @@ def returned_letters(service_id, reported_at):
         more_than_one_page=(count_of_returned_letters > page_size),
         page_size=page_size,
         count_of_returned_letters=count_of_returned_letters,
+        orphaned_count=orphaned_count,
     )
 
 
 @main.route("/services/<uuid:service_id>/returned-letters/<simple_date:reported_at>.csv")
 @user_has_permissions("view_activity")
 def returned_letters_report(service_id, reported_at):
-    returned_letters = service_api_client.get_returned_letters(service_id, reported_at)
+    returned_letters = service_api_client.get_returned_letters(service_id, reported_at)["returned_letters"]
+
     column_names = {
         "notification_id": "Notification ID",
         "client_reference": "Reference",
@@ -60,6 +65,6 @@ def returned_letters_report(service_id, reported_at):
         200,
         {
             "Content-Type": "text/csv; charset=utf-8",
-            "Content-Disposition": f'inline; filename="{reported_at} returned letters.csv"',
+            "Content-Disposition": f'attachment; filename="{reported_at} returned letters.csv"',
         },
     )

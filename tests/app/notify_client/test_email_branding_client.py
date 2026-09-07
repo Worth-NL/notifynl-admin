@@ -65,9 +65,11 @@ def test_create_email_branding(mocker, fake_uuid):
         colour=org_data["colour"],
         brand_type="org",
         created_by_id=org_data["created_by"],
+        height=100,
+        alignment="center",
     )
 
-    mock_post.assert_called_once_with(url="/email-branding", data=org_data)
+    mock_post.assert_called_once_with(url="/email-branding", data=org_data | {"height": 100, "alignment": "center"})
 
     mock_redis_delete.assert_called_with_args("email_branding")
 
@@ -97,9 +99,13 @@ def test_update_email_branding(mocker, fake_uuid):
         colour=org_data["colour"],
         brand_type="org",
         updated_by_id=org_data["updated_by"],
+        height=100,
+        alignment="center",
     )
 
-    mock_post.assert_called_once_with(url=f"/email-branding/{fake_uuid}", data=org_data)
+    mock_post.assert_called_once_with(
+        url=f"/email-branding/{fake_uuid}", data=org_data | {"height": 100, "alignment": "center"}
+    )
     mock_redis_delete.assert_called_with_args(f"email_branding-{fake_uuid}", "email_branding")
     mock_redis_delete_by_pattern.assert_called_with_args("organisation-*-email-branding-pool")
 
@@ -123,6 +129,8 @@ def test_create_email_branding_sends_none_values(mocker, fake_uuid):
         "text": None,
         "colour": None,
         "brand_type": "org",
+        "height": None,
+        "alignment": None,
         "created_by": fake_uuid,
     }
 
@@ -151,6 +159,8 @@ def test_update_email_branding_sends_none_values(mocker, fake_uuid):
         "text": None,
         "colour": None,
         "brand_type": "org",
+        "height": None,
+        "alignment": None,
         "updated_by": fake_uuid,
     }
 

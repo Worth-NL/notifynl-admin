@@ -2,7 +2,8 @@
 {% from "components/form.html" import form_wrapper %}
 {% from "components/page-header.html" import page_header %}
 {% from "components/page-footer.html" import page_footer %}
-{% from "govuk_frontend_jinja/components/back-link/macro.html" import govukBackLink %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
+{% from "govuk_frontend_jinja/components/task-list/macro.html" import govukTaskList %}
 
 {% block service_page_title %}
   E-mails versturen
@@ -14,16 +15,66 @@
 
 {% block maincolumn_content %}
 
+  {# as options objects are different for completed vs incomplete #}
+  {# we set them here to reuse them later #}
+  {% set completed_status = {"text": "Voltooid"} %}
+  {% set incomplete_status = {"tag": {"text": "Niet voltooid"}} %}
+
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-five-sixths">
       {{ page_header('E-mails versturen') }}
+      {% if current_service.has_permission("email") %}
+        <p class="govuk-body">
+          Het is gratis om e-mails te versturen via NotifyNL.
+        </p>
+        {% call form_wrapper() %}
+          {{ form.enabled }}
+          {{ page_footer('Opslaan') }}
+        {% endcall %}
+        <h2 class="govuk-heading-m">
+          Als u e-mails uitschakelt
+        </h2>
       <p class="govuk-body">
-        Het is gratis om e-mails te versturen via NotifyNL.
-      </p>
-      {% call form_wrapper() %}
-        {{ form.enabled }}
-        {{ page_footer('Opslaan') }}
-      {% endcall %}
+          Verbergt NotifyNL:
+        </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>bestaande e-mailsjablonen</li>
+        <li>de mogelijkheid om nieuwe e-mailsjablonen toe te voegen</li>
+        <li>een deel van uw e-mailinstellingen</li>
+      </ul>
+      <p class="govuk-body">
+          Om deze terug te krijgen, schakelt u e-mails weer in.
+        </p>
+      {% else %}
+        <h2 class="govuk-heading-m">Richt uw dienst in</h2>
+        {{ govukTaskList({
+          "items": [
+          {
+            "title": {
+              "text": "Kies een ‘van’ naam",
+              "classes": "govuk-link--no-visited-state",
+            },
+            "href": url_for('main.service_email_sender_change', service_id=current_service.id),
+            "status": completed_status if current_service.confirmed_email_sender_name else incomplete_status,
+          },
+          {
+            "title": {
+              "text": "Voeg een antwoord-naar-e-mailadres toe",
+              "classes": "govuk-link--no-visited-state",
+            },
+            "href": url_for('main.service_email_reply_to', service_id=current_service.id),
+            "status": completed_status if current_service.has_email_reply_to_address else incomplete_status,
+          },
+
+          ]
+        }) }}
+        <p class="govuk-body">
+          U moet alle taken voltooien voordat u e-mails kunt versturen.
+        </p>
+        {% call form_wrapper(action=url_for('.enable_email_channel', service_id=current_service.id)) %}
+          {{ page_footer('E-mails versturen inschakelen') }}
+        {% endcall %}
+      {% endif %}
     </div>
   </div>
 

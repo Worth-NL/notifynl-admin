@@ -16,8 +16,13 @@ class EnhancedTextbox {
       return this;
     }
 
+    // guard against CSS not being loaded
+    if (window.getComputedStyle($module)['position'] !== 'relative') {
+      return this;
+    }
+
     this.$module = $module;
-    this.tagPattern = /\(\(([^\)\((\?)]+)(\?\?)?([^\)\(]*)\)\)/g;
+    this.tagPattern = /\(\(([^()?]+)(\?\?)?([^()]*)\)\)/g;
     this.highlightPlaceholders = this.$module.dataset.highlightPlaceholders === 'true';
     this.autofocus = this.$module.dataset.autofocusTextbox === 'true';
     this.$textbox = this.$module;
@@ -42,10 +47,10 @@ class EnhancedTextbox {
     this.$visibleTextbox.style.visibility = 'hidden';
     this.$visibleTextbox.style.display = 'block';
     document.querySelector('body').append(this.$visibleTextbox);
-    
+
     this.initialHeight = this.$visibleTextbox.offsetHeight;
 
-    this.$backgroundHighlightElement.style.borderWidth = 
+    this.$backgroundHighlightElement.style.borderWidth =
       window.getComputedStyle(this.$textbox).getPropertyValue('border-width');
 
     this.$visibleTextbox.remove();
@@ -64,7 +69,7 @@ class EnhancedTextbox {
           this.$backgroundHighlightElement.offsetHeight
       )}px`;
 
-    if ('stickAtBottomWhenScrolling' in GOVUK) {
+    if ('stickAtBottomWhenScrolling' in window.GOVUK) {
       window.GOVUK.stickAtBottomWhenScrolling.recalculate();
     }
   }
