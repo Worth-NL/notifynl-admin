@@ -1,3 +1,4 @@
+import json
 import weakref
 from contextlib import suppress
 from copy import deepcopy
@@ -898,6 +899,19 @@ class OrganisationTypeField(GovukRadiosField):
         )
 
 
+class GeoJSONBoundaryField(GovukTextareaField):
+    def process_formdata(self, valuelist):
+        if valuelist and valuelist[0].strip():
+            try:
+                self.data = json.loads(valuelist[0])
+            except ValueError:
+                # kept as the raw string so validate_area_boundary can report
+                # a friendly error instead of a 500 from a failed json.loads
+                self.data = valuelist[0]
+        else:
+            self.data = None
+
+
 class GovukRadiosFieldWithNoneOption(FieldWithNoneOption, GovukRadiosField):
     pass
 
@@ -1281,6 +1295,23 @@ class AddNHSLocalOrganisationForm(StripWhitespaceForm):
 
 class OrganisationOrganisationTypeForm(StripWhitespaceForm):
     organisation_type = OrganisationTypeField("Wat voor een type organisatie is dit?")
+
+
+class OrganisationAreaBoundaryForm(StripWhitespaceForm):
+    area_boundary = GeoJSONBoundaryField("Gebiedsgrens (GeoJSON)")
+
+    def validate_area_boundary(self, field):
+        if field.data is None:
+            return
+
+        if not isinstance(field.data, dict):
+            raise ValidationError("Vul geldige GeoJSON in")
+
+        if field.data.get("type") not in ("Polygon", "MultiPolygon"):
+            raise ValidationError("De geometrie moet van het type Polygon of MultiPolygon zijn")
+
+        if not isinstance(field.data.get("coordinates"), list):
+            raise ValidationError("De geometrie moet coördinaten bevatten")
 
 
 class OrganisationCrownStatusForm(StripWhitespaceForm):
