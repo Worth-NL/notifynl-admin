@@ -143,7 +143,7 @@ prod-nl: ## Set environment to prod
 
 .PHONY: upload-static-nl
 upload-static-nl: ## Base command
-	aws s3 cp --region eu-west-1 --recursive --cache-control max-age=315360000,immutable ./app/static s3://${CDN_BUCKET}
+	aws s3 cp --region eu-central-1 --recursive --cache-control max-age=315360000,immutable ./app/static s3://${CDN_BUCKET}
 
 .PHONY: upload-static-nl-test
 upload-static-nl-test: test-nl upload-static-nl
