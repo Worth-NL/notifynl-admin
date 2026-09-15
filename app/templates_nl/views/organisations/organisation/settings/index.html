@@ -307,6 +307,26 @@
               }
             ]
           }
+        },
+        {
+          "key": {
+            "classes": "notify-summary-list__key notify-summary-list__key--35-100",
+            "text": "Gebiedsgrens"
+          },
+          "value": {
+            "text": "Ingesteld" if current_org.area_boundary else "Niet ingesteld",
+            "classes": "govuk-summary-list__value--default" if not current_org.area_boundary
+          },
+          "actions": {
+            "items": [
+              {
+                "href": url_for('main.edit_organisation_area_boundary', org_id=current_org.id),
+                "text": "Wijzigen",
+                "visuallyHiddenText": "gebiedsgrens van de organisatie",
+                "classes": "govuk-link--no-visited-state"
+              }
+            ]
+          }
         }
       ]
     }) }}

@@ -63,6 +63,7 @@ class Organisation(JSONModel):
     billing_reference: str
     purchase_order_number: str
     notes: str
+    area_boundary: Any
     can_approve_own_go_live_requests: bool
     permissions: list
 

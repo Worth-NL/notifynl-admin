@@ -1,4 +1,5 @@
 import pytest
+from flask import url_for
 from freezegun import freeze_time
 
 from app.constants import PERMISSION_CAN_MAKE_SERVICES_LIVE
@@ -229,3 +230,67 @@ def test_view_edit_organisation_billing_details(
         "purchase_order_number",
         "notes",
     ]
+
+
+def test_update_organisation_area_boundary(
+    client_request,
+    platform_admin_user,
+    organisation_one,
+    mock_get_organisation,
+    mock_update_organisation,
+):
+    client_request.login(platform_admin_user)
+    client_request.post(
+        "main.edit_organisation_area_boundary",
+        org_id=organisation_one["id"],
+        _data={
+            "area_boundary": (
+                '{"type": "Polygon", "coordinates": '
+                "[[[4.30, 52.07], [4.32, 52.07], [4.32, 52.09], [4.30, 52.09], [4.30, 52.07]]]}"
+            )
+        },
+        _expected_redirect=url_for(
+            "main.organisation_settings",
+            org_id=organisation_one["id"],
+        ),
+    )
+    mock_update_organisation.assert_called_with(
+        organisation_one["id"],
+        cached_service_ids=None,
+        area_boundary={
+            "type": "Polygon",
+            "coordinates": [[[4.30, 52.07], [4.32, 52.07], [4.32, 52.09], [4.30, 52.09], [4.30, 52.07]]],
+        },
+    )
+
+
+def test_update_organisation_area_boundary_rejects_non_polygon_geometry(
+    client_request,
+    platform_admin_user,
+    organisation_one,
+    mock_get_organisation,
+    mock_update_organisation,
+):
+    client_request.login(platform_admin_user)
+    page = client_request.post(
+        "main.edit_organisation_area_boundary",
+        org_id=organisation_one["id"],
+        _data={"area_boundary": '{"type": "Point", "coordinates": [4.3, 52.07]}'},
+        _expected_status=200,
+    )
+    assert "Polygon of MultiPolygon" in normalize_spaces(page.select_one(".govuk-error-message").text)
+    assert not mock_update_organisation.called
+
+
+def test_update_organisation_area_boundary_errors_when_user_not_platform_admin(
+    client_request,
+    organisation_one,
+    mock_get_organisation,
+    mock_update_organisation,
+):
+    client_request.post(
+        "main.edit_organisation_area_boundary",
+        org_id=organisation_one["id"],
+        _data={"area_boundary": ""},
+        _expected_status=403,
+    )
