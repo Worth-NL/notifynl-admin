@@ -359,7 +359,7 @@ jobs:
   smoke-test:
     needs: deploy
     if: github.event.pull_request.draft == false
-    uses: ./.github/workflows/e2e-smoke-test.yml
+    uses: Worth-NL/notifynl-smoke-tests/.github/workflows/run-smoke-tests.yml@main
     with:
-      environment: test
+      project: admin
     secrets: inherit
