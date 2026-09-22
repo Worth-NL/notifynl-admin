@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from functools import partial
 
@@ -24,6 +25,7 @@ from app.main.overrides_nl.forms import (
     AdminOrganisationGoLiveNotesForm,
     InviteOrgUserForm,
     OrganisationAgreementSignedForm,
+    OrganisationAreaBoundaryForm,
     OrganisationCrownStatusForm,
     OrganisationOrganisationTypeForm,
     OrganisationUserPermissionsForm,
@@ -331,6 +333,25 @@ def edit_organisation_type(org_id):
 
     return render_template(
         "views/organisations/organisation/settings/edit-type.html",
+        form=form,
+    )
+
+
+@main.route("/organisations/<uuid:org_id>/settings/edit-area-boundary", methods=["GET", "POST"])
+@user_is_platform_admin
+def edit_organisation_area_boundary(org_id):
+    form = OrganisationAreaBoundaryForm(
+        area_boundary=json.dumps(current_organisation.area_boundary, indent=2)
+        if current_organisation.area_boundary
+        else ""
+    )
+
+    if form.validate_on_submit():
+        current_organisation.update(area_boundary=form.area_boundary.data)
+        return redirect(url_for(".organisation_settings", org_id=org_id))
+
+    return render_template(
+        "views/organisations/organisation/settings/edit-area-boundary.html",
         form=form,
     )
 

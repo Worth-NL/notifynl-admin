@@ -90,6 +90,7 @@ EXCLUDED_ENDPOINTS = set(
             "download_unsubscribe_request_report",
             "edit_data_retention",
             "edit_organisation_agreement",
+            "edit_organisation_area_boundary",
             "edit_organisation_billing_details",
             "edit_organisation_can_approve_own_go_live_requests",
             "edit_organisation_can_ask_to_join_a_service",
