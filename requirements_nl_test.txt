@@ -797,9 +797,9 @@ markupsafe==3.0.2 \
     #   jinja2
     #   werkzeug
     #   wtforms
-mistune==0.8.4 \
-    --hash=sha256:59a3429db53c50b5c6bcc8a07f8848cb00d7dc8bdb431a4ab41920d201d4756e \
-    --hash=sha256:88a1051873018da288eee8538d476dffe1262495144b33ecb586c4ab266bb8d4
+mistune==3.3.3 \
+    --hash=sha256:99de1585e42dcbd826faa9e11a202727a5e202e4e4722a4c69ac1ff615793dd7 \
+    --hash=sha256:c4c6c0c840b8637a2e9b8b6d607eb7c8f00888bf14c754409bcd339e848c2477
     # via
     #   -r requirements_nl.txt
     #   notifications-utils
@@ -810,7 +810,7 @@ moto==5.1.0 \
 notifications-python-client==10.0.0 \
     --hash=sha256:0f152a4d23b7f7b827dae6b45ac63568a2bc56044b1aa57b66bc68b137c40e57
     # via -r requirements_nl.txt
-notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@40e6af24df0a7e672098ff406d8dae0a0da7f621
+notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@cb66ced9f10e1e852d86a340a3cf0a8d7f5a95f8
     # via -r requirements_nl.txt
 notifynl-frontend-jinja @ git+https://github.com/Worth-NL/LandRegistry-frontend-jinja@08ff37bf48cafc08477d735cae51c2a7b938e8c4
     # via -r requirements_nl.txt
@@ -977,9 +977,9 @@ pyjwt==2.10.1 \
     # via
     #   -r requirements_nl.txt
     #   notifications-python-client
-pypdf==6.15.0 \
-    --hash=sha256:14e001d6504822cb1ca9c7ed9a69bccb320f59b320730f55af804361abe4d5ee \
-    --hash=sha256:d39c4d955a76409284a905e2d65b40076d77ab76129e0faaeeb6612403ecfc79
+pypdf==6.19.0 \
+    --hash=sha256:7e5d6e730e7dae87d560a2cee218b852f6498c8be61966f3cd02ead971e48d14 \
+    --hash=sha256:bbc43aca292369ccc6cbc8a921991ecf2538a3587ab5a116eff06c321d647155
     # via
     #   -r requirements_nl.txt
     #   notifications-utils
