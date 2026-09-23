@@ -27,7 +27,7 @@ ARG NOTIFY_ENVIRONMENT=development
 
 # amd64 pinned deliberately, same reason as the base image above.
 # hadolint ignore=DL3029
-FROM --platform=linux/amd64 node:24-bookworm-trixie AS frontend_build
+FROM --platform=linux/amd64 node:24-trixie-slim AS frontend_build
 
 SHELL ["/bin/bash", "-c"]
 
