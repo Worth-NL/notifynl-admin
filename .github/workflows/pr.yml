@@ -61,7 +61,6 @@ jobs:
           enable-cache: true
           cache-dependency-glob: |
             requirements_nl.txt
-            requirements_nl_test.txt
 
       - name: Install application requirements (pip)
         run: uv pip install -r requirements_nl_test.txt
@@ -74,7 +73,7 @@ jobs:
 
       - uses: astral-sh/ruff-action@v3
         with:
-          version-file: requirements_for_test.txt
+          version-file: requirements_nl_test.txt
 
       - name: Generate version file
         run: make generate-version-file
