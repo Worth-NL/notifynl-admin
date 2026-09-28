@@ -26,3 +26,6 @@ sentry-sdk[flask]==2.35.0
 
 # [NOTIFYNL] vulnerability pins
 pypdf>=6.16.1
+PyJWT>=2.13.0
+lxml>=6.1.0
+requests>=2.33.0
