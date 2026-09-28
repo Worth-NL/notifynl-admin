@@ -19,6 +19,10 @@ RUN apt-get update \
     && apt-get -y clean && \
     rm -rf /var/lib/apt/lists/* /tmp/*
 
+# System pip is unused (venv is --without-pip, installs go through uv) and its vendored
+# msgpack/setuptools get flagged by Trivy, so drop it from every stage.
+RUN python -m pip uninstall -y pip
+
 WORKDIR /home/vcap/app
 
 
@@ -74,8 +78,6 @@ COPY --chown=notify:notify app app
 COPY --chown=notify:notify application.py entrypoint.sh gunicorn_config.py ./
 COPY --from=frontend_build --chown=notify:notify /usr/frontend/app/static app/static
 COPY --from=frontend_build --chown=notify:notify /usr/frontend/app/templates app/templates
-COPY --from=frontend_build --chown=notify:notify /usr/local/lib /usr/local/lib
-COPY --from=frontend_build --chown=notify:notify /usr/local/bin /usr/local/bin
 COPY --from=python_build --chown=notify:notify /home/vcap/app/app/version.py app/version.py
 
 RUN python -m compileall . && \
@@ -89,6 +91,10 @@ CMD [ "web" ]
 FROM production AS test
 
 USER root
+
+# Node/npm are only needed here (make bootstrap-nl, web-local), not in production
+COPY --from=frontend_build --chown=notify:notify /usr/local/lib /usr/local/lib
+COPY --from=frontend_build --chown=notify:notify /usr/local/bin /usr/local/bin
 
 RUN echo "Install OS dependencies for test build" && \
     apt-get update && \
