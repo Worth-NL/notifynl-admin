@@ -18,14 +18,14 @@ def test_organisation_left_hand_nav_for_platform_admin_users(
 
     page = client_request.get("main.organisation_dashboard", org_id=ORGANISATION_ID)
     nav_items = [item.text.strip() for item in page.select("nav.navigation a")]
-    assert nav_items == ["Gebruik", "Teamleden", "Instellingen", "Proefdiensten", "Facturatie"]
+    assert nav_items == ["Gebruik", "Teamleden", "Brieven", "Instellingen", "Proefdiensten", "Facturatie"]
 
 
 @pytest.mark.parametrize(
     "user_org_permissions, expected_nav_items",
     [
-        ([], ["Gebruik", "Teamleden"]),
-        ([PERMISSION_CAN_MAKE_SERVICES_LIVE], ["Gebruik", "Teamleden", "Proefdiensten"]),
+        ([], ["Gebruik", "Teamleden", "Brieven"]),
+        ([PERMISSION_CAN_MAKE_SERVICES_LIVE], ["Gebruik", "Teamleden", "Brieven", "Proefdiensten"]),
     ],
 )
 def test_organisation_left_hand_nav_for_org_users(
