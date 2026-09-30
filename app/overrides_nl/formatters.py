@@ -259,7 +259,17 @@ def format_notification_status_text(notification):
             return f"{reason} ({code})" if code else reason
     status = _notification_attr(notification, "status")
     template_type = _notification_attr(notification, "template")["template_type"]
+    # a letter its print provider accepted: say which one (notifynl-api's print_provider)
+    if template_type == "letter" and status == "sent":
+        return f"Geaccepteerd door {format_print_provider(_notification_attr(notification, 'print_provider'))}"
     return format_notification_status(status, template_type)
+
+
+def format_print_provider(print_provider):
+    return {
+        "pingen": "Pingen",
+        "rest-endpoint": "de printleverancier van uw organisatie",
+    }.get(print_provider, "de printleverancier")
 
 
 def format_notification_status_as_time(status, created, updated):

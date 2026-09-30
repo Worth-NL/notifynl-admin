@@ -25,7 +25,7 @@ from app.s3_client.s3_csv_client import s3download
 from app.utils import parse_filter_args, set_status_filters
 from app.utils.csv import generate_notifications_csv
 from app.utils.user import user_has_permissions
-from app.utils_nl.letters import get_letter_printing_statement, printing_today_or_tomorrow
+from app.utils_nl.letters import get_letter_printing_statement
 
 
 @main.route("/services/<uuid:service_id>/jobs")
@@ -49,8 +49,10 @@ def view_job(service_id, job_id):
     filter_args = parse_filter_args(request.args)
     filter_args["status"] = set_status_filters(filter_args)
 
-    just_sent_message = "Uw {} is verzonden. Het printen start {} om 17:30 uur.".format(
-        "brief is" if job.notification_count == 1 else "brieven zijn", printing_today_or_tomorrow(job.created_at)
+    just_sent_message = (
+        "Uw brief is verzonden. NotifyNL stuurt hem binnen enkele minuten naar de printleverancier."
+        if job.notification_count == 1
+        else "Uw brieven zijn verzonden. NotifyNL stuurt ze binnen enkele minuten naar de printleverancier."
     )
 
     if job.scheduled:

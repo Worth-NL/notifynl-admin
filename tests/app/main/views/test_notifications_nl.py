@@ -1,3 +1,6 @@
+import pytest
+from freezegun import freeze_time
+
 from tests.conftest import (
     SERVICE_ONE_ID,
     create_notification,
@@ -73,3 +76,28 @@ def test_should_show_image_of_templated_letter_notification_that_failed_validati
         == "De validatie is mislukt omdat deze brief 11 pagina’s lang is.Brieven mogen maximaal 10 pagina’s bevatten "
         "(5 dubbelzijdige vellen papier)."
     )
+
+
+@pytest.mark.parametrize(
+    "status, print_provider, expected_status",
+    [
+        ("created", None, "Wordt naar de printleverancier gestuurd"),
+        ("sending", None, "Wordt naar de printleverancier gestuurd"),
+        ("sent", "pingen", "Geaccepteerd door Pingen"),
+        ("sent", "rest-endpoint", "Geaccepteerd door de printleverancier van uw organisatie"),
+        ("delivered", "pingen", "Aan de post overgedragen"),
+    ],
+)
+@freeze_time("2026-09-30 10:00")
+def test_letter_notification_page_says_where_the_letter_is(
+    client_request, mocker, fake_uuid, mock_get_page_counts_for_letter, status, print_provider, expected_status
+):
+    notification = create_notification(template_type="letter", notification_status=status)
+    notification["print_provider"] = print_provider
+    mocker.patch("app.notification_api_client.get_notification", return_value=notification)
+
+    page = client_request.get("main.view_notification", service_id=SERVICE_ONE_ID, notification_id=fake_uuid)
+
+    assert normalize_spaces(page.select_one("#letter-status").text) == expected_status
+    # letters go to their print provider within minutes: no daily print run
+    assert "17:30" not in page.text
