@@ -73,7 +73,7 @@ def organisation_letter_endpoint(org_id):
 
 def _form_data(stored_endpoint):
     if not stored_endpoint:
-        return {"address_placement": "60mm"}
+        return {"address_placement": "50mm"}  # 60mm is only for Pingen
 
     auth_method = stored_endpoint["auth_method"]
     data = {

@@ -252,7 +252,7 @@ def test_rest_endpoint_page_for_an_organisation_on_pingen(logged_in_org_member):
     assert not page.select_one("input[name=endpoint_url]").get("value")
     assert not page.select_one("input[name=password]").get("value")
     assert page.select_one("input[name=api_key_header]")["value"] == "X-Api-Key"
-    assert page.select_one("input[name=address_placement][checked]")["value"] == "60mm"
+    assert page.select_one("input[name=address_placement][checked]")["value"] == "50mm"
 
 
 @pytest.mark.parametrize(
