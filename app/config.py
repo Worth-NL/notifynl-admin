@@ -203,6 +203,9 @@ class ConfigNL(Config):
 class DevNL(ConfigNL):
     NOTIFY_ENVIRONMENT = "development"
 
+    # like notifynl-api's: the local letter endpoint stub is plain http on a private host
+    LETTER_ENDPOINT_ALLOW_INSECURE = True
+
     SERVER_NAME = os.getenv("SERVER_NAME")
     DEBUG = True
     SESSION_COOKIE_SECURE = False

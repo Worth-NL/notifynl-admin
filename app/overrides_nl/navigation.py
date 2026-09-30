@@ -431,6 +431,11 @@ class OrgNavigation(Navigation):
         "trial-services": {
             "organisation_trial_mode_services",
         },
+        "letter-provider": {
+            "organisation_change_letter_provider",
+            "organisation_letter_endpoint",
+            "organisation_letter_provider",
+        },
         "billing": {
             "organisation_billing",
         },

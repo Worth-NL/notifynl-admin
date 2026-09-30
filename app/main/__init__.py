@@ -52,7 +52,7 @@ from app.main.views_nl import (  # noqa
     your_account,
     your_services,
 )
-from app.main.views_nl.organisations import branding, index  # noqa
+from app.main.views_nl.organisations import branding, index, letter_provider  # noqa
 from app.main.views_nl.service_settings import branding, index  # noqa
 
 
