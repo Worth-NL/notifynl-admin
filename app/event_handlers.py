@@ -47,6 +47,14 @@ class Events(metaclass=EventsMeta):
     archive_service = {"service_id", "archived_by_id"}
     update_email_branding = {"email_branding_id", "updated_by_id", "old_email_branding"}
     update_letter_branding = {"letter_branding_id", "updated_by_id", "old_letter_branding"}
+    update_organisation_letter_provider = {  # [NotifyNL] never any credentials
+        "organisation_id",
+        "updated_by_id",
+        "old_provider",
+        "new_provider",
+        "old_endpoint_url",
+        "new_endpoint_url",
+    }
     set_inbound_sms_on = {"user_id", "service_id", "inbound_number_id"}
     remove_platform_admin = {"user_id", "removed_by_id"}
 

@@ -64,6 +64,7 @@ class Organisation(JSONModel):
     purchase_order_number: str
     notes: str
     area_boundary: Any
+    letter_provider: Any
     can_approve_own_go_live_requests: bool
     permissions: list
 
@@ -227,6 +228,17 @@ class Organisation(JSONModel):
         organisations_client.update_organisation(
             self.id, cached_service_ids=self.service_ids if delete_services_cache else None, **kwargs
         )
+
+    ### [NotifyNL] #####################################################################################################
+    @property
+    def letter_provider_identifier(self):
+        # an organisation without a letter provider sends its letters with Pingen
+        return (self.letter_provider or {}).get("identifier") or "pingen"
+
+    def set_letter_provider(self, **data):
+        return organisations_client.set_organisation_letter_provider(self.id, data, cached_service_ids=self.service_ids)
+
+    ####################################################################################################################
 
     def associate_service(self, service_id):
         organisations_client.update_service_organisation(service_id, self.id)
