@@ -51,6 +51,8 @@ class Service(JSONModel):
     international_sms_message_limit: int
     sms_message_limit: int
     letter_address_placement: str
+    letter_address_placement_decided_by_provider: bool  # [NotifyNL]
+    send_client_reference_to_letter_provider: bool  # [NotifyNL]
     letter_message_limit: int
     messagebox_message_limit: int
     rate_limit: int

@@ -1,0 +1,108 @@
+{% extends "org_template.html" %}
+{% from "govuk_frontend_jinja/components/summary-list/macro.html" import govukSummaryList %}
+{% from "govuk_frontend_jinja/components/warning-text/macro.html" import govukWarningText %}
+{% from "govuk_frontend_jinja/components/inset-text/macro.html" import govukInsetText %}
+
+{% block org_page_title %}
+  Brieven
+{% endblock %}
+
+{% block maincolumn_content %}
+  <h1 class="heading-medium">Brieven</h1>
+
+  <p class="govuk-body">
+    NotifyNL stuurt de brieven van uw organisatie naar een printleverancier. Die print de brieven en geeft ze aan de post.
+  </p>
+
+  {% set is_endpoint = letter_provider and letter_provider.identifier == 'rest-endpoint' %}
+  {% set auth_method_labels = {
+    "basic": "Gebruikersnaam en wachtwoord (Basic)",
+    "api_key": "API-sleutel in een header",
+    "oauth": "OAuth 2.0 (client credentials)",
+  } %}
+  {% set auth_config_labels = {
+    "username": "Gebruikersnaam",
+    "api_key_header": "Naam van de header",
+    "token_endpoint": "Token-URL",
+    "client_id": "Client-ID",
+    "scope": "Scope",
+  } %}
+  {% set change_endpoint = {
+    "items": [{
+      "href": url_for('main.organisation_letter_endpoint', org_id=current_org.id),
+      "text": "Wijzigen",
+      "visuallyHiddenText": "de instellingen van uw printleverancier",
+      "classes": "govuk-link--no-visited-state"
+    }]
+  } %}
+
+  {% set rows = [
+    {
+      "key": {"text": "Printleverancier", "classes": "notify-summary-list__key notify-summary-list__key--35-100"},
+      "value": {"text": "Eigen printleverancier" if is_endpoint else "Pingen"},
+      "actions": {
+        "items": [{
+          "href": url_for('main.organisation_change_letter_provider', org_id=current_org.id),
+          "text": "Wijzigen",
+          "visuallyHiddenText": "printleverancier",
+          "classes": "govuk-link--no-visited-state"
+        }]
+      }
+    }
+  ] %}
+
+  {% if is_endpoint %}
+    {% set _ = rows.append({
+      "key": {"text": "Endpoint-URL", "classes": "notify-summary-list__key notify-summary-list__key--35-100"},
+      "value": {"text": letter_provider.endpoint_url},
+      "actions": change_endpoint
+    }) %}
+    {% set _ = rows.append({
+      "key": {"text": "Inlogmethode", "classes": "notify-summary-list__key notify-summary-list__key--35-100"},
+      "value": {"text": auth_method_labels.get(letter_provider.auth_method, "Niet ingesteld")},
+      "actions": change_endpoint
+    }) %}
+    {# in the order the form asks for them, not the API's (alphabetical) order #}
+    {% for field, label in auth_config_labels.items() if letter_provider.auth_config.get(field) %}
+      {% set _ = rows.append({
+        "key": {"text": label, "classes": "notify-summary-list__key notify-summary-list__key--35-100"},
+        "value": {"text": letter_provider.auth_config[field]},
+        "actions": change_endpoint
+      }) %}
+    {% endfor %}
+    {% set _ = rows.append({
+      "key": {"text": "Inloggegevens", "classes": "notify-summary-list__key notify-summary-list__key--35-100"},
+      "value": {"text": "Opgeslagen" if letter_provider.has_credentials else "Niet ingevuld"},
+      "actions": change_endpoint
+    }) %}
+    {% set _ = rows.append({
+      "key": {"text": "Adres op de brief", "classes": "notify-summary-list__key notify-summary-list__key--35-100"},
+      "value": {"text": letter_provider.address_placement|replace("mm", " mm") ~ " vanaf de bovenkant"},
+      "actions": change_endpoint
+    }) %}
+  {% else %}
+    {% set _ = rows.append({
+      "key": {"text": "Adres op de brief", "classes": "notify-summary-list__key notify-summary-list__key--35-100"},
+      "value": {"text": "60 mm vanaf de bovenkant (vast bij Pingen)"},
+    }) %}
+  {% endif %}
+
+  {% if is_endpoint and not letter_provider.is_complete %}
+    {{ govukWarningText({
+      "text": "De instellingen van uw printleverancier zijn niet compleet. Tot ze compleet zijn, stuurt NotifyNL uw brieven naar Pingen.",
+      "iconFallbackText": "Waarschuwing"
+    }) }}
+  {% endif %}
+
+  {{ govukSummaryList({"classes": "notify-summary-list", "rows": rows}) }}
+
+  {% if letter_provider and letter_provider.updated_at %}
+    <p class="govuk-body govuk-hint">
+      Laatst gewijzigd {{ letter_provider.updated_at|format_datetime_short }}
+    </p>
+  {% endif %}
+
+  {{ govukInsetText({
+    "text": "Vraagt uw printleverancier om een clientcertificaat (mutual TLS)? Neem dan contact op met het platformteam van NotifyNL."
+  }) }}
+{% endblock %}

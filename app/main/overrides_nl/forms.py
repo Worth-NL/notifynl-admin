@@ -1,4 +1,5 @@
 import json
+import re
 import weakref
 from contextlib import suppress
 from copy import deepcopy
@@ -8,6 +9,7 @@ from html import escape
 from itertools import chain, repeat
 from math import ceil
 from numbers import Number
+from urllib.parse import urlsplit
 from zipfile import BadZipFile
 
 import pytz
@@ -2625,6 +2627,22 @@ class AdminServiceInboundNumberArchive(StripWhitespaceForm):
     )
 
 
+class ServiceSendClientReferenceToLetterProviderForm(StripWhitespaceForm):
+    enabled = OnOffField(
+        "Wilt u de klantreferentie van elke brief naar de printleverancier sturen?",
+        choices=[(True, "Ja"), (False, "Nee")],
+        choices_for_error_message="ja of nee",
+        param_extensions={
+            "hint": {
+                "text": (
+                    "De printleverancier gebruikt de referentie om brieven terug te vinden. Heeft een brief geen "
+                    "klantreferentie, dan stuurt NotifyNL de referentie die het zelf voor de brief heeft gemaakt."
+                )
+            }
+        },
+    )
+
+
 class AdminServiceLetterAddressPlacementForm(StripWhitespaceForm):
     letter_address_placement = GovukRadiosField(
         "Adresplaatsing op de brief",
@@ -3498,3 +3516,206 @@ class DocumentDownloadConfirmEmailAddressForm(StripWhitespaceForm):
                     "om te bevestigen dat het bestand voor u bedoeld was."
                 )
             )
+
+
+### [NotifyNL] organisation letter provider ###########################################################################
+# Shown in the secret fields of a letter endpoint instead of the stored secret, which the API never returns: leaving it
+# keeps the stored secret, as long as the endpoint's URLs don't change
+LETTER_ENDPOINT_DUMMY_SECRET = "secret_set"
+LETTER_ENDPOINT_AUTH_FIELDS = {
+    "basic": ("username", "password"),
+    "api_key": ("api_key_header", "api_key"),
+    "oauth": ("token_endpoint", "client_id", "client_secret", "scope"),
+}
+LETTER_ENDPOINT_SECRET_FIELDS = {"password", "api_key", "client_secret"}
+# how the error messages refer to each required field
+LETTER_ENDPOINT_FIELD_NAMES = {
+    "username": "de gebruikersnaam",
+    "password": "het wachtwoord",
+    "api_key_header": "de naam van de header",
+    "api_key": "de API-sleutel",
+    "token_endpoint": "de token-URL",
+    "client_id": "de client-ID",
+    "client_secret": "het client secret",
+}
+# an HTTP header name (RFC 9110 token), and not one the request itself depends on (as checked by the API)
+LETTER_ENDPOINT_HEADER_PATTERN = re.compile(r"[!#$%&'*+\-.^_`|~0-9A-Za-z]{1,100}")
+LETTER_ENDPOINT_RESERVED_HEADERS = {
+    "connection",
+    "content-length",
+    "content-type",
+    "host",
+    "idempotency-key",
+    "transfer-encoding",
+    "user-agent",
+}
+
+
+class OrganisationLetterProviderForm(StripWhitespaceForm):
+    provider = GovukRadiosField(
+        "Via welke printleverancier verstuurt NotifyNL de brieven van uw organisatie?",
+        choices=[
+            ("pingen", "Pingen"),
+            ("rest-endpoint", "Een eigen printleverancier"),
+        ],
+        thing="een printleverancier",
+        param_extensions={
+            "items": [
+                {"hint": {"text": "De standaard printleverancier van NotifyNL."}},
+                {"hint": {"text": "Uw organisatie heeft een contract met een printleverancier met een REST-endpoint."}},
+            ]
+        },
+    )
+
+
+class OrganisationLetterEndpointForm(StripWhitespaceForm):
+    def __init__(self, *args, stored=None, allow_insecure=False, **kwargs):
+        # stored: the organisation's current REST endpoint (from the API, without secrets), if it has one
+        self.stored = stored or {}
+        self.allow_insecure = allow_insecure
+        super().__init__(*args, **kwargs)
+
+    endpoint_url = GovukTextInputField("Endpoint-URL")
+    address_placement = GovukRadiosField(
+        "Waar staat het adres op de brieven?",
+        choices=[
+            ("50mm", "50 mm vanaf de bovenkant"),
+            ("60mm", "60 mm vanaf de bovenkant"),
+        ],
+        thing="waar het adres staat",
+    )
+    auth_method = GovukRadiosField(
+        "Hoe logt NotifyNL in bij uw printleverancier?",
+        choices=[
+            ("basic", "Met een gebruikersnaam en wachtwoord (Basic)"),
+            ("api_key", "Met een API-sleutel in een header"),
+            ("oauth", "Met OAuth 2.0 (client credentials)"),
+        ],
+        thing="hoe NotifyNL inlogt",
+    )
+    username = GovukTextInputField("Gebruikersnaam")
+    password = GovukPasswordField("Wachtwoord")
+    api_key_header = GovukTextInputField("Naam van de header", default="X-Api-Key")
+    api_key = GovukPasswordField("API-sleutel")
+    token_endpoint = GovukTextInputField("Token-URL")
+    client_id = GovukTextInputField("Client-ID")
+    client_secret = GovukPasswordField("Client secret")
+    scope = GovukTextInputField("Scope (optioneel)")
+
+    def validate_endpoint_url(self, field):
+        if error := self._url_error(field.data, "Vul de endpoint-URL in"):
+            raise ValidationError(error)
+
+    def validate(self, *args, **kwargs):
+        valid = super().validate(*args, **kwargs)
+        auth_method = self.auth_method.data
+        if auth_method not in LETTER_ENDPOINT_AUTH_FIELDS:
+            return False
+
+        for name in LETTER_ENDPOINT_AUTH_FIELDS[auth_method]:
+            field = getattr(self, name)
+            if name == "token_endpoint":
+                if error := self._url_error(field.data, "Vul de token-URL in"):
+                    valid = self._add_error(field, error)
+            elif name in LETTER_ENDPOINT_SECRET_FIELDS:
+                if error := self._secret_error(name):
+                    valid = self._add_error(field, error)
+            elif name in LETTER_ENDPOINT_FIELD_NAMES and not field.data:
+                valid = self._add_error(field, f"Vul {LETTER_ENDPOINT_FIELD_NAMES[name]} in")
+
+        header = self.api_key_header.data
+        if (
+            auth_method == "api_key"
+            and header
+            and (
+                not LETTER_ENDPOINT_HEADER_PATTERN.fullmatch(header)
+                or header.lower() in LETTER_ENDPOINT_RESERVED_HEADERS
+            )
+        ):
+            valid = self._add_error(self.api_key_header, "Deze naam kan niet als header worden gebruikt")
+        return valid
+
+    @property
+    def stored_secrets_can_be_kept(self):
+        """Stored secrets are only kept while they keep going to the same place (the API enforces this too)."""
+        stored_auth_config = self.stored.get("auth_config") or {}
+        return bool(
+            self.stored.get("has_credentials")
+            and self.stored.get("auth_method") == self.auth_method.data
+            and self.stored.get("endpoint_url") == self.endpoint_url.data
+            and (
+                self.auth_method.data != "oauth" or stored_auth_config.get("token_endpoint") == self.token_endpoint.data
+            )
+        )
+
+    def api_data(self):
+        auth_method = self.auth_method.data
+        auth_config = {}
+        for name in LETTER_ENDPOINT_AUTH_FIELDS[auth_method]:
+            value = getattr(self, name).data
+            # the API keeps the stored secret when it gets an empty one
+            auth_config[name] = "" if value == LETTER_ENDPOINT_DUMMY_SECRET else value
+        return {
+            "provider": "rest-endpoint",
+            "endpoint_url": self.endpoint_url.data,
+            "auth_method": auth_method,
+            "auth_config": auth_config,
+            "address_placement": self.address_placement.data,
+        }
+
+    def add_api_error(self, message):
+        """Show an error the API gave when saving, for checks the admin can't do itself (like resolving hosts)."""
+        message = str(message)
+        token_endpoint = self.token_endpoint.data if self.auth_method.data == "oauth" else None
+        url_field = self.token_endpoint if token_endpoint and token_endpoint in message else self.endpoint_url
+        if "private or internal address" in message or "cannot be resolved" in message:
+            self._add_error(url_field, "NotifyNL kan dit adres niet gebruiken: het is onbekend of intern")
+        elif "must use https" in message:
+            self._add_error(url_field, "Het adres moet met https:// beginnen")
+        elif "API key header" in message:
+            self._add_error(self.api_key_header, "Deze naam kan niet als header worden gebruikt")
+        elif "entered again" in message:
+            for name in LETTER_ENDPOINT_AUTH_FIELDS[self.auth_method.data]:
+                if name in LETTER_ENDPOINT_SECRET_FIELDS:
+                    self._add_error(getattr(self, name), self._reenter_message(name))
+        else:
+            self._add_error(self.endpoint_url, f"De instellingen konden niet worden opgeslagen: {message}")
+
+    def _url_error(self, url, missing_message):
+        if not url:
+            return missing_message
+        try:
+            parts = urlsplit(url)
+            hostname = parts.hostname
+        except ValueError:
+            hostname = None
+        else:
+            if parts.scheme not in (("https", "http") if self.allow_insecure else ("https",)):
+                return "Het adres moet met https:// beginnen"
+        if not hostname:
+            return "Vul een volledig adres in, zoals https://print.voorbeeld.nl/brieven"
+        return None
+
+    def _secret_error(self, name):
+        value = getattr(self, name).data
+        if value == LETTER_ENDPOINT_DUMMY_SECRET:
+            if self.stored_secrets_can_be_kept:
+                return None
+            if self.stored.get("has_credentials"):
+                return self._reenter_message(name)
+        if not value or value == LETTER_ENDPOINT_DUMMY_SECRET:
+            return f"Vul {LETTER_ENDPOINT_FIELD_NAMES[name]} in"
+        return None
+
+    @staticmethod
+    def _reenter_message(name):
+        thing = LETTER_ENDPOINT_FIELD_NAMES[name]
+        return f"Vul {thing} opnieuw in: inloggegevens worden niet bewaard als een URL verandert"
+
+    @staticmethod
+    def _add_error(field, message):
+        field.errors = [*field.errors, message]
+        return False
+
+
+########################################################################################################################

@@ -248,6 +248,7 @@ def uploaded_letter_preview(service_id, file_id):
         invalid_pages,
         page_count,
         letter_address_placement=current_service.letter_address_placement,
+        address_placement_decided_by_provider=current_service.letter_address_placement_decided_by_provider,
     )
 
     form = LetterUploadPostageForm(postage_zone=postal_address.postage)

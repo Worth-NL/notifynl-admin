@@ -14,34 +14,26 @@ from notifications_utils.timezones import (
 from app.overrides_nl.formatters import _format_datetime_short
 
 
-def printing_today_or_tomorrow(created_at):
-    print_cutoff = datetime.now(local_timezone).replace(hour=17, minute=30)
-    created_at = utc_string_to_aware_gmt_datetime(created_at)
-
-    if created_at < print_cutoff:
-        return "vandaag"
-    else:
-        return "morgen"
-
-
 def get_letter_printing_statement(status, created_at, long_form=True):
+    """
+    Letters go to their print provider within minutes of being sent, not in a daily print run at 17:30 as in GOV.UK
+    Notify: so say when a letter went to the print provider, rather than when it will be printed.
+    """
     if isinstance(created_at, datetime):
         created_at = created_at.astimezone(UTC).isoformat()
     created_at_dt = parser.parse(created_at).replace(tzinfo=None)
     if letter_can_be_cancelled(status, created_at_dt):
-        description = "Het printen start" if long_form else "Printen"
-        return f"{description} {printing_today_or_tomorrow(created_at)} om 17:30 uur"
+        return "Wordt naar de printleverancier gestuurd"
+
+    sent_at = utc_string_to_aware_gmt_datetime(created_at)
+    today = datetime.now(local_timezone).date()
+    if sent_at.date() == today:
+        when = "vandaag"
+    elif sent_at.date() == today - timedelta(days=1):
+        when = "gisteren"
     else:
-        printed_datetime = utc_string_to_aware_gmt_datetime(created_at) + timedelta(hours=6, minutes=30)
-        if printed_datetime.date() == datetime.now().date():
-            return "Geprint vandaag om 17:30 uur"
-        elif printed_datetime.date() == datetime.now().date() - timedelta(days=1):
-            return "Geprint gisteren om 17:30 uur"
-
-        printed_date = _format_datetime_short(printed_datetime)
-        description = "Geprint op" if long_form else "Geprint"
-
-        return f"{description} {printed_date} om 17:30 uur"
+        when = f"op {_format_datetime_short(sent_at)}"
+    return f"{'Naar de printleverancier gestuurd' if long_form else 'Verstuurd'} {when}"
 
 
 LETTER_VALIDATION_MESSAGES = {
@@ -197,8 +189,27 @@ LETTER_VALIDATION_MESSAGES = {
 
 LETTER_ADDRESS_PLACEMENT_LABELS = {"50mm": "50mm", "60mm": "60mm (standaard)"}
 
+# When the organisation's print provider decides the address placement, the service can't change it
+ADDRESS_PLACEMENT_MISMATCH_DECIDED_BY_PROVIDER = {
+    "title": "De positie van het adres komt niet overeen met uw printleverancier",
+    "detail": (
+        "Het adres op deze brief staat niet op de positie die de printleverancier van uw organisatie gebruikt "
+        "({letter_address_placement}). Pas de lay-out van uw brief aan."
+    ),
+    "summary": (
+        "De validatie is mislukt omdat de positie van het adres niet overeenkomt met de adrespositie van de "
+        "printleverancier van uw organisatie ({letter_address_placement})."
+    ),
+}
 
-def get_letter_validation_error(validation_message, invalid_pages=None, page_count=None, letter_address_placement=None):
+
+def get_letter_validation_error(
+    validation_message,
+    invalid_pages=None,
+    page_count=None,
+    letter_address_placement=None,
+    address_placement_decided_by_provider=False,
+):
     if not invalid_pages:
         invalid_pages = []
     if validation_message not in LETTER_VALIDATION_MESSAGES:
@@ -210,18 +221,24 @@ def get_letter_validation_error(validation_message, invalid_pages=None, page_cou
         invalid_pages, before_each="", after_each="", prefix="pagina", prefix_plural="pagina’s", conjunction="en"
     )
 
-    letter_address_placement = LETTER_ADDRESS_PLACEMENT_LABELS.get(letter_address_placement, letter_address_placement)
+    messages = LETTER_VALIDATION_MESSAGES[validation_message]
+    if validation_message == "address-placement-mismatch" and address_placement_decided_by_provider:
+        messages = ADDRESS_PLACEMENT_MISMATCH_DECIDED_BY_PROVIDER
+    else:
+        letter_address_placement = LETTER_ADDRESS_PLACEMENT_LABELS.get(
+            letter_address_placement, letter_address_placement
+        )
 
     return {
-        "title": LETTER_VALIDATION_MESSAGES[validation_message]["title"],
-        "detail": LETTER_VALIDATION_MESSAGES[validation_message]["detail"].format(
+        "title": messages["title"],
+        "detail": messages["detail"].format(
             invalid_pages=invalid_pages,
             invalid_pages_are_or_is=invalid_pages_are_or_is,
             page_count=page_count,
             letter_spec_guidance=url_for("main.guidance_upload_a_letter"),
             letter_address_placement=letter_address_placement,
         ),
-        "summary": LETTER_VALIDATION_MESSAGES[validation_message]["summary"].format(
+        "summary": messages["summary"].format(
             invalid_pages=invalid_pages,
             invalid_pages_are_or_is=invalid_pages_are_or_is,
             page_count=page_count,

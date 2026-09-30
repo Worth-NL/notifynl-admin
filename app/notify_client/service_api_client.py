@@ -117,6 +117,7 @@ class ServiceAPIClient(NotifyAdminAPIClient):
             "go_live_user",
             "has_active_go_live_request",
             "letter_address_placement",
+            "send_client_reference_to_letter_provider",  # [NotifyNL]
             "letter_branding",
             "letter_contact_block",
             "email_message_limit",

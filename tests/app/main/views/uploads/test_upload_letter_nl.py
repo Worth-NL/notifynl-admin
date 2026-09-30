@@ -5,7 +5,7 @@ from flask import make_response, url_for
 from requests import RequestException
 
 from app.s3_client.s3_letter_upload_client import LetterMetadata
-from tests.conftest import SERVICE_ONE_ID, do_mock_get_page_counts_for_letter
+from tests.conftest import SERVICE_ONE_ID, do_mock_get_page_counts_for_letter, normalize_spaces
 
 
 def test_post_upload_letter_shows_letter_preview_for_invalid_file(
@@ -190,3 +190,46 @@ def test_uploaded_letter_preview_image_shows_overlay_when_content_outside_printa
     else:
         template_preview_mock_valid.assert_called_once_with("pdf_file", page_requested)
         assert template_preview_mock_invalid.called is False
+
+
+@pytest.mark.parametrize(
+    "decided_by_provider, expected_title",
+    (
+        (False, "De positie van het adres komt niet overeen met uw instelling"),
+        (True, "De positie van het adres komt niet overeen met uw printleverancier"),
+    ),
+)
+def test_uploaded_letter_preview_explains_an_address_placement_mismatch(
+    client_request,
+    active_user_with_permissions,
+    service_one,
+    fake_uuid,
+    mocker,
+    decided_by_provider,
+    expected_title,
+):
+    mocker.patch("app.models.service.service_api_client.get_precompiled_template")
+    mocker.patch(
+        "app.main.views_nl.uploads.get_letter_metadata",
+        return_value=LetterMetadata(
+            {
+                "filename": "letter.pdf",
+                "page_count": "1",
+                "status": "invalid",
+                "message": "address-placement-mismatch",
+            }
+        ),
+    )
+    service_one["letter_address_placement"] = "60mm"
+    service_one["letter_address_placement_decided_by_provider"] = decided_by_provider
+    client_request.login(active_user_with_permissions, service=service_one)
+
+    page = client_request.get(
+        "main.uploaded_letter_preview",
+        service_id=SERVICE_ONE_ID,
+        file_id=fake_uuid,
+        _test_page_title=False,  # the page is titled after the file, its h1 is the error
+    )
+
+    assert normalize_spaces(page.select_one("h1").text) == expected_title
+    assert ("brief-instellingen" in page.text) is not decided_by_provider

@@ -42,6 +42,7 @@ class Notification(JSONModel):
     detailed_status_code: str
     messagebox_stadium: str
     messagebox_failure_reason: str
+    print_provider: str  # [NotifyNL] the print provider that accepted a letter
 
     __sort_attribute__ = "created_at"
 

@@ -87,4 +87,32 @@ Providers
 
   {% endcall %}
 
+  <h2 class="heading-medium">Brieven</h2>
+
+  <p class="govuk-body">
+    Elke organisatie kiest haar printleverancier zelf, op haar pagina ‘Brieven’. Zonder keuze gaan brieven naar Pingen.
+  </p>
+
+  {% call(item, row_number) list_table(
+      letter_providers,
+      caption="Printleveranciers",
+      caption_visible=False,
+      empty_message='Geen printleveranciers',
+      field_headings=['Provider', 'Actief', 'Laatst bijgewerkt', 'Bijgewerkt door'],
+      field_headings_visible=True
+  ) %}
+
+      {{ text_field(item.display_name) }}
+
+      {{ text_field(item.active) }}
+
+      {{ optional_text_field(
+        item.updated_at|format_datetime_short if item.updated_at,
+        default='Geen'
+      ) }}
+
+      {{ optional_text_field(item.created_by_name, default='Geen') }}
+
+  {% endcall %}
+
 {% endblock %}

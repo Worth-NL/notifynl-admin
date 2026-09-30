@@ -325,6 +325,7 @@ class MainNavigation(Navigation):
             "service_set_international_letters",
             "service_set_international_sms",
             "service_set_letter_address_placement",
+            "service_set_send_client_reference_to_letter_provider",
             "service_set_letters",
             "service_set_reply_to_email",
             "service_set_sms_prefix",
@@ -430,6 +431,11 @@ class OrgNavigation(Navigation):
         },
         "trial-services": {
             "organisation_trial_mode_services",
+        },
+        "letter-provider": {
+            "organisation_change_letter_provider",
+            "organisation_letter_endpoint",
+            "organisation_letter_provider",
         },
         "billing": {
             "organisation_billing",
