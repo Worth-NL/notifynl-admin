@@ -65,3 +65,19 @@ def test_get_letter_validation_error_for_address_placement_mismatch_interpolates
     # AdminServiceLetterAddressPlacementForm.choices for where "Pingen" is intentionally kept.
     assert "Pingen" not in error["detail"]
     assert "Pingen" not in error["summary"]
+
+
+def test_get_letter_validation_error_for_address_placement_decided_by_the_print_provider(notify_admin):
+    with notify_admin.test_request_context():
+        error = get_letter_validation_error(
+            "address-placement-mismatch",
+            letter_address_placement="60mm",
+            address_placement_decided_by_provider=True,
+        )
+
+    assert error["title"] == "De positie van het adres komt niet overeen met uw printleverancier"
+    assert "de printleverancier van uw organisatie gebruikt (60mm)" in error["detail"]
+    assert "printleverancier van uw organisatie (60mm)" in error["summary"]
+    # the service can't change a placement its print provider decides
+    assert "standaard" not in error["detail"] + error["summary"]
+    assert "wijzig" not in error["detail"]

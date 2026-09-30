@@ -189,8 +189,27 @@ LETTER_VALIDATION_MESSAGES = {
 
 LETTER_ADDRESS_PLACEMENT_LABELS = {"50mm": "50mm", "60mm": "60mm (standaard)"}
 
+# When the organisation's print provider decides the address placement, the service can't change it
+ADDRESS_PLACEMENT_MISMATCH_DECIDED_BY_PROVIDER = {
+    "title": "De positie van het adres komt niet overeen met uw printleverancier",
+    "detail": (
+        "Het adres op deze brief staat niet op de positie die de printleverancier van uw organisatie gebruikt "
+        "({letter_address_placement}). Pas de lay-out van uw brief aan."
+    ),
+    "summary": (
+        "De validatie is mislukt omdat de positie van het adres niet overeenkomt met de adrespositie van de "
+        "printleverancier van uw organisatie ({letter_address_placement})."
+    ),
+}
 
-def get_letter_validation_error(validation_message, invalid_pages=None, page_count=None, letter_address_placement=None):
+
+def get_letter_validation_error(
+    validation_message,
+    invalid_pages=None,
+    page_count=None,
+    letter_address_placement=None,
+    address_placement_decided_by_provider=False,
+):
     if not invalid_pages:
         invalid_pages = []
     if validation_message not in LETTER_VALIDATION_MESSAGES:
@@ -202,18 +221,24 @@ def get_letter_validation_error(validation_message, invalid_pages=None, page_cou
         invalid_pages, before_each="", after_each="", prefix="pagina", prefix_plural="pagina’s", conjunction="en"
     )
 
-    letter_address_placement = LETTER_ADDRESS_PLACEMENT_LABELS.get(letter_address_placement, letter_address_placement)
+    messages = LETTER_VALIDATION_MESSAGES[validation_message]
+    if validation_message == "address-placement-mismatch" and address_placement_decided_by_provider:
+        messages = ADDRESS_PLACEMENT_MISMATCH_DECIDED_BY_PROVIDER
+    else:
+        letter_address_placement = LETTER_ADDRESS_PLACEMENT_LABELS.get(
+            letter_address_placement, letter_address_placement
+        )
 
     return {
-        "title": LETTER_VALIDATION_MESSAGES[validation_message]["title"],
-        "detail": LETTER_VALIDATION_MESSAGES[validation_message]["detail"].format(
+        "title": messages["title"],
+        "detail": messages["detail"].format(
             invalid_pages=invalid_pages,
             invalid_pages_are_or_is=invalid_pages_are_or_is,
             page_count=page_count,
             letter_spec_guidance=url_for("main.guidance_upload_a_letter"),
             letter_address_placement=letter_address_placement,
         ),
-        "summary": LETTER_VALIDATION_MESSAGES[validation_message]["summary"].format(
+        "summary": messages["summary"].format(
             invalid_pages=invalid_pages,
             invalid_pages_are_or_is=invalid_pages_are_or_is,
             page_count=page_count,
