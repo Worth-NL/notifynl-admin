@@ -268,6 +268,7 @@
     "/services/<uuid:service_id>/service-settings/receive-text-messages/stop/success",
     "/services/<uuid:service_id>/service-settings/request-to-go-live",
     "/services/<uuid:service_id>/service-settings/request-to-go-live/estimate-usage",
+    "/services/<uuid:service_id>/service-settings/send-client-reference-to-letter-provider",
     "/services/<uuid:service_id>/service-settings/send-files-by-email",
     "/services/<uuid:service_id>/service-settings/set-<branding_type:branding_type>-branding",
     "/services/<uuid:service_id>/service-settings/set-<branding_type:branding_type>-branding/add-to-branding-pool-step",

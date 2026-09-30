@@ -53,6 +53,7 @@ from app.main.overrides_nl.forms import (
     ServiceEmailSenderForm,
     ServiceLetterContactBlockForm,
     ServiceReplyToEmailForm,
+    ServiceSendClientReferenceToLetterProviderForm,
     ServiceSmsSenderForm,
     ServiceSwitchChannelForm,
     SetAuthTypeForm,
@@ -672,6 +673,9 @@ def service_set_international_letters(service_id):
 @main.route("/services/<uuid:service_id>/service-settings/set-letter-address-placement", methods=["GET", "POST"])
 @user_has_permissions("manage_service")
 def service_set_letter_address_placement(service_id):
+    if current_service.letter_address_placement_decided_by_provider:
+        # the organisation's print provider decides it (see the organisation's Brieven page)
+        abort(404)
     form = AdminServiceLetterAddressPlacementForm(
         letter_address_placement=current_service.letter_address_placement,
     )
@@ -680,6 +684,23 @@ def service_set_letter_address_placement(service_id):
         return redirect(url_for(".service_settings", service_id=service_id))
     return render_template(
         "views/service-settings/set-letter-address-placement.html",
+        form=form,
+    )
+
+
+@main.route(
+    "/services/<uuid:service_id>/service-settings/send-client-reference-to-letter-provider", methods=["GET", "POST"]
+)
+@user_has_permissions("manage_service")
+def service_set_send_client_reference_to_letter_provider(service_id):
+    form = ServiceSendClientReferenceToLetterProviderForm(
+        enabled=current_service.send_client_reference_to_letter_provider,
+    )
+    if form.validate_on_submit():
+        current_service.update(send_client_reference_to_letter_provider=form.enabled.data)
+        return redirect(url_for(".service_settings", service_id=service_id))
+    return render_template(
+        "views/service-settings/set-send-client-reference-to-letter-provider.html",
         form=form,
     )
 

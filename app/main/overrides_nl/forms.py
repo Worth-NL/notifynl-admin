@@ -2627,6 +2627,22 @@ class AdminServiceInboundNumberArchive(StripWhitespaceForm):
     )
 
 
+class ServiceSendClientReferenceToLetterProviderForm(StripWhitespaceForm):
+    enabled = OnOffField(
+        "Wilt u de klantreferentie van elke brief naar de printleverancier sturen?",
+        choices=[(True, "Ja"), (False, "Nee")],
+        choices_for_error_message="ja of nee",
+        param_extensions={
+            "hint": {
+                "text": (
+                    "De printleverancier gebruikt de referentie om brieven terug te vinden. Heeft een brief geen "
+                    "klantreferentie, dan stuurt NotifyNL de referentie die het zelf voor de brief heeft gemaakt."
+                )
+            }
+        },
+    )
+
+
 class AdminServiceLetterAddressPlacementForm(StripWhitespaceForm):
     letter_address_placement = GovukRadiosField(
         "Adresplaatsing op de brief",

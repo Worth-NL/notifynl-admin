@@ -574,7 +574,9 @@
               "text": "Adresplaatsing op de brief"
             },
             "value": {
-              "text": current_service.letter_address_placement
+              "text": current_service.letter_address_placement ~ (
+                " (bepaald door printleverancier)" if current_service.letter_address_placement_decided_by_provider else ""
+              )
             },
             "actions": {
               "items": [
@@ -582,6 +584,25 @@
                   "href": url_for('main.service_set_letter_address_placement', service_id=current_service.id),
                   "text": "Wijzigen",
                   "visuallyHiddenText": "adresplaatsing op de brief",
+                  "classes": "govuk-link--no-visited-state"
+                }
+              ] if current_user.has_permissions('manage_service') and not current_service.letter_address_placement_decided_by_provider else []
+            }
+          },
+          {
+            "key": {
+              "classes": "notify-summary-list__key notify-summary-list__key--35-100",
+              "text": "Klantreferentie naar printleverancier"
+            },
+            "value": {
+              "text": "Aan" if current_service.send_client_reference_to_letter_provider else "Uit"
+            },
+            "actions": {
+              "items": [
+                {
+                  "href": url_for('main.service_set_send_client_reference_to_letter_provider', service_id=current_service.id),
+                  "text": "Wijzigen",
+                  "visuallyHiddenText": "klantreferentie naar printleverancier",
                   "classes": "govuk-link--no-visited-state"
                 }
               ] if current_user.has_permissions('manage_service') else []
