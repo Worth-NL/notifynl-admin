@@ -167,6 +167,19 @@ def test_letter_provider_page_for_a_rest_endpoint(logged_in_org_member, letter_p
     assert "mutual TLS" in normalize_spaces(page.select_one(".govuk-inset-text").text)
 
 
+def test_letter_provider_page_lists_the_login_details_in_form_order(logged_in_org_member, letter_provider):
+    letter_provider.return_value = REST_ENDPOINT | {
+        "auth_method": "oauth",
+        # alphabetical, as the API's JSON has it
+        "auth_config": {"client_id": "notify", "scope": "letters", "token_endpoint": "https://print.example.com/token"},
+    }
+
+    page = logged_in_org_member.get("main.organisation_letter_provider", org_id=ORGANISATION_ID)
+
+    keys = [normalize_spaces(key.text) for key in page.select(".govuk-summary-list__key")]
+    assert keys[keys.index("Inlogmethode") + 1 : keys.index("Inloggegevens")] == ["Token-URL", "Client-ID", "Scope"]
+
+
 def test_letter_provider_page_warns_about_an_incomplete_rest_endpoint(logged_in_org_member, letter_provider):
     letter_provider.return_value = REST_ENDPOINT | {"has_credentials": False, "is_complete": False}
 
