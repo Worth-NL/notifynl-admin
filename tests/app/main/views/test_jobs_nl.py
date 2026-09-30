@@ -34,4 +34,4 @@ def test_should_not_show_cancel_link_for_letter_job_if_too_late(
     page = client_request.get("main.view_job", service_id=SERVICE_ONE_ID, job_id=str(job_id))
 
     assert "Cancel sending these letters" not in page
-    assert page.select_one("p#printing-info").text.strip() == f"Geprint {expected_fragment} om 17:30 uur"
+    assert page.select_one("p#printing-info").text.strip() == f"Naar de printleverancier gestuurd {expected_fragment}"
