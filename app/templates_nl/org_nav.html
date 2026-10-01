@@ -2,10 +2,8 @@
   <ul>
     <li class="navigation__item"><a class="govuk-link govuk-link--no-visited-state govuk-link--no-underline{{ org_navigation.is_selected('dashboard') }}" href="{{ url_for('main.organisation_dashboard', org_id=current_org.id) }}">Gebruik</a></li>
     <li class="navigation__item"><a class="govuk-link govuk-link--no-visited-state govuk-link--no-underline{{ org_navigation.is_selected('team-members') }}" href="{{ url_for('main.manage_org_users', org_id=current_org.id) }}">Teamleden</a></li>
-    <li class="navigation__item"><a class="govuk-link govuk-link--no-visited-state govuk-link--no-underline{{ org_navigation.is_selected('letter-provider') }}" href="{{ url_for('main.organisation_letter_provider', org_id=current_org.id) }}">Brieven</a></li>
-    {% if current_user.platform_admin %}
+    {# open to org members too, who only see the organisation's letter provider on it #}
     <li class="navigation__item"><a class="govuk-link govuk-link--no-visited-state govuk-link--no-underline{{ org_navigation.is_selected('settings') }}" href="{{ url_for('main.organisation_settings', org_id=current_org.id) }}">Instellingen</a></li>
-    {% endif %}
     {% if current_user.platform_admin or current_user.has_permission_for_organisation(current_org.id, 'can_make_services_live') %}
     <li class="navigation__item"><a class="govuk-link govuk-link--no-visited-state govuk-link--no-underline{{ org_navigation.is_selected('trial-services') }}" href="{{ url_for('main.organisation_trial_mode_services', org_id=current_org.id) }}">Proefdiensten</a></li>
     {% endif %}

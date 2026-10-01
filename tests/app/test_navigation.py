@@ -93,7 +93,6 @@ EXCLUDED_ENDPOINTS = set(
             "edit_organisation_area_boundary",
             "organisation_change_letter_provider",
             "organisation_letter_endpoint",
-            "organisation_letter_provider",
             "edit_organisation_billing_details",
             "edit_organisation_can_approve_own_go_live_requests",
             "edit_organisation_can_ask_to_join_a_service",

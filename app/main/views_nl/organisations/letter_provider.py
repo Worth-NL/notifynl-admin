@@ -14,16 +14,8 @@ from app.main.overrides_nl.forms import (
 )
 from app.utils.user import user_has_permissions
 
-# Any member of the organisation can choose its letter provider, not just platform admins
-
-
-@main.route("/organisations/<uuid:org_id>/letter-provider", methods=["GET"])
-@user_has_permissions()
-def organisation_letter_provider(org_id):
-    return render_template(
-        "views/organisations/organisation/letter-provider/index.html",
-        letter_provider=organisations_client.get_organisation_letter_provider(org_id),
-    )
+# Any member of the organisation can choose its letter provider, not just platform admins. Its summary is a section
+# of the organisation's settings page, which org members see with nothing else on it.
 
 
 @main.route("/organisations/<uuid:org_id>/letter-provider/change", methods=["GET", "POST"])
@@ -38,7 +30,7 @@ def organisation_change_letter_provider(org_id):
         stored = organisations_client.get_organisation_letter_provider(org_id)
         if not stored or stored["identifier"] != "pingen":
             _save_letter_provider({"provider": "pingen"}, stored)
-        return redirect(url_for(".organisation_letter_provider", org_id=org_id))
+        return redirect(url_for(".organisation_settings", org_id=org_id))
 
     return render_template("views/organisations/organisation/letter-provider/change.html", form=form)
 
@@ -62,7 +54,7 @@ def organisation_letter_endpoint(org_id):
                 raise
             form.add_api_error(e.message)
         else:
-            return redirect(url_for(".organisation_letter_provider", org_id=org_id))
+            return redirect(url_for(".organisation_settings", org_id=org_id))
 
     return render_template(
         "views/organisations/organisation/letter-provider/rest-endpoint.html",

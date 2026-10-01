@@ -2,6 +2,7 @@ import pytest
 from flask import url_for
 from notifications_python_client.errors import HTTPError
 
+from tests import organisation_json
 from tests.conftest import ORGANISATION_ID, create_user, normalize_spaces, sample_uuid
 
 ENDPOINT_URL = "https://print.example.com/letters"
@@ -28,6 +29,8 @@ REST_ENDPOINT = PINGEN | {
     "auth_config": {"username": "denhaag"},
     "updated_at": "2026-09-29T12:00:00.000000Z",
 }
+# what notifynl-api's serialize_summary puts in the organisation JSON
+SUMMARY_FIELDS = ("identifier", "display_name", "endpoint_url", "auth_method", "address_placement", "has_credentials")
 
 
 @pytest.fixture
@@ -39,6 +42,18 @@ def org_member():
 def letter_provider(notify_admin, mocker):
     """The organisation's letter provider as notifynl-api returns it: set .return_value to change it."""
     return mocker.patch("app.organisations_client.get_organisation_letter_provider", return_value=PINGEN)
+
+
+@pytest.fixture
+def mock_get_organisation(notify_admin, mocker, letter_provider):
+    """Overrides the conftest fixture: the organisation JSON summarises the letter provider it has stored"""
+
+    def _get_organisation(org_id):
+        stored = letter_provider.return_value
+        summary = {field: stored[field] for field in SUMMARY_FIELDS} if stored else None
+        return organisation_json(org_id, "Test organisation", letter_provider=summary)
+
+    return mocker.patch("app.organisations_client.get_organisation", side_effect=_get_organisation)
 
 
 @pytest.fixture
@@ -70,7 +85,7 @@ def _form_errors(page):
 @pytest.mark.parametrize(
     "endpoint",
     [
-        "main.organisation_letter_provider",
+        "main.organisation_settings",
         "main.organisation_change_letter_provider",
         "main.organisation_letter_endpoint",
     ],
@@ -82,13 +97,19 @@ def test_any_organisation_member_can_manage_the_letter_provider(logged_in_org_me
 @pytest.mark.parametrize(
     "endpoint",
     [
-        "main.organisation_letter_provider",
+        "main.organisation_settings",
         "main.organisation_change_letter_provider",
         "main.organisation_letter_endpoint",
     ],
 )
 def test_platform_admins_can_manage_the_letter_provider(
-    client_request, platform_admin_user, mock_get_organisation, letter_provider, endpoint
+    client_request,
+    platform_admin_user,
+    mock_get_organisation,
+    mock_get_empty_email_branding_pool,
+    mock_get_empty_letter_branding_pool,
+    letter_provider,
+    endpoint,
 ):
     client_request.login(platform_admin_user)
     client_request.get(endpoint, org_id=ORGANISATION_ID)
@@ -97,7 +118,7 @@ def test_platform_admins_can_manage_the_letter_provider(
 @pytest.mark.parametrize(
     "endpoint, method",
     [
-        ("main.organisation_letter_provider", "get"),
+        ("main.organisation_settings", "get"),
         ("main.organisation_change_letter_provider", "post"),
         ("main.organisation_letter_endpoint", "post"),
     ],
@@ -112,29 +133,60 @@ def test_other_users_cannot_manage_the_letter_provider(
     assert not mock_set_letter_provider.called
 
 
-@pytest.mark.parametrize(
-    "endpoint",
-    ["main.organisation_settings", "main.edit_organisation_area_boundary"],
-)
-def test_organisation_settings_stay_platform_admin_only(logged_in_org_member, endpoint):
-    logged_in_org_member.get(endpoint, org_id=ORGANISATION_ID, _expected_status=403)
+def test_organisation_members_see_only_the_letter_provider_in_the_settings(logged_in_org_member):
+    page = logged_in_org_member.get("main.organisation_settings", org_id=ORGANISATION_ID)
+
+    assert normalize_spaces(page.select_one("h1").text) == "Instellingen"
+    keys = [normalize_spaces(key.text) for key in page.select(".govuk-summary-list__key")]
+    assert keys == ["Printleverancier", "Adres op de brief"]
+    assert not page.select_one("a[href$='/settings/archive']")
 
 
-def test_organisation_nav_shows_brieven_to_organisation_members(logged_in_org_member, mocker):
+def test_platform_admins_see_every_organisation_setting_and_then_the_letter_provider(
+    client_request,
+    platform_admin_user,
+    mock_get_organisation,
+    mock_get_empty_email_branding_pool,
+    mock_get_empty_letter_branding_pool,
+):
+    client_request.login(platform_admin_user)
+
+    page = client_request.get("main.organisation_settings", org_id=ORGANISATION_ID)
+
+    keys = [normalize_spaces(key.text) for key in page.select(".govuk-summary-list__key")]
+    assert keys[0] == "Naam"
+    assert keys[-3:] == ["Gebiedsgrens", "Printleverancier", "Adres op de brief"]
+    assert page.select_one("a[href$='/settings/archive']")
+
+
+def test_every_other_organisation_setting_stays_platform_admin_only(notify_admin, logged_in_org_member):
+    other_settings = [
+        rule.rule.replace("<uuid:org_id>", ORGANISATION_ID)
+        for rule in notify_admin.url_map.iter_rules()
+        if rule.rule.startswith("/organisations/<uuid:org_id>/settings/")
+        and rule.rule != "/organisations/<uuid:org_id>/settings/"
+    ]
+    assert len(other_settings) >= 15
+
+    for url in other_settings:
+        logged_in_org_member.get_url(url, _expected_status=403)
+
+
+def test_organisation_nav_shows_instellingen_to_organisation_members(logged_in_org_member, mocker):
     mocker.patch("app.organisations_client.get_services_and_usage", return_value={"services": [], "updated_at": None})
 
-    page = logged_in_org_member.get("main.organisation_letter_provider", org_id=ORGANISATION_ID)
+    page = logged_in_org_member.get("main.organisation_change_letter_provider", org_id=ORGANISATION_ID)
 
     nav_items = [normalize_spaces(item.text) for item in page.select("nav.navigation a")]
-    assert nav_items == ["Gebruik", "Teamleden", "Brieven"]
-    assert "selected" in page.select_one("nav.navigation a[href$='/letter-provider']")["class"]
+    assert nav_items == ["Gebruik", "Teamleden", "Instellingen"]
+    assert "selected" in page.select_one("nav.navigation a[href$='/settings/']")["class"]
 
 
 @pytest.mark.parametrize("pingen", [PINGEN, None])
 def test_letter_provider_page_for_pingen(logged_in_org_member, letter_provider, pingen):
     letter_provider.return_value = pingen
 
-    page = logged_in_org_member.get("main.organisation_letter_provider", org_id=ORGANISATION_ID)
+    page = logged_in_org_member.get("main.organisation_settings", org_id=ORGANISATION_ID)
 
     rows = [normalize_spaces(row.text) for row in page.select(".govuk-summary-list__row")]
     assert rows == [
@@ -142,12 +194,14 @@ def test_letter_provider_page_for_pingen(logged_in_org_member, letter_provider, 
         "Adres op de brief 60 mm vanaf de bovenkant (vast bij Pingen)",
     ]
     assert not page.select(".govuk-warning-text")
+    # nothing stored, nothing to fetch: the organisation JSON already says so
+    assert letter_provider.called is bool(pingen)
 
 
 def test_letter_provider_page_for_a_rest_endpoint(logged_in_org_member, letter_provider):
     letter_provider.return_value = REST_ENDPOINT
 
-    page = logged_in_org_member.get("main.organisation_letter_provider", org_id=ORGANISATION_ID)
+    page = logged_in_org_member.get("main.organisation_settings", org_id=ORGANISATION_ID)
 
     rows = [
         normalize_spaces(row.select_one(".govuk-summary-list__key").text)
@@ -174,7 +228,7 @@ def test_letter_provider_page_lists_the_login_details_in_form_order(logged_in_or
         "auth_config": {"client_id": "notify", "scope": "letters", "token_endpoint": "https://print.example.com/token"},
     }
 
-    page = logged_in_org_member.get("main.organisation_letter_provider", org_id=ORGANISATION_ID)
+    page = logged_in_org_member.get("main.organisation_settings", org_id=ORGANISATION_ID)
 
     keys = [normalize_spaces(key.text) for key in page.select(".govuk-summary-list__key")]
     assert keys[keys.index("Inlogmethode") + 1 : keys.index("Inloggegevens")] == ["Token-URL", "Client-ID", "Scope"]
@@ -183,7 +237,7 @@ def test_letter_provider_page_lists_the_login_details_in_form_order(logged_in_or
 def test_letter_provider_page_warns_about_an_incomplete_rest_endpoint(logged_in_org_member, letter_provider):
     letter_provider.return_value = REST_ENDPOINT | {"has_credentials": False, "is_complete": False}
 
-    page = logged_in_org_member.get("main.organisation_letter_provider", org_id=ORGANISATION_ID)
+    page = logged_in_org_member.get("main.organisation_settings", org_id=ORGANISATION_ID)
 
     assert "stuurt NotifyNL uw brieven naar Pingen" in normalize_spaces(page.select_one(".govuk-warning-text").text)
 
@@ -215,7 +269,7 @@ def test_choosing_pingen_saves_it_and_logs_an_event(
         "main.organisation_change_letter_provider",
         org_id=ORGANISATION_ID,
         _data={"provider": "pingen"},
-        _expected_redirect=url_for("main.organisation_letter_provider", org_id=ORGANISATION_ID),
+        _expected_redirect=url_for("main.organisation_settings", org_id=ORGANISATION_ID),
     )
 
     mock_set_letter_provider.assert_called_once_with(
@@ -238,7 +292,7 @@ def test_choosing_pingen_again_changes_nothing(logged_in_org_member, mock_set_le
         "main.organisation_change_letter_provider",
         org_id=ORGANISATION_ID,
         _data={"provider": "pingen"},
-        _expected_redirect=url_for("main.organisation_letter_provider", org_id=ORGANISATION_ID),
+        _expected_redirect=url_for("main.organisation_settings", org_id=ORGANISATION_ID),
     )
 
     assert not mock_set_letter_provider.called
@@ -309,7 +363,7 @@ def test_saving_a_rest_endpoint(
         "main.organisation_letter_endpoint",
         org_id=ORGANISATION_ID,
         _data={"endpoint_url": ENDPOINT_URL, "address_placement": "50mm"} | form_data,
-        _expected_redirect=url_for("main.organisation_letter_provider", org_id=ORGANISATION_ID),
+        _expected_redirect=url_for("main.organisation_settings", org_id=ORGANISATION_ID),
     )
 
     mock_set_letter_provider.assert_called_once_with(

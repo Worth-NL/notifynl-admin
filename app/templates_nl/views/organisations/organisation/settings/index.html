@@ -7,6 +7,8 @@
 
 {% block maincolumn_content %}
   <h1 class="heading-medium">Instellingen</h1>
+  {# org members see only the letter provider: every other setting, and its edit page, is platform-admin-only #}
+  {% if current_user.platform_admin %}
   <div class="bottom-gutter-3-2">
 
     {% set billing_details_html %}
@@ -330,14 +332,18 @@
         }
       ]
     }) }}
-    {% if current_org.active %}
-      <p class="top-gutter-1-2">
-        <span class="page-footer-link page-footer-delete-link-without-button">
-          <a class="govuk-link govuk-link--destructive" href="{{ url_for('main.archive_organisation', org_id=current_org.id) }}">
-            Deze organisatie verwijderen
-          </a>
-        </span>
-      </p>
-    {% endif %}
   </div>
+  {% endif %}
+
+  {% include "views/organisations/organisation/letter-provider/_summary.html" %}
+
+  {% if current_user.platform_admin and current_org.active %}
+    <p class="top-gutter-1-2">
+      <span class="page-footer-link page-footer-delete-link-without-button">
+        <a class="govuk-link govuk-link--destructive" href="{{ url_for('main.archive_organisation', org_id=current_org.id) }}">
+          Deze organisatie verwijderen
+        </a>
+      </span>
+    </p>
+  {% endif %}
 {% endblock %}
