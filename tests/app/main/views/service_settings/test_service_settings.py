@@ -151,6 +151,7 @@ FAKE_TEMPLATE_ID = uuid4()
                 "Receive inbound SMS Off Change your settings for Receive inbound SMS",
                 "Email authentication Off Change your settings for Email authentication",
                 "Sending SMS to UK landlines Off Change your settings for Sending SMS to UK landlines",
+                "Block sending to ofcom protected range Off Change your settings for Block sending to ofcom protected range",  # noqa: E501
             ],
         ),
         (
@@ -184,6 +185,7 @@ FAKE_TEMPLATE_ID = uuid4()
                 "Custom data retention Email – 7 days Change data retention",
                 "Email authentication Off Change your settings for Email authentication",
                 "Sending SMS to UK landlines Off Change your settings for Sending SMS to UK landlines",
+                "Block sending to ofcom protected range Off Change your settings for Block sending to ofcom protected range",  # noqa: E501
             ],
         ),
     ],
@@ -731,14 +733,14 @@ def test_switch_service_to_live_turns_email_off_if_no_expected_volumes_and_no_em
         ),
     )
 
-    # update_service should always be called to make the service live
-    # if emails aren't being used it's called again, to remove the 'emails' service permission
     update_service_kwargs = app.service_api_client.update_service.call_args.kwargs
+
+    assert app.service_api_client.update_service.call_count == 1
+    assert update_service_kwargs["restricted"] is False
+
     if expect_emails_to_be_turned_off:
-        assert app.service_api_client.update_service.call_count == 2
         assert "permissions" in update_service_kwargs and set(update_service_kwargs["permissions"]) == {"sms", "letter"}
     else:
-        assert app.service_api_client.update_service.call_count == 1
         assert "permissions" not in update_service_kwargs
 
 
@@ -900,7 +902,12 @@ def test_should_redirect_after_service_name_change(
         ),
     )
 
-    mock_update_service.assert_called_once_with(SERVICE_ONE_ID, name="New Name", confirmed_unique=False)
+    mock_update_service.assert_called_once_with(
+        SERVICE_ONE_ID,
+        name="New Name",
+        confirmed_unique=False,
+        confirmed_service_name=False,
+    )
 
 
 class TestServiceDataRetention:
@@ -2071,8 +2078,10 @@ def test_incorrect_letter_contact_block_input(
         ("abcdefghijkhgkg", "Error: Text message sender ID cannot be longer than 11 characters"),
         (
             r" ¯\_(ツ)_/¯ ",
-            "Error: Text message sender ID can only include letters, "
-            "numbers, spaces, and the following characters: & . - _",
+            (
+                "Error: Text message sender ID can only include letters, "
+                "numbers, spaces, and the following characters: & . - _"
+            ),
         ),
         ("blood.co.uk", None),
         ("00123", "Error: Text message sender ID cannot start with 00"),
@@ -3030,6 +3039,46 @@ def test_inbound_sms_sender_is_not_editable(client_request, service_one, fake_uu
             normalize_spaces(page.select_one('form[method="post"] p').text)
             == "GOVUK This phone number receives replies and cannot be changed"
         )
+
+
+def test_service_confirm_free_allowance_terms(client_request):
+    page = client_request.get("main.service_confirm_free_allowance_terms", service_id=SERVICE_ONE_ID)
+
+    assert normalize_spaces(page.select_one("h1").text) == "Free text message allowance"
+    assert (
+        normalize_spaces(page.select_one("main .govuk-checkboxes").label.text)
+        == "I have read and understood the terms of the free allowance"
+    )
+
+
+def test_service_confirm_free_allowance_terms_hides_checkbox_if_terms_already_accepted(client_request, service_one):
+    service_one["confirmed_unique"] = True
+    page = client_request.get("main.service_confirm_free_allowance_terms", service_id=SERVICE_ONE_ID)
+
+    assert normalize_spaces(page.select_one("h1").text) == "Free text message allowance"
+    assert not page.select("main .govuk-checkboxes")
+
+
+def test_service_confirm_free_allowance_terms_redirects_when_checkbox_is_checked(client_request, mock_update_service):
+    client_request.post(
+        "main.service_confirm_free_allowance_terms",
+        service_id=SERVICE_ONE_ID,
+        _data={"confirm": True},
+        _expected_redirect=url_for("main.service_settings", service_id=SERVICE_ONE_ID),
+    )
+    mock_update_service.assert_called_once_with(SERVICE_ONE_ID, confirmed_unique=True)
+
+
+def test_service_confirm_free_allowance_terms_requires_checkbox_to_be_checked(client_request, mock_update_service):
+    page = client_request.post(
+        "main.service_confirm_free_allowance_terms", service_id=SERVICE_ONE_ID, _expected_status=200
+    )
+    assert normalize_spaces(page.select_one("h1").text) == "Free text message allowance"
+    assert (
+        normalize_spaces(page.select_one(".govuk-error-message").text)
+        == "Error: Select ‘I have read and understood the terms of the free allowance’"
+    )
+    assert not mock_update_service.called
 
 
 def test_service_set_letter_branding_platform_admin_only(
@@ -4001,7 +4050,7 @@ def test_unknown_channel_404s(
     [
         (
             "letter",
-            "It costs between 59 pence and £1.76 to send a letter using Notify.",
+            "It costs between 59.2 pence and £1.76 to send a letter using Notify.",
             "Send letters",
             ["email", "sms"],
             "False",
@@ -4010,7 +4059,7 @@ def test_unknown_channel_404s(
         ),
         (
             "letter",
-            "It costs between 59 pence and £1.76 to send a letter using Notify.",
+            "It costs between 59.2 pence and £1.76 to send a letter using Notify.",
             "Send letters",
             ["email", "sms", "letter"],
             "True",
@@ -4062,7 +4111,11 @@ def test_switch_service_channels_on_and_off(
     posted_value,
     expected_updated_permissions,
 ):
-    mocked_fn = mocker.patch("app.service_api_client.update_service", return_value=service_one)
+    mocked_update_service = mocker.patch("app.service_api_client.update_service", return_value=service_one)
+    mocked_get_reply_to_email_addresses = mocker.patch(
+        "app.service_api_client.get_reply_to_email_addresses", return_value=[]
+    )
+
     service_one["permissions"] = initial_permissions
 
     page = client_request.get(
@@ -4087,8 +4140,12 @@ def test_switch_service_channels_on_and_off(
             service_id=service_one["id"],
         ),
     )
-    assert set(mocked_fn.call_args[1]["permissions"]) == set(expected_updated_permissions)
-    assert mocked_fn.call_args[0][0] == service_one["id"]
+
+    assert set(mocked_update_service.call_args[1]["permissions"]) == set(expected_updated_permissions)
+    assert mocked_update_service.call_args[0][0] == service_one["id"]
+
+    # in cases where this *was* called we will have "failed" much earlier in the test
+    assert mocked_get_reply_to_email_addresses.mock_calls == []
 
 
 @pytest.mark.parametrize(
@@ -4524,8 +4581,10 @@ def test_send_files_by_email_in_page_guidance(client_request):
         "To send a file by email, either:",
         "choose a template and select ‘Attach files’",
         "or follow the instructions in our API documentation",
-        "You need to include contact details for your service so your users can get in touch if "
-        "there’s a problem. For example, if the link to download the file you sent them has expired.",
+        (
+            "You need to include contact details for your service so your users can get in touch if "
+            "there’s a problem. For example, if the link to download the file you sent them has expired."
+        ),
     ]
 
 
@@ -5274,10 +5333,14 @@ def test_service_receive_text_messages_when_inbound_number_is_not_set(
                 "Your service will receive text messages sent to:",
                 "You can see the number of received messages on your dashboard.",
                 "You can also download the last 7 days’ worth of received text messages.",
-                "If you’re using the API, you can fetch received messages or set up a "
-                "callback to push the message to your service.",
-                "You can still send text messages from a sender ID if you need to, but people "
-                "will not be able to reply to those messages.",
+                (
+                    "If you’re using the API, you can fetch received messages or set up a "
+                    "callback to push the message to your service."
+                ),
+                (
+                    "You can still send text messages from a sender ID if you need to, but people "
+                    "will not be able to reply to those messages."
+                ),
                 "Stop receiving text messages",
             ],
         ),
@@ -5287,8 +5350,10 @@ def test_service_receive_text_messages_when_inbound_number_is_not_set(
                 "Your service will receive text messages sent to:",
                 "You can see the number of received messages on your dashboard.",
                 "You can also download the last 7 days’ worth of received text messages.",
-                "You can still send text messages from a sender ID if you need to, but people "
-                "will not be able to reply to those messages.",
+                (
+                    "You can still send text messages from a sender ID if you need to, but people "
+                    "will not be able to reply to those messages."
+                ),
                 "Stop receiving text messages",
             ],
         ),

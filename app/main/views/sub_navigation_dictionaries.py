@@ -44,11 +44,15 @@ def pricing_nav():
             "link": "main.guidance_pricing",
             "sub_navigation_items": [
                 {
-                    "name": "Text messages",
+                    "name": "Free text message allowance",
+                    "link": "main.guidance_pricing_free_text_message_allowance",
+                },
+                {
+                    "name": "Text message pricing",
                     "link": "main.guidance_pricing_text_messages",
                 },
                 {
-                    "name": "Letters",
+                    "name": "Letter pricing",
                     "link": "main.guidance_pricing_letters",
                 },
                 {
@@ -109,6 +113,10 @@ def using_notify_nav():
                 {
                     "name": "Email branding",
                     "link": "main.guidance_email_branding",
+                },
+                {
+                    "name": "Fonts and typefaces",
+                    "link": "main.guidance_fonts_typefaces",
                 },
                 {
                     "name": "Formatting emails and letters",

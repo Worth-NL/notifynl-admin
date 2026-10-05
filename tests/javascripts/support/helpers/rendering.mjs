@@ -3,7 +3,7 @@
 // - the page
 // - the window
 
-const triggerEvent = require('./events.js').triggerEvent;
+import { triggerEvent } from './events.mjs'
 
 class WindowMock {
   constructor (jest) {
@@ -16,7 +16,6 @@ class WindowMock {
       window: {}
     };
     this._jest = jest;
-    this._setSpies();
     this._plugJSDOM();
   }
 
@@ -38,16 +37,6 @@ class WindowMock {
 
   get scrollPosition () {
     return window.scrollY;
-  }
-
-  _setSpies () {
-
-    // remove calls to document.documentElement.clientHeight when jQuery is gone. It's called to support older browsers like IE8
-    this.spies.document.clientHeight = this._jest.spyOn(document.documentElement, 'clientHeight', 'get').mockImplementation(() => window.innerHeight);
-
-    // remove calls to document.documentElement.clientWidth when jQuery is gone. It's called to support older browsers like IE8
-    this.spies.document.clientWidth = this._jest.spyOn(document.documentElement, 'clientWidth', 'get').mockImplementation(() => window.innerWidth);
-
   }
 
   _plugJSDOM () {
@@ -395,5 +384,7 @@ class ScreenMock {
 }
 ScreenMock.REQUIRED_WINDOW_PROPS = ['height', 'width', 'scrollTop'];
 
-exports.WindowMock = WindowMock;
-exports.ScreenMock = ScreenMock;
+export {
+  WindowMock,
+  ScreenMock
+};

@@ -1,5 +1,8 @@
+from unittest.mock import Mock
+
 import pytest
 from flask import Flask, url_for
+from notifications_python_client.errors import HTTPError
 
 from app import create_app
 from app.overrides_nl.navigation import (
@@ -155,6 +158,7 @@ EXCLUDED_ENDPOINTS = set(
             "guidance_delivery_times",
             "guidance_email_branding",
             "guidance_features",
+            "guidance_fonts_typefaces",
             "guidance_formatting",
             "guidance_how_to_pay",
             "guidance_letter_branding",
@@ -164,6 +168,7 @@ EXCLUDED_ENDPOINTS = set(
             "guidance_personalisation",
             "guidance_pricing_letters",
             "guidance_pricing_text_messages",
+            "guidance_pricing_free_text_message_allowance",
             "guidance_pricing",
             "guidance_qr_codes",
             "guidance_receive_text_messages",
@@ -309,6 +314,7 @@ EXCLUDED_ENDPOINTS = set(
             "service_confirm_delete_letter_contact",
             "service_confirm_delete_sms_sender",
             "service_confirm_disable_email_auth",
+            "service_confirm_free_allowance_terms",
             "service_dashboard",
             "service_data_retention",
             "service_delete_email_reply_to",
@@ -725,3 +731,28 @@ def test_navigation_displayed_on_service_page_404(
     assert normalize_spaces(page.select_one("h1").text) == "Page not found"
     assert normalize_spaces(page.select_one(".navigation-service-name").text) == "service one"
     assert len(page.select("nav.navigation .navigation__item")) == 8
+
+
+def test_navigation_and_custom_error_displayed_on_notification_page_404(
+    client_request,
+    mocker,
+    fake_uuid,
+):
+    mock_get_notification = mocker.patch(
+        "app.notification_api_client.get_notification",
+        side_effect=HTTPError(response=Mock(status_code=404)),
+    )
+
+    page = client_request.get(
+        "main.view_notification",
+        service_id=SERVICE_ONE_ID,
+        notification_id=fake_uuid,
+        _expected_status=404,
+    )
+    assert normalize_spaces(page.select_one("h1").text) == "Page not found"
+    assert normalize_spaces(page.select_one(".navigation-service-name").text) == "service one"
+    assert len(page.select("nav.navigation .navigation__item")) == 8
+    assert page.select_one('a:contains("Data retention period")')["href"] == url_for(
+        "main.guidance_data_retention_period"
+    )
+    mock_get_notification.assert_called_once()

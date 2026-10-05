@@ -217,6 +217,7 @@ def test_process_webauthn_auth_sign_in_redirects_to_webauthn_with_next_redirect(
 def test_should_return_locked_out_true_when_user_is_locked(
     client_request,
     mock_get_user_by_email_locked,
+    mock_verify_password,
 ):
     client_request.logout()
     page = client_request.post(
@@ -228,6 +229,7 @@ def test_should_return_locked_out_true_when_user_is_locked(
         _expected_status=200,
     )
     assert "The email address or password you entered is incorrect" in page.text
+    assert not mock_verify_password.mock_calls
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")

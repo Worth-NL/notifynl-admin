@@ -5,30 +5,7 @@ import terser from '@rollup/plugin-terser';
 import copy from 'rollup-plugin-copy';
 import styles from "rollup-plugin-styler";
 import postCSSReplace from 'postcss-replace';
-import fs from 'node:fs/promises';
 
-
-const LEGACY_BUNDLE_ID = 'legacy-bundle'
-// Simple file concatenation plugin
-const concatenateFiles = (files) => ({
-  // checking ID as it's a virtual module
-  // https://rollupjs.org/plugin-development/#a-simple-example
-  resolveId(id) {
-    if (id === LEGACY_BUNDLE_ID) return id;
-  },
-  async load(id) {
-    if (id === LEGACY_BUNDLE_ID) {
-      const contents = await Promise.all(
-        files.map(file => fs.readFile(file, 'utf-8'))
-      );
-
-      return contents.join('\n');
-    }
-  }
-});
-
-// toggle to enable rebrand styles
-const enableRebrand = true;
 const paths = {
   src: 'app/assets/',
   dist: 'app/static/',
@@ -73,6 +50,7 @@ export default [
           { src: govukFrontendAssetPaths.images, dest: paths.dist + 'images/' },
           { src: govukFrontendAssetPaths.fonts, dest: paths.dist + 'fonts/' },
           { src: govukFrontendAssetPaths.manifest, dest: paths.dist },
+          // NL images last, so they replace govuk-frontend's of the same name
           { src: paths.src + 'images/**/*', dest: paths.dist + 'images/' },
         ]
       }),
@@ -98,7 +76,6 @@ export default [
             paths.npm
           ],
           silenceDeprecations: [
-            "mixed-decls",
             "global-builtin",
             "color-functions",
             "slash-div",
@@ -117,30 +94,6 @@ export default [
             }
           }),
         ]
-      }),
-    ]
-  },
-  // ES5 JS compilation
-  {
-    input: LEGACY_BUNDLE_ID,
-    context: 'window',
-    external: [],
-    output: {
-      file: paths.dist + 'javascripts/all.js',
-      format: 'cjs',
-      sourcemap: true,
-      exports: 'none',
-      strict: false
-    },
-    plugins: [
-      concatenateFiles([
-          paths.npm + 'jquery/dist/jquery.min.js',
-          paths.src + 'javascripts/modules.js',
-          paths.src + 'javascripts/templateFolderForm_nl.js',
-          paths.src + 'javascripts/main.js'
-        ]),
-      terser({
-        ecma: '5'
       }),
     ]
   }

@@ -2,7 +2,8 @@ from datetime import datetime
 from typing import Any
 
 from markupsafe import Markup
-from notifications_utils.letter_timings import get_letter_timings, letter_can_be_cancelled
+from notifications_utils.interruptible_io import InterruptibleIterableMixin
+from notifications_utils.letter_timings import LetterTimings, letter_can_be_cancelled
 from notifications_utils.template import (
     LetterPreviewTemplate,
     SMSBodyPreviewTemplate,
@@ -14,13 +15,11 @@ from app.models.api_key import APIKey
 from app.notify_client.notification_api_client import notification_api_client
 from app.notify_client.service_api_client import service_api_client
 from app.utils import DELIVERED_STATUSES, FAILURE_STATUSES
-from app.utils.interruptible_io import InterruptibleIterableMixin
 from app.utils.letters import get_letter_printing_statement
 from app.utils.templates import EmailPreviewTemplate
 
 
 class Notification(JSONModel):
-    id: Any
     to: str
     recipient: str
     template: Any
@@ -132,7 +131,7 @@ class Notification(JSONModel):
     @property
     def estimated_letter_delivery_date(self):
         if self.notification_type == "letter":
-            return get_letter_timings(self.created_at.replace(tzinfo=None), postage=self.postage).latest_delivery
+            return LetterTimings(self.created_at.replace(tzinfo=None), postage=self.postage).latest_delivery
 
     @property
     def letter_can_be_cancelled(self):
@@ -224,7 +223,6 @@ class InboundSMSMessage(JSONModel):
     notify_number: str
     content: str
     created_at: datetime
-    id: Any
 
     __sort_attribute__ = "created_at"
 

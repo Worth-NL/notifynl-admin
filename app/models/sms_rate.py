@@ -1,15 +1,14 @@
 from datetime import datetime
 
-from app.models import JSONModel
+from notifications_utils.serialised_model import SerialisedModel
+
 from app.notify_client.sms_rate_client import sms_rate_api_client
 from app.overrides_nl.formatters import format_pennies_as_currency
 
 
-class SMSRate(JSONModel):
+class SMSRate(SerialisedModel):
     rate: float
     valid_from: datetime
-
-    __sort_attribute__ = "valid_from"
 
     def __init__(self):
         super().__init__(sms_rate_api_client.get_sms_rate())

@@ -17,6 +17,10 @@ class Config:
     TEMPLATE_PREVIEW_API_HOST = os.environ.get("TEMPLATE_PREVIEW_API_HOST", "http://localhost:6013")
     TEMPLATE_PREVIEW_API_KEY = os.environ.get("TEMPLATE_PREVIEW_API_KEY", "my-secret-key")
 
+    DOCUMENT_DOWNLOAD_API_HOST = os.environ.get("DOCUMENT_DOWNLOAD_API_HOST")
+    DOCUMENT_DOWNLOAD_API_HOST_NAME_INTERNAL = os.environ.get("DOCUMENT_DOWNLOAD_API_HOST_NAME_INTERNAL")
+    DOCUMENT_DOWNLOAD_API_KEY = os.environ.get("DOCUMENT_DOWNLOAD_API_KEY")
+
     # Logging
     DEBUG = False
     NOTIFY_REQUEST_LOG_LEVEL = os.getenv("NOTIFY_REQUEST_LOG_LEVEL", "INFO")
@@ -42,8 +46,6 @@ class Config:
     INVITATION_EXPIRY_SECONDS = 3600 * 24 * 2  # 2 days - also set on api
     EMAIL_2FA_EXPIRY_SECONDS = 1800  # 30 Minutes
 
-    # mix(govuk-colour("dark-grey"), govuk-colour("mid-grey"))
-    HEADER_COLOUR = os.environ.get("HEADER_COLOUR", "#81878b")
     HTTP_PROTOCOL = os.environ.get("HTTP_PROTOCOL", "http")
     NOTIFY_APP_NAME = "admin"
     NOTIFY_LOG_LEVEL = "DEBUG"
@@ -61,6 +63,7 @@ class Config:
     SESSION_REFRESH_EACH_REQUEST = False
 
     SEND_FILE_MAX_AGE_DEFAULT = 365 * 24 * 60 * 60  # 1 year
+    MAX_CUSTOM_FILENAME_LENGTH = 100
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = None
     ACTIVITY_STATS_LIMIT_DAYS = 7
@@ -88,6 +91,8 @@ class Config:
 
     REDIS_URL = os.environ.get("REDIS_URL")
     REDIS_ENABLED = False if os.environ.get("REDIS_ENABLED") == "0" else True
+    REDIS_SOCKET_TIMEOUT = 5
+    REDIS_SOCKET_CONNECT_TIMEOUT = 5
 
     ASSET_DOMAIN = os.environ.get("ASSET_DOMAIN", "")
     ASSET_PATH = os.environ.get("ASSET_PATH", "/static/")
@@ -137,6 +142,12 @@ class Development(Config):
     ANTIVIRUS_API_KEY = "test-key"
     ANTIVIRUS_ENABLED = os.getenv("ANTIVIRUS_ENABLED") == "1"
 
+    DOCUMENT_DOWNLOAD_API_HOST = os.environ.get("DOCUMENT_DOWNLOAD_API_HOST", "http://localhost:7000")
+    DOCUMENT_DOWNLOAD_API_HOST_NAME_INTERNAL = os.environ.get(
+        "DOCUMENT_DOWNLOAD_API_HOST_NAME_INTERNAL", "http://localhost:7000"
+    )
+    DOCUMENT_DOWNLOAD_API_KEY = os.environ.get("DOCUMENT_DOWNLOAD_API_KEY", "auth-token")
+
     ASSET_PATH = "/static/"
 
     REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
@@ -172,19 +183,6 @@ class Test(Development):
 
     ASSET_DOMAIN = "static.example.com"
     ASSET_PATH = "https://static.example.com/"
-
-
-class CloudFoundryConfig(Config):
-    pass
-
-
-# CloudFoundry sandbox
-class Sandbox(CloudFoundryConfig):
-    HTTP_PROTOCOL = "https"
-    HEADER_COLOUR = "#F499BE"  # $baby-pink
-    S3_BUCKET_CSV_UPLOAD = "cf-sandbox-notifications-csv-upload"
-    S3_BUCKET_LOGO_UPLOAD = "cf-sandbox-notifications-logo-upload"
-    NOTIFY_ENVIRONMENT = "sandbox"
 
 
 ##########################
@@ -227,6 +225,12 @@ class DevNL(ConfigNL):
     ANTIVIRUS_API_HOST = os.environ.get("ANTIVIRUS_API_HOST", "http://localhost:6016")
     ANTIVIRUS_API_KEY = "test-key"
     ANTIVIRUS_ENABLED = os.getenv("ANTIVIRUS_ENABLED") == "1"
+
+    DOCUMENT_DOWNLOAD_API_HOST = os.environ.get("DOCUMENT_DOWNLOAD_API_HOST", "http://localhost:7000")
+    DOCUMENT_DOWNLOAD_API_HOST_NAME_INTERNAL = os.environ.get(
+        "DOCUMENT_DOWNLOAD_API_HOST_NAME_INTERNAL", "http://localhost:7000"
+    )
+    DOCUMENT_DOWNLOAD_API_KEY = os.environ.get("DOCUMENT_DOWNLOAD_API_KEY", "auth-token")
 
     ASSET_PATH = "/static/"
 

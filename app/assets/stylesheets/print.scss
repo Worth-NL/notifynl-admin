@@ -1,13 +1,15 @@
 /* stylelint-disable declaration-no-important */
 // set asset URL root to match that of application
-$govuk-assets-path: "/static/";
+@use "govuk/base" as * with (
+  $govuk-assets-path: "/static/"  // set asset URL root to match that of application
+);
 
-@import "govuk/settings";
-@import "govuk/tools";
-@import "govuk/helpers";
+@use "govuk/settings";
+@use "govuk/tools";
+@use "govuk/helpers";
 
-@import "govuk/core";
-@import "govuk/objects";
+@use "govuk/core";
+@use "govuk/objects";
 
 * {
   background: transparent;
@@ -26,7 +28,7 @@ body {
 
 a,
 a:visited {
-  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 a[href^="/"]:after,
@@ -53,7 +55,7 @@ select {
 
   .govuk-header__logo {
     @include govuk-font($size: 19);
-    text-rendering: optimizeLegibility;
+    text-rendering: optimizelegibility;
 
     a {
       &,

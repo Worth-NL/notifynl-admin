@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
 
@@ -39,6 +40,7 @@ class Service(JSONModel):
     billing_contact_names: str
     billing_reference: str
     confirmed_email_sender_name: Any
+    confirmed_service_name: bool
     confirmed_unique: bool
     contact_link: str
     count_as_live: bool
@@ -46,7 +48,6 @@ class Service(JSONModel):
     email_sender_local_part: str
     go_live_at: datetime
     has_active_go_live_request: bool
-    id: Any
     email_message_limit: int
     international_sms_message_limit: int
     sms_message_limit: int
@@ -66,13 +67,13 @@ class Service(JSONModel):
 
     __sort_attribute__ = "name"
 
-    TEMPLATE_TYPES = (
+    TEMPLATE_TYPES: Sequence[str] = (
         "email",
         "sms",
         "letter",
     )
 
-    ALL_PERMISSIONS = TEMPLATE_TYPES + (
+    ALL_PERMISSIONS: Sequence[str] = TEMPLATE_TYPES + (
         "edit_folder_permissions",
         "email_auth",
         "inbound_sms",
@@ -80,6 +81,7 @@ class Service(JSONModel):
         "international_sms",
         "messagebox",
         "sms_to_uk_landlines",
+        "block_ofcom_protected_block",
     )
 
     @classmethod
@@ -123,8 +125,22 @@ class Service(JSONModel):
     def update_count_as_live(self, count_as_live):
         return service_api_client.update_count_as_live(self.id, count_as_live=count_as_live)
 
-    def update_status(self, live):
-        return service_api_client.update_status(self.id, live=live)
+    def update_status(self, live, permissions_to_remove=None):
+        original_permissions = set(self._permissions)
+
+        if permissions_to_remove:
+            updated_permissions = original_permissions - set(permissions_to_remove)
+
+            return service_api_client.update_status(
+                self.id,
+                live=live,
+                permissions=list(updated_permissions),
+            )
+
+        return service_api_client.update_status(
+            self.id,
+            live=live,
+        )
 
     def switch_permission(self, permission):
         return self.force_permission(
@@ -526,6 +542,9 @@ class Service(JSONModel):
 
     @property
     def organisation_type_label(self):
+        if self.organisation_type == Organisation.TYPE_NHS_NOTIFY:
+            return Organisation.NHS_NOTIFY_TYPE_LABEL
+
         return Organisation.TYPE_LABELS.get(self.organisation_type)
 
     @property
@@ -723,7 +742,6 @@ class Services(SerialisedModelCollection):
 
 
 class ServiceJoinRequest(JSONModel):
-    id: Any
     requester: Any
     service_id: Any
     created_at: datetime

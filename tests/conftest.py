@@ -3,7 +3,7 @@ import json
 import os
 import re
 from contextlib import contextmanager
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from unittest import mock
 from unittest.mock import Mock, PropertyMock
 from uuid import UUID, uuid4
@@ -554,6 +554,26 @@ def mock_get_service(notify_admin, mocker, api_user_active, mocked_get_service_d
 
 
 @pytest.fixture(scope="function")
+def mock_get_service_with_contact_link(notify_admin, mocker, api_user_active, mocked_get_service_data):
+    def _get(service_id):
+        return {
+            "data": mocked_get_service_data.get(
+                service_id,
+                service_json(
+                    service_id,
+                    users=[api_user_active["id"]],
+                    email_message_limit=50,
+                    sms_message_limit=50,
+                    letter_message_limit=50,
+                    contact_link="https://example.com",
+                ),
+            )
+        }
+
+    return mocker.patch("app.service_api_client.get_service", side_effect=_get)
+
+
+@pytest.fixture(scope="function")
 def mock_get_service_statistics(notify_admin, mocker, api_user_active):
     def _get(service_id, limit_days=None):
         return {
@@ -694,6 +714,7 @@ ORGANISATION_ID = "c011fa40-4cbe-4524-b415-dde2f421bd9c"
 ORGANISATION_TWO_ID = "d9b5be73-0b36-4210-9d89-8f1a5c2fef26"
 TEMPLATE_ONE_ID = "b22d7d94-2197-4a7d-a8e7-fd5f9770bf48"
 USER_ONE_ID = "7b395b52-c6c1-469c-9d61-54166461c1ab"
+API_KEY_REVOKER_ID = "df4beeef-8ee7-4fa2-b3d8-0d9d7f739dcc"
 
 
 @pytest.fixture(scope="function")
@@ -849,6 +870,36 @@ def mock_get_service_email_template(notify_admin, mocker):
             content="Your vehicle tax expires on ((date))",
             subject="Your ((thing)) is due soon",
             redact_personalisation=False,
+        )
+        return {"data": template}
+
+    return mocker.patch("app.service_api_client.get_service_template", side_effect=_get)
+
+
+@pytest.fixture(scope="function")
+def mock_get_service_email_template_with_file(notify_admin, mocker):
+    def _get(service_id, template_id, version=None):
+        email_files = [
+            {
+                "service_id": SERVICE_ONE_ID,
+                "template_id": str(template_id),
+                "id": fake_uuid,
+                "filename": "example.pdf",
+                "created_by_id": str(uuid4()),
+                "link_text": "example file",
+                "retention_period": 12,
+                "validate_users_email": True,
+            }
+        ]
+        template = template_json(
+            service_id=service_id,
+            id_=template_id,
+            name="Two week reminder",
+            type_="email",
+            content="Your vehicle tax expires on ((date)). Please click the file ((example.pdf))",
+            subject="Your ((thing)) is due soon",
+            redact_personalisation=False,
+            email_files=email_files,
         )
         return {"data": template}
 
@@ -1036,67 +1087,6 @@ def mock_update_service_template(notify_admin, mocker):
             has_unsubscribe_link=has_unsubscribe_link,
         )
         return {"data": template}
-
-    return mocker.patch("app.service_api_client.update_service_template", side_effect=_update)
-
-
-@pytest.fixture(scope="function")
-def mock_create_service_template_content_too_big(notify_admin, mocker):
-    def _create(
-        *,
-        name,
-        type_,
-        content,
-        service_id,
-        subject=None,
-        parent_folder_id=None,
-        has_unsubscribe_link=None,
-    ):
-        json_mock = Mock(
-            return_value={
-                "message": {"content": ["Content has a character count greater than the limit of 459"]},
-                "result": "error",
-            }
-        )
-        resp_mock = Mock(status_code=400, json=json_mock)
-        http_error = HTTPError(
-            response=resp_mock, message={"content": ["Content has a character count greater than the limit of 459"]}
-        )
-        raise http_error
-
-    return mocker.patch("app.service_api_client.create_service_template", side_effect=_create)
-
-
-@pytest.fixture(scope="function")
-def mock_update_service_template_400_content_too_big(notify_admin, mocker):
-    def _update(*, service_id, template_id, name=None, content=None, subject=None):
-        json_mock = Mock(
-            return_value={
-                "message": {"content": ["Content has a character count greater than the limit of 459"]},
-                "result": "error",
-            }
-        )
-        resp_mock = Mock(status_code=400, json=json_mock)
-        http_error = HTTPError(
-            response=resp_mock, message={"content": ["Content has a character count greater than the limit of 459"]}
-        )
-        raise http_error
-
-    return mocker.patch("app.service_api_client.update_service_template", side_effect=_update)
-
-
-@pytest.fixture(scope="function")
-def mock_update_service_template_400_qr_code_too_big(notify_admin, mocker):
-    def _update(*, service_id, template_id, name=None, content=None, subject=None):
-        json_mock = Mock(
-            return_value={
-                "message": {"content": ["qr-code-too-long"]},
-                "result": "error",
-            }
-        )
-        resp_mock = Mock(status_code=400, json=json_mock)
-        http_error = HTTPError(response=resp_mock, message={"content": ["qr-code-too-long"]})
-        raise http_error
 
     return mocker.patch("app.service_api_client.update_service_template", side_effect=_update)
 
@@ -1298,7 +1288,7 @@ def active_user_no_settings_permission():
 def api_user_locked(fake_uuid):
     return create_user(
         id=fake_uuid,
-        failed_login_count=5,
+        failed_login_count=11,
         password_changed_at=None,
     )
 
@@ -1307,7 +1297,7 @@ def api_user_locked(fake_uuid):
 def api_user_request_password_reset(fake_uuid):
     return create_user(
         id=fake_uuid,
-        failed_login_count=5,
+        failed_login_count=11,
     )
 
 
@@ -1315,7 +1305,7 @@ def api_user_request_password_reset(fake_uuid):
 def api_user_changed_password(fake_uuid):
     return create_user(
         id=fake_uuid,
-        failed_login_count=5,
+        failed_login_count=11,
         password_changed_at=str(datetime.now(UTC) + timedelta(minutes=1)),
     )
 
@@ -1469,17 +1459,27 @@ def mock_get_api_keys(notify_admin, mocker, fake_uuid):
     def _get_keys(service_id, key_id=None):
         keys = {
             "apiKeys": [
-                api_key_json(id_=fake_uuid, name="some key name", key_type="normal"),
+                api_key_json(
+                    id_=fake_uuid,
+                    name="some key name",
+                    key_type="normal",
+                    created_by=fake_uuid,
+                    created_at="2026-09-14 10:00:00.000000",
+                ),
                 api_key_json(
                     id_="1234567",
                     name="another key name",
-                    expiry_date=str(date.fromtimestamp(0)),
+                    expiry_date="2026-09-13 11:00:00.000000",
                     key_type="test",
+                    created_by=str(uuid4()),
+                    created_at="2026-09-02 12:00:00.000000",
                 ),
                 api_key_json(
                     id_=str(uuid4()),
                     name="third key",
                     key_type="team",
+                    created_by=str(uuid4()),
+                    created_at="2024-04-04 04:04:04.000000",
                 ),
             ]
         }
@@ -3936,7 +3936,7 @@ def mock_get_service_history(notify_admin, mocker):
                     "name": "Bad key",
                     "updated_at": "2012-11-11T12:12:12.000000Z",
                     "created_at": "2011-11-11T11:11:11.000000Z",
-                    "created_by_id": sample_uuid(),
+                    "created_by_id": API_KEY_REVOKER_ID,
                 },
                 {
                     "name": "Bad key",
@@ -4524,7 +4524,7 @@ def mock_create_service_join_request(notify_admin, mocker):
 def mock_get_letter_rates(mocker):
     def _get_letter_rates():
         return [
-            {"post_class": "economy", "rate": "0.59", "sheet_count": 1, "start_date": "2024-06-30T23:00:00"},
+            {"post_class": "economy", "rate": "0.592", "sheet_count": 1, "start_date": "2024-06-30T23:00:00"},
             {"post_class": "second", "rate": "0.68", "sheet_count": 1, "start_date": "2024-06-30T23:00:00"},
             {"post_class": "first", "rate": "1.49", "sheet_count": 1, "start_date": "2024-06-30T23:00:00"},
             {"post_class": "europe", "rate": "1.56", "sheet_count": 1, "start_date": "2024-01-02T00:00:00"},

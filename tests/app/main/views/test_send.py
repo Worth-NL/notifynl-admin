@@ -31,6 +31,8 @@ from tests.conftest import (
     create_active_user_with_permissions,
     create_multiple_email_reply_to_addresses,
     create_multiple_sms_senders,
+    create_service_one_admin,
+    create_service_one_user,
     create_template,
     do_mock_get_page_counts_for_letter,
     mock_get_service_email_template,
@@ -3840,6 +3842,34 @@ def test_check_messages_shows_too_many_international_sms_messages_errors(
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
+@pytest.mark.parametrize(
+    "template_type, file_contents, expected_error",
+    (
+        (
+            "sms",
+            "phone number,\n07900900321",
+            (
+                "You cannot send to this phone number "
+                "In trial mode you can only send to yourself and members of your team"
+            ),
+        ),
+        (
+            "email",
+            "email address,\nnot-in-team@example.gov.uk",
+            (
+                "You cannot send to this email address "
+                "In trial mode you can only send to yourself and members of your team"
+            ),
+        ),
+    ),
+)
+@pytest.mark.parametrize(
+    "user_name",
+    (
+        "07900900321",
+        "not-in-team@example.gov.uk",
+    ),
+)
 def test_check_messages_shows_trial_mode_error(
     client_request,
     mock_s3_get_metadata,
@@ -3849,10 +3879,25 @@ def test_check_messages_shows_trial_mode_error(
     mock_get_service_statistics,
     mock_get_job_doesnt_exist,
     mock_get_jobs,
+    template_type,
+    file_contents,
+    expected_error,
+    user_name,
     fake_uuid,
     mocker,
 ):
-    mocker.patch("app.main.views_nl.send.s3download", return_value=("phone number,\n07900900321"))  # Not in team
+    template = create_template(template_type=template_type)
+    mocker.patch(
+        "app.service_api_client.get_service_template",
+        return_value={"data": template},
+    )
+    mocker.patch("app.main.views_nl.send.s3download", return_value=file_contents)
+    mocker.patch(
+        "app.models.user.Users._get_items",
+        return_value=[
+            create_service_one_admin(name=user_name),
+        ],
+    )
 
     with client_request.session_transaction() as session:
         session["file_uploads"] = {
@@ -3869,9 +3914,7 @@ def test_check_messages_shows_trial_mode_error(
         _test_page_title=False,
     )
 
-    assert " ".join(page.select_one("div.banner-dangerous").text.split()) == (
-        "You cannot send to this phone number In trial mode you can only send to yourself and members of your team"
-    )
+    assert normalize_spaces(page.select_one("div.banner-dangerous")) == expected_error
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -4575,6 +4618,86 @@ def test_check_notification_shows_back_link(client_request, service_one, fake_uu
 
 
 @pytest.mark.parametrize(
+    "template_content, personalisation, recipient, expected_cost_message",
+    (
+        (
+            "hello",
+            {},
+            "07900900123",
+            "Will be charged as 1 text message",
+        ),
+        (
+            "hello ((name))",
+            {"name": "a" * 161},
+            "07900900123",
+            "Will be charged as 2 text messages",
+        ),
+        (
+            "ŵ" * 80,
+            {},
+            "07900900123",
+            "Will be charged as 2 text messages",
+        ),
+        (
+            "Sending abroad",
+            {},
+            "+225 01 01 01 01 01",  # Côte d'Ivoire
+            "Will be charged as 10 text messages",
+        ),
+    ),
+)
+@pytest.mark.parametrize(
+    "permissions",
+    [
+        ["send_texts", "send_emails", "send_letters", "manage_templates"],
+        ["send_texts", "send_emails", "send_letters", "manage_users", "manage_settings"],
+        pytest.param(
+            # All the permissions except manage templates/service
+            ["send_texts", "send_emails", "send_letters", "manage_api_keys", "view_activity"],
+            marks=pytest.mark.xfail(raises=AttributeError),  # Paragraph not found on page
+        ),
+    ],
+)
+def test_check_notification_shows_cost_of_text_message(
+    client_request,
+    template_content,
+    personalisation,
+    recipient,
+    expected_cost_message,
+    permissions,
+    fake_uuid,
+    mocker,
+):
+    user = create_service_one_user(
+        id=fake_uuid,
+        permissions={SERVICE_ONE_ID: permissions},
+    )
+    client_request.login(user)
+    mocker.patch(
+        "app.service_api_client.get_service_template",
+        return_value={
+            "data": template_json(
+                service_id=SERVICE_ONE_ID,
+                id_=fake_uuid,
+                type_="sms",
+                content=template_content,
+            )
+        },
+    )
+    with client_request.session_transaction() as session:
+        session["recipient"] = recipient
+        session["placeholders"] = personalisation
+
+    page = client_request.get(
+        "main.check_notification",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+    )
+
+    assert normalize_spaces(page.select_one("p.govuk-hint").text) == expected_cost_message
+
+
+@pytest.mark.parametrize(
     "template, recipient, placeholders, expected_personalisation",
     (
         (
@@ -5018,16 +5141,16 @@ def test_choose_from_contact_list(
         template_id=fake_uuid,
     )
     assert [
-        normalize_spaces(filename.text) for filename in page.select(".file-list-filename-large")
+        normalize_spaces(filename.text) for filename in page.select(".notify-summary-list__filename")
     ] == expected_filenames
 
-    assert page.select_one("a.file-list-filename-large")["href"] == url_for(
+    assert page.select_one("a.notify-summary-list__filename")["href"] == url_for(
         "main.send_from_contact_list",
         service_id=SERVICE_ONE_ID,
         template_id=template["id"],
         contact_list_id=expected_list_id,
     )
-    assert normalize_spaces(page.select_one(".file-list-hint-large").text) == (expected_time)
+    assert normalize_spaces(page.select_one(".notify-summary-list__metadata").text) == (expected_time)
     assert normalize_spaces(page.select_one(".big-number-smallest").text) == (expected_count)
 
 
@@ -5049,11 +5172,13 @@ def test_choose_from_contact_list_with_personalised_template(
         template_id=fake_uuid,
     )
     assert [normalize_spaces(p.text) for p in page.select("main p")] == [
-        "You cannot use an emergency contact list with this template because "
-        "it is personalised with ((name)) and ((thing)).",
+        (
+            "You cannot use an emergency contact list with this template because "
+            "it is personalised with ((name)) and ((thing))."
+        ),
         "Emergency contact lists can only include email addresses or phone numbers.",
     ]
-    assert not page.select("table")
+    assert not page.select(".govuk-summary-list")
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")

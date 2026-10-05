@@ -94,7 +94,7 @@ def test_organisation_page_shows_all_organisations(client_request, platform_admi
         ("Test 3", "0 live services", url_for("main.organisation_dashboard", org_id="A3")),
     ]
 
-    archived = page.select_one(".table-field-status-default.heading-medium")
+    archived = page.select_one(".browse-list-item__status.heading-medium")
     assert normalize_spaces(archived.text) == "– archived"
     assert normalize_spaces(archived.parent.text) == "Test 2 – archived 2 live services"
 
@@ -909,8 +909,8 @@ def test_organisation_trial_mode_services_shows_all_non_live_services(
 
     assert normalize_spaces(services[0].text) == "2"
     assert normalize_spaces(services[1].text) == "3"
-    assert services[0].find("a")["href"] == url_for("main.service_dashboard", service_id="2")
-    assert services[1].find("a")["href"] == url_for("main.service_dashboard", service_id="3")
+    assert services[0].find("a")["href"] == url_for("main.usage", service_id="2")
+    assert services[1].find("a")["href"] == url_for("main.usage", service_id="3")
 
 
 def test_organisation_trial_mode_services_is_visible_to_platform_admin(

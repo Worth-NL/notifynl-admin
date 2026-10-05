@@ -1,13 +1,8 @@
 from flask import abort, flash, redirect, render_template, request, url_for
-from flask_login import current_user
 
-from app import current_service, organisations_client
+from app import current_service, current_user, organisations_client
 from app.main import main
-from app.main.forms import (
-    OnOffSettingForm,
-    ServiceGoLiveDecisionForm,
-    UniqueServiceForm,
-)
+from app.main.forms import OnOffSettingForm, ServiceGoLiveDecisionForm, UniqueServiceForm
 from app.utils.user import user_has_permissions
 
 
@@ -29,10 +24,7 @@ def org_member_make_service_live_start(service_id):
     )
 
 
-@main.route(
-    "/services/<uuid:service_id>/make-service-live/unique-service",
-    methods=["GET", "POST"],
-)
+@main.route("/services/<uuid:service_id>/make-service-live/unique-service", methods=["GET", "POST"])
 @user_has_permissions(allow_org_user=True)
 def org_member_make_service_live_check_unique(service_id):
     if current_service.live:
@@ -60,11 +52,7 @@ def org_member_make_service_live_check_unique(service_id):
             )
 
         return redirect(
-            url_for(
-                ".org_member_make_service_live_service_name",
-                service_id=current_service.id,
-                unique=unique,
-            )
+            url_for(".org_member_make_service_live_service_name", service_id=current_service.id, unique=unique)
         )
 
     return render_template(
@@ -79,10 +67,7 @@ def org_member_make_service_live_check_unique(service_id):
     )
 
 
-@main.route(
-    "/services/<uuid:service_id>/make-service-live/service-name",
-    methods=["GET", "POST"],
-)
+@main.route("/services/<uuid:service_id>/make-service-live/service-name", methods=["GET", "POST"])
 @user_has_permissions(allow_org_user=True)
 def org_member_make_service_live_service_name(service_id):
     if current_service.live:
@@ -93,20 +78,14 @@ def org_member_make_service_live_service_name(service_id):
 
     if "unique" not in request.args:
         return redirect(url_for(".org_member_make_service_live_start", service_id=current_service.id))
-    elif (unique := request.args.get("unique").lower()) == "no":
-        return redirect(
-            url_for(
-                ".org_member_make_service_live_decision",
-                service_id=current_service.id,
-                unique=unique,
-            )
-        )
+    elif (unique := request.args["unique"].lower()) == "no":
+        return redirect(url_for(".org_member_make_service_live_decision", service_id=current_service.id, unique=unique))
 
     form = OnOffSettingForm(
         truthy="Yes",
         falsey="No",
-        name=f"Will recipients understand the name ‘{current_service.name}’?",
-        choices_for_error_message="‘yes’ if recipients will understand the service name",
+        name=f"Will GOV.UK Notify understand the name ‘{current_service.name}’?",
+        choices_for_error_message="‘yes’ if GOV.UK Notify will understand the service name",
     )
 
     # Re-populate the form field data from URL query args, if present. This allows backlinks to take a user back to
@@ -115,17 +94,15 @@ def org_member_make_service_live_service_name(service_id):
         form.enabled.data = name == "ok"
 
     if form.validate_on_submit():
-        redirect_kwargs = {
-            "name": "ok" if form.enabled.data else "bad",
-            "unique": unique,
-        }
+        redirect_name = "ok" if form.enabled.data else "bad"
 
         if form.enabled.data and unique == "yes":
             return redirect(
                 url_for(
                     ".org_member_make_service_live_decision",
                     service_id=current_service.id,
-                    **redirect_kwargs,
+                    name=redirect_name,
+                    unique=unique,
                 )
             )
 
@@ -141,7 +118,8 @@ def org_member_make_service_live_service_name(service_id):
             url_for(
                 ".org_member_make_service_live_contact_user",
                 service_id=current_service.id,
-                **redirect_kwargs,
+                name=redirect_name,
+                unique=unique,
             )
         )
 
@@ -176,12 +154,7 @@ def org_member_make_service_live_contact_user(service_id):
         abort(400)
     elif unique == "no" or (name == "ok" and unique == "yes"):
         return redirect(
-            url_for(
-                ".org_member_make_service_live_decision",
-                service_id=current_service.id,
-                name=name,
-                unique=unique,
-            )
+            url_for(".org_member_make_service_live_decision", service_id=current_service.id, name=name, unique=unique)
         )
 
     return render_template(
@@ -210,7 +183,7 @@ def org_member_make_service_live_decision(service_id):
     if "unique" not in request.args:
         return redirect(url_for(".org_member_make_service_live_start", service_id=current_service.id))
 
-    unique = request.args.get("unique").lower()
+    unique = request.args["unique"].lower()
     cannot_approve = unique == "no"
 
     form = ServiceGoLiveDecisionForm(
@@ -224,11 +197,9 @@ def org_member_make_service_live_decision(service_id):
 
     if form.validate_on_submit():
         if form.enabled.data:
-            flash(
-                "This service is now live. We’ll email the team to let them know.",
-                "default_with_tick",
-            )
+            flash("This service is now live. We’ll email the team to let them know.", "default_with_tick")
         else:
+            assert form.rejection_reason.data is not None  # type narrowing
             organisations_client.notify_service_member_of_rejected_go_live_request(
                 service_id=service_id,
                 service_member_name=current_service.go_live_user.name,
@@ -246,10 +217,12 @@ def org_member_make_service_live_decision(service_id):
                 "default",
             )
 
-        current_service.update_status(live=form.enabled.data)
+        permissions_to_remove = []
 
         if not current_service.has_email_templates and not bool(current_service.volume_email):
-            current_service.force_permission("email", on=False)
+            permissions_to_remove.append("email")
+
+        current_service.update_status(live=form.enabled.data, permissions_to_remove=permissions_to_remove)
 
         return redirect(url_for(".organisation_dashboard", org_id=current_service.organisation_id))
 

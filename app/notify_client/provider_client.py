@@ -18,16 +18,16 @@ class ProviderClient(NotifyAdminAPIClient):
     def get_provider_versions(self, provider_id):
         return self.get(url=f"/provider-details/{provider_id}/versions")
 
-    def update_provider(self, provider_id, priority):
-        data = {"priority": priority}
+    def update_provider(self, provider_id, priority, reason=None):
+        data = {"priority": priority, "reason": reason}
         data = _attach_current_user(data)
         return self.post(url=f"/provider-details/{provider_id}", data=data)
 
 
-_provider_client_context_var: ContextVar[ProviderClient] = ContextVar("provider_client")
+_provider_client_context_var: ContextVar[ProviderClient | None] = ContextVar("provider_client")
 get_provider_client: LazyLocalGetter[ProviderClient] = LazyLocalGetter(
     _provider_client_context_var,
     lambda: ProviderClient(current_app),
 )
 memo_resetters.append(lambda: get_provider_client.clear())
-provider_client = LocalProxy(get_provider_client)
+provider_client: ProviderClient = LocalProxy(get_provider_client)  # type: ignore[assignment]

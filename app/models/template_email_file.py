@@ -13,15 +13,17 @@ from notifications_utils.serialised_model import SerialisedModelCollection
 from notifications_utils.template import Template
 
 from app.models import JSONModel
-from app.s3_client.s3_template_email_file_upload_client import upload_template_email_file_to_s3
+from app.s3_client.s3_template_email_file_upload_client import (
+    download_template_email_file_from_s3,
+    upload_template_email_file_to_s3,
+)
 
 
-def _get_file_location(file_id: uuid, service_id: uuid) -> str:
+def _get_file_location(file_id: str, service_id: str) -> str:
     return f"{service_id}/{file_id}"
 
 
 class TemplateEmailFile(JSONModel):
-    id: Any
     service_id: Any
     template: Any
     filename: str
@@ -36,7 +38,7 @@ class TemplateEmailFile(JSONModel):
     def create(*, filename, file_contents, template_id):
         from app import current_service, current_user, template_email_file_client
 
-        file_id = uuid.uuid4()
+        file_id = str(uuid.uuid4())
         file_bytes = file_contents.read()
         file_location = _get_file_location(file_id, current_service.id)
         upload_template_email_file_to_s3(data=file_bytes, file_location=file_location)
@@ -48,6 +50,40 @@ class TemplateEmailFile(JSONModel):
             created_by_id=current_user.id,
         )
         return file_id
+
+    def copy_file(
+        self,
+        destination_template_id,
+        source_service_id,
+        destination_service_id,
+        validate_users_email,
+        retention_period,
+        link_text,
+    ):
+        from app import current_user, template_email_file_client
+
+        destination_file_id = str(uuid.uuid4())
+        source_file_location = _get_file_location(self.id, source_service_id)
+        destination_file_bytes = download_template_email_file_from_s3(file_location=source_file_location).read()
+        destination_file_location = _get_file_location(file_id=destination_file_id, service_id=destination_service_id)
+        upload_template_email_file_to_s3(data=destination_file_bytes, file_location=destination_file_location)
+        template_email_file_client.create_file(
+            file_id=destination_file_id,
+            service_id=destination_service_id,
+            template_id=destination_template_id,
+            filename=self.filename,
+            created_by_id=current_user.id,
+        )
+
+        return template_email_file_client.update_file(
+            service_id=destination_service_id,
+            template_id=destination_template_id,
+            file_id=destination_file_id,
+            pending=False,
+            link_text=link_text,
+            retention_period=retention_period,
+            validate_users_email=validate_users_email,
+        )
 
     def update(self, **kwargs):
         from app import template_email_file_client
@@ -79,6 +115,7 @@ class TemplateEmailFile(JSONModel):
             service_id=self.service_id,
             document_id=self.id,
             key=uuid_to_base64(self.template.id),
+            template_version=self.template.version,
             _external=True,
         )
         if self.link_text:
