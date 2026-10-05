@@ -27,7 +27,7 @@ import UpdateStatus from './update-status.mjs';
 import UpdateContent from './update-content.mjs';
 import UpdateRelativeTime from './update-relative-time_nl.mjs';
 import { stickAtTopWhenScrolling, stickAtBottomWhenScrolling } from './stick-to-window-when-scrolling.mjs';
-import TemplateFolderForm from './template-folder-form.mjs';
+import TemplateFolderForm from './template-folder-form_nl.mjs';
 
 createAll(Button,
   { preventDoubleClick: true }
