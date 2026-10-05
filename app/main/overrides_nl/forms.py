@@ -12,22 +12,24 @@ from zipfile import BadZipFile
 
 import pytz
 from flask import request
-from flask_login import current_user
 from flask_wtf import FlaskForm as Form
 from flask_wtf.file import FileAllowed, FileSize
 from flask_wtf.file import FileField as FileField_wtf
 from markupsafe import Markup
+from notifications_utils import SMS_CHAR_COUNT_LIMIT
 from notifications_utils.countries_nl import Postage
 from notifications_utils.eventlet import SoftEventletTimeout
 from notifications_utils.field import Field as UtilsField
 from notifications_utils.formatters import strip_all_whitespace
 from notifications_utils.insensitive_dict import InsensitiveDict, InsensitiveSet
+from notifications_utils.interruptible_io import InterruptibleIterableList, interruptible_iter
 from notifications_utils.recipient_validation.email_address import format_email_address, validate_email_address
 from notifications_utils.recipient_validation.errors import InvalidEmailError, InvalidPhoneError
 from notifications_utils.recipient_validation.notifynl.phone_number import PhoneNumber as PhoneNumberUtils
 from notifications_utils.recipient_validation.notifynl.postal_address import PostalAddress
 from notifications_utils.safe_string import make_string_safe_for_email_local_part
 from notifications_utils.sanitise_text import SanitiseASCII
+from notifications_utils.template import LetterPreviewTemplate, SMSMessageTemplate
 from notifications_utils.timezones import local_timezone, utc_string_to_aware_gmt_datetime
 from ordered_set import OrderedSet
 from werkzeug.utils import cached_property
@@ -60,7 +62,7 @@ from wtforms.validators import (
 from xlrd.biffh import XLRDError
 from xlrd.xldate import XLDateError
 
-from app import asset_fingerprinter, current_organisation
+from app import asset_fingerprinter, current_organisation, current_user, document_download_api_client
 from app.constants import (
     SERVICE_JOIN_REQUEST_APPROVED,
     SERVICE_JOIN_REQUEST_REJECTED,
@@ -69,6 +71,7 @@ from app.constants import (
     LetterLanguageOptions,
 )
 from app.main.overrides_nl.validators import (
+    CanEncode,
     CannotContainURLsOrLinks,
     CharactersNotAllowed,
     CommonlyUsedPassword,
@@ -89,7 +92,6 @@ from app.main.overrides_nl.validators import (
     NotifyDataRequired,
     NotifyInputRequired,
     NotifyUrlValidator,
-    OnlySMSCharacters,
     ValidEmail,
     ValidGovEmail,
     ValidPhoneNumber,
@@ -101,6 +103,7 @@ from app.models.branding import (
 from app.models.feedback import PROBLEM_TICKET_TYPE, QUESTION_TICKET_TYPE
 from app.models.organisation import Organisation
 from app.models.spreadsheet import Spreadsheet
+from app.notify_client.document_download_api_client import DocumentDownloadError
 from app.overrides_nl.formatters import (
     format_auth_type,
     format_date_human,
@@ -116,7 +119,6 @@ from app.utils.govuk_frontend_field import (
     render_govuk_frontend_macro,
 )
 from app.utils.image_processing import CorruptImage, ImageProcessor, WrongImageFormat
-from app.utils.interruptible_io import InterruptibleIterableList, interruptible_iter
 from app.utils_nl.user_permissions import (
     all_ui_permissions,
     organisation_user_permission_names,
@@ -879,7 +881,7 @@ class OnOffField(GovukRadiosField):
     def iter_choices(self):
         for value, label in self.choices:
             # This overrides WTForms default behaviour which is to check
-            # self.coerce(value) == self.data
+            # > self.coerce(value) == self.data
             # where self.coerce returns a string for a boolean input
             yield (value, label, (self.data in {value, self.coerce(value)}), {})
 
@@ -1187,17 +1189,14 @@ class TwoFactorForm(StripWhitespaceForm):
 
     sms_code = SMSCode("SMS bericht code")
 
-    def validate(self, *args, **kwargs):
-        if not self.sms_code.validate(self):
-            return False
+    def validate_sms_code(self, field):
+        if field.errors:
+            return
 
-        is_valid, reason = self.validate_code_func(self.sms_code.data)
+        is_valid, reason = self.validate_code_func(field.data)
 
         if not is_valid:
-            self.sms_code.errors.append(reason)
-            return False
-
-        return super().validate(*args, **kwargs)
+            raise ValidationError(reason)
 
 
 class TextNotReceivedForm(StripWhitespaceForm):
@@ -1373,8 +1372,8 @@ class AdminOrganisationDomainsForm(StripWhitespaceForm):
             "",
             validators=[
                 CharactersNotAllowed("@"),
-                # Todo NL: This should probably be used dynamically with some sort of blacklist?
-                # StringsNotAllowed("nhs.uk", "nhs.net"),
+                # [NOTIFYNL] Upstream blocks the nhs.uk and nhs.net domains here with StringsNotAllowed.
+                # TODO: decide whether NL needs a configurable domain blocklist instead.
                 Optional(),
             ],
             default="",
@@ -1399,6 +1398,18 @@ class CreateServiceForm(StripWhitespaceForm):
         "Wie is er verantwoordelijk voor deze dienst?",
         include_only={Organisation.TYPE_CENTRAL, Organisation.TYPE_LOCAL, Organisation.TYPE_OTHER},
     )
+
+
+class CreateNhsNotifyServiceForm(StripWhitespaceForm):
+    name = GovukTextInputField(
+        "Enter a service name",
+        validators=[
+            DataRequired(message="Enter a service name"),
+            MustContainAlphanumericCharacters(),
+            Length(max=255, thing="service name"),
+        ],
+    )
+    organisation_type = HiddenField("organisation_type", default="nhs_notify")
 
 
 class CreateNhsServiceForm(CreateServiceForm):
@@ -1523,7 +1534,8 @@ class BaseTemplateForm(StripWhitespaceForm):
 
 class SMSTemplateForm(BaseTemplateForm, TemplateNameMixin):
     def validate_template_content(self, field):
-        OnlySMSCharacters(template_type="sms")(None, field)
+        if SMSMessageTemplate({"content": field.data, "template_type": "sms"}).is_message_too_long():
+            raise ValidationError(f"Content has a character count greater than the limit of {SMS_CHAR_COUNT_LIMIT}")
 
 
 class LetterAddressForm(StripWhitespaceForm):
@@ -1605,6 +1617,11 @@ class LetterTemplateForm(BaseTemplateForm, TemplateNameMixin):
         if kwargs.get("letter_languages") == LetterLanguageOptions.welsh_then_english:
             self.subject.label.text = f"{self.subject.label.text} (Nederlands)"
             self.template_content.label.text = f"{self.template_content.label.text} (Nederlands)"
+
+    def validate_template_content(self, field):
+        template = LetterPreviewTemplate({"subject": "", "content": field.data, "template_type": "letter"})
+        if template.has_qr_code_with_too_much_data():
+            raise ValidationError("Cannot create a usable QR code - the link you entered is too long")
 
 
 class WelshLetterTemplateForm(BaseTemplateForm, TemplateNameMixin):
@@ -2006,11 +2023,11 @@ class EstimateUsageForm(StripWhitespaceForm):
 
 
 class AdminProviderRatioForm(OrderableFieldsForm):
-    def __init__(self, providers):
+    def __init__(self, providers, *args, **kwargs):
         self._providers = providers
 
         # hack: https://github.com/wtforms/wtforms/issues/736
-        self._unbound_fields = [
+        fields = [
             (
                 provider["identifier"],
                 GovukIntegerField(
@@ -2024,8 +2041,15 @@ class AdminProviderRatioForm(OrderableFieldsForm):
             )
             for provider in providers
         ]
+        fields += [
+            (
+                "reason",
+                GovukTextInputField("Reason"),
+            )
+        ]
 
-        super().__init__(data={provider["identifier"]: provider["priority"] for provider in providers})
+        self._unbound_fields = fields
+        super().__init__(*args, data={provider["identifier"]: provider["priority"] for provider in providers}, **kwargs)
 
     def validate(self, *args, **kwargs):
         if not super().validate(*args, **kwargs):
@@ -2346,9 +2370,7 @@ class AdminEditEmailBrandingForm(StripWhitespaceForm):
         if op == "email-branding-details" and not self.name.data:
             raise ValidationError("Vul een naam in voor deze huisstijl")
 
-    def validate(self, *args, **kwargs):
-        rv = super().validate(*args, **kwargs)
-
+    def validate_alt_text(self, field):
         op = request.form.get("operation")
         if op == "email-branding-details":
             # we only want to validate alt_text/text if we're editing the fields, not the file
@@ -2356,14 +2378,10 @@ class AdminEditEmailBrandingForm(StripWhitespaceForm):
                 self.alt_text.data = escape(self.alt_text.data)
 
             if self.alt_text.data and self.text.data:
-                self.alt_text.errors.append("Alt tekst moet leeg zijn als u al een logo tekst hebt ingevuld")
-                return False
+                raise ValidationError("Alt tekst moet leeg zijn als u al een logo tekst hebt ingevuld")
 
             if not (self.alt_text.data or self.text.data):
-                self.alt_text.errors.append("Vul een alt tekst in voor uw logo")
-                return False
-
-        return rv
+                raise ValidationError("Vul een alt tekst in voor uw logo")
 
 
 class DuplicatableHiddenField(HiddenField):
@@ -2612,6 +2630,10 @@ class AdminServiceInboundNumberForm(StripWhitespaceForm):
 
 
 class AdminServiceInboundNumberArchive(StripWhitespaceForm):
+    def __init__(self, *args, service, **kwargs):
+        self.service = service
+        super().__init__(*args, **kwargs)
+
     removal_options = GovukRadiosField(
         "Wat wilt u doen met dit nummer?",
         choices=[("true", "Archiveren"), ("false", "Ontsluiten")],
@@ -2645,6 +2667,10 @@ class AdminServiceLetterAddressPlacementForm(StripWhitespaceForm):
         },
     )
 
+    def validate_removal_options(self, field):
+        if self.service.default_sms_sender == self.service.inbound_number:
+            raise ValidationError("You need to change your default text message sender ID before you can continue")
+
 
 class CallbackForm(StripWhitespaceForm):
     url = GovukTextInputField(
@@ -2652,11 +2678,16 @@ class CallbackForm(StripWhitespaceForm):
         validators=[
             DataRequired(message="Kan niet leeg zijn"),
             Regexp(regex="^https.*", message="Moet een valide https URL zijn"),
+            CanEncode(field_type="een webadres"),
         ],
     )
     bearer_token = GovukPasswordField(
         "Bearer token",
-        validators=[DataRequired(message="Kan niet leeg zijn"), Length(min=10, thing="het bearer token")],
+        validators=[
+            DataRequired(message="Kan niet leeg zijn"),
+            Length(min=10, thing="het bearer token"),
+            CanEncode(field_type="een bearer token"),
+        ],
     )
 
     def validate(self, *args, **kwargs):
@@ -3401,9 +3432,11 @@ class ProcessUnsubscribeRequestForm(StripWhitespaceForm):
 
 
 class TemplateEmailFilesUploadForm(StripWhitespaceForm):
-    def __init__(self, *args, template, **kwargs):
+    def __init__(self, *args, service_id, template, **kwargs):
         self.existing_file_names = template.filenames
         self.placeholders_in_subject = UtilsField(template._subject).placeholders
+        self.service_id = service_id
+        self.template_id = template.id
         super().__init__(*args, **kwargs)
 
     allowed_file_formats = {
@@ -3423,7 +3456,7 @@ class TemplateEmailFilesUploadForm(StripWhitespaceForm):
     }
     allowed_file_extensions = tuple(chain(*allowed_file_formats.values()))
 
-    file = VirusScannedFileField(
+    file = FileField(
         "Voeg een bestand toe",
         validators=[
             DataRequired(message="U moet een bestand uploaden om te versturen"),
@@ -3436,10 +3469,13 @@ class TemplateEmailFilesUploadForm(StripWhitespaceForm):
         ],
     )
 
-    def validate_file(self, field):
+    def validate_file(self, field):  # noqa: C901
+        from flask import current_app
+
         if field.errors:
             return
 
+        # Carry out a preliminary file name length checks
         if (length := len(field.data.filename)) > 100:
             raise ValidationError(
                 f"Bestandsnaam mag niet langer zijn dan 100 tekens (‘{field.data.filename}’ is {length} tekens)"
@@ -3453,6 +3489,57 @@ class TemplateEmailFilesUploadForm(StripWhitespaceForm):
                 f"U kunt geen bestand in het onderwerp van een sjabloon plaatsen "
                 f"– verwijder (({field.data.filename})) of hernoem uw bestand"
             )
+
+        if len(field.data.read()) == 0:
+            raise ValidationError("Your file is empty – check your file and try again")
+        field.data.seek(0)
+
+        # hand off file to document download api to perform further validation checks,
+        # antivirus scan and determination of the file mimetype
+        try:
+            document_download_api_client.file_check_and_antivirus_scan(
+                service_id=self.service_id, file_name=field.data.filename, file_bytes=field.data.read()
+            )
+            field.data.seek(0)  # reset for subsequent file scans ie during S3 upload
+        except DocumentDownloadError as e:
+            raise ValidationError(e.message) from e
+
+        if Spreadsheet.can_handle(field.data.filename):
+            try:
+                too_many_email_addresses = Spreadsheet.from_file(
+                    field.data, filename=field.data.filename
+                ).contains_many_email_addresses()
+            except (UnicodeDecodeError, BadZipFile, XLRDError) as e:
+                raise ValidationError("Notify cannot read this file - try using a different file type") from e
+            except SoftEventletTimeout as e:
+                raise ValidationError(
+                    "Your file took too long to process – try again, or remove any sheets, columns or "
+                    "rows that are not needed"
+                ) from e
+            except XLDateError as e:
+                raise ValidationError("Notify cannot read this file - try saving it as a CSV instead") from e
+            except Spreadsheet.TooManyColumnsError as e:
+                raise ValidationError("Your file has too many columns (Notify can check up to 1,000 columns)") from e
+            except Spreadsheet.TooManyRowsError as e:
+                raise ValidationError(
+                    "Your file has too many rows (Notify can check up to 100,000 rows at once)"
+                ) from e
+
+            if too_many_email_addresses:
+                current_app.logger.warning(
+                    "Too many email addresses in %s uploaded to template %s",
+                    field.data.filename,
+                    self.template_id,
+                    exc_info=True,
+                    extra={
+                        "file_name": field.data.filename,
+                        "template_id": self.template_id,
+                    },
+                )
+                raise ValidationError(
+                    "Your file contains too many email addresses. If you are trying to upload a list of recipients "
+                    "go back to your template and choose ‘Get ready to send’"
+                )
 
 
 class TemplateEmailFileLinkTextForm(StripWhitespaceForm):

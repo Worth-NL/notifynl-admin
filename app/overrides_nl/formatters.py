@@ -339,7 +339,7 @@ def nl2br(value):
 
 
 def format_pounds_as_currency(number: float):
-    return format_pennies_as_currency(round(number * 100), long=False)
+    return format_pennies_as_currency(round(number * 100, ndigits=0), long=False)
 
 
 def format_pennies_as_currency(pennies: int | float, long: bool) -> str:
@@ -348,7 +348,11 @@ def format_pennies_as_currency(pennies: int | float, long: bool) -> str:
     if pennies >= 100:
         pennies = round(pennies)
         return f"€{pennies // 100:,}.{pennies % 100:02}"
-    elif long:
+    # non-fractional cents should be reported as 82 cent, not 82.0 cent
+    if float(pennies) == float(int(pennies)):
+        pennies = round(pennies)
+
+    if long:
         return f"{pennies} cent"
 
     return f"{pennies} cent"

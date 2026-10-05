@@ -8,14 +8,13 @@ from flask import (
     request,
     url_for,
 )
-from flask_login import current_user
 from notifications_utils.recipients import RecipientCSV
 from notifications_utils.template import HTMLEmailTemplate
 
-from app import status_api_client
+from app import current_user, status_api_client
 from app.formatters import format_thousands
 from app.main import main
-from app.main.overrides_nl.forms import FieldWithNoneOption
+from app.main.overrides_nl.forms import FieldWithNoneOption, TemplateEmailFilesUploadForm
 from app.main.views_nl.sub_navigation_dictionaries import features_nav, using_notify_nav
 from app.models.branding import EmailBranding
 from app.models.letter_rates import LetterRates
@@ -240,6 +239,18 @@ def guidance_email_branding():
     )
 
 
+@main.route("/using-notify/fonts-typefaces")
+@main.route("/using-notify/fonts-typefaces/<template_type:notification_type>")
+def guidance_fonts_typefaces(notification_type=None):
+    if not notification_type:
+        return redirect(url_for(".guidance_fonts_typefaces", notification_type="email"))
+    return render_template(
+        "views/guidance/using-notify/fonts-typefaces.html",
+        navigation_links=using_notify_nav(),
+        notification_type=notification_type,
+    )
+
+
 @main.route("/using-notify/formatting")
 def guidance_formatting():
     return render_template(
@@ -324,6 +335,7 @@ def guidance_schedule_messages():
 def guidance_send_files_by_email():
     return render_template(
         "views/guidance/using-notify/send-files-by-email.html",
+        allowed_file_formats=TemplateEmailFilesUploadForm.allowed_file_formats,
         navigation_links=using_notify_nav(),
     )
 

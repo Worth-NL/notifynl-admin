@@ -1,7 +1,6 @@
 from flask import abort, flash, redirect, render_template, request, url_for
-from flask_login import current_user
 
-from app import current_service, organisations_client
+from app import current_service, current_user, organisations_client
 from app.main import main
 from app.main.overrides_nl.forms import OnOffSettingForm, ServiceGoLiveDecisionForm, UniqueServiceForm
 from app.utils.user import user_has_permissions
@@ -79,7 +78,7 @@ def org_member_make_service_live_service_name(service_id):
 
     if "unique" not in request.args:
         return redirect(url_for(".org_member_make_service_live_start", service_id=current_service.id))
-    elif (unique := request.args.get("unique").lower()) == "no":
+    elif (unique := request.args["unique"].lower()) == "no":
         return redirect(url_for(".org_member_make_service_live_decision", service_id=current_service.id, unique=unique))
 
     form = OnOffSettingForm(
@@ -95,11 +94,16 @@ def org_member_make_service_live_service_name(service_id):
         form.enabled.data = name == "ok"
 
     if form.validate_on_submit():
-        redirect_kwargs = {"name": "ok" if form.enabled.data else "bad", "unique": unique}
+        redirect_name = "ok" if form.enabled.data else "bad"
 
         if form.enabled.data and unique == "yes":
             return redirect(
-                url_for(".org_member_make_service_live_decision", service_id=current_service.id, **redirect_kwargs)
+                url_for(
+                    ".org_member_make_service_live_decision",
+                    service_id=current_service.id,
+                    name=redirect_name,
+                    unique=unique,
+                )
             )
 
         organisations_client.notify_org_member_about_next_steps_of_go_live_request(
@@ -111,7 +115,12 @@ def org_member_make_service_live_service_name(service_id):
         )
 
         return redirect(
-            url_for(".org_member_make_service_live_contact_user", service_id=current_service.id, **redirect_kwargs)
+            url_for(
+                ".org_member_make_service_live_contact_user",
+                service_id=current_service.id,
+                name=redirect_name,
+                unique=unique,
+            )
         )
 
     return render_template(
@@ -174,7 +183,7 @@ def org_member_make_service_live_decision(service_id):
     if "unique" not in request.args:
         return redirect(url_for(".org_member_make_service_live_start", service_id=current_service.id))
 
-    unique = request.args.get("unique").lower()
+    unique = request.args["unique"].lower()
     cannot_approve = unique == "no"
 
     form = ServiceGoLiveDecisionForm(
@@ -190,6 +199,7 @@ def org_member_make_service_live_decision(service_id):
         if form.enabled.data:
             flash("Deze dienst is nu live. We sturen het team een e-mail om hen te informeren.", "default_with_tick")
         else:
+            assert form.rejection_reason.data is not None  # type narrowing
             organisations_client.notify_service_member_of_rejected_go_live_request(
                 service_id=service_id,
                 service_member_name=current_service.go_live_user.name,
@@ -207,10 +217,12 @@ def org_member_make_service_live_decision(service_id):
                 "default",
             )
 
-        current_service.update_status(live=form.enabled.data)
+        permissions_to_remove = []
 
         if not current_service.has_email_templates and not bool(current_service.volume_email):
-            current_service.force_permission("email", on=False)
+            permissions_to_remove.append("email")
+
+        current_service.update_status(live=form.enabled.data, permissions_to_remove=permissions_to_remove)
 
         return redirect(url_for(".organisation_dashboard", org_id=current_service.organisation_id))
 

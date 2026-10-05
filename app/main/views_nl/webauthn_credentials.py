@@ -1,6 +1,10 @@
-from flask import abort, current_app, flash, jsonify, redirect, request, session, url_for
-from flask_login import current_user
+from collections.abc import Mapping
 
+from fido2.server import Fido2Server
+from fido2.webauthn import PublicKeyCredentialUserEntity, UserVerificationRequirement
+from flask import abort, current_app, flash, jsonify, redirect, request, session, url_for
+
+from app import current_user
 from app.main import main
 from app.models.user import User
 from app.models.webauthn_credential import RegistrationError, WebAuthnCredential
@@ -15,16 +19,16 @@ def webauthn_begin_register():
     if not current_user.can_use_webauthn:
         abort(403)
 
-    server = current_app.webauthn_server
+    server: Fido2Server = current_app.webauthn_server  # type: ignore[attr-defined]
 
     registration_data, state = server.register_begin(
-        {
-            "id": bytes(current_user.id, "utf-8"),
-            "name": current_user.email_address,
-            "displayName": current_user.name,
-        },
+        PublicKeyCredentialUserEntity(
+            id=bytes(current_user.id, "utf-8"),
+            name=current_user.email_address,
+            display_name=current_user.name,
+        ),
         credentials=current_user.webauthn_credentials.as_cbor,
-        user_verification="discouraged",  # don't ask for PIN
+        user_verification=UserVerificationRequirement.DISCOURAGED,  # don't ask for PIN
         authenticator_attachment=None,
     )
 
@@ -81,9 +85,11 @@ def webauthn_begin_authentication():
     if not user_to_login.webauthn_auth:
         abort(403)
 
-    authentication_data, state = current_app.webauthn_server.authenticate_begin(
+    server: Fido2Server = current_app.webauthn_server  # type: ignore[attr-defined]
+
+    authentication_data, state = server.authenticate_begin(
         credentials=user_to_login.webauthn_credentials.as_cbor,
-        user_verification="discouraged",  # don't ask for PIN
+        user_verification=UserVerificationRequirement.DISCOURAGED,  # don't ask for PIN
     )
     session["webauthn_authentication_state"] = state
     return jsonify(dict(authentication_data))
@@ -117,7 +123,12 @@ def _verify_webauthn_authentication(user):
     request_data = request.get_json()
 
     try:
-        attested_credential_data = current_app.webauthn_server.authenticate_complete(
+        if not isinstance(request_data, Mapping):  # type narrowing
+            raise ValueError("Decoded request data is not a Mapping")
+
+        server: Fido2Server = current_app.webauthn_server  # type: ignore[attr-defined]
+
+        attested_credential_data = server.authenticate_complete(
             state=state,
             credentials=user.webauthn_credentials.as_cbor,
             response=request_data,

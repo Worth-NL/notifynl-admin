@@ -1,10 +1,11 @@
+from collections.abc import Mapping, Set
 from itertools import chain
 
 from flask import request, url_for
 
 
 class Navigation:
-    mapping = {}
+    mapping: Mapping[str, Set[str]] = {}
     selected_class = "selected"
 
     def __init__(self):
@@ -65,6 +66,7 @@ class HeaderNavigation(Navigation):
             "guidance_data_retention_period",
             "guidance_delivery_times",
             "guidance_email_branding",
+            "guidance_fonts_typefaces",
             "guidance_formatting",
             "guidance_letter_branding",
             "guidance_links_and_URLs",
@@ -156,7 +158,7 @@ class HeaderNavigation(Navigation):
 
         nav_items = [
             {"href": url_for("main.guidance_features"), "text": "Functies", "active": self.is_selected("features")},
-            # {"href": url_for("main.guidance_pricing"), "text": "Prijzen", "active": self.is_selected("pricing")},
+            # [NOTIFYNL] No "Prijzen" (pricing) link in the NL header.
             {
                 "href": url_for("main.guidance_using_notify"),
                 "text": "Gebruik van Notify",

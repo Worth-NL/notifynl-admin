@@ -24,9 +24,8 @@ class LetterRates(ModelList):
     post_classes = {
         # The API doesn’t store names or a sort order for the classes
         # so we define them here.
-        # "economy": "Economy mail", # leaving this here as a backup
-        # "second": "Second class", # leaving this here as a backup
-        # "first": "First class", # leaving this here as a backup
+        # [NOTIFYNL] NL only offers "netherlands" postage; upstream's economy, second
+        # and first class names are left out.
         "netherlands": "Netherlands",
         # The API will return rows for `europe` and `rest-of-world`.
         # At the moment the rates for both are the same. So we treat

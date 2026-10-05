@@ -3,13 +3,13 @@ from datetime import datetime
 from functools import partial
 
 from flask import flash, redirect, render_template, request, send_file, url_for
-from flask_login import current_user
 from notifications_python_client.errors import HTTPError
 from werkzeug.exceptions import abort
 
 from app import (
     current_organisation,
     current_service,
+    current_user,
     org_invite_api_client,
     organisations_client,
 )
@@ -72,7 +72,7 @@ def add_organisation():
         except HTTPError as e:
             org_name_exists_message = "Organisation name already exists"
             if e.status_code == 400 and org_name_exists_message in e.message:
-                form.name.errors.append("Deze organisatienaam bestaat al.")
+                form.name.errors.append("Deze organisatienaam bestaat al.")  # type: ignore[attr-defined]  # is there a better way?
             else:
                 raise e
 
@@ -308,7 +308,7 @@ def edit_organisation_name(org_id):
         except HTTPError as http_error:
             error_msg = "Organisation name already exists"
             if http_error.status_code == 400 and error_msg in http_error.message:
-                form.name.errors.append("Deze organisatienaam is al in gebruik")
+                form.name.errors.append("Deze organisatienaam is al in gebruik")  # type: ignore[attr-defined]  # is there a better way?
             else:
                 raise http_error
         else:
@@ -562,7 +562,11 @@ def archive_organisation(org_id):
         try:
             organisations_client.archive_organisation(org_id)
         except HTTPError as e:
-            if e.status_code == 400 and ("team members" in e.message or "services" in e.message):
+            if (
+                e.status_code == 400
+                and isinstance(e.message, str)
+                and ("team members" in e.message or "services" in e.message)
+            ):
                 flash(e.message)
                 return organisation_settings(org_id)
             else:

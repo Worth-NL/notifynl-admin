@@ -3041,6 +3041,7 @@ def test_inbound_sms_sender_is_not_editable(client_request, service_one, fake_uu
         )
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] UK-only free text message allowance; not routed in NL")
 def test_service_confirm_free_allowance_terms(client_request):
     page = client_request.get("main.service_confirm_free_allowance_terms", service_id=SERVICE_ONE_ID)
 
@@ -3051,6 +3052,7 @@ def test_service_confirm_free_allowance_terms(client_request):
     )
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] UK-only free text message allowance; not routed in NL")
 def test_service_confirm_free_allowance_terms_hides_checkbox_if_terms_already_accepted(client_request, service_one):
     service_one["confirmed_unique"] = True
     page = client_request.get("main.service_confirm_free_allowance_terms", service_id=SERVICE_ONE_ID)
@@ -3059,6 +3061,7 @@ def test_service_confirm_free_allowance_terms_hides_checkbox_if_terms_already_ac
     assert not page.select("main .govuk-checkboxes")
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] UK-only free text message allowance; not routed in NL")
 def test_service_confirm_free_allowance_terms_redirects_when_checkbox_is_checked(client_request, mock_update_service):
     client_request.post(
         "main.service_confirm_free_allowance_terms",
@@ -3069,6 +3072,7 @@ def test_service_confirm_free_allowance_terms_redirects_when_checkbox_is_checked
     mock_update_service.assert_called_once_with(SERVICE_ONE_ID, confirmed_unique=True)
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] UK-only free text message allowance; not routed in NL")
 def test_service_confirm_free_allowance_terms_requires_checkbox_to_be_checked(client_request, mock_update_service):
     page = client_request.post(
         "main.service_confirm_free_allowance_terms", service_id=SERVICE_ONE_ID, _expected_status=200
