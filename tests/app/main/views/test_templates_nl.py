@@ -1,3 +1,4 @@
+import json
 import uuid
 from unittest.mock import Mock
 
@@ -6,9 +7,11 @@ from flask import url_for
 from freezegun import freeze_time
 from notifications_python_client.errors import HTTPError
 
-from tests import sample_uuid
+from tests import NotifyBeautifulSoup, sample_uuid
 from tests.conftest import (
     SERVICE_ONE_ID,
+    SERVICE_TWO_ID,
+    TEMPLATE_ONE_ID,
     create_template,
     normalize_spaces,
 )
@@ -210,8 +213,8 @@ def test_edit_service_template_asks_confirmation_when_removing_email_files(
 
 def test_should_not_edit_letter_template_with_too_big_qr_code(
     client_request,
-    mock_get_service_template,
-    mock_update_service_template_400_qr_code_too_big,
+    mock_get_service_letter_template,
+    mock_update_service_template,
     mock_get_no_api_keys,
     fake_uuid,
     service_one,
@@ -240,6 +243,8 @@ def test_should_not_edit_letter_template_with_too_big_qr_code(
     assert normalize_spaces(page.select_one(".govuk-error-message").text) == (
         "Error: Cannot create a usable QR code - the link you entered is too long"
     )
+    # The QR code length is now validated by the form, so the API is never called
+    assert mock_update_service_template.called is False
 
 
 def test_attach_files_button_letter_translation(
@@ -548,3 +553,156 @@ def test_edit_service_template_archives_email_files(
     )
 
     assert normalize_spaces(page.select(".banner-default-with-tick")[0].text) == expected_banner_text
+
+
+@pytest.mark.parametrize(
+    "content, expected_message, expected_class",
+    (
+        ("Hallo", "Wordt in rekening gebracht als 1 SMS-bericht", None),
+        ("Ẅ" * 71, "Wordt in rekening gebracht als 2 SMS-berichten", None),
+        ("Hallo ((naam))", "Wordt in rekening gebracht als 1 SMS-bericht (exclusief personalisatie)", None),
+        ("Ẅ" * 919, "U heeft 1 karakter te veel", "govuk-error-message"),
+        ("Ẅ" * 920, "U heeft 2 karakters te veel", "govuk-error-message"),
+    ),
+)
+def test_content_count_json_endpoint_nl(client_request, content, expected_message, expected_class):
+    response = client_request.post_response(
+        "main.count_content_length",
+        service_id=SERVICE_ONE_ID,
+        template_type="sms",
+        _data={"template_content": content},
+        _expected_status=200,
+    )
+
+    snippet = NotifyBeautifulSoup(json.loads(response.get_data(as_text=True))["html"], "html.parser").select_one("span")
+
+    assert normalize_spaces(snippet.text) == expected_message
+    assert snippet.get("class") == ([expected_class] if expected_class else None)
+
+
+def test_content_count_json_endpoint_shows_no_cost_reduction_tips_nl(client_request):
+    response = client_request.post_response(
+        "main.count_content_length",
+        service_id=SERVICE_ONE_ID,
+        template_type="sms",
+        _data={"template_content": "ẄÿÈ" * 25},
+        _expected_status=200,
+    )
+
+    snippet = NotifyBeautifulSoup(json.loads(response.get_data(as_text=True))["html"], "html.parser").select_one("span")
+
+    assert normalize_spaces(snippet.text) == "Wordt in rekening gebracht als 2 SMS-berichten"
+    assert not snippet.select("p.govuk-hint, ul.govuk-list")
+
+
+@pytest.mark.parametrize(
+    "permissions, template_content, expected_hint_text",
+    (
+        ({}, "Hallo wereld", ""),
+        ({"view_activity"}, "Hallo ((naam))", ""),
+        ({"manage_templates"}, "Hallo wereld", "Wordt in rekening gebracht als 1 SMS-bericht"),
+        (
+            {"manage_service"},
+            "Hallo ((naam))",
+            "Wordt in rekening gebracht als 1 SMS-bericht (exclusief personalisatie)",
+        ),
+        # One character over the maximum, but the template page shows no error
+        ({"manage_api_keys"}, "a" * 919, "Wordt in rekening gebracht als 7 SMS-berichten"),
+    ),
+)
+def test_should_show_sms_fragment_count_on_template_page_nl(
+    client_request,
+    fake_uuid,
+    active_user_with_permissions,
+    permissions,
+    template_content,
+    expected_hint_text,
+    mocker,
+):
+    mocker.patch(
+        "app.service_api_client.get_service_template",
+        return_value={"data": create_template(template_id=fake_uuid, template_type="sms", content=template_content)},
+    )
+    active_user_with_permissions["permissions"][SERVICE_ONE_ID] = permissions
+    client_request.login(active_user_with_permissions)
+
+    page = client_request.get(
+        ".view_template", service_id=SERVICE_ONE_ID, template_id=fake_uuid, _test_page_title=False
+    )
+
+    assert normalize_spaces(getattr(page.select_one(".govuk-hint"), "text", "")) == expected_hint_text
+
+
+def test_post_copy_template_with_email_files_without_contact_link_redirects_nl(
+    client_request,
+    active_user_with_permissions,
+    mock_get_service,
+    multiple_sms_senders,
+    mock_get_service_email_template_with_file,
+    mock_get_service_templates,
+    mock_get_organisations_and_services_for_user,
+    mock_create_service_template,
+    mock_get_no_api_keys,
+    mock_s3_download,
+):
+    active_user_with_permissions["services"].append(SERVICE_TWO_ID)
+    active_user_with_permissions["permissions"][SERVICE_TWO_ID] = active_user_with_permissions["permissions"][
+        SERVICE_ONE_ID
+    ]
+    page = client_request.post(
+        "main.copy_template",
+        service_id=SERVICE_ONE_ID,
+        from_service=SERVICE_TWO_ID,
+        template_id=TEMPLATE_ONE_ID,
+        _data={"service": SERVICE_ONE_ID, "name": "Herinnering na twee weken (kopie)"},
+        _expected_status=200,
+        _follow_redirects=True,
+    )
+
+    assert not mock_create_service_template.call_args_list
+    assert normalize_spaces(page.select_one(".banner-dangerous")) == (
+        "U moet contactgegevens voor uw dienst toevoegen. Contactgegevens voor uw dienst toevoegen"
+    )
+    assert normalize_spaces(page.select_one(".heading-large")) == "Kies een bestaand sjabloon om te kopiëren"
+
+
+def test_should_not_create_too_big_template_nl(client_request, mock_create_service_template):
+    page = client_request.post(
+        ".add_service_template",
+        service_id=SERVICE_ONE_ID,
+        template_type="sms",
+        _data={"name": "nieuwe naam", "template_content": "a" * 919, "template_type": "sms", "service": SERVICE_ONE_ID},
+        _expected_status=200,
+    )
+
+    assert normalize_spaces(page.select_one(".govuk-error-message")) == (
+        "Error: De inhoud heeft meer tekens dan de limiet van 918"
+    )
+    assert mock_create_service_template.called is False
+
+
+def test_should_not_update_too_big_template_nl(
+    client_request,
+    mock_get_service_template,
+    mock_update_service_template,
+    mock_get_no_api_keys,
+    fake_uuid,
+):
+    page = client_request.post(
+        ".edit_service_template",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+        _data={
+            "id": fake_uuid,
+            "name": "nieuwe naam",
+            "template_content": "a" * 919,
+            "service": SERVICE_ONE_ID,
+            "template_type": "sms",
+        },
+        _expected_status=200,
+    )
+
+    assert normalize_spaces(page.select_one(".govuk-error-message")) == (
+        "Error: De inhoud heeft meer tekens dan de limiet van 918"
+    )
+    assert mock_update_service_template.called is False

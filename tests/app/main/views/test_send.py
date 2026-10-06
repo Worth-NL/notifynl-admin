@@ -4617,6 +4617,7 @@ def test_check_notification_shows_back_link(client_request, service_one, fake_uu
     assert normalize_spaces(previous_page.select_one("label").text) == "thing"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] SMS cost prompts are not shown in NL")
 @pytest.mark.parametrize(
     "template_content, personalisation, recipient, expected_cost_message",
     (

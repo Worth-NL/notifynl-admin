@@ -373,10 +373,7 @@ def test_create_file_redirects_to_manage_files_page(
             }
         },
     )
-    mocker.patch(
-        "app.extensions.antivirus_client.scan",
-        return_value=True,
-    )
+    mocker.patch("app.document_download_api_client.file_check_and_antivirus_scan")
     with open("tests/test_pdf_files/one_page_pdf.pdf", "rb") as file:
         page = client_request.post(
             "main.upload_template_email_files",
@@ -670,7 +667,7 @@ def test_upload_file_page_validates_extentions(
     expected_error_message,
     mocker,
 ):
-    mock_antivirus = mocker.patch("app.extensions.antivirus_client.scan", return_value=True)
+    mock_file_check_and_antivirus_scan = mocker.patch("app.document_download_api_client.file_check_and_antivirus_scan")
     mocker.patch("app.s3_client.s3_template_email_file_upload_client.utils_s3upload")
     mocker.patch("app.template_email_file_client.post")
     mocker.patch("app.service_api_client.update_service_template")
@@ -684,7 +681,7 @@ def test_upload_file_page_validates_extentions(
             _expected_status=200,  # if the form fails to validate we should return upload view with msg
         )
 
-    assert mock_antivirus.called
+    assert mock_file_check_and_antivirus_scan.call_args_list == []
     error_message = page.select_one("form label .govuk-error-message")
     assert normalize_spaces(error_message.text) == expected_error_message
 
@@ -713,7 +710,7 @@ def test_upload_file_returns_error_if_filename_is_too_long(
 ):
     assert len(filename) == expected_length
     service_one["contact_link"] = "https://example.com"
-    mock_antivirus = mocker.patch("app.extensions.antivirus_client.scan", return_value=True)
+    mock_file_check_and_antivirus_scan = mocker.patch("app.document_download_api_client.file_check_and_antivirus_scan")
     mock_s3 = mocker.patch("app.s3_client.s3_template_email_file_upload_client.utils_s3upload")
     mock_post = mocker.patch("app.template_email_file_client.post")
 
@@ -731,7 +728,7 @@ def test_upload_file_returns_error_if_filename_is_too_long(
         "is 101 tekens)"
     )
 
-    assert mock_antivirus.called is True
+    assert mock_file_check_and_antivirus_scan.call_args_list == []
     assert mock_s3.called is expected_file_created
     assert mock_post.called is expected_file_created
 
@@ -769,7 +766,7 @@ def test_upload_file_returns_error_if_file_with_same_name_exists(
             )
         },
     )
-    mock_antivirus = mocker.patch("app.extensions.antivirus_client.scan", return_value=True)
+    mock_file_check_and_antivirus_scan = mocker.patch("app.document_download_api_client.file_check_and_antivirus_scan")
     mock_s3 = mocker.patch("app.s3_client.s3_template_email_file_upload_client.utils_s3upload")
     mock_post = mocker.patch("app.template_email_file_client.post")
     mock_template_update = mocker.patch("app.service_api_client.update_service_template")
@@ -784,7 +781,7 @@ def test_upload_file_returns_error_if_file_with_same_name_exists(
     assert normalize_spaces(page.select_one(".govuk-error-message").text) == (
         "Uw sjabloon heeft al een bestand met de naam ‘tests/test_pdf_files/one_page_pdf.pdf’"
     )
-    assert mock_antivirus.called is True
+    assert mock_file_check_and_antivirus_scan.call_args_list == []
     assert mock_template_update.call_args_list == []
     assert mock_s3.call_args_list == []
     assert mock_post.call_args_list == []
@@ -815,7 +812,7 @@ def test_upload_file_returns_error_if_placeholder_exists_in_subject(
             )
         },
     )
-    mock_antivirus = mocker.patch("app.extensions.antivirus_client.scan", return_value=True)
+    mock_file_check_and_antivirus_scan = mocker.patch("app.document_download_api_client.file_check_and_antivirus_scan")
     mock_s3 = mocker.patch("app.s3_client.s3_template_email_file_upload_client.utils_s3upload")
     mock_post = mocker.patch("app.template_email_file_client.post")
     mock_template_update = mocker.patch("app.service_api_client.update_service_template")
@@ -831,7 +828,7 @@ def test_upload_file_returns_error_if_placeholder_exists_in_subject(
         "U kunt geen bestand in het onderwerp van een sjabloon plaatsen – "
         "verwijder ((tests/test_pdf_files/one_page_pdf.pdf)) of hernoem uw bestand"
     )
-    assert mock_antivirus.called is True
+    assert mock_file_check_and_antivirus_scan.call_args_list == []
     assert mock_template_update.call_args_list == []
     assert mock_s3.call_args_list == []
     assert mock_post.call_args_list == []
@@ -865,3 +862,103 @@ def test_change_email_validation_page_has_backlink_and_form_action(
         template_email_file_id=test_template_email_files_data[0]["id"],
     )
     assert page.select_one(".govuk-back-link").text.strip() == "Terug"
+
+
+def test_cannot_upload_file_with_lots_of_email_addresses_nl(
+    client_request,
+    service_one,
+    fake_uuid,
+    test_template_email_files_data,
+    mocker,
+    active_user_with_permissions,
+    mock_update_service,
+    mock_get_service_email_template,
+):
+    service_one["contact_link"] = "https://example.nl"
+    active_user_with_permissions["permissions"][SERVICE_ONE_ID] = ["view_activity", "manage_templates"]
+    client_request.login(active_user_with_permissions)
+    mocker.patch("app.document_download_api_client.file_check_and_antivirus_scan")
+    mock_create_file = mocker.patch("app.models.template_email_file.TemplateEmailFile.create")
+
+    with open("tests/spreadsheet_files/excessive/too_many_email_addresses.csv", "rb") as file:
+        page = client_request.post(
+            "main.upload_template_email_files",
+            service_id=SERVICE_ONE_ID,
+            template_id=fake_uuid,
+            _data={"file": file},
+            _expected_status=200,
+        )
+
+    assert mock_create_file.call_args_list == []
+    assert normalize_spaces(page.select_one(".govuk-error-message").text) == (
+        "Uw bestand bevat te veel e-mailadressen. Als u een lijst met ontvangers wilt uploaden, "
+        "ga dan terug naar uw sjabloon en kies ‘Klaar om te versturen’"
+    )
+
+
+@pytest.mark.parametrize(
+    "document_download_message, expected_error",
+    (
+        ("The file must be smaller than 2MB", "Het bestand moet kleiner zijn dan 2MB"),
+        ("File did not pass the virus scan", "Het bestand heeft de virusscan niet doorstaan"),
+        ("Document must not be empty", "Uw bestand is leeg – controleer uw bestand en probeer het opnieuw"),
+        (
+            "Unsupported file type 'application/x-msdownload'. Supported types are: '.csv', '.pdf'",
+            "Dit bestandstype is niet toegestaan",
+        ),
+        ("Some new error", "Some new error"),
+    ),
+)
+def test_upload_file_shows_document_download_errors_in_dutch(
+    client_request,
+    service_one,
+    fake_uuid,
+    mock_get_service_email_template,
+    mocker,
+    document_download_message,
+    expected_error,
+):
+    from app.notify_client.document_download_api_client import DocumentDownloadError
+
+    service_one["contact_link"] = "https://example.nl"
+    mocker.patch(
+        "app.document_download_api_client.file_check_and_antivirus_scan",
+        side_effect=DocumentDownloadError(message=document_download_message, status_code=400),
+    )
+    mock_post = mocker.patch("app.template_email_file_client.post")
+
+    with open("tests/test_pdf_files/one_page_pdf.pdf", "rb") as file:
+        page = client_request.post(
+            "main.upload_template_email_files",
+            service_id=SERVICE_ONE_ID,
+            template_id=fake_uuid,
+            _data={"file": file},
+            _expected_status=200,
+        )
+
+    assert normalize_spaces(page.select_one(".govuk-error-message").text) == expected_error
+    assert mock_post.call_args_list == []
+
+
+def test_upload_file_returns_error_if_file_is_empty_nl(
+    client_request,
+    fake_uuid,
+    service_one,
+    mock_get_service_email_template,
+    mocker,
+):
+    service_one["contact_link"] = "https://example.nl"
+    mock_file_check_and_antivirus_scan = mocker.patch("app.document_download_api_client.file_check_and_antivirus_scan")
+    with open("tests/text_files/empty.txt", "rb") as file:
+        page = client_request.post(
+            "main.upload_template_email_files",
+            service_id=SERVICE_ONE_ID,
+            template_id=fake_uuid,
+            _data={"file": file},
+            _expected_status=200,
+        )
+
+    assert normalize_spaces(page.select_one(".govuk-error-message").text) == (
+        "Uw bestand is leeg – controleer uw bestand en probeer het opnieuw"
+    )
+    assert mock_file_check_and_antivirus_scan.call_args_list == []

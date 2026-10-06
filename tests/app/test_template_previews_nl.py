@@ -1,5 +1,3 @@
-from unittest.mock import Mock
-
 import pytest
 
 from app import template_preview_client
@@ -13,11 +11,14 @@ def test_get_preview_for_templated_letter_includes_letter_address_placement(
     mocker,
     mock_get_service_letter_template,
     mock_onwards_request_headers,
+    requests_mock,
     letter_address_placement,
 ):
-    mocker.patch(
-        "app.template_preview_client.requests_session.post",
-        return_value=Mock(content="a", status_code="b", headers={"content-type": "image/png"}),
+    requests_mock.post(
+        "http://localhost:9999/preview.png",
+        content=b"a",
+        status_code=200,
+        headers={"content-type": "image/png"},
     )
     service = mocker.Mock(
         spec=Service,
@@ -28,23 +29,23 @@ def test_get_preview_for_templated_letter_includes_letter_address_placement(
 
     template_preview_client.get_preview_for_templated_letter(db_template=template, filetype="png", service=service)
 
-    request_mock = template_preview_client.requests_session.post
-    assert request_mock.call_args[1]["json"]["letter_address_placement"] == letter_address_placement
+    assert requests_mock.request_history[0].json()["letter_address_placement"] == letter_address_placement
 
 
 def test_get_preview_for_templated_letter_letter_address_placement_is_none_without_service(
     client_request,
-    mocker,
     mock_get_service_letter_template,
     mock_onwards_request_headers,
+    requests_mock,
 ):
-    mocker.patch(
-        "app.template_preview_client.requests_session.post",
-        return_value=Mock(content="a", status_code="b", headers={"content-type": "image/png"}),
+    requests_mock.post(
+        "http://localhost:9999/preview.png",
+        content=b"a",
+        status_code=200,
+        headers={"content-type": "image/png"},
     )
     template = mock_get_service_letter_template("123", "456")["data"]
 
     template_preview_client.get_preview_for_templated_letter(db_template=template, filetype="png")
 
-    request_mock = template_preview_client.requests_session.post
-    assert request_mock.call_args[1]["json"]["letter_address_placement"] is None
+    assert requests_mock.request_history[0].json()["letter_address_placement"] is None

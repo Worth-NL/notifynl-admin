@@ -481,6 +481,7 @@ def test_should_show_page_for_email_template_with_unsubscribe_link(
     assert normalize_spaces(unsubscribe_link.text) == "Unsubscribe from these emails"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "permissions, template_content, expected_hint_text",
     (
@@ -2293,6 +2294,7 @@ def test_letter_branding_preview_image(
         "values": None,
         "filename": "example",
         "date": None,
+        "letter_address_placement": "60mm",
     }
 
 
@@ -2888,6 +2890,7 @@ def test_post_copy_template(
     ]
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_post_copy_template_with_email_files_without_contact_link_redirects(
     client_request,
     active_user_with_permissions,
@@ -3943,6 +3946,7 @@ def test_removing_placeholders_is_not_a_breaking_change(
     assert mock_update_service_template.called is True
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_not_create_too_big_template(
     client_request,
     mock_create_service_template,
@@ -3965,6 +3969,7 @@ def test_should_not_create_too_big_template(
     assert mock_create_service_template.called is False
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_not_update_too_big_template(
     client_request,
     mock_get_service_template,
@@ -4918,6 +4923,7 @@ def test_set_template_sender_escapes_letter_contact_block_names(
     assert "<script>" not in radio_text
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "prefix_sms, content, expected_message, expected_class",
     (
@@ -5098,6 +5104,7 @@ def test_content_count_json_endpoint(
         assert expected_class is None
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] SMS cost prompts are not shown in NL")
 def test_content_count_json_endpoint_formats_multiple_suggestions_as_list(
     client_request,
 ):

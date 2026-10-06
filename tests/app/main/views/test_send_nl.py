@@ -16,6 +16,7 @@ from tests.conftest import (
     SERVICE_ONE_ID,
     create_active_caseworking_user,
     create_active_user_with_permissions,
+    create_service_one_user,
     create_template,
     do_mock_get_page_counts_for_letter,
     normalize_spaces,
@@ -883,3 +884,24 @@ def test_example_spreadsheet_for_letters(
         ("name", "example"),
         ("date", "example"),
     ]
+
+
+def test_check_notification_does_not_show_cost_of_text_message_nl(client_request, fake_uuid, mocker):
+    # [NOTIFYNL] Upstream shows "Will be charged as ..." before sending; NL skips the SMS cost prompts.
+    user = create_service_one_user(
+        id=fake_uuid,
+        permissions={SERVICE_ONE_ID: ["send_texts", "send_emails", "send_letters", "manage_templates"]},
+    )
+    client_request.login(user)
+    mocker.patch(
+        "app.service_api_client.get_service_template",
+        return_value={"data": template_json(service_id=SERVICE_ONE_ID, id_=fake_uuid, type_="sms", content="ŵ" * 80)},
+    )
+    with client_request.session_transaction() as session:
+        session["recipient"] = "0612345678"
+        session["placeholders"] = {}
+
+    page = client_request.get("main.check_notification", service_id=SERVICE_ONE_ID, template_id=fake_uuid)
+
+    assert "Wordt in rekening gebracht" not in page.text
+    assert "Will be charged" not in page.text

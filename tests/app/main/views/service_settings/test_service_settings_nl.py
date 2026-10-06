@@ -406,3 +406,25 @@ def test_service_set_letter_address_placement_rejects_invalid_value(
 
     assert not mock_update_service.called
     assert page.select_one(".govuk-error-summary")
+
+
+def test_service_receive_text_messages_stop_fails_when_inbound_number_is_default_sender_nl(
+    client_request,
+    platform_admin_user,
+    service_one,
+    mock_get_inbound_number_for_service,
+    mock_get_most_recent_inbound_usage_date,
+    multiple_sms_senders,
+):
+    service_one["permissions"] = ["inbound_sms"]
+    client_request.login(platform_admin_user)
+
+    page = client_request.post(
+        ".service_receive_text_messages_stop",
+        service_id=SERVICE_ONE_ID,
+        _data={"removal_options": "true"},
+        _expected_status=200,
+    )
+
+    error_summary = page.select_one(".govuk-error-summary")
+    assert "U moet eerst de standaard afzender-ID voor sms-berichten wijzigen" in error_summary.text

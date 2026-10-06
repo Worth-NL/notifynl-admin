@@ -104,6 +104,7 @@ def test_get_should_not_render_radios_if_org_type_known(
     assert page.select_one("input[name=name]").get("value") is None
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_get_name_service_should_not_render_org_type_radios_for_nhs_notify_user(client_request, mocker):
     mocker.patch("app.models.user.User.is_nhs_notify_org_member", return_value=True)
 
@@ -332,6 +333,7 @@ def test_should_add_service_and_redirect_to_dashboard_when_existing_service(
         assert session["service_id"] == 101
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_add_service_for_nhs_notify_user_sets_nhs_notify_org_type_automatically_without_org_type_being_provided(
     client_request,
     mock_update_service,

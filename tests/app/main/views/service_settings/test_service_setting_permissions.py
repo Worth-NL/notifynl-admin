@@ -79,17 +79,19 @@ def test_service_set_permission_requires_platform_admin(
             "False",
             [],
         ),
-        (
+        pytest.param(
             [],
             "block_ofcom_protected_block",
             "True",
             ["block_ofcom_protected_block"],
+            marks=pytest.mark.skip(reason="[NOTIFYNL] OFCOM protected-range toggle is UK-only and not offered in NL"),
         ),
-        (
+        pytest.param(
             ["block_ofcom_protected_block"],
             "block_ofcom_protected_block",
             "False",
             [],
+            marks=pytest.mark.skip(reason="[NOTIFYNL] OFCOM protected-range toggle is UK-only and not offered in NL"),
         ),
     ],
 )

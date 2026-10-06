@@ -1,9 +1,10 @@
 import json
 
+import pytest
 from flask import url_for
 from freezegun import freeze_time
 
-from tests import NotifyBeautifulSoup
+from tests import NotifyBeautifulSoup, service_json
 from tests.conftest import SERVICE_ONE_ID, normalize_spaces
 
 
@@ -20,6 +21,7 @@ def test_service_dashboard_skeleton(
     assert [(heading.name, normalize_spaces(heading.text)) for heading in page.select("main h1, main h2, main h3")] == [
         ("h1", "Dashboard"),
         ("h2", "Afgelopen 7 dagen"),
+        ("h2", "Per template"),
         ("h2", "Dit jaar"),
     ]
 
@@ -46,7 +48,7 @@ def test_service_dashboard_skeleton(
         "brieven verstuurd mislukt – Onbekend %",
     ]
 
-    assert normalize_spaces(template_statistics.select_one("table caption").text) == "Per template"
+    assert normalize_spaces(template_statistics.select_one("h2").text) == "Per template"
     assert template_statistics.select(".spark-bar")
 
     assert [
@@ -125,7 +127,7 @@ def test_template_usage_hides_link_for_precompiled_letter_template(
 
     page = client_request.get("main.template_usage", service_id=SERVICE_ONE_ID)
 
-    table_rows = page.select("tbody tr")
+    table_rows = page.select(".govuk-summary-list__row")
     assert len(table_rows) == 2
 
     normal_row, precompiled_row = table_rows
@@ -174,3 +176,24 @@ def test_service_dashboard_updates_shows_correct_totals_labels(
         "SMS-berichten verstuurd",
         "brieven verstuurd",
     ]
+
+
+@pytest.mark.parametrize("service_restricted, expected_tag", [(True, "Proefmodus"), (False, None)])
+def test_service_navigation_shows_proefmodus_tag_nl(
+    mock_get_service_templates_when_no_templates_exist,
+    mock_has_no_jobs,
+    mock_get_unsubscribe_requests_statistics,
+    mock_get_returned_letter_statistics_with_no_returned_letters,
+    api_user_active,
+    client_request,
+    service_restricted,
+    expected_tag,
+    mocker,
+):
+    service = service_json(SERVICE_ONE_ID, users=[api_user_active["id"]], restricted=service_restricted)
+    mocker.patch("app.service_api_client.get_service", return_value={"data": service})
+
+    page = client_request.get("main.service_dashboard", service_id=SERVICE_ONE_ID)
+
+    tag = page.select_one(".navigation-status-tag")
+    assert (normalize_spaces(tag.text) if tag else None) == expected_tag
