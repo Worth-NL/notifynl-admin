@@ -469,8 +469,8 @@ def copy_template(service_id, template_id):
         if template.template_type == "email" and files_to_copy and not current_service.contact_link:
             flash(
                 Markup(
-                    f"You need to add contact details for your service. "
-                    f'<p class="govuk-body govuk-!-font-weight-bold"><a href="{url_for("main.send_files_by_email_contact_details", service_id=service_id)}" class="govuk-link">Add contact details for your service</a></p>'  # noqa: E501
+                    f"U moet contactgegevens voor uw dienst toevoegen. "
+                    f'<p class="govuk-body govuk-!-font-weight-bold"><a href="{url_for("main.send_files_by_email_contact_details", service_id=service_id)}" class="govuk-link">Contactgegevens voor uw dienst toevoegen</a></p>'  # noqa: E501
                 )
             )
             return redirect(url_for("main.choose_template_to_copy", service_id=service_id))

@@ -1535,7 +1535,7 @@ class BaseTemplateForm(StripWhitespaceForm):
 class SMSTemplateForm(BaseTemplateForm, TemplateNameMixin):
     def validate_template_content(self, field):
         if SMSMessageTemplate({"content": field.data, "template_type": "sms"}).is_message_too_long():
-            raise ValidationError(f"Content has a character count greater than the limit of {SMS_CHAR_COUNT_LIMIT}")
+            raise ValidationError(f"De inhoud heeft meer tekens dan de limiet van {SMS_CHAR_COUNT_LIMIT}")
 
 
 class LetterAddressForm(StripWhitespaceForm):
@@ -2646,6 +2646,10 @@ class AdminServiceInboundNumberArchive(StripWhitespaceForm):
         },
     )
 
+    def validate_removal_options(self, field):
+        if self.service.default_sms_sender == self.service.inbound_number:
+            raise ValidationError("U moet eerst de standaard afzender-ID voor sms-berichten wijzigen")
+
 
 class AdminServiceLetterAddressPlacementForm(StripWhitespaceForm):
     letter_address_placement = GovukRadiosField(
@@ -2666,10 +2670,6 @@ class AdminServiceLetterAddressPlacementForm(StripWhitespaceForm):
             ]
         },
     )
-
-    def validate_removal_options(self, field):
-        if self.service.default_sms_sender == self.service.inbound_number:
-            raise ValidationError("You need to change your default text message sender ID before you can continue")
 
 
 class CallbackForm(StripWhitespaceForm):
@@ -3491,7 +3491,7 @@ class TemplateEmailFilesUploadForm(StripWhitespaceForm):
             )
 
         if len(field.data.read()) == 0:
-            raise ValidationError("Your file is empty – check your file and try again")
+            raise ValidationError("Uw bestand is leeg – controleer uw bestand en probeer het opnieuw")
         field.data.seek(0)
 
         # hand off file to document download api to perform further validation checks,
@@ -3502,7 +3502,7 @@ class TemplateEmailFilesUploadForm(StripWhitespaceForm):
             )
             field.data.seek(0)  # reset for subsequent file scans ie during S3 upload
         except DocumentDownloadError as e:
-            raise ValidationError(e.message) from e
+            raise ValidationError(_document_download_error_message_nl(e.message)) from e
 
         if Spreadsheet.can_handle(field.data.filename):
             try:
@@ -3510,19 +3510,21 @@ class TemplateEmailFilesUploadForm(StripWhitespaceForm):
                     field.data, filename=field.data.filename
                 ).contains_many_email_addresses()
             except (UnicodeDecodeError, BadZipFile, XLRDError) as e:
-                raise ValidationError("Notify cannot read this file - try using a different file type") from e
+                raise ValidationError("Notify kan dit bestand niet lezen – probeer een ander bestandstype") from e
             except SoftEventletTimeout as e:
                 raise ValidationError(
-                    "Your file took too long to process – try again, or remove any sheets, columns or "
-                    "rows that are not needed"
+                    "Het verwerken van uw bestand duurde te lang – probeer het opnieuw, of verwijder werkbladen, "
+                    "kolommen of rijen die u niet nodig heeft"
                 ) from e
             except XLDateError as e:
-                raise ValidationError("Notify cannot read this file - try saving it as a CSV instead") from e
+                raise ValidationError("Notify kan dit bestand niet lezen – sla het op als CSV-bestand") from e
             except Spreadsheet.TooManyColumnsError as e:
-                raise ValidationError("Your file has too many columns (Notify can check up to 1,000 columns)") from e
+                raise ValidationError(
+                    "Uw bestand heeft te veel kolommen (Notify kan maximaal 1.000 kolommen controleren)"
+                ) from e
             except Spreadsheet.TooManyRowsError as e:
                 raise ValidationError(
-                    "Your file has too many rows (Notify can check up to 100,000 rows at once)"
+                    "Uw bestand heeft te veel rijen (Notify kan maximaal 100.000 rijen tegelijk controleren)"
                 ) from e
 
             if too_many_email_addresses:
@@ -3537,9 +3539,24 @@ class TemplateEmailFilesUploadForm(StripWhitespaceForm):
                     },
                 )
                 raise ValidationError(
-                    "Your file contains too many email addresses. If you are trying to upload a list of recipients "
-                    "go back to your template and choose ‘Get ready to send’"
+                    "Uw bestand bevat te veel e-mailadressen. Als u een lijst met ontvangers wilt uploaden, "
+                    "ga dan terug naar uw sjabloon en kies ‘Klaar om te versturen’"
                 )
+
+
+# [NOTIFYNL] document-download-api (and its admin client, for a 413) return English errors;
+# show the ones we know in Dutch and fall back to the original message otherwise.
+_DOCUMENT_DOWNLOAD_ERRORS_NL = {
+    "The file must be smaller than 2MB": "Het bestand moet kleiner zijn dan 2MB",
+    "File did not pass the virus scan": "Het bestand heeft de virusscan niet doorstaan",
+    "Document must not be empty": "Uw bestand is leeg – controleer uw bestand en probeer het opnieuw",
+}
+
+
+def _document_download_error_message_nl(message):
+    if message and message.startswith("Unsupported file type"):
+        return "Dit bestandstype is niet toegestaan"
+    return _DOCUMENT_DOWNLOAD_ERRORS_NL.get(message, message)
 
 
 class TemplateEmailFileLinkTextForm(StripWhitespaceForm):

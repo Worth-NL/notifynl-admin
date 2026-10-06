@@ -18,7 +18,7 @@ Providers
       caption="Binnenlandse SMS-providers",
       caption_visible=False,
       empty_message='Geen binnenlandse SMS-providers',
-      field_headings=['Provider', 'Prioriteit', '% maandelijks verkeer', 'Actief', 'Laatst bijgewerkt', 'Bijgewerkt door'],
+      field_headings=['Provider', 'Prioriteit', '% maandelijks verkeer', 'Actief', 'Laatst bijgewerkt', 'Bijgewerkt door', 'Reden'],
       field_headings_visible=True,
       give_rows_ids=False,
   ) %}
@@ -37,6 +37,8 @@ Providers
       ) }}
 
       {{ optional_text_field(item.created_by_name, default='Geen') }}
+
+      {{ optional_text_field(item.reason, default='None') }}
 
   {% endcall %}
 

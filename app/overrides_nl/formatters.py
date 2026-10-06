@@ -497,7 +497,7 @@ def iteration_count(count):
 def character_count(count):
     if count == 1:
         return "1 karakter"
-    return f"{format_thousands(count)} karakter"
+    return f"{format_thousands(count)} karakters"
 
 
 def format_billions(count):

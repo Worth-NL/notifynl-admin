@@ -1,5 +1,5 @@
 {% extends "withoutnav_template.html" %}
-{% from "components/table.html" import list_table, text_field %}
+{% from "components/table.html" import list_table, text_field, optional_text_field %}
 {% from "components/page-header.html" import page_header %}
 {% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
 
@@ -27,7 +27,7 @@
         caption='',
         caption_visible=False,
         empty_message='Geen geschiedenis beschikbaar voor deze provider',
-        field_headings=['Versie', 'Laatst bijgewerkt', 'Bijgewerkt door', 'Prioriteit', 'Actief'],
+        field_headings=['Versie', 'Laatst bijgewerkt', 'Bijgewerkt door', 'Prioriteit', 'Actief', 'Reden'],
         field_headings_visible=True,
         give_rows_ids=False,
       ) %}
@@ -46,9 +46,13 @@
             {{ text_field('Geen') }}
         {% endif %}
 
+
         {{ text_field(item.priority) }}
 
         {{ text_field(item.active) }}
+
+        {{ optional_text_field(item.reason, default='Not given') }}
+
 
       {% endcall %}
 

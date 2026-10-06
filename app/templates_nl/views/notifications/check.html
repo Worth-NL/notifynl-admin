@@ -70,6 +70,7 @@
   {{ template|string }}
 
   <div class="js-stick-at-bottom-when-scrolling">
+    {# [NOTIFYNL] Upstream's "Will be charged as" cost before sending is not shown in NL (SMS cost prompts are skipped). #}
     <form method="post" enctype="multipart/form-data" action="{{url_for(
         'main.send_notification',
         service_id=current_service.id,

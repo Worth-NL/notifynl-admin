@@ -1,7 +1,7 @@
 {% extends "views/platform-admin/_base_template.html" %}
 {% from "components/form.html" import form_wrapper %}
-{% from "components/table.html" import mapping_table, row, text_field %}
 {% from "components/page-footer.html" import page_footer %}
+{% from "govuk_frontend_jinja/components/summary-list/macro.html" import govukSummaryList %}
 
 {% block per_page_title %}
   Dagelijks volumerapport
@@ -22,28 +22,74 @@
   <h2 class="heading-medium">
     Gegevens opgenomen in het rapport
   </h2>
-<div class="bottom-gutter-3-2">
-    {% call mapping_table(
-      caption='Beschrijving van dagelijkse volumegegevens',
-      field_headings=['Naam', 'Beschrijving'],
-      field_headings_visible=True,
-      caption_visible=False
-    ) %}
-      {% for column_heading, description in [
-        ('day', 'De hele werkdag in BST.'),
-        ('sms totals', 'Het aantal verzonden sms-berichten'),
-        ('sms fragments', 'Het aantal verzonden sms-fragmenten vermenigvuldigd met de tariefvermenigvuldiger'),
-        ('sms chargeable units', 'Het aantal verzonden sms-fragmenten'),
-        ('email totals', 'Het aantal verzonden e-mails'),
-        ('letter totals', 'Het aantal verzonden brieven'),
-        ('letter sheet totals', 'Het aantal verzonden pagina\'s')
-      ] %}
-        {% call row() %}
-          {{ text_field(column_heading) }}
-          {{ text_field(description) }}
-        {% endcall %}
-      {% endfor %}
-    {% endcall %}
-  </div>
+
+  {{ govukSummaryList({
+    "classes": "notify-summary-list govuk-!-margin-bottom-7 govuk-!-font-size-16",
+    "rows": [
+      {
+        "key": {
+          "classes": "notify-summary-list__key",
+          "text": "day"
+        },
+        "value": {
+          "text": "De hele werkdag in BST."
+        }
+      },
+      {
+        "key": {
+          "classes": "notify-summary-list__key",
+          "text": "sms totals"
+        },
+        "value": {
+          "text": "Het aantal verzonden sms-berichten"
+        }
+      },
+      {
+        "key": {
+          "classes": "notify-summary-list__key",
+          "text": "sms fragments"
+        },
+        "value": {
+          "text": "Het aantal verzonden sms-fragmenten vermenigvuldigd met de tariefvermenigvuldiger"
+        }
+      },
+      {
+        "key": {
+          "classes": "notify-summary-list__key",
+          "text": "sms chargeable units"
+        },
+        "value": {
+          "text": "Het aantal verzonden sms-fragmenten"
+        }
+      },
+      {
+        "key": {
+          "classes": "notify-summary-list__key",
+          "text": "email totals"
+        },
+        "value": {
+          "text": "Het aantal verzonden e-mails"
+        }
+      },
+      {
+        "key": {
+          "classes": "notify-summary-list__key",
+          "text": "letter totals"
+        },
+        "value": {
+          "text": "Het aantal verzonden brieven"
+        }
+      },
+      {
+        "key": {
+          "classes": "notify-summary-list__key",
+          "text": "letter sheet totals"
+        },
+        "value": {
+          "text": "Het aantal verzonden pagina's"
+        }
+      }
+    ]
+  }) }}
 
 {% endblock %}

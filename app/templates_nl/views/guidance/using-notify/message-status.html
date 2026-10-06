@@ -2,7 +2,7 @@
 
 {% from "components/pill.html" import pill %}
 {% from "components/service-link.html" import service_link %}
-{% from "components/table.html" import mapping_table, row, text_field %}
+{% from "govuk_frontend_jinja/components/table/macro.html" import govukTable %}
 
 {# Used by the content_template.html layout, prefixes the "navigation" accessible name #}
 {% set navigation_label_prefix = 'Notify gebruiken' %}
@@ -32,74 +32,55 @@
     ) }}
   </div>
 
+  {% set status_descriptions = [] %}
+  {% set caption_text = "" %}
   {% if notification_type == "email" %}
-    {% call mapping_table(
-      caption='Statussen van berichten – e-mails',
-      field_headings=['Status', 'Beschrijving'],
-      field_headings_visible=True,
-      caption_visible=False
-    ) %}
-      {% for message_status, description in [
-        ('Bezorgen', 'Notify heeft het bericht naar de provider gestuurd. De provider probeert het bericht tot 72 uur bij de ontvanger af te leveren. Notify wacht op bezorginformatie.'),
-        ('Bezorgd', 'Het bericht is succesvol afgeleverd. Notify geeft niet door of een gebruiker het bericht heeft geopend of gelezen.'),
-        ('E-mailadres bestaat niet', 'De provider kon het bericht niet afleveren omdat het e-mailadres onjuist was. U dient deze e-mailadressen uit uw database te verwijderen.'),
-        ('Postvak kan nu geen berichten ontvangen', 'De provider kon het bericht niet afleveren. Dit kan gebeuren als het postvak van de ontvanger vol is of als de spamfilter uw e-mail afwijst. <a class="govuk-link govuk-link--no-visited-state" href="https://www.gov.uk/service-manual/design/sending-emails-and-text-messages#protect-your-users-from-spam-and-phishing">Controleer of uw inhoud niet op spam lijkt</a> voordat u het bericht opnieuw probeert te verzenden.' | safe),
-        ('Technische storing', 'Uw bericht is niet verzonden door een probleem tussen Notify en de provider. U zult uw berichten opnieuw moeten versturen.'),
-      ] %}
-        {% call row() %}
-          {{ text_field(message_status) }}
-          {{ text_field(description) }}
-        {% endcall %}
-      {% endfor %}
-    {% endcall %}
-
+    {% set caption_text = "Statussen van berichten – e-mails" %}
+    {% set status_descriptions = [
+      ('Bezorgen', 'Notify heeft het bericht naar de provider gestuurd. De provider probeert het bericht tot 72 uur bij de ontvanger af te leveren. Notify wacht op bezorginformatie.'),
+      ('Bezorgd', 'Het bericht is succesvol afgeleverd. Notify geeft niet door of een gebruiker het bericht heeft geopend of gelezen.'),
+      ('E-mailadres bestaat niet', 'De provider kon het bericht niet afleveren omdat het e-mailadres onjuist was. U dient deze e-mailadressen uit uw database te verwijderen.'),
+      ('Postvak kan nu geen berichten ontvangen', 'De provider kon het bericht niet afleveren. Dit kan gebeuren als het postvak van de ontvanger vol is of als de spamfilter uw e-mail afwijst. <a class="govuk-link govuk-link--no-visited-state" href="https://www.gov.uk/service-manual/design/sending-emails-and-text-messages#protect-your-users-from-spam-and-phishing">Controleer of uw inhoud niet op spam lijkt</a> voordat u het bericht opnieuw probeert te verzenden.' | safe),
+      ('Technische storing', 'Uw bericht is niet verzonden door een probleem tussen Notify en de provider. U zult uw berichten opnieuw moeten versturen.'),
+    ] %}
+  {% elif notification_type == "sms" %}
+    {% set caption_text = "Statussen van berichten – sms-berichten" %}
+    {% set status_descriptions = [
+      ('Bezorgen', 'Notify heeft het bericht naar de provider gestuurd. De provider probeert het bericht tot 72 uur bij de ontvanger af te leveren. Notify wacht op bezorginformatie.'),
+      ('Verzonden naar een internationaal nummer', 'Mobiele netwerken in sommige landen verstrekken geen bezorginformatie meer.'),
+      ('Bezorgd', 'Het bericht is succesvol afgeleverd. Notify geeft niet door of een gebruiker het bericht heeft geopend of gelezen.'),
+      ('Niet bezorgd', ('De provider kon het bericht niet afleveren. Dit kan gebeuren als het telefoonnummer onjuist is of als de netwerkoperator het bericht weigert. Als u zeker weet dat deze telefoonnummers correct zijn, kunt u <a class="govuk-link govuk-link--no-visited-state" href="' + url_for(".support") + '">contact met ons opnemen</a>. Zo niet, dan dient u ze uit uw database te verwijderen. U krijgt nog wel kosten voor sms’jes die niet bezorgd kunnen worden.')|safe),
+      ('Telefoon kan nu geen berichten ontvangen', 'De provider kon het bericht niet afleveren. Dit kan gebeuren als de telefoon van de ontvanger uitstaat, geen bereik heeft of de inbox voor sms-berichten vol is. U kunt het bericht opnieuw proberen te verzenden. U krijgt nog wel kosten voor sms’jes naar telefoons die geen berichten kunnen ontvangen.'),
+      ('Technische storing', 'Uw bericht is niet verzonden door een probleem tussen Notify en de provider. U zult uw berichten opnieuw moeten versturen. Voor sms-berichten die getroffen zijn door een technische storing krijgt u geen kosten in rekening gebracht.'),
+    ] %}
+  {% elif notification_type == "letter" %}
+    {% set caption_text = "Statussen van berichten – brieven" %}
+    {% set status_descriptions = [
+      ('Verzonden', 'Notify heeft de brief naar de provider gestuurd om te worden gedrukt.'),
+      ('Gedrukt', 'De provider heeft de brief gedrukt. Brieven worden om 17:30 uur gedrukt en de volgende werkdag verzonden.'),
+      ('Geannuleerd', 'Verzenden geannuleerd. Uw brief wordt niet gedrukt of verzonden.'),
+      ('Technische storing', 'Uw brief is niet verzonden door een probleem tussen Notify en de provider. We werken aan een oplossing. We nemen contact met u op als we uw hulp nodig hebben. Probeer niet om de brief opnieuw te versturen.'),
+      ('Permanente storing', 'De provider kan de brief niet drukken. Uw brief wordt niet verzonden.')
+    ] %}
   {% endif %}
-  {% if notification_type == "sms" %}
 
-    {% call mapping_table(
-      caption='Statussen van berichten – sms-berichten',
-      field_headings=['Status', 'Beschrijving'],
-      field_headings_visible=True,
-      caption_visible=False
-    ) %}
-      {% for message_status, description in [
-        ('Bezorgen', 'Notify heeft het bericht naar de provider gestuurd. De provider probeert het bericht tot 72 uur bij de ontvanger af te leveren. Notify wacht op bezorginformatie.'),
-        ('Verzonden naar een internationaal nummer', 'Mobiele netwerken in sommige landen verstrekken geen bezorginformatie meer.'),
-        ('Bezorgd', 'Het bericht is succesvol afgeleverd. Notify geeft niet door of een gebruiker het bericht heeft geopend of gelezen.'),
-        ('Niet bezorgd', ('De provider kon het bericht niet afleveren. Dit kan gebeuren als het telefoonnummer onjuist is of als de netwerkoperator het bericht weigert. Als u zeker weet dat deze telefoonnummers correct zijn, kunt u <a class="govuk-link govuk-link--no-visited-state" href="' + url_for(".support") + '">contact met ons opnemen</a>. Zo niet, dan dient u ze uit uw database te verwijderen. U krijgt nog wel kosten voor sms’jes die niet bezorgd kunnen worden.')|safe),
-        ('Telefoon kan nu geen berichten ontvangen', 'De provider kon het bericht niet afleveren. Dit kan gebeuren als de telefoon van de ontvanger uitstaat, geen bereik heeft of de inbox voor sms-berichten vol is. U kunt het bericht opnieuw proberen te verzenden. U krijgt nog wel kosten voor sms’jes naar telefoons die geen berichten kunnen ontvangen.'),
-        ('Technische storing', 'Uw bericht is niet verzonden door een probleem tussen Notify en de provider. U zult uw berichten opnieuw moeten versturen. Voor sms-berichten die getroffen zijn door een technische storing krijgt u geen kosten in rekening gebracht.'),
-      ] %}
-        {% call row() %}
-          {{ text_field(message_status) }}
-          {{ text_field(description) }}
-        {% endcall %}
-      {% endfor %}
-    {% endcall %}
+  {% set table_body = [] %}
+  {% for status, description in status_descriptions %}
+    {% do table_body.append([
+      { "text": status },
+      { "html": description }
+    ]) %}
+  {% endfor %}
 
-  {% endif %}
-  {% if notification_type == "letter" %}
-
-    {% call mapping_table(
-      caption='Statussen van berichten – brieven',
-      field_headings=['Status', 'Beschrijving'],
-      field_headings_visible=True,
-      caption_visible=False
-    ) %}
-      {% for message_status, description in [
-        ('Verzonden', 'Notify heeft de brief naar de provider gestuurd om te worden gedrukt.'),
-        ('Gedrukt', 'De provider heeft de brief gedrukt. Brieven worden om 17:30 uur gedrukt en de volgende werkdag verzonden.'),
-        ('Geannuleerd', 'Verzenden geannuleerd. Uw brief wordt niet gedrukt of verzonden.'),
-        ('Technische storing', 'Uw brief is niet verzonden door een probleem tussen Notify en de provider. We werken aan een oplossing. We nemen contact met u op als we uw hulp nodig hebben. Probeer niet om de brief opnieuw te versturen.'),
-        ('Permanente storing', 'De provider kan de brief niet drukken. Uw brief wordt niet verzonden.')
-      ] %}
-        {% call row() %}
-          {{ text_field(message_status) }}
-          {{ text_field(description) }}
-        {% endcall %}
-      {% endfor %}
-    {% endcall %}
-
-  {% endif %}
+  {{ govukTable({
+    "caption": caption_text,
+    "captionClasses": "govuk-visually-hidden",
+    "classes": "notify-table notify-table--body-small",
+    "head": [
+      { "text": "Status" },
+      { "text": "Beschrijving" }
+    ],
+    "rows": table_body
+  }) }}
 
 {% endblock %}
