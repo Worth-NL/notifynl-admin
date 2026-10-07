@@ -27,7 +27,7 @@
               <span class="api-key__revoked">Ingetrokken op {{ item.expiry_date|format_datetime_human }}</span>
             {% else %}
               <a class="govuk-link govuk-link--destructive api-key__action-link" href="{{ url_for('main.revoke_api_key', service_id=current_service.id, key_id=item.id) }}">
-                Intrekken <span class="govuk-visually-hidden"> API-sleutel {{ item.name }}</span>
+                Intrekken<span class="govuk-visually-hidden"> {{ item.name }}</span>
               </a>
             {% endif %}
           </div>
