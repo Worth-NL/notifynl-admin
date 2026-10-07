@@ -2044,7 +2044,7 @@ class AdminProviderRatioForm(OrderableFieldsForm):
         fields += [
             (
                 "reason",
-                GovukTextInputField("Reason"),
+                GovukTextInputField("Reden"),
             )
         ]
 
