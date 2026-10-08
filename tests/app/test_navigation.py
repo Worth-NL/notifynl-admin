@@ -290,6 +290,7 @@ EXCLUDED_ENDPOINTS = set(
             "revoke_api_key",
             "save_contact_list",
             "security_policy",
+            "security_policy_legacy",
             "send_files_by_email_contact_details",
             "send_from_contact_list",
             "send_messages",
