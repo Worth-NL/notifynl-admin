@@ -29,9 +29,9 @@ def submit_request_to_go_live(service_id):
         flash(
             Markup(
                 """
-                        <h2 class='govuk-heading-m'>There is a problem</h2>
+                        <h2 class='govuk-heading-m'>Er is een probleem</h2>
                         <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
-                            Some of the tasks on this page are incomplete
+                            Sommige taken op deze pagina zijn nog niet afgerond
                         </p>
                     """
             )

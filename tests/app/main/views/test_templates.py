@@ -4161,6 +4161,7 @@ def test_edit_service_template_archives_email_files(
     assert normalize_spaces(page.select(".banner-default-with-tick")[0].text) == expected_banner_text
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_edit_service_template_does_not_allow_email_file_in_subject(
     client_request,
     fake_uuid,

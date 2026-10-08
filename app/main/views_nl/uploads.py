@@ -147,7 +147,7 @@ def upload_letter(service_id):
         except PdfReadError:
             current_app.logger.info("Invalid PDF uploaded for service %s", service_id, extra={"service_id": service_id})
             form.file.errors.append(  # type: ignore[attr-defined]  # is there a better way?
-                "Notify cannot read this PDF - save a new copy and try again"
+                "Notify kan deze pdf niet lezen – sla een nieuwe kopie op en probeer het opnieuw"
             )
 
         if not form.errors:
@@ -502,7 +502,7 @@ def delete_contact_list(service_id, contact_list_id):
 
     flash(
         [  # type: ignore[arg-type]  # lists as messages is a notify hack
-            f"Are you sure you want to delete ‘{contact_list.original_file_name}’?",
+            f"Weet u zeker dat u ‘{contact_list.original_file_name}’ wilt verwijderen?",
         ],
         "delete",
     )

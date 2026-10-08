@@ -236,12 +236,12 @@ def test_should_not_edit_letter_template_with_too_big_qr_code(
     )
 
     assert normalize_spaces(page.select_one(".govuk-error-summary").text) == (
-        "Er is een probleem Cannot create a usable QR code - the link you entered is too long"
+        "Er is een probleem Er kan geen bruikbare QR-code worden gemaakt – de link die u heeft ingevoerd is te lang"
     )
     # The "Error:" visually-hidden prefix comes from the vendored (untranslated)
     # govuk_frontend_jinja error-message macro's default, so it stays in English.
     assert normalize_spaces(page.select_one(".govuk-error-message").text) == (
-        "Error: Cannot create a usable QR code - the link you entered is too long"
+        "Error: Er kan geen bruikbare QR-code worden gemaakt – de link die u heeft ingevoerd is te lang"
     )
     # The QR code length is now validated by the form, so the API is never called
     assert mock_update_service_template.called is False
@@ -706,3 +706,36 @@ def test_should_not_update_too_big_template_nl(
         "Error: De inhoud heeft meer tekens dan de limiet van 918"
     )
     assert mock_update_service_template.called is False
+
+
+def test_edit_service_template_does_not_allow_email_file_in_subject_nl(client_request, fake_uuid, mocker):
+    email_template = create_template(
+        template_type="email",
+        email_files=[
+            {
+                "id": str(uuid.UUID(int=1, version=4)),
+                "filename": "uitnodiging.pdf",
+                "link_text": None,
+                "retention_period": 90,
+                "validate_users_email": False,
+            },
+        ],
+    )
+    mocker.patch("app.service_api_client.get_service_template", return_value={"data": email_template})
+
+    page = client_request.post(
+        ".edit_service_template",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+        _data={
+            "name": email_template["name"],
+            "template_content": email_template["content"],
+            "subject": "Download ((UITNODIGING.PDF))",
+            "service": SERVICE_ONE_ID,
+        },
+        _expected_status=200,
+    )
+
+    assert normalize_spaces(page.select_one(".govuk-error-message")) == (
+        "Error: U kunt geen bestand in het onderwerp plaatsen"
+    )

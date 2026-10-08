@@ -1192,8 +1192,8 @@ def _process_letter_attachment_form(service_id, template, form, upload_id):
             extra={"service_id": service_id, "upload_id": upload_id},
         )
         raise LetterAttachmentFormError(
-            title="There’s a problem with your file",
-            detail="Notify cannot read this PDF - save a new copy and try again",
+            title="Er is een probleem met uw bestand",
+            detail="Notify kan deze pdf niet lezen – sla een nieuwe kopie op en probeer het opnieuw",
         ) from None
 
     file_location = get_transient_letter_file_location(service_id, upload_id)
@@ -1231,10 +1231,10 @@ def _process_letter_attachment_form(service_id, template, form, upload_id):
     if attachment_page_count + template.page_count > template.max_page_count:
         raise LetterAttachmentFormError(
             detail=(
-                f"Letters must be {template.max_page_count} pages or less "
-                f"({template.max_sheet_count} double-sided sheets of paper). "
-                "In total, your letter template and the file you attached are "
-                f"{template.page_count + attachment_page_count} pages long."
+                f"Brieven mogen maximaal {template.max_page_count} pagina’s lang zijn "
+                f"({template.max_sheet_count} dubbelzijdig bedrukte vellen papier). "
+                "Uw briefsjabloon en het bestand dat u heeft bijgevoegd zijn samen "
+                f"{template.page_count + attachment_page_count} pagina’s lang."
             )
         )
 

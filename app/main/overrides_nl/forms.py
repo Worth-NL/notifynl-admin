@@ -1402,9 +1402,9 @@ class CreateServiceForm(StripWhitespaceForm):
 
 class CreateNhsNotifyServiceForm(StripWhitespaceForm):
     name = GovukTextInputField(
-        "Enter a service name",
+        "Vul een naam in voor de dienst",
         validators=[
-            DataRequired(message="Enter a service name"),
+            DataRequired(message="Vul een naam in voor de dienst"),
             MustContainAlphanumericCharacters(),
             Length(max=255, thing="service name"),
         ],
@@ -1603,7 +1603,7 @@ class EmailTemplateForm(BaseTemplateForm, TemplateNameMixin):
             return
 
         if self.email_file_filenames & UtilsField(field.data).placeholders:
-            raise ValidationError("You cannot put a file in the subject")
+            raise ValidationError("U kunt geen bestand in het onderwerp plaatsen")
 
 
 class LetterTemplateForm(BaseTemplateForm, TemplateNameMixin):
@@ -1621,7 +1621,9 @@ class LetterTemplateForm(BaseTemplateForm, TemplateNameMixin):
     def validate_template_content(self, field):
         template = LetterPreviewTemplate({"subject": "", "content": field.data, "template_type": "letter"})
         if template.has_qr_code_with_too_much_data():
-            raise ValidationError("Cannot create a usable QR code - the link you entered is too long")
+            raise ValidationError(
+                "Er kan geen bruikbare QR-code worden gemaakt – de link die u heeft ingevoerd is te lang"
+            )
 
 
 class WelshLetterTemplateForm(BaseTemplateForm, TemplateNameMixin):
@@ -2917,7 +2919,7 @@ class AdminServiceAddDataRetentionForm(StripWhitespaceForm):
             ("letter", "Brief"),
             ("messagebox", "Berichtenbox"),
         ],
-        thing="a type of notification",
+        thing="een notificatietype",
     )
     days_of_retention = GovukIntegerField(
         label="Bewaartermijn in dagen",

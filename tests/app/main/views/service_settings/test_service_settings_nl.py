@@ -214,9 +214,9 @@ def test_switch_email_on_from_tasklist_form(
     page = client_request.post("main.enable_email_channel", service_id=service_one["id"], _follow_redirects=True)
 
     if not confirmed_email_sender_name or not has_email_reply_to_address:
-        assert normalize_spaces(page.select_one(".banner-dangerous h2").text) == ("There is a problem")
+        assert normalize_spaces(page.select_one(".banner-dangerous h2").text) == ("Er is een probleem")
         assert normalize_spaces(page.select_one(".banner-dangerous p").text) == (
-            "Some of the tasks on this page are incomplete"
+            "Sommige taken op deze pagina zijn nog niet afgerond"
         )
     if has_email_reply_to_address and confirmed_email_sender_name:
         assert set(mock_update_service.call_args[1]["permissions"]) == set(expected_updated_permissions)

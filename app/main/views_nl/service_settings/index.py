@@ -746,7 +746,7 @@ def service_receive_text_messages_stop(service_id):
                 extra={"inbound_number": inbound_number, "service_id": service_id},
             )
             form.removal_options.errors.append(  # type: ignore[attr-defined]  # is there a better way?
-                "Failed to remove number from service"
+                "Het nummer kon niet van de dienst worden verwijderd"
             )
 
     recent_use_date = None
@@ -820,9 +820,9 @@ def enable_email_channel(service_id):
         flash(
             Markup(
                 """
-                    <h2 class='govuk-heading-m'>There is a problem</h2>
+                    <h2 class='govuk-heading-m'>Er is een probleem</h2>
                     <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
-                        Some of the tasks on this page are incomplete
+                        Sommige taken op deze pagina zijn nog niet afgerond
                     </p>
                 """
             )
