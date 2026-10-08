@@ -710,7 +710,7 @@ notifications-python-client==12.2.0 \
     # via -r requirements_nl.in
 notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@754687eb4a4ae99354133ab3835a21f56cf9a943
     # via -r requirements_nl.in
-notifynl-frontend-jinja @ git+https://github.com/Worth-NL/LandRegistry-frontend-jinja@befec6e3fd1e73330560750e1ee2dfdf3b2dea5f
+notifynl-frontend-jinja @ git+https://github.com/Worth-NL/LandRegistry-frontend-jinja@26fc51cfdcea6b088ca0291be8dc9e9df3ed0d14
     # via -r requirements_nl.in
 openpyxl==3.1.5 \
     --hash=sha256:5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2 \

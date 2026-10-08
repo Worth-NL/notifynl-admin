@@ -20,7 +20,7 @@ git+https://github.com/alphagov/gds_metrics_python.git@6f1840a57b6fb1ee40b7e84f2
 # Run `make bump-utils` to update to the latest version
 notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@102.0.1
 
-notifynl-frontend-jinja @ git+https://github.com/Worth-NL/LandRegistry-frontend-jinja@befec6e
+notifynl-frontend-jinja @ git+https://github.com/Worth-NL/LandRegistry-frontend-jinja@20261008.8
 
 sentry-sdk[flask]~=2.63
 
