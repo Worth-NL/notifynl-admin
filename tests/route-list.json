@@ -17,7 +17,6 @@
     "/d/<base64_uuid:service_id>/<base64_uuid:document_id>/download",
     "/delivery-and-failure",
     "/design-patterns-content-guidance",
-    "/docs/notify-pdf-letter-spec-latest.pdf",
     "/documentation",
     "/email-auth/<string:token>",
     "/email-branding",

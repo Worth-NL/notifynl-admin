@@ -400,11 +400,6 @@ def guidance_unsubscribe_links():
 # --- Redirects --- #
 
 
-@main.route("/docs/notify-pdf-letter-spec-latest.pdf")
-def letter_spec():
-    return redirect("https://docs.notifications.service.gov.uk/documentation/images/notify-pdf-letter-spec-v2.4.pdf")
-
-
 @main.route("/user-profile/mobile-number/delete", methods=["GET"])
 def user_profile_mobile_number():
     return redirect(url_for("main.your_account_confirm_delete_mobile_number"), 301)

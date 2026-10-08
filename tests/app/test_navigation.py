@@ -209,7 +209,6 @@ EXCLUDED_ENDPOINTS = set(
             "letter_branding_set_name",
             "letter_branding_upload_branding",
             "letter_branding",
-            "letter_spec",
             "letter_template_attach_pages",
             "letter_template_change_language",
             "letter_template_confirm_remove_welsh",

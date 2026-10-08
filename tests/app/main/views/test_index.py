@@ -353,6 +353,7 @@ def test_email_branding_preview_allows_custom_page_title(
     assert page.select_one("title").text == "Preview of new email branding"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] NL has no generic letter specification PDF")
 def test_letter_spec_redirect(client_request):
     client_request.get(
         "main.letter_spec",
@@ -363,6 +364,7 @@ def test_letter_spec_redirect(client_request):
     )
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] NL has no generic letter specification PDF")
 def test_letter_spec_redirect_with_non_logged_in_user(client_request):
     client_request.logout()
     client_request.get(
