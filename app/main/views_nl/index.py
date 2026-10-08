@@ -63,7 +63,7 @@ def accessibility_statement():
 
 @main.route("/design-patterns-content-guidance")
 def design_content():
-    return redirect("https://www.gov.uk/service-manual/design/sending-emails-and-text-messages", 301)
+    return redirect("https://www.ncsc.nl/phishing/hoe-herken-ik-een-phishing-e-mail", 301)
 
 
 @main.route("/_email")
