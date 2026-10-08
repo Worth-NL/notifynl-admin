@@ -68,7 +68,6 @@ from app.models.branding import (
     LetterBranding,
 )
 from app.models.letter_rates import LetterRates
-from app.models.organisation import Organisation
 from app.models.sms_rate import SMSRate
 from app.utils import DELIVERED_STATUSES, FAILURE_STATUSES, SENDING_STATUSES
 from app.utils.services import service_has_or_is_expected_to_send_x_or_more_notifications
@@ -1328,11 +1327,6 @@ def link_service_to_organisation(service_id):
     if form.validate_on_submit():
         if form.organisations.data != current_service.organisation_id:
             organisations_client.update_service_organisation(service_id, form.organisations.data)
-
-            # if it's a GP in trial mode, we need to set their daily sms_message_limit to 0
-            organisation = Organisation.from_id(form.organisations.data)
-            if current_service.trial_mode and organisation.organisation_type == Organisation.TYPE_NHS_GP:
-                current_service.update(sms_message_limit=0)
 
             current_service.update(has_active_go_live_request=False)
         return redirect(url_for(".service_settings", service_id=service_id))

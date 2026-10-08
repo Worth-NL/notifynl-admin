@@ -8,7 +8,6 @@ from werkzeug.exceptions import abort
 
 from app import (
     current_organisation,
-    current_service,
     current_user,
     org_invite_api_client,
     organisations_client,
@@ -16,8 +15,6 @@ from app import (
 from app.constants import PERMISSION_CAN_MAKE_SERVICES_LIVE
 from app.main import main
 from app.main.overrides_nl.forms import (
-    AddGPOrganisationForm,
-    AddNHSLocalOrganisationForm,
     AdminBillingDetailsForm,
     AdminNewOrganisationForm,
     AdminNotesForm,
@@ -77,67 +74,6 @@ def add_organisation():
                 raise e
 
     return render_template("views/organisations/add-organisation.html", form=form, error_summary_enabled=True)
-
-
-@main.route("/services/<uuid:service_id>/add-gp-organisation", methods=["GET", "POST"])
-@user_has_permissions("manage_service")
-def add_organisation_from_gp_service(service_id):
-    if (not current_service.organisation_type == Organisation.TYPE_NHS_GP) or current_service.organisation:
-        abort(403)
-
-    form = AddGPOrganisationForm(service_name=current_service.name)
-
-    if form.validate_on_submit():
-        try:
-            Organisation.create(
-                form.get_organisation_name(),
-                crown=False,
-                organisation_type="nhs_gp",
-                agreement_signed=False,
-            ).associate_service(service_id)
-        except HTTPError as e:
-            org_name_exists_message = "Organisation name already exists"
-            if e.status_code == 400 and org_name_exists_message in e.message:
-                flash("Deze organisatienaam bestaat al.")
-            else:
-                raise e
-
-        else:
-            return redirect(url_for(".service_agreement", service_id=service_id))
-
-    return render_template("views/organisations/add-gp-organisation.html", form=form, error_summary_enabled=True)
-
-
-@main.route("/services/<uuid:service_id>/add-nhs-local-organisation", methods=["GET", "POST"])
-@user_has_permissions("manage_service")
-def add_organisation_from_nhs_local_service(service_id):
-    if (not current_service.organisation_type == Organisation.TYPE_NHS_LOCAL) or current_service.organisation:
-        abort(403)
-
-    form = AddNHSLocalOrganisationForm(
-        organisation_choices=[
-            (organisation.id, organisation.name)
-            for organisation in sorted(AllOrganisations())
-            if organisation.organisation_type == Organisation.TYPE_NHS_LOCAL and organisation.active
-        ]
-    )
-
-    search_form = SearchByNameForm()
-
-    if form.validate_on_submit():
-        Organisation.from_id(form.organisations.data).associate_service(service_id)
-        return redirect(
-            url_for(
-                ".service_agreement",
-                service_id=service_id,
-            )
-        )
-
-    return render_template(
-        "views/organisations/add-nhs-local-organisation.html",
-        form=form,
-        _search_form=search_form,
-    )
 
 
 @main.route("/organisations/<uuid:org_id>", methods=["GET"])

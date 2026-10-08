@@ -107,6 +107,7 @@ def test_show_agreement_page(
         ("nhs_local", "main.add_organisation_from_nhs_local_service"),
     ),
 )
+@pytest.mark.skip(reason="[NOTIFYNL] NHS and GP features are not offered in NL")
 def test_unknown_gps_and_trusts_are_redirected(
     client_request,
     service_one,

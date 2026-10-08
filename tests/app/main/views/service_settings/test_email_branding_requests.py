@@ -442,6 +442,7 @@ def test_email_branding_options_page_redirects_to_choose_banner_type_page_if_som
     )
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] NHS and GP features are not offered in NL")
 def test_email_branding_options_page_redirects_nhs_specific_page(
     service_one,
     client_request,

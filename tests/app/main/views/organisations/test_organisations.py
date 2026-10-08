@@ -118,6 +118,7 @@ def test_view_organisation_shows_the_correct_organisation(client_request, mocker
     assert not page.select("a[download]")
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] NHS and GP features are not offered in NL")
 def test_page_to_create_new_organisation(
     client_request,
     platform_admin_user,
@@ -370,6 +371,7 @@ def test_nhs_local_can_create_own_organisations(
         ),
     ),
 )
+@pytest.mark.skip(reason="[NOTIFYNL] NHS and GP features are not offered in NL")
 def test_gps_can_name_their_organisation(
     client_request,
     mocker,
@@ -473,6 +475,7 @@ def test_validation_of_gps_creating_organisations(
     assert normalize_spaces(page.select_one("label[for=same_as_service_name-1]")) == "No"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] NHS and GP features are not offered in NL")
 def test_nhs_local_assigns_to_selected_organisation(
     client_request,
     mocker,
@@ -1549,10 +1552,11 @@ def test_view_organisation_settings(
             {"organisation_type": "local"},
             {"cached_service_ids": [], "organisation_type": "local"},
         ),
-        (
+        pytest.param(
             ".edit_organisation_type",
             {"organisation_type": "nhs_local"},
             {"cached_service_ids": [], "organisation_type": "nhs_local"},
+            marks=pytest.mark.skip(reason="[NOTIFYNL] NHS and GP features are not offered in NL"),
         ),
         (
             ".edit_organisation_crown_status",

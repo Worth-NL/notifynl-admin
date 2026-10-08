@@ -294,3 +294,33 @@ def test_update_organisation_area_boundary_errors_when_user_not_platform_admin(
         _data={"area_boundary": ""},
         _expected_status=403,
     )
+
+
+def test_page_to_create_new_organisation_only_offers_nl_organisation_types(client_request, platform_admin_user):
+    client_request.login(platform_admin_user)
+    page = client_request.get(".add_organisation")
+
+    assert [radio["value"] for radio in page.select("input[name=organisation_type]")] == ["central", "local", "other"]
+
+
+@pytest.mark.parametrize("organisation_type", ["nhs_central", "nhs_local", "nhs_gp"])
+def test_edit_organisation_type_rejects_nhs_types(
+    client_request,
+    platform_admin_user,
+    organisation_one,
+    mock_get_organisation,
+    mock_update_organisation,
+    mocker,
+    organisation_type,
+):
+    mocker.patch("app.organisations_client.get_organisation_services", return_value=[])
+    client_request.login(platform_admin_user)
+
+    client_request.post(
+        ".edit_organisation_type",
+        org_id=organisation_one["id"],
+        _data={"organisation_type": organisation_type},
+        _expected_status=200,
+    )
+
+    assert mock_update_organisation.called is False

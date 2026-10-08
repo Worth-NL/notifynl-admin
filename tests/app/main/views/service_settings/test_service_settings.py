@@ -5727,6 +5727,7 @@ def test_update_service_organisation(
     mock_update_service.assert_called_once_with(service_one["id"], has_active_go_live_request=False)
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] NHS and GP features are not offered in NL")
 def test_update_service_organisation_sets_daily_sms_limit_to_zero_for_trial_mode_gp(
     client_request,
     platform_admin_user,

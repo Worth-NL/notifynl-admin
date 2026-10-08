@@ -3,7 +3,7 @@ from notifications_python_client.errors import HTTPError
 
 from app import current_user, service_api_client
 from app.main import main
-from app.main.overrides_nl.forms import CreateNhsNotifyServiceForm, CreateNhsServiceForm, CreateServiceForm
+from app.main.overrides_nl.forms import CreateServiceForm
 from app.models.organisation import Organisation
 from app.models.service import Service
 from app.utils.user import user_is_gov_user, user_is_logged_in
@@ -62,15 +62,8 @@ def add_service():
 def name_service():
     default_organisation_type = current_user.default_organisation_type
 
-    form: CreateNhsNotifyServiceForm | CreateServiceForm
-    if default_organisation_type == "nhs":
-        form = CreateNhsServiceForm()
-        default_organisation_type = None
-    elif default_organisation_type == "nhs_notify":
-        form = CreateNhsNotifyServiceForm(organisation_type=default_organisation_type)
-        form.organisation_type.data = "nhs_notify"
-    else:
-        form = CreateServiceForm(organisation_type=default_organisation_type)
+    # [NOTIFYNL] No NHS or NHS Notify service forms in NL
+    form = CreateServiceForm(organisation_type=default_organisation_type)
 
     if form.validate_on_submit():
         service_name = form.name.data

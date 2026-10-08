@@ -1242,58 +1242,12 @@ class RenameOrganisationForm(StripWhitespaceForm):
     )
 
 
-class AddGPOrganisationForm(StripWhitespaceForm):
-    def __init__(self, *args, service_name="onbekend", **kwargs):
-        super().__init__(*args, **kwargs)
-        self.same_as_service_name.label.text = f"Is uw huisartspraktijd ‘{service_name}’?"
-        self.service_name = service_name
-        self.same_as_service_name.param_extensions = {
-            "items": [
-                {},
-                {"conditional": {"html": self.name}},
-            ]
-        }
-
-    def get_organisation_name(self):
-        if self.same_as_service_name.data:
-            return self.service_name
-        return self.name.data
-
-    same_as_service_name = OnOffField(
-        "Is de naam van uw huisartsenpraktijk hetzelfde als die van uw dienst?",
-        choices=[
-            (True, "Ja"),
-            (False, "Nee"),
-        ],
-        choices_for_error_message="‘Ja‘ om de naam van uw huisartsenpraktijk te bevestigen",
-    )
-
-    name = GovukTextInputField(
-        "Wat is de naam van uw huisartsenpraktijk?",
-    )
-
-    def validate_name(self, field):
-        if self.same_as_service_name.data is False:
-            if not field.data:
-                raise ValidationError("Vul de naam van uw huisartsenpraktijk in")
-        else:
-            field.data = ""
-
-
-class AddNHSLocalOrganisationForm(StripWhitespaceForm):
-    def __init__(self, *args, organisation_choices=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.organisations.choices = organisation_choices
-
-    organisations = GovukRadiosField(
-        "Voor welke zorginstelling werkt u?",
-        param_extensions={"fieldset": {"legend": {"classes": "govuk-visually-hidden"}}},
-        thing="een goedgekeurde zorginstelling",
-    )
-
-
 class OrganisationOrganisationTypeForm(StripWhitespaceForm):
-    organisation_type = OrganisationTypeField("Wat voor een type organisatie is dit?")
+    # [NOTIFYNL] Only the NL organisation types; upstream's NHS, GP, emergency service and school types are UK-only.
+    organisation_type = OrganisationTypeField(
+        "Wat voor een type organisatie is dit?",
+        include_only={Organisation.TYPE_CENTRAL, Organisation.TYPE_LOCAL, Organisation.TYPE_OTHER},
+    )
 
 
 class OrganisationAreaBoundaryForm(StripWhitespaceForm):
@@ -1397,26 +1351,6 @@ class CreateServiceForm(StripWhitespaceForm):
     organisation_type = OrganisationTypeField(
         "Wie is er verantwoordelijk voor deze dienst?",
         include_only={Organisation.TYPE_CENTRAL, Organisation.TYPE_LOCAL, Organisation.TYPE_OTHER},
-    )
-
-
-class CreateNhsNotifyServiceForm(StripWhitespaceForm):
-    name = GovukTextInputField(
-        "Vul een naam in voor de dienst",
-        validators=[
-            DataRequired(message="Vul een naam in voor de dienst"),
-            MustContainAlphanumericCharacters(),
-            Length(max=255, thing="service name"),
-        ],
-    )
-    organisation_type = HiddenField("organisation_type", default="nhs_notify")
-
-
-class CreateNhsServiceForm(CreateServiceForm):
-    organisation_type = OrganisationTypeField(
-        "Wie is er verantwoordelijk voor deze dienst?",
-        # Todo nl: dit lijkt overbodig zonder NHS
-        include_only={"nhs_central", "nhs_local", "nhs_gp"},
     )
 
 

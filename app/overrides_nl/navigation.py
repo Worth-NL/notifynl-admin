@@ -285,7 +285,6 @@ class MainNavigation(Navigation):
             "usage",
         },
         "settings": {
-            "branding_nhs",
             "branding_option_preview",
             "email_branding_choose_banner_colour",
             "email_branding_choose_banner_type",
@@ -360,8 +359,6 @@ class MainNavigation(Navigation):
             "org_member_make_service_live_start",
         },
         "make-your-service-live": {
-            "add_organisation_from_gp_service",
-            "add_organisation_from_nhs_local_service",
             "confirm_service_is_unique",
             "estimate_usage",
             "request_to_go_live",
