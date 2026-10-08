@@ -34,3 +34,14 @@ def test_design_content_redirects_to_ncsc(client_request):
         _expected_status=301,
         _expected_redirect="https://www.ncsc.nl/phishing/hoe-herken-ik-een-phishing-e-mail",
     )
+
+
+def test_letter_spec_address_block_matches_nl_address_windows(client_request):
+    # [NOTIFYNL] template-preview validates the address at 50mm or 60mm from the top, 40mm high
+    client_request.logout()
+    page = normalize_spaces(client_request.get("main.guidance_upload_a_letter").text)
+
+    assert "Positie: 24,6 mm vanaf de linkerkant, 50 mm of 60 mm vanaf de bovenkant" in page
+    assert "Afmeting: 95,4 mm breed bij 40 mm hoog" in page
+    assert "Adresplaatsing op de brief" in page
+    assert "39,5 mm" not in page
