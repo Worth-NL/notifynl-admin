@@ -8,6 +8,7 @@ import pytest
         "/.well-known/security.txt",
     ],
 )
+@pytest.mark.skip(reason="[NOTIFYNL] NL serves its own security.txt, see test_security_policy_nl.py")
 def test_security_policy_redirects_to_policy(client_request, url):
     client_request.get_url(
         url,

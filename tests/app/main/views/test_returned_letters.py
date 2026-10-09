@@ -50,9 +50,11 @@ def test_returned_letter_summary(
     mock.assert_called_once_with(SERVICE_ONE_ID)
 
     assert page.select_one("h1").string.strip() == "Returned letters"
-    assert [normalize_spaces(p.text) for p in page.select("main p.govuk-body")] == expected_paragraphs
-    assert normalize_spaces(page.select_one(".table-field").text) == "24 December 2019 1,234 letters"
-    assert page.select_one(".table-field a")["href"] == url_for(
+    assert [
+        normalize_spaces(p.text) for p in page.select("main p.govuk-body:not(ul p.govuk-body)")
+    ] == expected_paragraphs
+    assert normalize_spaces(page.select_one(".returned-letters-list li").text) == "24 December 2019 1,234 letters"
+    assert page.select_one(".returned-letters-list li a")["href"] == url_for(
         ".returned_letters",
         service_id=SERVICE_ONE_ID,
         reported_at="2019-12-24",
@@ -69,7 +71,7 @@ def test_returned_letter_summary_with_one_letter(client_request, mock_get_api_ke
     mock.assert_called_once_with(SERVICE_ONE_ID)
 
     assert page.select_one("h1").string.strip() == "Returned letters"
-    assert normalize_spaces(page.select_one(".table-field").text) == "24 December 2019 1 letter"
+    assert normalize_spaces(page.select_one(".returned-letters-list li").text) == "24 December 2019 1 letter"
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -109,14 +111,13 @@ def test_returned_letters_page(client_request, mocker):
     )
 
     assert [
-        "Template name Originally sent",
         "Example template Reference ABC123 Sent 24 December 2019",
         "Example template Sent from Example spreadsheet.xlsx Sent 24 December 2019",
         "Example template No reference provided Sent 24 December 2019",
         "Example precompiled.pdf Reference DEF456 Sent 24 December 2019",
         "Example one-off.pdf No reference provided Sent 24 December 2019",
         "Provided as PDF Reference XYZ999 Sent 24 December 2019",
-    ] == [normalize_spaces(row.text) for row in page.select("tr")]
+    ] == [normalize_spaces(list_item.text) for list_item in page.select(".govuk-summary-list__row")]
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -171,7 +172,7 @@ def test_returned_letters_page_with_many_letters(
         reported_at="2019-12-24",
     )
 
-    assert len(page.select("tbody tr")) == 50
+    assert len(page.select(".govuk-summary-list__row")) == 50
 
     download_link = page.select_one("main a")
     assert normalize_spaces(download_link.text) == "Download this report (CSV)"
@@ -187,7 +188,7 @@ def test_returned_letters_page_with_many_letters(
     else:
         assert [normalize_spaces(e.text) for e in orphaned_paras] == [orphaned_expected_message]
 
-    show_more_links = [e for e in page.select(".table-show-more-link") if "Only showing" in e.text]
+    show_more_links = [e for e in page.select(".more-items-available-text") if "Only showing" in e.text]
     if more_expected_message is None:
         assert show_more_links == []
     else:

@@ -1,9 +1,24 @@
-import * as helpers from './support/helpers.js';
-import CopyToClipboard from '../../app/assets/javascripts/esm/copy-to-clipboard.mjs';
+;
 import { beforeEach, jest } from '@jest/globals';
+import { triggerEvent } from './support/helpers/events.mjs';
+import { RangeMock } from './support/helpers/dom_interfaces.mjs';
+
+jest.unstable_mockModule('../../app/assets/javascripts/esm/stick-to-window-when-scrolling.mjs', () => ({
+  stickAtBottomWhenScrolling: {
+    recalculate: jest.fn()
+  }
+}));
+
+let CopyToClipboard;
+let stickAtBottomWhenScrolling;
 
 
-beforeAll(() => {
+beforeAll( async() => {
+  ({ stickAtBottomWhenScrolling } = await import('../../app/assets/javascripts/esm/stick-to-window-when-scrolling.mjs'));
+  const copyToClipboardModule = await import('../../app/assets/javascripts/esm/copy-to-clipboard.mjs');
+
+  CopyToClipboard = copyToClipboardModule.default;
+
   document.body.classList.add('govuk-frontend-supported');
 });
 
@@ -29,16 +44,12 @@ describe('copy to clipboard', () => {
   };
 
   beforeEach(() => {
+    stickAtBottomWhenScrolling.recalculate.mockClear();
     // mock objects used to manipulate the page selection
-    rangeMock = new helpers.RangeMock(jest);
+    rangeMock = new RangeMock(jest);
 
     // plug gaps in JSDOM's API for Range
     document.createRange = jest.fn(() => rangeMock);
-
-    // mock sticky JS
-    window.GOVUK.stickAtBottomWhenScrolling = {
-      recalculate: jest.fn(() => {})
-    }
 
   });
 
@@ -59,12 +70,6 @@ describe('copy to clipboard', () => {
   });
 
   describe("If Clipboard API is supported", () => {
-
-    beforeAll(() => {
-      // force module require to not come from cache
-      jest.resetModules();
-
-    });
 
     beforeEach(() => {
       // mock Clipboard API availability
@@ -106,7 +111,7 @@ describe('copy to clipboard', () => {
         test("It should tell any sticky JS present the page has changed", () => {
 
           // recalculate forces the sticky JS to recalculate any stored DOM position/dimensions
-          expect(window.GOVUK.stickAtBottomWhenScrolling.recalculate).toHaveBeenCalled();
+          expect(stickAtBottomWhenScrolling.recalculate).toHaveBeenCalled();
 
         });
 
@@ -212,7 +217,7 @@ describe('copy to clipboard', () => {
 
           keyEl = component.querySelector('.copy-to-clipboard__value');
 
-          helpers.triggerEvent(component.querySelector('button'), 'click');
+          triggerEvent(component.querySelector('button'), 'click');
 
         });
 
@@ -275,7 +280,7 @@ describe('copy to clipboard', () => {
 
           beforeEach(() => {
 
-            helpers.triggerEvent(component.querySelector('button'), 'click');
+            triggerEvent(component.querySelector('button'), 'click');
 
           });
 
@@ -310,7 +315,7 @@ describe('copy to clipboard', () => {
           // start the module
           new CopyToClipboard(component);
 
-          helpers.triggerEvent(component.querySelector('button'), 'click');
+          triggerEvent(component.querySelector('button'), 'click');
 
         });
 
@@ -351,7 +356,7 @@ describe('copy to clipboard', () => {
           // start the module
           new CopyToClipboard(component);
 
-          helpers.triggerEvent(component.querySelector('button'), 'click');
+          triggerEvent(component.querySelector('button'), 'click');
 
         });
 

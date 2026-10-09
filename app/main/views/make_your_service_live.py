@@ -1,5 +1,4 @@
 from flask import flash, redirect, render_template, url_for
-from flask_login import current_user
 from markupsafe import Markup
 from notifications_python_client.errors import HTTPError
 from notifications_utils.clients.zendesk.zendesk_client import (
@@ -7,7 +6,7 @@ from notifications_utils.clients.zendesk.zendesk_client import (
     NotifyTicketType,
 )
 
-from app import current_service, service_api_client
+from app import current_service, current_user, service_api_client
 from app.extensions import zendesk_client
 from app.main import main
 from app.main.forms import RenameServiceForm
@@ -96,7 +95,7 @@ def confirm_service_is_unique(service_id):
 
     if form.validate_on_submit():
         try:
-            current_service.update(name=form.name.data, confirmed_unique=True)
+            current_service.update(name=form.name.data, confirmed_unique=True, confirmed_service_name=True)
         except HTTPError as http_error:
             if http_error.status_code == 400 and (
                 error_message := service_api_client.parse_edit_service_http_error(http_error)

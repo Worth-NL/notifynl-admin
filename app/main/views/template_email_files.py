@@ -1,6 +1,5 @@
 from flask import abort, flash, redirect, render_template, request, url_for
 from notifications_utils.field import PlainTextField
-from notifications_utils.insensitive_dict import InsensitiveSet
 
 from app import current_service, current_user, service_api_client
 from app.main import main
@@ -118,7 +117,7 @@ def make_file_live(service_id, template_id, template_email_file_id):
     template_email_file = TemplateEmailFile.get_by_id(
         template_email_file_id=template_email_file_id, service_id=service_id, template=template
     )
-    if template_email_file.filename not in InsensitiveSet(template.placeholders):
+    if template_email_file.filename not in template.placeholders:
         new_content = template.content + f"\n\n(({template_email_file.filename}))"
         service_api_client.update_service_template(
             service_id=service_id,
@@ -140,7 +139,7 @@ def upload_template_email_files(template_id, service_id):
     )
     if not current_service.contact_link:
         abort(403)
-    form = TemplateEmailFilesUploadForm(template=template)
+    form = TemplateEmailFilesUploadForm(service_id=service_id, template=template)
     if form.validate_on_submit():
         template_email_file_id = TemplateEmailFile.create(
             filename=form.file.data.filename,

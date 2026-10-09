@@ -2,7 +2,7 @@
 {% from "components/page-footer.html" import page_footer %}
 {% from "components/form.html" import form_wrapper %}
 {% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
-{% from "components/table.html" import mapping_table, row, text_field %}
+{% from "govuk_frontend_jinja/components/table/macro.html" import govukTable %}
 
 {% block service_page_title %}
   {{ form.postage.label.text }}
@@ -32,28 +32,42 @@
       <h2 class="govuk-heading-m">
         Bezorgtijden
       </h2>
-      <p class="govuk-body">Brieven worden vóór 17:30 uur gedrukt en de eerstvolgende werkdag (maandag t/m vrijdag) verzonden.</p>
-      <p class="govuk-body">De geschatte levertijden zijn gebaseerd op de datum waarop een brief wordt verzonden.</p>
+  <p class="govuk-body">Brieven worden vóór 17:30 uur gedrukt en de eerstvolgende werkdag (maandag t/m vrijdag) verzonden.</p>
+  <p class="govuk-body">De geschatte levertijden zijn gebaseerd op de datum waarop een brief wordt verzonden.</p>
 
-      <div class="bottom-gutter-3-2">
-        {% call mapping_table(
-          caption='Geschatte levertijden voor brieven',
-          field_headings=['Porto', 'Geschatte levertijd'],
-          field_headings_visible=True,
-          caption_visible=False
-        ) %}
-          {% for column_heading, description in [
-            ('Netherlands', '1 tot 2 dagen'),
-            ('Internationaal (Europa)', '3 tot 5 dagen'),
-            ('Internationaal (Europa) (rest van de werld)', '6 tot 7 dagen'),
-            ] %}
-            {% call row() %}
-              {{ text_field(column_heading) }}
-              {{ text_field(description) }}
-            {% endcall %}
-          {% endfor %}
-        {% endcall %}
-      </div>
+  <div class="bottom-gutter-3-2">
+    {% set delivery_times_table_body = [] %}
+    {% for column_heading, description in [
+        ('Nederland', '1 tot 2 dagen'),
+        ('Internationaal (Europa)', '3 tot 5 dagen'),
+        ('Internationaal (rest van de wereld)', '6 tot 7 dagen'),
+      ] %}
+      {% do delivery_times_table_body.append([
+        {
+          "text": column_heading
+        },
+        {
+          "text": description
+        }
+      ])%}
+    {% endfor %}
+
+    {{ govukTable({
+      "caption": "Geschatte levertijden voor brieven",
+      "captionClasses": "govuk-visually-hidden",
+      "classes": "notify-table notify-table--body-small",
+      "head": [
+        {
+          "text": "Porto"
+        },
+        {
+          "text": "Geschatte levertijd",
+        },
+      ],
+      "rows": delivery_times_table_body
+    }) }}
+  </div>
+
     </div>
   </div>
 

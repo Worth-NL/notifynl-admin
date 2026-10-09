@@ -146,8 +146,8 @@ def test_can_show_notifications(
             **extra_args,
         )
 
-    first_row = page.select_one("tbody tr")
-    assert normalize_spaces(first_row.select_one("a.file-list-filename.govuk-link").text) == (
+    first_row = page.select_one(".govuk-summary-list__row")
+    assert normalize_spaces(first_row.select_one("a.notify-summary-list__filename").text) == (
         # Comes from
         # https://github.com/alphagov/notifications-admin/blob/8faffad508f9a087b0006989c197741c693cc2e2/tests/__init__.py#L436
         "07123456789"
@@ -155,7 +155,7 @@ def test_can_show_notifications(
     assert normalize_spaces(
         # We’re doing str() here not .text to make sure there’s no extra
         # HTML sneaking in
-        str(first_row.select_one(".file-list-hint"))
+        str(first_row.select_one(".notify-summary-list__metadata"))
     ) == (
         # Comes from
         # https://github.com/alphagov/notifications-admin/blob/8faffad508f9a087b0006989c197741c693cc2e2/tests/__init__.py#L271
@@ -166,9 +166,7 @@ def test_can_show_notifications(
         "template subject"
     )
 
-    assert normalize_spaces(first_row.select_one(".table-field-right-aligned .align-with-message-body").text) == (
-        "Delivered 1 January at 1:01am"
-    )
+    assert normalize_spaces(first_row.select_one(".notification-state").text) == ("Delivered 1 January at 1:01am")
 
     assert page_title in page.select_one("h1").text.strip()
 
@@ -203,7 +201,7 @@ def test_can_show_notifications(
 
     # All links to view individual notifications should pass through the statuses for the current view,
     # so that backlinks can be generated correctly.
-    view_notification_links = page.select(".file-list-filename")
+    view_notification_links = page.select(".notify-summary-list__filename")
     assert all(
         parse_qs(urlparse(view_notification_link["href"]).query, keep_blank_values=True)["from_statuses"]
         == [status_argument]
@@ -245,7 +243,7 @@ def test_view_notifications_interruptible(
     mock_get_notifications_count_for_service,
     mocker,
 ):
-    mock_interruptible = mocker.patch("app.utils.interruptible_io._interruptible")
+    mock_interruptible = mocker.patch("notifications_utils.interruptible_io._allow_interruption")
 
     client_request.get(
         "main.view_notifications",
@@ -506,7 +504,7 @@ def test_letters_with_status_virus_scan_failed_shows_a_failure_description(
         status="",
     )
 
-    error_description = page.select_one("div.table-field-status-error").text.strip()
+    error_description = page.select_one(".notification-state").text.strip()
     assert "Virus detected\n" in error_description
 
 
@@ -533,7 +531,7 @@ def test_should_not_show_preview_link_for_precompiled_letters_in_virus_states(
         status="",
     )
 
-    assert not page.select_one("a.file-list-filename")
+    assert not page.select_one("a.notify-summary-list__filename")
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -551,7 +549,7 @@ def test_shows_message_when_no_notifications(
         message_type="sms",
     )
 
-    assert normalize_spaces(page.select("tbody tr")[0].text) == "No messages found (messages are kept for 7 days)"
+    assert normalize_spaces(page.select_one(".no-data").text) == "No messages found (messages are kept for 7 days)"
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -776,10 +774,10 @@ def test_doesnt_show_pagination_with_search_term(
         },
         _expected_status=200,
     )
-    assert len(page.select("tbody tr")) == 50
+    assert len(page.select(".govuk-summary-list__row")) == 50
     assert not page.select_one("a[rel=next]")
     assert not page.select_one("a[rel=previous]")
-    assert normalize_spaces(page.select_one(".table-show-more-link").text) == "Only showing the first 50 messages"
+    assert normalize_spaces(page.select_one(".more-items-available-text").text) == "Only showing the first 50 messages"
 
 
 @pytest.mark.parametrize(
@@ -913,7 +911,7 @@ def test_redacts_templates_that_should_be_redacted(
         message_type=notification_type,
     )
 
-    assert normalize_spaces(page.select("tbody tr th")[0].text) == (expected_row_contents)
+    assert normalize_spaces(page.select_one(".govuk-summary-list__key").text) == (expected_row_contents)
 
 
 @pytest.mark.parametrize("message_type, nav_visible", [("email", True), ("sms", True), ("letter", False)])
@@ -944,24 +942,24 @@ def test_big_numbers_dont_show_for_letters(
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2017-09-27 16:30:00.000000")
 @pytest.mark.parametrize(
-    "message_type, status, expected_hint_status, single_line",
+    "message_type, status, expected_hint_status, has_link",
     [
-        ("email", "created", "Delivering since 27 September at 5:30pm", True),
-        ("email", "sending", "Delivering since 27 September at 5:30pm", True),
-        ("email", "temporary-failure", "Inbox not accepting messages right now 27 September at 5:31pm", False),
-        ("email", "permanent-failure", "Email address does not exist 27 September at 5:31pm", False),
-        ("email", "delivered", "Delivered 27 September at 5:31pm", True),
-        ("sms", "created", "Delivering since 27 September at 5:30pm", True),
-        ("sms", "sending", "Delivering since 27 September at 5:30pm", True),
-        ("sms", "temporary-failure", "Phone not accepting messages right now 27 September at 5:31pm", False),
-        ("sms", "permanent-failure", "Not delivered 27 September at 5:31pm", False),
-        ("sms", "delivered", "Delivered 27 September at 5:31pm", True),
-        ("letter", "created", "27 September at 5:30pm", True),
-        ("letter", "pending-virus-check", "27 September at 5:30pm", True),
-        ("letter", "sending", "27 September at 5:30pm", True),
-        ("letter", "delivered", "27 September at 5:30pm", True),
-        ("letter", "received", "27 September at 5:30pm", True),
-        ("letter", "accepted", "27 September at 5:30pm", True),
+        ("email", "created", "Delivering since 27 September at 5:30pm", False),
+        ("email", "sending", "Delivering since 27 September at 5:30pm", False),
+        ("email", "temporary-failure", "Inbox not accepting messages right now 27 September at 5:31pm", True),
+        ("email", "permanent-failure", "Email address does not exist 27 September at 5:31pm", True),
+        ("email", "delivered", "Delivered 27 September at 5:31pm", False),
+        ("sms", "created", "Delivering since 27 September at 5:30pm", False),
+        ("sms", "sending", "Delivering since 27 September at 5:30pm", False),
+        ("sms", "temporary-failure", "Phone not accepting messages right now 27 September at 5:31pm", True),
+        ("sms", "permanent-failure", "Not delivered 27 September at 5:31pm", True),
+        ("sms", "delivered", "Delivered 27 September at 5:31pm", False),
+        ("letter", "created", "27 September at 5:30pm", False),
+        ("letter", "pending-virus-check", "27 September at 5:30pm", False),
+        ("letter", "sending", "27 September at 5:30pm", False),
+        ("letter", "delivered", "27 September at 5:30pm", False),
+        ("letter", "received", "27 September at 5:30pm", False),
+        ("letter", "accepted", "27 September at 5:30pm", False),
         (
             "letter",
             "cancelled",
@@ -972,13 +970,13 @@ def test_big_numbers_dont_show_for_letters(
             "letter",
             "permanent-failure",
             "Permanent failure 27 September at 5:31pm",
-            False,
+            True,
         ),
         (
             "letter",
             "temporary-failure",
             "27 September at 5:30pm",
-            False,
+            True,
         ),  # Not currently a real letter status
         ("letter", "virus-scan-failed", "Virus detected 27 September at 5:30pm", False),
         (
@@ -991,7 +989,7 @@ def test_big_numbers_dont_show_for_letters(
             "letter",
             "technical-failure",
             "Technical failure 27 September at 5:30pm",
-            False,
+            True,
         ),
     ],
 )
@@ -1005,7 +1003,7 @@ def test_sending_status_hint_displays_correctly_on_notifications_page(
     message_type,
     status,
     expected_hint_status,
-    single_line,
+    has_link,
     mocker,
 ):
     notifications = create_notifications(template_type=message_type, status=status)
@@ -1013,8 +1011,8 @@ def test_sending_status_hint_displays_correctly_on_notifications_page(
 
     page = client_request.get("main.view_notifications", service_id=service_one["id"], message_type=message_type)
 
-    assert normalize_spaces(page.select(".table-field-right-aligned")[0].text) == expected_hint_status
-    assert bool(page.select(".align-with-message-body")) is single_line
+    assert normalize_spaces(page.select(".notification-state")[0].text) == expected_hint_status
+    assert bool(page.select(".notification-state__link")) is has_link
 
 
 @pytest.mark.parametrize(
@@ -1051,8 +1049,8 @@ def test_should_show_address_and_hint_for_letters(
         message_type="letter",
     )
 
-    assert page.select_one("a.file-list-filename").text == "Full Name, First address line, postcode"
-    assert page.select_one("p.file-list-hint").text.strip() == expected_hint
+    assert page.select_one("a.notify-summary-list__filename").text == "Full Name, First address line, postcode"
+    assert page.select_one(".notify-summary-list__metadata").text.strip() == expected_hint
 
 
 CanDownloadLinkTestCase = namedtuple(

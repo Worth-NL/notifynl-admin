@@ -837,14 +837,18 @@ def test_create_email_branding_government_identity_logo_form(client_request, pla
 
     assert list(zip(values, images, strict=True)) == [
         (
-            "Department for Business & Trade",
-            "https://static.example.com/images/branding/insignia/"
-            "Department for Business & Trade.png?037794106095c182ff58655a47fe3bca",
+            "Department for Business, Innovation, Science and Trade",
+            (
+                "https://static.example.com/images/branding/insignia/"
+                "Department for Business, Innovation, Science and Trade.png?5bbdca1f88c78d6157a9ed4395b25a1d"
+            ),
         ),
         (
             "Foreign, Commonwealth & Development Office",
-            "https://static.example.com/images/branding/insignia/"
-            "Foreign, Commonwealth & Development Office.png?890210781ce4936bb44462036e150b50",
+            (
+                "https://static.example.com/images/branding/insignia/"
+                "Foreign, Commonwealth & Development Office.png?890210781ce4936bb44462036e150b50"
+            ),
         ),
         (
             "HM Coastguard",
@@ -856,8 +860,10 @@ def test_create_email_branding_government_identity_logo_form(client_request, pla
         ),
         (
             "HM Revenue & Customs",
-            "https://static.example.com/images/branding/insignia/"
-            "HM Revenue & Customs.png?306230d3421662dacc0c2e185bc6a57b",
+            (
+                "https://static.example.com/images/branding/insignia/"
+                "HM Revenue & Customs.png?306230d3421662dacc0c2e185bc6a57b"
+            ),
         ),
         (
             "Home Office",
@@ -865,8 +871,10 @@ def test_create_email_branding_government_identity_logo_form(client_request, pla
         ),
         (
             "Ministry of Defence",
-            "https://static.example.com/images/branding/insignia/"
-            "Ministry of Defence.png?e58dccf7441c42356c5947a191a732ed",
+            (
+                "https://static.example.com/images/branding/insignia/"
+                "Ministry of Defence.png?e58dccf7441c42356c5947a191a732ed"
+            ),
         ),
         (
             "Scotland Office",
@@ -912,13 +920,11 @@ def test_create_email_branding_government_identity_colour(client_request, platfo
         ("Attorney General’s Office", "#9f1888"),
         ("Cabinet Office", "#005abb"),
         ("Civil Service", "#af292e"),
-        ("Department for Business & Trade", "#cf102d"),
-        ("Department for Business Innovation & Skills", "#003479"),
+        ("Department for Business, Innovation, Science and Trade", "#ff4328"),
         ("Department for Digital, Culture, Media & Sport", "#d40072"),
         ("Department for Education", "#003a69"),
         ("Department for Environment Food & Rural Affairs", "#00a33b"),
-        ("Department for International Development", "#002878"),
-        ("Department for Levelling Up, Housing & Communities", "#012169"),
+        ("Ministry of Housing, Communities and Local Government", "#012169"),
         ("Department for Transport", "#006c56"),
         ("Department for Work & Pensions", "#00beb7"),
         ("Department of Health & Social Care", "#00ad93"),
@@ -927,7 +933,7 @@ def test_create_email_branding_government_identity_colour(client_request, platfo
         ("HM Government", "#0076c0"),
         ("HM Revenue & Customs", "#009390"),
         ("HM Treasury", "#af292e"),
-        ("Home Office", "#9325b2"),
+        ("Home Office", "#732282"),
         ("Ministry of Defence", "#4d2942"),
         ("Ministry of Justice", "#231f20"),
         ("Northern Ireland Office", "#002663"),

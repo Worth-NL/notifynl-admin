@@ -1,0 +1,26 @@
+{% extends "withnav_template.html" %}
+{% block per_page_title %}Pagina niet gevonden{% endblock %}
+{% block maincolumn_content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-five-sixths">
+      <h1 class="heading-large">
+        Pagina niet gevonden
+      </h1>
+      <p class="govuk-body">
+        Controleer of het webadres correct is ingevuld.
+      </p>
+      <p class="govuk-body">
+        Als u het webadres heeft geplakt, controleer dan of u het volledige adres hebt gekopieerd.
+      </p>
+      <p class="govuk-body">
+        Als het webadres correct is, bestaat de pagina die u zoekt mogelijk niet meer.
+      </p>
+      <p class="govuk-body">
+        Uit veiligheidsoverwegingen bewaart Notify de e-mails, sms-berichten en brieven die u verstuurt maar tijdelijk.
+      </p>
+      <p class="govuk-body">
+        Meer informatie: <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_data_retention_period') }}">Bewaartermijn van gegevens</a>
+      </p>
+    </div>
+  </div>
+{% endblock %}

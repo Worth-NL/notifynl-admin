@@ -251,6 +251,7 @@ def test_letter_branding_options_redirects_to_upload_logo(client_request, mocker
     mock_create_ticket.assert_not_called()
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] NHS and GP features are not offered in NL")
 def test_letter_branding_options_redirects_to_nhs_page(
     client_request,
     service_one,
@@ -838,6 +839,7 @@ def test_letter_branding_nhs_page_displays_preview(
     assert mock_get_letter_branding_pool.called
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] NHS and GP features are not offered in NL")
 def test_letter_branding_nhs_page_returns_404_if_service_not_nhs(
     service_one, organisation_one, client_request, mocker, mock_get_letter_branding_pool
 ):

@@ -3,9 +3,10 @@ from unittest.mock import call
 
 import pytest
 from flask import url_for
+from freezegun import freeze_time
 
 from tests import generate_uuid, validate_route_permission
-from tests.conftest import SERVICE_ONE_ID, create_notifications, normalize_spaces
+from tests.conftest import SERVICE_ONE_ID, create_notifications, create_user, normalize_spaces
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -36,6 +37,7 @@ def test_should_show_api_page_with_lots_of_notifications(
         "main.api_integration",
         service_id=SERVICE_ONE_ID,
     )
+    assert "When you send messages via the API they’ll appear here" not in normalize_spaces(page.select_one("main"))
     rows = page.select("div.api-notifications-item")
     assert " ".join(rows[len(rows) - 1].text.split()) == (
         "Only showing the first 50 messages. Notify deletes messages after 7 days."
@@ -307,6 +309,7 @@ def test_should_show_empty_api_keys_page(
     mock_login,
     mock_get_no_api_keys,
     mock_has_permissions,
+    mock_get_users_by_service,
 ):
     client_request.login(api_user_active)
     page = client_request.get("main.api_keys", service_id=SERVICE_ONE_ID)
@@ -317,21 +320,45 @@ def test_should_show_empty_api_keys_page(
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+@freeze_time("2026-09-14 12:00")
 def test_should_show_api_keys_page(
     client_request,
     mock_get_api_keys,
     fake_uuid,
+    mock_get_users_by_service,
+    api_user_active,
+    mocker,
 ):
+    mocker.patch(
+        "app.user_api_client.get_user",
+        side_effect=[
+            # First call is to authenticate the user viewing the page
+            api_user_active,
+            # Second call returns an archived user who is not longer in the team
+            create_user(
+                id=str(uuid.uuid4()),
+                name="Archived user",
+                state="inactive",
+            ),
+        ],
+    )
+
     page = client_request.get("main.api_keys", service_id=SERVICE_ONE_ID)
-    rows = [normalize_spaces(row.text) for row in page.select("main tr")]
-    revoke_link = page.select_one("main tr a.govuk-link.govuk-link--destructive")
+    revoke_link = page.select_one("ul li a.govuk-link.govuk-link--destructive")
 
-    assert rows[0] == "API keys Action"
-    assert rows[1] == "another key name Test – pretends to send messages Revoked 1 January at 1:00am"
-    assert rows[2] == "some key name Live – sends to anyone Revoke some key name"
-    assert rows[3] == "third key Team and guest list – limits who you can send to Revoke third key"
+    assert [normalize_spaces(item.text) for item in page.select("ul.api-key-list li")] == [
+        (
+            "another key name Revoked yesterday at midday Test – "
+            "pretends to send messages Created by Test User 12 days ago"
+        ),
+        ("some key name Revoke some key name API key Live – sends to anyone Created by Test User 2 hours ago"),
+        (
+            "third key Revoke third key API key Team and guest list – "
+            "limits who you can send to Created by an archived user 2 years ago"
+        ),
+    ]
 
-    assert normalize_spaces(revoke_link.text) == "Revoke some key name"
+    assert normalize_spaces(revoke_link.text) == "Revoke some key name API key"
     assert revoke_link["href"] == url_for(
         "main.revoke_api_key",
         service_id=SERVICE_ONE_ID,
@@ -453,6 +480,7 @@ def test_should_show_confirm_revoke_api_key(
     client_request,
     mock_get_api_keys,
     fake_uuid,
+    mock_get_users_by_service,
 ):
     page = client_request.get(
         "main.revoke_api_key",
@@ -484,10 +512,13 @@ def test_should_404_for_api_key_that_doesnt_exist(
 
 def test_should_redirect_after_revoking_api_key(
     client_request,
-    mock_revoke_api_key,
+    api_user_active,
     mock_get_api_keys,
     fake_uuid,
+    mocker,
 ):
+    post = mocker.patch("app.models.api_key.api_key_api_client.post")
+
     client_request.post(
         "main.revoke_api_key",
         service_id=SERVICE_ONE_ID,
@@ -498,7 +529,11 @@ def test_should_redirect_after_revoking_api_key(
             service_id=SERVICE_ONE_ID,
         ),
     )
-    mock_revoke_api_key.assert_called_once_with(service_id=SERVICE_ONE_ID, key_id=fake_uuid)
+
+    post.assert_called_once_with(
+        url=f"/service/{SERVICE_ONE_ID}/api-key/revoke/{fake_uuid}",
+        data={"created_by": api_user_active["id"]},
+    )
     mock_get_api_keys.assert_called_once_with(
         SERVICE_ONE_ID,
     )
@@ -795,29 +830,29 @@ def test_callbacks_button_links_straight_to_delivery_status_if_service_has_no_in
     [
         pytest.param(
             [],
-            ["Delivery receipts Not set Change"],
+            ["Delivery receipts Not set Change delivery receipts callback settings"],
             marks=pytest.mark.xfail(reason="Endpoint will redirect to delivery receipts page"),
         ),
         (
             ["inbound_sms"],
             [
-                "Delivery receipts Not set Change",
-                "Received text messages Not set Change",
+                "Delivery receipts Not set Change delivery receipts callback settings",
+                "Received text messages Not set Change received text messages callback settings",
             ],
         ),
         (
             ["letter"],
             [
-                "Delivery receipts Not set Change",
-                "Returned letters Not set Change",
+                "Delivery receipts Not set Change delivery receipts callback settings",
+                "Returned letters Not set Change returned letters callback settings",
             ],
         ),
         (
             ["inbound_sms", "letter"],
             [
-                "Delivery receipts Not set Change",
-                "Received text messages Not set Change",
-                "Returned letters Not set Change",
+                "Delivery receipts Not set Change delivery receipts callback settings",
+                "Received text messages Not set Change received text messages callback settings",
+                "Returned letters Not set Change returned letters callback settings",
             ],
         ),
     ],
@@ -832,7 +867,7 @@ def test_callbacks_page_lists_correct_rows_depending_on_service_permissions(
         service_id=service_one["id"],
     )
 
-    assert [normalize_spaces(row.text) for row in page.select("main tbody tr")] == expected_rows
+    assert [normalize_spaces(row.text) for row in page.select("main .govuk-summary-list__row")] == expected_rows
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -1006,9 +1041,9 @@ def test_update_service_callback_without_changes_does_not_update(
         (
             None,
             {},
-            "Delivery receipts Not set Change",
-            "Received text messages Not set Change",
-            "Returned letters Not set Change",
+            "Delivery receipts Not set Change delivery receipts callback settings",
+            "Received text messages Not set Change received text messages callback settings",
+            "Returned letters Not set Change returned letters callback settings",
         ),
         (
             [
@@ -1017,36 +1052,36 @@ def test_update_service_callback_without_changes_does_not_update(
                 {"callback_id": uuid.uuid4(), "callback_type": "inbound_sms"},
             ],
             {"url": "https://generic.urls"},
-            "Delivery receipts https://generic.urls Change",
-            "Received text messages https://generic.urls Change",
-            "Returned letters https://generic.urls Change",
+            "Delivery receipts https://generic.urls Change delivery receipts callback settings",
+            "Received text messages https://generic.urls Change received text messages callback settings",
+            "Returned letters https://generic.urls Change returned letters callback settings",
         ),
         (
             [
                 {"callback_id": uuid.uuid4(), "callback_type": "delivery_status"},
             ],
             {"url": "https://delivery.receipts"},
-            "Delivery receipts https://delivery.receipts Change",
-            "Received text messages Not set Change",
-            "Returned letters Not set Change",
+            "Delivery receipts https://delivery.receipts Change delivery receipts callback settings",
+            "Received text messages Not set Change received text messages callback settings",
+            "Returned letters Not set Change returned letters callback settings",
         ),
         (
             [
                 {"callback_id": uuid.uuid4(), "callback_type": "returned_letter"},
             ],
             {"url": "https://returned.letter"},
-            "Delivery receipts Not set Change",
-            "Received text messages Not set Change",
-            "Returned letters https://returned.letter Change",
+            "Delivery receipts Not set Change delivery receipts callback settings",
+            "Received text messages Not set Change received text messages callback settings",
+            "Returned letters https://returned.letter Change returned letters callback settings",
         ),
         (
             [
                 {"callback_id": uuid.uuid4(), "callback_type": "inbound_sms"},
             ],
             {"url": "https://inbound.sms"},
-            "Delivery receipts Not set Change",
-            "Received text messages https://inbound.sms Change",
-            "Returned letters Not set Change",
+            "Delivery receipts Not set Change delivery receipts callback settings",
+            "Received text messages https://inbound.sms Change received text messages callback settings",
+            "Returned letters Not set Change returned letters callback settings",
         ),
     ],
 )
@@ -1073,7 +1108,7 @@ def test_callbacks_page_works_when_no_apis_set(
         expected_2nd_row,
         expected_3rd_row,
     ]
-    rows = page.select("tbody tr")
+    rows = page.select("main .govuk-summary-list__row")
     assert len(rows) == 3
     for index, row in enumerate(expected_rows):
         assert row == normalize_spaces(rows[index].text)

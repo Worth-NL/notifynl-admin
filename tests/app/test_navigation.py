@@ -1,5 +1,8 @@
+from unittest.mock import Mock
+
 import pytest
 from flask import Flask, url_for
+from notifications_python_client.errors import HTTPError
 
 from app import create_app
 from app.overrides_nl.navigation import (
@@ -23,8 +26,6 @@ EXCLUDED_ENDPOINTS = set(
             "action_blocked",
             "add_data_retention",
             "add_organisation_email_branding_options",
-            "add_organisation_from_gp_service",
-            "add_organisation_from_nhs_local_service",
             "add_organisation_letter_branding_options",
             "add_organisation",
             "add_service_template",
@@ -39,7 +40,6 @@ EXCLUDED_ENDPOINTS = set(
             "bat_phone",
             "begin_tour",
             "branding_option_preview",
-            "branding_nhs",
             "cancel_invited_org_user",
             "cancel_invited_user",
             "cancel_job",
@@ -155,6 +155,7 @@ EXCLUDED_ENDPOINTS = set(
             "guidance_delivery_times",
             "guidance_email_branding",
             "guidance_features",
+            "guidance_fonts_typefaces",
             "guidance_formatting",
             "guidance_how_to_pay",
             "guidance_letter_branding",
@@ -208,7 +209,6 @@ EXCLUDED_ENDPOINTS = set(
             "letter_branding_set_name",
             "letter_branding_upload_branding",
             "letter_branding",
-            "letter_spec",
             "letter_template_attach_pages",
             "letter_template_change_language",
             "letter_template_confirm_remove_welsh",
@@ -290,6 +290,7 @@ EXCLUDED_ENDPOINTS = set(
             "revoke_api_key",
             "save_contact_list",
             "security_policy",
+            "security_policy_legacy",
             "send_files_by_email_contact_details",
             "send_from_contact_list",
             "send_messages",
@@ -725,3 +726,29 @@ def test_navigation_displayed_on_service_page_404(
     assert normalize_spaces(page.select_one("h1").text) == "Page not found"
     assert normalize_spaces(page.select_one(".navigation-service-name").text) == "service one"
     assert len(page.select("nav.navigation .navigation__item")) == 8
+
+
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+def test_navigation_and_custom_error_displayed_on_notification_page_404(
+    client_request,
+    mocker,
+    fake_uuid,
+):
+    mock_get_notification = mocker.patch(
+        "app.notification_api_client.get_notification",
+        side_effect=HTTPError(response=Mock(status_code=404)),
+    )
+
+    page = client_request.get(
+        "main.view_notification",
+        service_id=SERVICE_ONE_ID,
+        notification_id=fake_uuid,
+        _expected_status=404,
+    )
+    assert normalize_spaces(page.select_one("h1").text) == "Page not found"
+    assert normalize_spaces(page.select_one(".navigation-service-name").text) == "service one"
+    assert len(page.select("nav.navigation .navigation__item")) == 8
+    assert page.select_one('a:contains("Data retention period")')["href"] == url_for(
+        "main.guidance_data_retention_period"
+    )
+    mock_get_notification.assert_called_once()

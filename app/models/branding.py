@@ -4,10 +4,9 @@ from pathlib import Path
 from typing import Any, TypedDict
 
 from flask import current_app
-from flask_login import current_user
 from notifications_utils.safe_string import make_string_safe
 
-from app import asset_fingerprinter
+from app import asset_fingerprinter, current_user
 from app.models import JSONModel, ModelList
 from app.notify_client.email_branding_client import email_branding_client
 from app.notify_client.letter_branding_client import letter_branding_client
@@ -24,7 +23,6 @@ class BrandingSerializedType(TypedDict):
 
 
 class Branding(JSONModel):
-    id: str
     name: str
     created_by: Any
     created_at: datetime
@@ -262,13 +260,11 @@ GOVERNMENT_IDENTITY_SYSTEM_COLOURS = {
     "Attorney General’s Office": "#9f1888",
     "Cabinet Office": "#005abb",
     "Civil Service": "#af292e",
-    "Department for Business & Trade": "#cf102d",
-    "Department for Business Innovation & Skills": "#003479",
+    "Department for Business, Innovation, Science and Trade": "#ff4328",
     "Department for Digital, Culture, Media & Sport": "#d40072",
     "Department for Education": "#003a69",
     "Department for Environment Food & Rural Affairs": "#00a33b",
-    "Department for International Development": "#002878",
-    "Department for Levelling Up, Housing & Communities": "#012169",
+    "Ministry of Housing, Communities and Local Government": "#012169",
     "Department for Transport": "#006c56",
     "Department for Work & Pensions": "#00beb7",
     "Department of Health & Social Care": "#00ad93",
@@ -277,7 +273,7 @@ GOVERNMENT_IDENTITY_SYSTEM_COLOURS = {
     "HM Government": "#0076c0",
     "HM Revenue & Customs": "#009390",
     "HM Treasury": "#af292e",
-    "Home Office": "#9325b2",
+    "Home Office": "#732282",
     "Ministry of Defence": "#4d2942",
     "Ministry of Justice": "#231f20",
     "Northern Ireland Office": "#002663",

@@ -34,8 +34,6 @@
   <p class="govuk-body">Uw brief mag maximaal 10 pagina’s bevatten (5 dubbelzijdige vellen papier).</p>
   <p class="govuk-body">De inhoud van uw brief moet binnen het afdrukbare gebied vallen.</p>
 
-  <p class="govuk-body">Om u te helpen uw brief op te maken, kunt u <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.letter_spec') }}">onze brievenspecificatie als PDF downloaden</a>.</p>
-
   {% set letter_spec %}
     <h3 class="heading-small">Pagina 1 van 10</h3>
 
@@ -51,8 +49,9 @@
 
     <h3 class="heading-small">Adresblok</h3>
 
-    <p class="govuk-body">Positie: 24,6 mm vanaf de linkerkant, 39,5 mm vanaf de bovenkant</p>
-    <p class="govuk-body">Afmeting: 95,4 mm breed bij 26,8 mm hoog</p>
+    <p class="govuk-body">Positie: 24,6 mm vanaf de linkerkant, 50 mm of 60 mm vanaf de bovenkant</p>
+    <p class="govuk-body">Afmeting: 95,4 mm breed bij 40 mm hoog</p>
+    <p class="govuk-body">Of het adresblok op 50 mm of 60 mm staat, hangt af van de instelling ‘Adresplaatsing op de brief’ bij de instellingen van uw dienst.</p>
 
     <h3 class="heading-small">Contactblok brief</h3>
 

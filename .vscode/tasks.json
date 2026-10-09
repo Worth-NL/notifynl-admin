@@ -46,7 +46,7 @@
         {
             "label": "Install Admin Python requirements",
             "type": "shell",
-            "command": "uv pip install -r requirements_nl_test.txt",
+            "command": "uv pip sync requirements_nl_test.txt",
             "dependsOn": ["Generate Admin version file","Generate Admin Python requirements_nl_test.in"],
             "problemMatcher": [],
             "presentation": {
@@ -78,7 +78,7 @@
         {
             "label": "Install Admin local LandRegistry-frontend-jinja",
             "type": "shell",
-            "command": "CHOICE=$(cat /workspace/.local-editables-choice 2>/dev/null || echo No); if [ \"$CHOICE\" = \"Yes\" ]; then uv pip uninstall govuk-frontend-jinja && uv pip install -e ../LandRegistry-frontend-jinja; fi",
+            "command": "CHOICE=$(cat /workspace/.local-editables-choice 2>/dev/null || echo No); if [ \"$CHOICE\" = \"Yes\" ]; then uv pip uninstall notifynl-frontend-jinja && uv pip install -e ../LandRegistry-frontend-jinja; fi",
             "dependsOn": ["Install Admin local notifynl-utils"],
             "problemMatcher": [],
             "presentation": {

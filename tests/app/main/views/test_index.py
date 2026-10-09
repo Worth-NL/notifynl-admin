@@ -37,7 +37,7 @@ def test_non_logged_in_user_can_see_homepage(
     )
     assert page.select_one("#whos-using-notify a")["href"] == url_for("main.performance")
 
-    assert "From 59 pence to print and post a one page letter" in normalize_spaces(page.text)
+    assert "From 59.2 pence to print and post a one page letter" in normalize_spaces(page.text)
 
 
 def test_logged_in_user_redirects_to_your_services(client_request):
@@ -99,7 +99,9 @@ def test_hiding_pages_from_search_engines(
         pytest.param("index", {}, marks=pytest.mark.xfail(raises=AssertionError)),
     ),
 )
-def test_hiding_pages_that_redirect_from_search_engines(client_request, endpoint, kwargs):
+def test_hiding_pages_that_redirect_from_search_engines(
+    client_request, mock_get_service_and_organisation_counts, mock_get_letter_rates, mock_get_sms_rate, endpoint, kwargs
+):
     client_request.logout()
     response = client_request.get_response(f"main.{endpoint}", _expected_status=301, **kwargs)
     assert "X-Robots-Tag" in response.headers
@@ -107,42 +109,53 @@ def test_hiding_pages_that_redirect_from_search_engines(client_request, endpoint
 
 
 @pytest.mark.parametrize(
-    "view",
+    "view, view_vars",
     [
-        "accessibility_statement",
-        "cookies",
-        "guidance_api_documentation",
-        "guidance_billing_details",
-        "guidance_delivery_times",
-        "guidance_email_branding",
-        "guidance_features",
-        "guidance_formatting",
-        "guidance_how_to_pay",
-        "guidance_letter_branding",
-        "guidance_links_and_URLs",
-        "guidance_optional_content",
-        "guidance_personalisation",
-        "guidance_pricing_letters",
-        "guidance_pricing_text_messages",
-        "guidance_pricing",
-        "guidance_qr_codes",
-        "guidance_receive_text_messages",
-        "guidance_reply_to_email_address",
-        "guidance_returned_letters",
-        "guidance_roadmap",
-        "guidance_schedule_messages",
-        "guidance_security",
-        "guidance_send_files_by_email",
-        "guidance_sign_in_method",
-        "guidance_team_members_and_permissions",
-        "guidance_templates",
-        "guidance_text_message_sender",
-        "guidance_unsubscribe_links",
-        "guidance_upload_a_letter",
-        "guidance_using_notify",
-        "guidance_who_can_use_notify",
-        "privacy",
-        "terms_of_use",
+        ["accessibility_statement", {}],
+        ["cookies", {}],
+        ["guidance_api_documentation", {}],
+        ["guidance_billing_details", {}],
+        ["guidance_delivery_times", {}],
+        ["guidance_email_branding", {}],
+        ["guidance_features", {}],
+        ["guidance_fonts_typefaces", {"notification_type": "email"}],
+        ["guidance_fonts_typefaces", {"notification_type": "sms"}],
+        ["guidance_fonts_typefaces", {"notification_type": "letter"}],
+        ["guidance_formatting", {}],
+        ["guidance_how_to_pay", {}],
+        ["guidance_letter_branding", {}],
+        ["guidance_links_and_URLs", {}],
+        ["guidance_message_status", {"notification_type": "email"}],
+        ["guidance_message_status", {"notification_type": "sms"}],
+        ["guidance_message_status", {"notification_type": "letter"}],
+        ["guidance_optional_content", {}],
+        ["guidance_personalisation", {}],
+        ["guidance_pricing_letters", {}],
+        ["guidance_pricing_text_messages", {}],
+        pytest.param(
+            "guidance_pricing_free_text_message_allowance",
+            {},
+            marks=pytest.mark.skip(reason="[NOTIFYNL] UK-only free text message allowance; not routed in NL"),
+        ),
+        ["guidance_pricing", {}],
+        ["guidance_qr_codes", {}],
+        ["guidance_receive_text_messages", {}],
+        ["guidance_reply_to_email_address", {}],
+        ["guidance_returned_letters", {}],
+        ["guidance_roadmap", {}],
+        ["guidance_schedule_messages", {}],
+        ["guidance_security", {}],
+        ["guidance_send_files_by_email", {}],
+        ["guidance_sign_in_method", {}],
+        ["guidance_team_members_and_permissions", {}],
+        ["guidance_templates", {}],
+        ["guidance_text_message_sender", {}],
+        ["guidance_unsubscribe_links", {}],
+        ["guidance_upload_a_letter", {}],
+        ["guidance_using_notify", {}],
+        ["guidance_who_can_use_notify", {}],
+        ["privacy", {}],
+        ["terms_of_use", {}],
     ],
 )
 def test_static_pages(
@@ -150,8 +163,9 @@ def test_static_pages(
     mock_get_letter_rates,
     mock_get_sms_rate,
     view,
+    view_vars,
 ):
-    request = partial(client_request.get, f"main.{view}")
+    request = partial(client_request.get, f"main.{view}", **view_vars)
 
     # Check the page loads when user is signed in
     page = request()
@@ -234,11 +248,18 @@ def test_redirect_blueprint_contains_valid_urls(_client):
     assert not invalid_redirects, "historical_redirects redirects to invalid endpoint name"
 
 
-def test_message_status_page_redirects_without_notification_type_specified(client_request):
+@pytest.mark.parametrize(
+    "view",
+    [
+        "guidance_message_status",
+        "guidance_fonts_typefaces",
+    ],
+)
+def test_guidance_pages_redirect_without_notification_type_specified(client_request, view):
     client_request.get(
-        "main.guidance_message_status",
+        f"main.{view}",
         _expected_redirect=url_for(
-            "main.guidance_message_status",
+            f"main.{view}",
             notification_type="email",
         ),
     )
@@ -332,6 +353,7 @@ def test_email_branding_preview_allows_custom_page_title(
     assert page.select_one("title").text == "Preview of new email branding"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] NL has no generic letter specification PDF")
 def test_letter_spec_redirect(client_request):
     client_request.get(
         "main.letter_spec",
@@ -342,6 +364,7 @@ def test_letter_spec_redirect(client_request):
     )
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] NL has no generic letter specification PDF")
 def test_letter_spec_redirect_with_non_logged_in_user(client_request):
     client_request.logout()
     client_request.get(

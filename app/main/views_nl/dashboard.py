@@ -2,14 +2,15 @@ import calendar
 from datetime import UTC, datetime
 from functools import partial
 from itertools import groupby
+from typing import Literal
 
 from flask import Response, abort, jsonify, render_template, request, session, url_for
-from flask_login import current_user
 from werkzeug.utils import redirect
 
 from app import (
     billing_api_client,
     current_service,
+    current_user,
     notification_api_client,
     report_request_api_client,
     service_api_client,
@@ -91,7 +92,7 @@ def make_cache_key(query_hash, service_id):
 
 
 def cache_search_query(search_term, service_id, search_query_hash):
-    cached_search_term = ""
+    cached_search_term: str | Literal[False] = ""
 
     if search_query_hash:
         cached_query = redis_client.get(make_cache_key(search_query_hash, service_id))
@@ -216,10 +217,7 @@ def view_notifications(service_id, message_type=None):
             # reference gets too long for the hint text
             None: ["recipient"],
         }.get(message_type, ["recipient"])
-        + {
-            True: ["reference"],
-            False: [],
-        }.get(bool(current_service.api_keys)),
+        + (["reference"] if current_service.api_keys else []),
         download_link=download_link,
         can_download=can_download,
         report_request_feature_flag=report_request_feature_flag,
@@ -702,13 +700,13 @@ def get_monthly_usage_breakdown_for_letters(monthly_letters):
 
     for _key, rate_group in rate_groups:
         # rate_group is a one-time generator so must be converted to a list for reuse
-        rate_group = list(rate_group)
+        rate_group_list = list(rate_group)
 
         yield {
-            "sent": sum(x["notifications_sent"] for x in rate_group),
-            "rate": rate_group[0]["rate"],
-            "cost": sum(x["cost"] for x in rate_group),
-            "postage_description": get_monthly_usage_postage_description(rate_group[0]),
+            "sent": sum(x["notifications_sent"] for x in rate_group_list),
+            "rate": rate_group_list[0]["rate"],
+            "cost": sum(x["cost"] for x in rate_group_list),
+            "postage_description": get_monthly_usage_postage_description(rate_group_list[0]),
         }
 
 

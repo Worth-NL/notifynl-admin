@@ -103,7 +103,7 @@ class UpdateRelativeTime {
 
     // for months and years, we use the calendar date logic as lengths are different
     const monthDiff = (elementTime.getFullYear() - currentTime.getFullYear()) * 12 + 
-                      (elementTime.getMonth() - currentTime.getMonth());
+                (elementTime.getMonth() - currentTime.getMonth());
 
     if (Math.abs(monthDiff) < 11) {
       return UpdateRelativeTime.relativeFormatter.format(monthDiff, 'month');

@@ -297,15 +297,13 @@ def test_inbox_showing_inbound_messages(
         service_id=SERVICE_ONE_ID,
     )
 
-    rows = page.select("tbody tr")
+    rows = page.select(".govuk-summary-list__row")
     assert len(rows) == 8
     assert normalize_spaces(rows[index].text) == expected_row
     assert page.select_one("[data-key=messages] a.govuk-\\!-font-weight-bold")["href"] == url_for(
         "main.inbox_download",
         service_id=SERVICE_ONE_ID,
     )
-    assert len(page.select("thead th:first-child.govuk-\\!-width-two-thirds--static")) == 1
-    assert len(page.select("thead th:last-child.govuk-\\!-width-one-third--static")) == 1
 
 
 def test_get_inbound_sms_shows_page_links(
@@ -350,7 +348,7 @@ def test_empty_inbox(
         service_id=SERVICE_ONE_ID,
     )
 
-    assert normalize_spaces(page.select("tbody tr")) == (
+    assert normalize_spaces(page.select("p.no-data")) == (
         "When users text your service’s phone number (07812398712) you’ll see the messages here"
     )
     assert not page.select("a[download]")
@@ -699,25 +697,25 @@ def test_should_show_recent_templates_on_dashboard(
 
     mock_template_stats.assert_called_once_with(SERVICE_ONE_ID, limit_days=7)
 
-    table_rows = partial_page.select_one("tbody").select("tr")
+    list_rows = partial_page.select_one(".notify-summary-list").select(".govuk-summary-list__row")
 
-    assert len(table_rows) == 4
+    assert len(list_rows) == 4
 
-    assert "Provided as PDF" in table_rows[0].select("th")[0].text
-    assert "Letter" in table_rows[0].select("th")[0].text
-    assert "400" in table_rows[0].select("td")[0].text
+    assert "Provided as PDF" in list_rows[0].select("dt")[0].text
+    assert "Letter" in list_rows[0].select("dt")[0].text
+    assert "400" in list_rows[0].select("dd")[0].text
 
-    assert "three" in table_rows[1].select("th")[0].text
-    assert "Letter template" in table_rows[1].select("th")[0].text
-    assert "300" in table_rows[1].select("td")[0].text
+    assert "three" in list_rows[1].select("dt")[0].text
+    assert "Letter template" in list_rows[1].select("dt")[0].text
+    assert "300" in list_rows[1].select("dd")[0].text
 
-    assert "two" in table_rows[2].select("th")[0].text
-    assert "Email template" in table_rows[2].select("th")[0].text
-    assert "200" in table_rows[2].select("td")[0].text
+    assert "two" in list_rows[2].select("dt")[0].text
+    assert "Email template" in list_rows[2].select("dt")[0].text
+    assert "200" in list_rows[2].select("dd")[0].text
 
-    assert "one" in table_rows[3].select("th")[0].text
-    assert "Text message template" in table_rows[3].select("th")[0].text
-    assert "100" in table_rows[3].select("td")[0].text
+    assert "one" in list_rows[3].select("dt")[0].text
+    assert "Text message template" in list_rows[3].select("dt")[0].text
+    assert "100" in list_rows[3].select("dd")[0].text
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -811,12 +809,12 @@ def test_should_show_monthly_breakdown_of_template_usage(
 
     mock_get_monthly_template_usage.assert_called_once_with(SERVICE_ONE_ID, 2016)
 
-    table_rows = page.select("tbody tr")
+    list_rows = page.select(".govuk-summary-list__row")
 
-    assert " ".join(table_rows[0].text.split()) == "My first template Text message template 2"
+    assert " ".join(list_rows[0].text.split()) == "My first template Text message template 2"
 
-    assert len(table_rows) == len(["April"])
-    assert len(page.select(".table-no-data")) == len(["May", "June", "July"])
+    assert len(list_rows) == len(["April"])
+    assert len(page.select(".no-data")) == len(["May", "June", "July"])
 
 
 def test_anyone_can_see_monthly_breakdown(
@@ -1862,7 +1860,7 @@ def test_org_breadcrumbs_show_if_user_is_platform_admin(
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
-def test_breadcrumb_shows_if_service_is_suspended(
+def test_breadcrumb_shows_if_service_is_archived(
     mock_get_template_statistics,
     mock_get_service_templates_when_no_templates_exist,
     mock_has_no_jobs,
@@ -1874,12 +1872,39 @@ def test_breadcrumb_shows_if_service_is_suspended(
     client_request,
     mocker,
 ):
-    service_one_json = service_json(SERVICE_ONE_ID, active=False)
+    service_one_json = service_json(SERVICE_ONE_ID, active=False, restricted=False)
     client_request.login(platform_admin_user, service=service_one_json)
 
     page = client_request.get("main.service_dashboard", service_id=SERVICE_ONE_ID)
 
-    assert "Suspended" in page.select_one(".navigation-service-name").text
+    assert normalize_spaces(page.select_one(".navigation-status-tag").text) == "Archived"
+
+
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+@pytest.mark.parametrize("service_restricted", [True, False])
+def test_service_navigation_shows_if_service_is_in_trial_mode(
+    mock_get_service_templates_when_no_templates_exist,
+    mock_has_no_jobs,
+    mock_get_unsubscribe_requests_statistics,
+    mock_get_returned_letter_statistics_with_no_returned_letters,
+    api_user_active,
+    client_request,
+    service_restricted,
+    mocker,
+):
+    service_one = service_json(
+        SERVICE_ONE_ID,
+        users=[api_user_active["id"]],
+        restricted=service_restricted,
+    )
+    mocker.patch("app.service_api_client.get_service", return_value={"data": service_one})
+
+    page = client_request.get("main.service_dashboard", service_id=SERVICE_ONE_ID)
+
+    if service_restricted:
+        assert normalize_spaces(page.select_one(".navigation-status-tag").text) == "Trial mode"
+    else:
+        assert not page.select_one(".navigation-status-tag")
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -2017,6 +2042,7 @@ def test_service_dashboard_skeleton(
     assert [(heading.name, normalize_spaces(heading.text)) for heading in page.select("main h1, main h2, main h3")] == [
         ("h1", "Dashboard"),
         ("h2", "In the last 7 days"),
+        ("h2", "By template"),
         ("h2", "This year"),
     ]
 
@@ -2043,7 +2069,7 @@ def test_service_dashboard_skeleton(
         "letters sent failed – Unknown %",
     ]
 
-    assert normalize_spaces(template_statistics.select_one("table caption").text) == "By template"
+    assert normalize_spaces(template_statistics.select_one("h2").text) == "By template"
     assert template_statistics.select(".spark-bar")
 
     assert [

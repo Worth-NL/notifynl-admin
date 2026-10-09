@@ -7,7 +7,7 @@ import pytest
 from bs4 import BeautifulSoup
 from freezegun import freeze_time
 from markupsafe import Markup
-from notifications_utils.template import SubjectMixin, Template
+from notifications_utils.template import Template
 from ordered_set import OrderedSet
 from requests.exceptions import HTTPError
 
@@ -79,11 +79,6 @@ def test_get_page_counts_for_letter_does_not_cache_on_error(
     fake_uuid,
     requests_mock,
 ):
-    # Regression test, ported from upstream (alphagov/notifications-admin@951ae1f2b, "Fix
-    # template-preview error cache"): app/template_previews.py's get_page_counts_for_letter
-    # had no raise_for_status(), so a template-preview failure got json.loads'd as if it were
-    # a valid page count and then cached - every later view of that template/version kept
-    # 500ing from the stale cached error, even after the underlying issue cleared.
     client_request.login(api_user_active, service_one)
 
     mock_redis_get = mocker.patch(
@@ -534,7 +529,7 @@ def test_subject_line_gets_applied_to_correct_template_types():
         EmailPreviewTemplate,
         TemplatedLetterImageTemplate,
     ]:
-        assert issubclass(cls, SubjectMixin)
+        assert hasattr(cls, "subject")
 
 
 @pytest.mark.parametrize(

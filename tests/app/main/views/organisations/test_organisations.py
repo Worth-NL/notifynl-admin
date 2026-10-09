@@ -94,7 +94,7 @@ def test_organisation_page_shows_all_organisations(client_request, platform_admi
         ("Test 3", "0 live services", url_for("main.organisation_dashboard", org_id="A3")),
     ]
 
-    archived = page.select_one(".table-field-status-default.heading-medium")
+    archived = page.select_one(".browse-list-item__status.heading-medium")
     assert normalize_spaces(archived.text) == "– archived"
     assert normalize_spaces(archived.parent.text) == "Test 2 – archived 2 live services"
 
@@ -118,6 +118,7 @@ def test_view_organisation_shows_the_correct_organisation(client_request, mocker
     assert not page.select("a[download]")
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] NHS and GP features are not offered in NL")
 def test_page_to_create_new_organisation(
     client_request,
     platform_admin_user,
@@ -370,6 +371,7 @@ def test_nhs_local_can_create_own_organisations(
         ),
     ),
 )
+@pytest.mark.skip(reason="[NOTIFYNL] NHS and GP features are not offered in NL")
 def test_gps_can_name_their_organisation(
     client_request,
     mocker,
@@ -473,6 +475,7 @@ def test_validation_of_gps_creating_organisations(
     assert normalize_spaces(page.select_one("label[for=same_as_service_name-1]")) == "No"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] NHS and GP features are not offered in NL")
 def test_nhs_local_assigns_to_selected_organisation(
     client_request,
     mocker,
@@ -909,8 +912,8 @@ def test_organisation_trial_mode_services_shows_all_non_live_services(
 
     assert normalize_spaces(services[0].text) == "2"
     assert normalize_spaces(services[1].text) == "3"
-    assert services[0].find("a")["href"] == url_for("main.service_dashboard", service_id="2")
-    assert services[1].find("a")["href"] == url_for("main.service_dashboard", service_id="3")
+    assert services[0].find("a")["href"] == url_for("main.usage", service_id="2")
+    assert services[1].find("a")["href"] == url_for("main.usage", service_id="3")
 
 
 def test_organisation_trial_mode_services_is_visible_to_platform_admin(
@@ -1549,10 +1552,11 @@ def test_view_organisation_settings(
             {"organisation_type": "local"},
             {"cached_service_ids": [], "organisation_type": "local"},
         ),
-        (
+        pytest.param(
             ".edit_organisation_type",
             {"organisation_type": "nhs_local"},
             {"cached_service_ids": [], "organisation_type": "nhs_local"},
+            marks=pytest.mark.skip(reason="[NOTIFYNL] NHS and GP features are not offered in NL"),
         ),
         (
             ".edit_organisation_crown_status",

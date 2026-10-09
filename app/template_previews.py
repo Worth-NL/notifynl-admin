@@ -5,6 +5,7 @@ from io import BytesIO
 import requests
 from flask import abort, current_app, json, request
 from flask.ctx import has_request_context
+from notifications_utils.json import RelaxedContainerJSONEncoder as RCJSONEncoder
 from notifications_utils.local_vars import LazyLocalGetter
 from notifications_utils.pdf import extract_page_from_pdf
 from werkzeug.local import LocalProxy
@@ -64,8 +65,11 @@ class TemplatePreviewClient:
                 filetype,
                 f"?page={page}" if page else "",
             ),
-            json=data,
-            headers=self._get_outbound_headers(),
+            data=RCJSONEncoder().encode(data),
+            headers={
+                "Content-type": "application/json",
+                **self._get_outbound_headers(),
+            },
         )
         headers = list(self.get_allowed_headers(response.headers))
         if filetype == "pdf":
@@ -106,8 +110,11 @@ class TemplatePreviewClient:
                 self.api_host,
                 f"?page={page}" if page else "",
             ),
-            json=data,
-            headers=self._get_outbound_headers(),
+            data=RCJSONEncoder().encode(data),
+            headers={
+                "Content-type": "application/json",
+                **self._get_outbound_headers(),
+            },
         )
         return response.content, response.status_code, self.get_allowed_headers(response.headers)
 
@@ -127,8 +134,11 @@ class TemplatePreviewClient:
         }
         response = self.requests_session.post(
             f"{self.api_host}/get-page-count",
-            json=data,
-            headers=self._get_outbound_headers(),
+            data=RCJSONEncoder().encode(data),
+            headers={
+                "Content-type": "application/json",
+                **self._get_outbound_headers(),
+            },
         )
         response.raise_for_status()
 
@@ -155,10 +165,10 @@ class TemplatePreviewClient:
         )
 
 
-_template_preview_client_context_var: ContextVar[TemplatePreviewClient] = ContextVar("template_preview_client")
+_template_preview_client_context_var: ContextVar[TemplatePreviewClient | None] = ContextVar("template_preview_client")
 get_template_preview_client: LazyLocalGetter[TemplatePreviewClient] = LazyLocalGetter(
     _template_preview_client_context_var,
     lambda: TemplatePreviewClient(current_app),
 )
 memo_resetters.append(lambda: get_template_preview_client.clear())
-template_preview_client = LocalProxy(get_template_preview_client)
+template_preview_client: TemplatePreviewClient = LocalProxy(get_template_preview_client)  # type: ignore[assignment]

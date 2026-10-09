@@ -119,11 +119,11 @@ html.rhc-theme {
         }
 
         .govuk-header__logo a {
-            color: #FFF;
+            color: #FFFFFF;
 
             &:hover,
             &:visited {
-                color: #FFF;
+                color: #FFFFFF;
             }
         }
     }
@@ -290,13 +290,13 @@ html.rhc-theme {
 
     @media (min-width: 40.0625em) {
         .heading-large {
-            margin-bottom: .5555555556em;
+            margin-bottom: .5556em;
             margin-top: 1.25em;
         }
 
         .heading-medium {
-            margin-top: .8333333333em;
-            margin-bottom: .8333333333em;
+            margin-top: .8333em;
+            margin-bottom: .8333em;
         }
     }
 

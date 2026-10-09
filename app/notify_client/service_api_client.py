@@ -106,6 +106,7 @@ class ServiceAPIClient(NotifyAdminAPIClient):
             "billing_contact_names",
             "billing_reference",
             "confirmed_email_sender_name",
+            "confirmed_service_name",
             "confirmed_unique",
             "contact_link",
             "created_by",
@@ -146,7 +147,7 @@ class ServiceAPIClient(NotifyAdminAPIClient):
         return self.post(endpoint, data)
 
     @cache.delete("live-service-and-organisation-counts")
-    def update_status(self, service_id, live):
+    def update_status(self, service_id, live, permissions=None):
         from flask import current_app
 
         def get_daily_limit(live, channel):
@@ -154,15 +155,19 @@ class ServiceAPIClient(NotifyAdminAPIClient):
                 return current_app.config["DEFAULT_LIVE_SERVICE_RATE_LIMITS"][channel]
             return current_app.config["DEFAULT_SERVICE_LIMIT"]
 
-        return self.update_service(
-            service_id,
-            email_message_limit=get_daily_limit(live, "email"),
-            sms_message_limit=get_daily_limit(live, "sms"),
-            letter_message_limit=get_daily_limit(live, "letter"),
-            restricted=(not live),
-            go_live_at=str_no_tz(datetime.now(UTC)) if live else None,
-            has_active_go_live_request=False,
-        )
+        data = {
+            "email_message_limit": get_daily_limit(live, "email"),
+            "sms_message_limit": get_daily_limit(live, "sms"),
+            "letter_message_limit": get_daily_limit(live, "letter"),
+            "restricted": (not live),
+            "go_live_at": str_no_tz(datetime.now(UTC)) if live else None,
+            "has_active_go_live_request": False,
+        }
+
+        if permissions is not None:
+            data["permissions"] = permissions
+
+        return self.update_service(service_id, **data)
 
     @cache.delete("live-service-and-organisation-counts")
     def update_count_as_live(self, service_id, count_as_live):
@@ -199,8 +204,8 @@ class ServiceAPIClient(NotifyAdminAPIClient):
         subject=None,
         parent_folder_id=None,
         letter_languages: LetterLanguageOptions | None = None,
-        letter_welsh_subject: str = None,
-        letter_welsh_content: str = None,
+        letter_welsh_subject: str | None = None,
+        letter_welsh_content: str | None = None,
         has_unsubscribe_link: bool | None = None,
     ):
         """
@@ -308,12 +313,6 @@ class ServiceAPIClient(NotifyAdminAPIClient):
     # Temp access of service history data. Includes service and api key history
     def get_service_history(self, service_id):
         return self.get(f"/service/{service_id}/history")["data"]
-
-    def get_service_service_history(self, service_id):
-        return self.get_service_history(service_id)["service_history"]
-
-    def get_service_api_key_history(self, service_id):
-        return self.get_service_history(service_id)["api_key_history"]
 
     def get_monthly_notification_stats(self, service_id, year):
         return self.get(f"/service/{service_id}/notifications/monthly?year={year}")
@@ -562,10 +561,10 @@ class ServiceAPIClient(NotifyAdminAPIClient):
         return self.post(f"/service/{service_id}/service-join-request/{request_id}", data)
 
 
-_service_api_client_context_var: ContextVar[ServiceAPIClient] = ContextVar("service_api_client")
+_service_api_client_context_var: ContextVar[ServiceAPIClient | None] = ContextVar("service_api_client")
 get_service_api_client: LazyLocalGetter[ServiceAPIClient] = LazyLocalGetter(
     _service_api_client_context_var,
     lambda: ServiceAPIClient(current_app),
 )
 memo_resetters.append(lambda: get_service_api_client.clear())
-service_api_client = LocalProxy(get_service_api_client)
+service_api_client: ServiceAPIClient = LocalProxy(get_service_api_client)  # type: ignore[assignment]

@@ -10,7 +10,6 @@ from flask import (
     request,
     url_for,
 )
-from flask_login import current_user
 from markupsafe import Markup
 from notifications_python_client.errors import HTTPError
 from notifications_utils.timezones import utc_string_to_aware_gmt_datetime
@@ -18,6 +17,7 @@ from notifications_utils.timezones import utc_string_to_aware_gmt_datetime
 from app import (
     billing_api_client,
     current_service,
+    current_user,
     inbound_number_client,
     notification_api_client,
     organisations_client,
@@ -68,7 +68,6 @@ from app.models.branding import (
     LetterBranding,
 )
 from app.models.letter_rates import LetterRates
-from app.models.organisation import Organisation
 from app.models.sms_rate import SMSRate
 from app.utils import DELIVERED_STATUSES, FAILURE_STATUSES, SENDING_STATUSES
 from app.utils.services import service_has_or_is_expected_to_send_x_or_more_notifications
@@ -102,12 +101,12 @@ def service_name_change(service_id):
 
     if form.validate_on_submit():
         try:
-            current_service.update(name=form.name.data, confirmed_unique=False)
+            current_service.update(name=form.name.data, confirmed_unique=False, confirmed_service_name=False)
         except HTTPError as http_error:
             if http_error.status_code == 400 and (
                 error_message := service_api_client.parse_edit_service_http_error(http_error)
             ):
-                form.name.errors.append(error_message)
+                form.name.errors.append(error_message)  # type: ignore[attr-defined]  # is there a better way?
             else:
                 raise http_error
         else:
@@ -229,9 +228,13 @@ def service_switch_live(service_id):
     form = OnOffSettingForm(name="Make service live", enabled=not current_service.trial_mode)
 
     if form.validate_on_submit():
-        current_service.update_status(live=form.enabled.data)
+        permissions_to_remove = []
+
         if not current_service.has_email_templates and not bool(current_service.volume_email):
-            current_service.force_permission("email", on=False)
+            permissions_to_remove.append("email")
+
+        current_service.update_status(live=form.enabled.data, permissions_to_remove=permissions_to_remove)
+
         return redirect(url_for(".service_settings", service_id=service_id))
 
     return render_template(
@@ -717,37 +720,33 @@ def service_receive_text_messages_stop(service_id):
     if not current_service.has_permission("inbound_sms"):
         return redirect(url_for(".service_receive_text_messages", service_id=service_id))
 
-    form = AdminServiceInboundNumberArchive()
+    form = AdminServiceInboundNumberArchive(service=current_service)
     inbound_number = current_service.inbound_number
 
     if form.validate_on_submit():
-        if current_service.default_sms_sender == current_service.inbound_number:
-            form.removal_options.errors.append(
-                "You need to change your default text message sender ID before you can continue"
+        archive = form.removal_options.data == "true"
+
+        try:
+            service_api_client.remove_service_inbound_sms(service_id, archive)
+            return redirect(
+                url_for(
+                    ".service_receive_text_messages_stop_success",
+                    service_id=service_id,
+                    inbound_number=inbound_number,
+                )
             )
 
-        else:
-            archive = form.removal_options.data == "true"
-
-            try:
-                service_api_client.remove_service_inbound_sms(service_id, archive)
-                return redirect(
-                    url_for(
-                        ".service_receive_text_messages_stop_success",
-                        service_id=service_id,
-                        inbound_number=inbound_number,
-                    )
-                )
-
-            except Exception as e:
-                current_app.logger.error(
-                    "Error removing inbound number %s for service %s: %s",
-                    inbound_number,
-                    service_id,
-                    e,
-                    extra={"inbound_number": inbound_number, "service_id": service_id},
-                )
-                form.removal_options.errors.append("Failed to remove number from service")
+        except Exception as e:
+            current_app.logger.error(
+                "Error removing inbound number %s for service %s: %s",
+                inbound_number,
+                service_id,
+                e,
+                extra={"inbound_number": inbound_number, "service_id": service_id},
+            )
+            form.removal_options.errors.append(  # type: ignore[attr-defined]  # is there a better way?
+                "Het nummer kon niet van de dienst worden verwijderd"
+            )
 
     recent_use_date = None
 
@@ -820,9 +819,9 @@ def enable_email_channel(service_id):
         flash(
             Markup(
                 """
-                    <h2 class='govuk-heading-m'>There is a problem</h2>
+                    <h2 class='govuk-heading-m'>Er is een probleem</h2>
                     <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
-                        Some of the tasks on this page are incomplete
+                        Sommige taken op deze pagina zijn nog niet afgerond
                     </p>
                 """
             )
@@ -926,6 +925,7 @@ def service_set_auth_type_for_users(service_id):
     )
 
     if form.validate_on_submit():
+        assert form.users.data is not None  # type narrowing
         for user in all_service_users:
             should_use_email_auth = user.id in form.users.data
             new_auth_type = "email_auth" if should_use_email_auth else "sms_auth"
@@ -956,7 +956,7 @@ def service_add_letter_contact(service_id):
     if form.validate_on_submit():
         new_letter_contact = service_api_client.add_letter_contact(
             current_service.id,
-            contact_block=form.letter_contact_block.data or None,
+            contact_block=form.letter_contact_block.data,
             is_default=first_contact_block if first_contact_block else form.is_default.data,
         )
         if from_template:
@@ -999,7 +999,7 @@ def service_edit_letter_contact(service_id, letter_contact_id):
     if form.validate_on_submit():
         current_service.edit_letter_contact_block(
             id=letter_contact_id,
-            contact_block=form.letter_contact_block.data or None,
+            contact_block=form.letter_contact_block.data,
             is_default=letter_contact_block["is_default"] or form.is_default.data,
         )
         return redirect(url_for(".service_letter_contact_details", service_id=service_id))
@@ -1050,7 +1050,7 @@ def service_add_sms_sender(service_id):
     if form.validate_on_submit():
         service_api_client.add_sms_sender(
             current_service.id,
-            sms_sender=form.sms_sender.data.replace("\r", "") or None,
+            sms_sender=form.sms_sender.data,
             is_default=first_sms_sender if first_sms_sender else form.is_default.data,
         )
         return redirect(url_for(".service_sms_senders", service_id=service_id))
@@ -1076,16 +1076,24 @@ def service_add_sms_sender(service_id):
 def service_edit_sms_sender(service_id, sms_sender_id):
     sms_sender = current_service.get_sms_sender(sms_sender_id)
     is_inbound_number = sms_sender["inbound_number_id"]
+
+    form: ServiceEditInboundNumberForm | ServiceSmsSenderForm
     if is_inbound_number:
         form = ServiceEditInboundNumberForm(is_default=sms_sender["is_default"])
     else:
         form = ServiceSmsSenderForm(**sms_sender)
 
     if form.validate_on_submit():
+        if isinstance(form, ServiceEditInboundNumberForm):
+            sms_sender_data = sms_sender["sms_sender"]
+        else:
+            assert form.sms_sender.data is not None
+            sms_sender_data = form.sms_sender.data
+
         service_api_client.update_sms_sender(
             current_service.id,
             sms_sender_id=sms_sender_id,
-            sms_sender=sms_sender["sms_sender"] if is_inbound_number else form.sms_sender.data.replace("\r", ""),
+            sms_sender=sms_sender_data,
             is_default=True if sms_sender["is_default"] else form.is_default.data,
         )
         return redirect(url_for(".service_sms_senders", service_id=service_id))
@@ -1319,11 +1327,6 @@ def link_service_to_organisation(service_id):
     if form.validate_on_submit():
         if form.organisations.data != current_service.organisation_id:
             organisations_client.update_service_organisation(service_id, form.organisations.data)
-
-            # if it's a GP in trial mode, we need to set their daily sms_message_limit to 0
-            organisation = Organisation.from_id(form.organisations.data)
-            if current_service.trial_mode and organisation.organisation_type == Organisation.TYPE_NHS_GP:
-                current_service.update(sms_message_limit=0)
 
             current_service.update(has_active_go_live_request=False)
         return redirect(url_for(".service_settings", service_id=service_id))

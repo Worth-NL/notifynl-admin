@@ -6,7 +6,7 @@ from itertools import count, cycle, islice
 from unittest.mock import ANY, Mock
 
 import pytest
-from flask import g, make_response, url_for
+from flask import abort, g, make_response, url_for
 from freezegun import freeze_time
 from notifications_python_client.errors import HTTPError
 from requests import RequestException
@@ -17,6 +17,7 @@ from app.models.service import Service
 from tests import (
     NotifyBeautifulSoup,
     sample_uuid,
+    service_json,
     template_json,
     template_version_json,
     validate_route_permission,
@@ -404,7 +405,7 @@ def test_choose_template_interruptible(
     mock_complex_templates_and_folders,
     mocker,
 ):
-    mock_interruptible = mocker.patch("app.utils.interruptible_io._interruptible")
+    mock_interruptible = mocker.patch("notifications_utils.interruptible_io._allow_interruption")
 
     client_request.get("main.choose_template", service_id=SERVICE_ONE_ID, _test_page_title=False)
 
@@ -480,6 +481,7 @@ def test_should_show_page_for_email_template_with_unsubscribe_link(
     assert normalize_spaces(unsubscribe_link.text) == "Unsubscribe from these emails"
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "permissions, template_content, expected_hint_text",
     (
@@ -2261,40 +2263,39 @@ def test_dont_show_preview_letter_templates_for_bad_filetype(
 def test_letter_branding_preview_image(
     client_request,
     mock_onwards_request_headers,
-    mocker,
+    requests_mock,
 ):
-    class MockedResponse:
-        content = "foo"
-        status_code = 200
-        headers = {}
+    requests_mock.post(
+        "http://localhost:9999/preview.png",
+        request_headers={
+            "Authorization": "Token my-secret-key",
+            "some-onwards": "request-headers",
+        },
+        content=b"foo",
+        status_code=200,
+        headers={"content-type": "image/png"},
+    )
 
-    mocked_preview = mocker.patch("app.template_preview_client.requests_session.post", return_value=MockedResponse())
     response = client_request.get_response(
         "no_cookie.letter_branding_preview_image",
         filename="example",
     )
-
-    mocked_preview.assert_called_with(
-        "http://localhost:9999/preview.png",
-        json={
-            "letter_contact_block": "",
-            "template": {
-                "subject": "An example letter",
-                "content": ANY,
-                "template_type": "letter",
-                "is_precompiled_letter": False,
-            },
-            "values": None,
-            "filename": "example",
-            "date": None,
-            "letter_address_placement": "60mm",
-        },
-        headers={
-            "Authorization": "Token my-secret-key",
-            "some-onwards": "request-headers",
-        },
-    )
     assert response.get_data(as_text=True) == "foo"
+
+    assert len(requests_mock.request_history) == 1
+    assert requests_mock.request_history[0].json() == {
+        "letter_contact_block": "",
+        "template": {
+            "subject": "An example letter",
+            "content": ANY,
+            "template_type": "letter",
+            "is_precompiled_letter": False,
+        },
+        "values": None,
+        "filename": "example",
+        "date": None,
+        "letter_address_placement": "60mm",
+    }
 
 
 @pytest.mark.parametrize("filename", [None, FieldWithNoneOption.NONE_OPTION_VALUE])
@@ -2684,7 +2685,7 @@ def test_choose_template_to_copy_interruptible(
     mock_get_just_services_for_user,
     mocker,
 ):
-    mock_interruptible = mocker.patch("app.utils.interruptible_io._interruptible")
+    mock_interruptible = mocker.patch("notifications_utils.interruptible_io._allow_interruption")
 
     client_request.get(
         "main.choose_template_to_copy",
@@ -2704,7 +2705,7 @@ def test_choose_template_to_copy_from_service_interruptible(
     mock_get_just_services_for_user,
     mocker,
 ):
-    mock_interruptible = mocker.patch("app.utils.interruptible_io._interruptible")
+    mock_interruptible = mocker.patch("notifications_utils.interruptible_io._allow_interruption")
 
     client_request.get(
         "main.choose_template_to_copy",
@@ -2889,6 +2890,125 @@ def test_post_copy_template(
     ]
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+def test_post_copy_template_with_email_files_without_contact_link_redirects(
+    client_request,
+    active_user_with_permissions,
+    mock_get_service,
+    multiple_sms_senders,
+    mock_get_service_email_template_with_file,
+    mock_get_service_templates,
+    mock_get_organisations_and_services_for_user,
+    mock_create_service_template,
+    mock_get_no_api_keys,
+    mock_s3_download,
+    mocker,
+):
+    active_user_with_permissions["services"].append(SERVICE_TWO_ID)
+    active_user_with_permissions["permissions"][SERVICE_TWO_ID] = active_user_with_permissions["permissions"][
+        SERVICE_ONE_ID
+    ]
+    page = client_request.post(
+        "main.copy_template",
+        service_id=SERVICE_ONE_ID,
+        from_service=SERVICE_TWO_ID,
+        template_id=TEMPLATE_ONE_ID,
+        _data={
+            "service": SERVICE_ONE_ID,
+            "name": "Two week reminder (copy)",
+        },
+        _expected_status=200,
+        _follow_redirects=True,
+    )
+    assert not mock_create_service_template.call_args_list
+    assert (
+        normalize_spaces(page.select_one(".banner-dangerous"))
+        == "You need to add contact details for your service. Add contact details for your service"
+    )
+    assert normalize_spaces(page.select_one(".heading-large")) == "Choose an existing template to copy"
+
+
+@pytest.mark.parametrize("copy_to_different_service", [True, False])
+def test_post_copy_template_with_file(
+    client_request,
+    active_user_with_permissions,
+    mock_get_service,
+    multiple_sms_senders,
+    mock_get_service_email_template_with_file,
+    mock_get_service_templates,
+    mock_get_organisations_and_services_for_user,
+    fake_uuid,
+    mock_create_service_template,
+    mocker,
+    copy_to_different_service,
+):
+    active_user_with_permissions["services"].append(SERVICE_TWO_ID)
+    active_user_with_permissions["permissions"][SERVICE_TWO_ID] = active_user_with_permissions["permissions"][
+        SERVICE_ONE_ID
+    ]
+    mocker.patch(
+        "app.service_api_client.get_service",
+        side_effect=lambda service_id: {"data": service_json(service_id, contact_link="https://example.com")},
+    )
+    s3_upload_mock = mocker.patch("app.s3_client.s3_template_email_file_upload_client.utils_s3upload")
+    s3_download_mock = mocker.patch("app.s3_client.s3_template_email_file_upload_client.utils_s3download")
+    template_email_file_client_create_file_mock = mocker.patch(
+        "app.notify_client.template_email_file_client.TemplateEmailFileClient.create_file"
+    )
+    template_email_file_client_update_file_mock = mocker.patch(
+        "app.notify_client.template_email_file_client.TemplateEmailFileClient.update_file"
+    )
+    mocker.patch("uuid.uuid4", return_value=fake_uuid)
+    client_request.post(
+        "main.copy_template",
+        service_id=SERVICE_ONE_ID,
+        from_service=SERVICE_TWO_ID if copy_to_different_service else SERVICE_ONE_ID,
+        template_id=TEMPLATE_ONE_ID,
+        _data={
+            "service": SERVICE_ONE_ID,
+            "name": "Two week reminder (copy)",
+        },
+        _expected_status=302,
+    )
+    assert mock_create_service_template.call_args_list == [
+        mocker.call(
+            name="Two week reminder (copy)",
+            type_="email",
+            service_id=SERVICE_ONE_ID,
+            parent_folder_id=None,
+            subject="Your ((thing)) is due soon",
+            content="Your vehicle tax expires on ((date)). Please click the file ((example.pdf))",
+            letter_languages=None,
+            letter_welsh_subject=None,
+            letter_welsh_content=None,
+            has_unsubscribe_link=None,
+        )
+    ]
+    assert template_email_file_client_create_file_mock.call_args_list == [
+        mocker.call(
+            file_id=fake_uuid,
+            service_id=SERVICE_ONE_ID,
+            template_id=fake_uuid,
+            filename="example.pdf",
+            created_by_id=active_user_with_permissions["id"],
+        )
+    ]
+    assert template_email_file_client_update_file_mock.call_args_list == [
+        mocker.call(
+            file_id=fake_uuid,
+            service_id=SERVICE_ONE_ID,
+            template_id=fake_uuid,
+            pending=False,
+            link_text="example file",
+            retention_period=12,
+            validate_users_email=True,
+        )
+    ]
+
+    s3_upload_mock.assert_called_once()
+    s3_download_mock.assert_called_once()
+
+
 def test_post_copy_template_into_folder(
     client_request,
     active_user_with_permissions,
@@ -3041,20 +3161,16 @@ def test_copy_letter_template_with_letter_attachment(
     [
         ("email", "New email template"),
         ("sms", "New text message template"),
-        ("letter", "Templates"),
     ],
 )
-def test_choose_template_for_each_template_type(
+def test_choose_template_for_email_sms(
     client_request,
-    mock_get_api_keys,
     service_one,
     mock_get_service_templates,
     mock_get_template_folders,
     template_type,
     expected_page_heading,
 ):
-    service_one["permissions"].append("letter")
-
     page = client_request.post(
         "main.choose_template",
         service_id=SERVICE_ONE_ID,
@@ -3066,6 +3182,35 @@ def test_choose_template_for_each_template_type(
     )
 
     assert normalize_spaces(page.select_one("h1").text) == expected_page_heading
+
+    assert mock_get_service_templates.called
+    assert mock_get_template_folders.called
+
+
+def test_choose_template_for_letter(
+    client_request,
+    service_one,
+    mock_get_service_templates,
+    mock_get_template_folders,
+    mock_create_service_template,
+    fake_uuid,
+):
+    service_one["permissions"].append("letter")
+
+    client_request.post(
+        "main.choose_template",
+        service_id=SERVICE_ONE_ID,
+        _data={
+            "operation": "add-new-template",
+            "add_template_by_template_type": "letter",
+        },
+        _follow_redirects=False,
+        _expected_redirect=f"/services/{SERVICE_ONE_ID}/templates/{fake_uuid}",
+    )
+
+    assert mock_create_service_template.called
+    assert mock_get_service_templates.called
+    assert mock_get_template_folders.called
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -3801,9 +3946,10 @@ def test_removing_placeholders_is_not_a_breaking_change(
     assert mock_update_service_template.called is True
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_not_create_too_big_template(
     client_request,
-    mock_create_service_template_content_too_big,
+    mock_create_service_template,
 ):
     page = client_request.post(
         ".add_service_template",
@@ -3811,19 +3957,23 @@ def test_should_not_create_too_big_template(
         template_type="sms",
         _data={
             "name": "new name",
-            "template_content": "template content",
+            "template_content": "a" * 919,
             "template_type": "sms",
             "service": SERVICE_ONE_ID,
         },
         _expected_status=200,
     )
-    assert "Content has a character count greater than the limit of 459" in page.text
+    assert normalize_spaces(page.select_one(".govuk-error-message")) == (
+        "Error: Content has a character count greater than the limit of 918"
+    )
+    assert mock_create_service_template.called is False
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_not_update_too_big_template(
     client_request,
     mock_get_service_template,
-    mock_update_service_template_400_content_too_big,
+    mock_update_service_template,
     mock_get_no_api_keys,
     fake_uuid,
 ):
@@ -3834,20 +3984,23 @@ def test_should_not_update_too_big_template(
         _data={
             "id": fake_uuid,
             "name": "new name",
-            "template_content": "template content",
+            "template_content": "a" * 919,
             "service": SERVICE_ONE_ID,
             "template_type": "sms",
         },
         _expected_status=200,
     )
-    assert "Content has a character count greater than the limit of 459" in page.text
+    assert normalize_spaces(page.select_one(".govuk-error-message")) == (
+        "Error: Content has a character count greater than the limit of 918"
+    )
+    assert mock_update_service_template.called is False
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_not_edit_letter_template_with_too_big_qr_code(
     client_request,
-    mock_get_service_template,
-    mock_update_service_template_400_qr_code_too_big,
+    mock_get_service_letter_template,
+    mock_update_service_template,
     mock_get_no_api_keys,
     fake_uuid,
     service_one,
@@ -3874,6 +4027,7 @@ def test_should_not_edit_letter_template_with_too_big_qr_code(
     assert normalize_spaces(page.select_one(".govuk-error-message").text) == (
         "Error: Cannot create a usable QR code - the link you entered is too long"
     )
+    assert mock_update_service_template.called is False
 
 
 def test_should_redirect_when_saving_a_template_email(
@@ -4007,6 +4161,7 @@ def test_edit_service_template_archives_email_files(
     assert normalize_spaces(page.select(".banner-default-with-tick")[0].text) == expected_banner_text
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_edit_service_template_does_not_allow_email_file_in_subject(
     client_request,
     fake_uuid,
@@ -4495,33 +4650,38 @@ def test_can_create_email_template_with_emoji(client_request, mock_create_servic
     assert mock_create_service_template.called is True
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
-def test_should_not_create_sms_template_with_emoji(
+def test_should_create_sms_template_with_non_gsm_characters(
     client_request,
     service_one,
     mock_create_service_template,
 ):
-    page = client_request.post(
+    client_request.post(
         ".add_service_template",
         service_id=SERVICE_ONE_ID,
         template_type="sms",
         _data={
             "name": "new name",
-            "template_content": "here are some noodles 🍜",
+            "template_content": "here are some noodles 🍜 and some “smart quotes”",
             "template_type": "sms",
             "service": SERVICE_ONE_ID,
         },
-        _expected_status=200,
     )
-    assert "You cannot use 🍜 in text messages." in page.text
-    assert mock_create_service_template.called is False
+    mock_create_service_template.assert_called_once_with(
+        name="new name",
+        type_="sms",
+        content="here are some noodles 🍜 and some “smart quotes”",
+        service_id=SERVICE_ONE_ID,
+        subject=None,
+        parent_folder_id=None,
+        has_unsubscribe_link=None,
+    )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
-def test_should_not_update_sms_template_with_emoji(
+def test_should_update_sms_template_with_emoji(
     client_request,
     service_one,
     mock_update_service_template,
+    mock_get_no_api_keys,
     fake_uuid,
     mocker,
 ):
@@ -4535,21 +4695,24 @@ def test_should_not_update_sms_template_with_emoji(
             )
         },
     )
-    page = client_request.post(
+    client_request.post(
         ".edit_service_template",
         service_id=SERVICE_ONE_ID,
         template_id=fake_uuid,
         _data={
             "id": fake_uuid,
             "name": "new name",
-            "template_content": "here's a burger 🍔",
+            "template_content": "here’s a burger 🍔",
             "service": SERVICE_ONE_ID,
             "template_type": "sms",
         },
-        _expected_status=200,
     )
-    assert "You cannot use 🍔 in text messages." in page.text
-    assert mock_update_service_template.called is False
+    mock_update_service_template.assert_called_once_with(
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+        content="here’s a burger 🍔",
+        name="new name",
+    )
 
 
 def test_should_create_sms_template_without_downgrading_unicode_characters(
@@ -4625,6 +4788,28 @@ def test_should_show_redact_template(
     )
 
     mock_redact_template.assert_called_once_with(SERVICE_ONE_ID, fake_uuid)
+
+
+def test_redact_template_checks_folder_permission_before_calling_api(
+    client_request,
+    mock_redact_template,
+    service_one,
+    fake_uuid,
+    mocker,
+):
+    mocker.patch(
+        "app.models.service.Service.get_template_with_user_permission_or_403",
+        side_effect=lambda *args, **kwargs: abort(403),
+    )
+
+    client_request.post(
+        "main.redact_template",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+        _expected_status=403,
+    )
+
+    mock_redact_template.assert_not_called()
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
@@ -4739,6 +4924,7 @@ def test_set_template_sender_escapes_letter_contact_block_names(
     assert "<script>" not in radio_text
 
 
+@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "prefix_sms, content, expected_message, expected_class",
     (
@@ -4757,7 +4943,7 @@ def test_set_template_sender_escapes_letter_contact_block_names(
         (
             False,
             "a" * 161,
-            "Will be charged as 2 text messages",
+            "Will be charged as 2 text messages Reduce the cost of sending this message by removing 1 character",
             None,
         ),
         (
@@ -4771,13 +4957,13 @@ def test_set_template_sender_escapes_letter_contact_block_names(
             # service name takes 13 characters, 148 + 13 = 161
             True,
             "a" * 148,
-            "Will be charged as 2 text messages",
+            "Will be charged as 2 text messages Reduce the cost of sending this message by removing 1 character",
             None,
         ),
         (
             False,
             "a" * 918,
-            "Will be charged as 6 text messages",
+            "Will be charged as 6 text messages Reduce the cost of sending this message by removing 153 characters",
             None,
         ),
         (
@@ -4785,7 +4971,7 @@ def test_set_template_sender_escapes_letter_contact_block_names(
             # against total character limit
             True,
             "a" * 918,
-            "Will be charged as 7 text messages",
+            "Will be charged as 7 text messages Reduce the cost of sending this message by removing 13 characters",
             None,
         ),
         (
@@ -4819,14 +5005,53 @@ def test_set_template_sender_escapes_letter_contact_block_names(
         ),
         (
             False,
+            "Ẅÿ" * 36,
+            (
+                "Will be charged as 2 text messages "
+                "Reduce the cost of sending this message by: "
+                "removing Ẅ and ÿ "
+                "removing 2 characters"
+            ),
+            None,
+        ),
+        (
+            False,
+            "ẄÿÈ" * 24,
+            (
+                "Will be charged as 2 text messages "
+                "Reduce the cost of sending this message by: "
+                "removing Ẅ, ÿ and È "
+                "removing 2 characters"
+            ),
+            None,
+        ),
+        (
+            False,
+            "ẄÿÈẅ" * 36,
+            (
+                "Will be charged as 3 text messages "
+                "Reduce the cost of sending this message by: "
+                "removing Ẅ, ÿ and similar characters "
+                "removing 10 characters"
+            ),
+            None,
+        ),
+        (
+            False,
             "Ẅ" * 71,
-            "Will be charged as 2 text messages",
+            (
+                "Will be charged as 2 text messages "
+                "Reduce the cost of sending this message by: removing Ẅ removing 1 character"
+            ),
             None,
         ),
         (
             False,
             "Ẅ" * 918,
-            "Will be charged as 14 text messages",
+            (
+                "Will be charged as 14 text messages "
+                "Reduce the cost of sending this message by: removing Ẅ removing 47 characters"
+            ),
             None,
         ),
         (
@@ -4880,25 +5105,31 @@ def test_content_count_json_endpoint(
         assert expected_class is None
 
 
-@pytest.mark.parametrize(
-    "template_type",
-    (
-        "email",
-        "letter",
-        "banana",
-    ),
-)
-def test_content_count_json_endpoint_for_unsupported_template_types(
+@pytest.mark.skip(reason="[NOTIFYNL] SMS cost prompts are not shown in NL")
+def test_content_count_json_endpoint_formats_multiple_suggestions_as_list(
     client_request,
-    template_type,
 ):
-    client_request.post(
+    response = client_request.post_response(
         "main.count_content_length",
         service_id=SERVICE_ONE_ID,
-        template_type=template_type,
-        content="foo",
-        _expected_status=404,
+        template_type="sms",
+        _data={
+            "template_content": ("ẄÿÈ" * 25),
+        },
+        _expected_status=200,
     )
+
+    html = json.loads(response.get_data(as_text=True))["html"]
+    snippet = NotifyBeautifulSoup(html, "html.parser").select_one("span")
+
+    assert [normalize_spaces(p) for p in snippet.select("p.govuk-hint")] == [
+        "Reduce the cost of sending this message by:",
+    ]
+
+    assert [normalize_spaces(li) for li in snippet.select("ul.govuk-list.govuk-list--bullet.govuk-hint li")] == [
+        "removing Ẅ, ÿ and È",
+        "removing 18 characters",
+    ]
 
 
 @pytest.mark.parametrize(
@@ -5086,21 +5317,21 @@ def test_attach_files_button(
             ],
             (
                 "For the appointment, you will need: "
-                "http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg, "
+                "http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg&template_version=1, "  # noqa: E501
                 "This is a link"
             ),
             [
                 (
                     "<a"
-                    ' href="http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg"'
+                    ' href="http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg&amp;template_version=1"'
                     ' style="word-wrap: break-word; color: #1D70B8;"'
                     ">"
-                    "http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg"
+                    "http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg&amp;template_version=1"
                     "</a>"
                 ),
                 (
                     "<a"
-                    ' href="http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAg?key=bORm0P1qEeWC9eCsy50Rpg"'
+                    ' href="http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAg?key=bORm0P1qEeWC9eCsy50Rpg&amp;template_version=1"'
                     ' style="word-wrap: break-word; color: #1D70B8;">'
                     "This is a link"
                     "</a>"
@@ -5134,21 +5365,21 @@ def test_attach_files_button(
             (
                 "This template contains a mixture of normal placeholders, and file placeholders: "
                 "((current_date)), "
-                "http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg, "
+                "http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg&template_version=1, "  # noqa: E501
                 "This is a link"
             ),
             [
                 (
                     "<a"
-                    ' href="http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg"'
+                    ' href="http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg&amp;template_version=1"'
                     ' style="word-wrap: break-word; color: #1D70B8;"'
                     ">"
-                    "http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg"
+                    "http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAQ?key=bORm0P1qEeWC9eCsy50Rpg&amp;template_version=1"
                     "</a>"
                 ),
                 (
                     "<a"
-                    ' href="http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAg?key=bORm0P1qEeWC9eCsy50Rpg"'
+                    ' href="http://localhost/d/WWNkoIWOQsiQYqj-giJg6w/AAAAAAAAQACAAAAAAAAAAg?key=bORm0P1qEeWC9eCsy50Rpg&amp;template_version=1"'
                     ' style="word-wrap: break-word; color: #1D70B8;"'
                     ">"
                     "This is a link"

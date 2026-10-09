@@ -1,12 +1,10 @@
 from datetime import UTC, datetime
 
 from flask import abort, redirect, render_template, request, send_file, url_for
-from flask_login import current_user
 
-from app import current_service
+from app import current_service, current_user
 from app.main import main
 from app.main.overrides_nl.forms import AcceptAgreementForm
-from app.models.organisation import Organisation
 from app.s3_client.s3_mou_client import get_mou
 from app.utils import hide_from_search_engines
 from app.utils.time import str_no_tz
@@ -16,11 +14,6 @@ from app.utils.user import user_has_permissions
 @main.route("/services/<uuid:service_id>/agreement")
 @user_has_permissions("manage_service")
 def service_agreement(service_id):
-    if not current_service.organisation:
-        if current_service.organisation_type == Organisation.TYPE_NHS_GP:
-            return redirect(url_for("main.add_organisation_from_gp_service", service_id=current_service.id))
-        if current_service.organisation_type == Organisation.TYPE_NHS_LOCAL:
-            return redirect(url_for("main.add_organisation_from_nhs_local_service", service_id=current_service.id))
     if current_service.organisation.crown is None:
         return render_template("views/agreement/service-agreement-choose.html")
     if current_service.organisation.agreement_signed:

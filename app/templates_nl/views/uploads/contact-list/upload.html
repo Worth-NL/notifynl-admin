@@ -1,8 +1,8 @@
 {% extends "withnav_template.html" %}
 {% from "components/file-upload.html" import file_upload %}
 {% from "components/page-header.html" import page_header %}
-{% from "components/table.html" import list_table, text_field, index_field %}
 {% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
+{% from "govuk_frontend_jinja/components/table/macro.html" import govukTable %}
 
 {% block service_page_title %}
   Upload een noodcontactlijst
@@ -46,40 +46,48 @@
 
 <div class="govuk-grid-row">
   <div class="govuk-grid-column-one-half">
-    <div class="spreadsheet">
-      {% call(item, row_number) list_table(
-        [
-          ['email address'],
-          ['test@example.gov.nl'],
+      {{ govukTable({
+        "caption": "Voorbeeldlijst met e-mailadressen van medewerkers",
+        "captionClasses": "govuk-visually-hidden",
+        "firstCellIsHeader": true,
+        "classes": "notify-table notify-table--body-small notify-table--spreadsheet",
+        "head": [
+          { "text": "" },
+          { "text": "A" }
         ],
-        caption="Voorbeeldlijst met e-mailadressen van medewerkers",
-        caption_visible=False,
-        field_headings=['', 'A']
-      ) %}
-        {{ index_field(row_number - 1) }}
-        {% for column in item %}
-          {{ text_field(column) }}
-        {% endfor %}
-      {% endcall %}
-    </div>
+        "rows": [
+          [
+            { "text": "1" },
+            { "text": "email address" }
+          ],
+          [
+            { "text": "2" },
+            { "text": "test@example.gov.nl" }
+          ]
+        ]
+      }) }}
   </div>
   <div class="govuk-grid-column-one-half">
-    <div class="spreadsheet">
-      {% call(item, row_number) list_table(
-        [
-          ['phone number'],
-          ['06 12345678'],
+      {{ govukTable({
+        "caption": "Voorbeeldlijst met telefoonnummers van medewerkers",
+        "captionClasses": "govuk-visually-hidden",
+        "firstCellIsHeader": true,
+        "classes": "notify-table notify-table--body-small notify-table--spreadsheet",
+        "head": [
+          { "text": "" },
+          { "text": "A" }
         ],
-        caption="Voorbeeldlijst met telefoonnummers van medewerkers",
-        caption_visible=False,
-        field_headings=['', 'A']
-      ) %}
-        {{ index_field(row_number - 1) }}
-        {% for column in item %}
-          {{ text_field(column) }}
-        {% endfor %}
-      {% endcall %}
-    </div>
+        "rows": [
+          [
+            { "text": "1" },
+            { "text": "phone number" }
+          ],
+          [
+            { "text": "2" },
+            { "text": "06 12345678" }
+          ]
+        ]
+      }) }}
   </div>
 </div>
 {% endblock %}

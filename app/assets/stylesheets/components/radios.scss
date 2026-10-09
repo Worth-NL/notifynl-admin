@@ -1,3 +1,5 @@
+@use 'govuk/helpers' as *;
+
 // https://github.com/alphagov/govuk-frontend/blob/v5.4.1/packages/govuk-frontend/src/govuk/components/checkboxes/_index.scss
 $govuk-touch-target-gutter: 4px;
 $govuk-radios-size: 40px;
@@ -55,7 +57,7 @@ $border-indent: ($govuk-radios-size/ 2) - ($border-thickness / 2);
   position: static; // override GOV.UK Frontend styling from the Button component
 }
 
-.radio-select__expander[aria-expanded=true]::before {
+.radio-select__expander[aria-expanded="true"]::before {
   transform:translateY(1px) rotate(225deg) scale(1);
 }
 
