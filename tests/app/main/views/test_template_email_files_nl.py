@@ -658,7 +658,7 @@ def test_upload_file_page_requires_file(
         ),
     ),
 )
-def test_upload_file_page_validates_extentions(
+def test_upload_file_page_validates_extensions(
     client_request,
     fake_uuid,
     service_one,

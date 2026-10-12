@@ -1,7 +1,7 @@
 import json
 
 
-def test_complete_register_flashes_dutch_confirmation(client_request, platform_admin_user, mocker):
+def test_complete_register_clears_session(client_request, platform_admin_user, mocker):
     with client_request.session_transaction() as session:
         session["webauthn_registration_state"] = "state"
 
