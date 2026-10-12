@@ -7,14 +7,12 @@ from tests import user_json
 from tests.conftest import SERVICE_ONE_ID, normalize_spaces
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_render_forgot_password(client_request):
     client_request.logout()
     page = client_request.get(".forgot_password")
     assert "We’ll send you an email to create a new password." in page.text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize("email_address", ["test@user.gov.uk", "someuser@notgovernment.com"])
 def test_should_redirect_to_password_reset_sent_for_valid_email(
     client_request,
@@ -51,7 +49,6 @@ def test_forgot_password_sends_next_link_with_reset_password_email_request(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_redirect_to_password_reset_sent_for_missing_email(
     client_request,
     api_user_active,

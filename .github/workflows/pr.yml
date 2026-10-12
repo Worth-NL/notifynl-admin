@@ -97,6 +97,9 @@ jobs:
           use-actions-summary: false
           badge-title: JEST
 
+      - name: Check superseded_tests_nl.toml
+        run: pytest --collect-only -qq --nl-verify
+
       - uses: pavelzw/pytest-action@v2
         with:
           job-summary: false

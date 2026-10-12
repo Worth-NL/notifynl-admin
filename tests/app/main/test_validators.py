@@ -39,7 +39,6 @@ def _gen_mock_field(x, **kwargs):
         "test@example.sch.uk",
     ],
 )
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_valid_list_of_white_list_email_domains(
     client_request,
     email,

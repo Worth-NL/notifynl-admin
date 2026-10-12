@@ -21,7 +21,6 @@ def test_non_gov_user_cannot_see_add_service_button(
     assert "Add a new service" not in page.text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_gov_user_can_see_trial_mode_guidance_page(
     client_request,
     api_user_active,
@@ -55,7 +54,6 @@ def test_nongov_user_cannot_see_trial_mode_guidance_page(
         organisation_json(organisation_type=None),
     ),
 )
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_get_should_render_add_service_template(
     client_request,
     mocker,
@@ -90,7 +88,6 @@ def test_get_should_render_add_service_template(
     ]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_get_should_not_render_radios_if_org_type_known(
     client_request,
     mocker,
@@ -104,7 +101,6 @@ def test_get_should_not_render_radios_if_org_type_known(
     assert page.select_one("input[name=name]").get("value") is None
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_get_name_service_should_not_render_org_type_radios_for_nhs_notify_user(client_request, mocker):
     mocker.patch("app.models.user.User.is_nhs_notify_org_member", return_value=True)
 
@@ -114,7 +110,6 @@ def test_get_name_service_should_not_render_org_type_radios_for_nhs_notify_user(
     assert not page.select(".govuk-radios")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_shows_back_link_if_come_from_your_services_page(
     client_request,
     mock_get_no_organisation_by_domain,
@@ -152,7 +147,6 @@ def test_shows_back_link_if_come_from_your_services_page(
     ),
 )
 @freeze_time("2021-01-01")
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_should_add_service_and_redirect_to_tour_when_no_services(
     client_request,
     mock_create_service_template,
@@ -220,7 +214,6 @@ def test_should_add_service_and_redirect_to_tour_when_no_services(
         assert session["service_id"] == 101
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_add_service_has_to_choose_org_type(
     client_request,
     mock_create_service,
@@ -252,7 +245,6 @@ def test_add_service_has_to_choose_org_type(
         "test@EXAMPLE.NHS.NET",
     ),
 )
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_get_should_only_show_nhs_org_types_radios_if_user_has_nhs_email(
     client_request,
     mocker,
@@ -293,7 +285,6 @@ def test_get_should_only_show_nhs_org_types_radios_if_user_has_nhs_email(
         "other",
     ],
 )
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_should_add_service_and_redirect_to_dashboard_when_existing_service(
     notify_admin,
     client_request,
@@ -333,7 +324,6 @@ def test_should_add_service_and_redirect_to_dashboard_when_existing_service(
         assert session["service_id"] == 101
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_add_service_for_nhs_notify_user_sets_nhs_notify_org_type_automatically_without_org_type_being_provided(
     client_request,
     mock_update_service,
@@ -371,7 +361,6 @@ def test_add_service_for_nhs_notify_user_sets_nhs_notify_org_type_automatically_
     assert mock_create_service_template.called is False
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 @pytest.mark.parametrize("org_type, mock_user_org_type", [("nhs_gp", "nhs"), ("nhs_notify", "nhs_notify")])
 def test_add_service_sets_daily_sms_limit_to_zero_for_nhs_services_with_no_allowance_when_user_already_has_services(
     mock_get_no_organisation_by_domain,
@@ -407,7 +396,6 @@ def test_add_service_sets_daily_sms_limit_to_zero_for_nhs_services_with_no_allow
     assert mock_create_service_template.called is False
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 @pytest.mark.parametrize("org_type, mock_user_org_type", [("nhs_gp", "nhs"), ("nhs_notify", "nhs_notify")])
 def test_add_service_sets_daily_sms_limit_to_zero_for_nhs_services_with_no_allowance_when_user_has_no_other_services(
     mock_get_no_organisation_by_domain,
@@ -451,7 +439,6 @@ def test_add_service_sets_daily_sms_limit_to_zero_for_nhs_services_with_no_allow
         ("a" * 256, "Service name cannot be longer than 255 characters"),
     ],
 )
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_add_service_fails_if_service_name_fails_validation(
     client_request,
     mock_get_organisation_by_domain,
@@ -466,7 +453,6 @@ def test_add_service_fails_if_service_name_fails_validation(
     assert error_message in page.select_one(".govuk-error-message").text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_should_return_form_errors_with_duplicate_service_name_regardless_of_case(
     client_request,
     mock_get_organisation_by_domain,
@@ -518,7 +504,6 @@ def test_non_government_user_cannot_create_service(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_email_auth_user_creates_service_with_email_auth_permission(
     api_user_active_email_auth,
     client_request,

@@ -6,7 +6,6 @@ from tests import validate_route_permission
 from tests.conftest import SERVICE_ONE_ID, create_template, normalize_spaces
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_200_for_tour_start(
     client_request,
     mock_get_service_template_with_multiple_placeholders,
@@ -116,7 +115,6 @@ def test_should_403_if_user_does_not_have_send_permissions_for_tour_start(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_200_for_get_tour_step(
     client_request,
     mock_get_service_template_with_multiple_placeholders,
@@ -285,7 +283,6 @@ def test_back_link_from_get_tour_step_points_to_previous_step(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_post_tour_step_saves_data_and_redirects_to_next_step(
     client_request,
     mock_get_service_template_with_multiple_placeholders,
@@ -314,7 +311,6 @@ def test_post_tour_step_saves_data_and_redirects_to_next_step(
         assert session["placeholders"] == {"one": "hello", "phone number": "07700 900762"}
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_post_tour_step_adds_data_to_saved_data_and_redirects_to_next_step(
     client_request,
     mock_get_service_template_with_multiple_placeholders,
@@ -347,7 +343,6 @@ def test_post_tour_step_adds_data_to_saved_data_and_redirects_to_next_step(
         }
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_post_tour_step_raises_validation_error_for_form_error(
     client_request,
     mock_get_service_template_with_multiple_placeholders,
@@ -379,7 +374,6 @@ def test_post_tour_step_raises_validation_error_for_form_error(
         assert session["placeholders"] == {"one": "hi", "phone number": "07700 900762"}
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_post_final_tour_step_saves_data_and_redirects_to_check_notification(
     client_request,
     mock_get_service_template_with_multiple_placeholders,
@@ -459,7 +453,6 @@ def test_get_test_step_out_of_index_redirects_to_check_notification_if_all_place
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_200_for_check_tour_notification(
     client_request,
     mock_get_service_template_with_multiple_placeholders,

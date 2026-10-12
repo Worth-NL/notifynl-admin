@@ -11,7 +11,6 @@ from app.utils.login import decrypt_new_password
 from tests.conftest import SERVICE_ONE_ID, url_for_endpoint_with_token
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2021-01-01 11:11:11")
 def test_should_render_new_password_template(
     notify_admin,

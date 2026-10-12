@@ -4,7 +4,6 @@ from freezegun import freeze_time
 from tests.conftest import API_KEY_REVOKER_ID, SERVICE_ONE_ID, create_service_one_admin, normalize_spaces, sample_uuid
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "extra_args, expected_headings_and_events",
     (

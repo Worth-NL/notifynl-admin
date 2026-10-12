@@ -24,7 +24,6 @@ def test_should_403_if_not_platform_admin(client_request):
     client_request.get("main.platform_admin_search", _expected_status=403)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_platform_admin_list_complaints(client_request, platform_admin_user, mocker):
     complaint = {
         "id": str(uuid.uuid4()),
@@ -138,7 +137,6 @@ def test_platform_admin_submit_returned_letters(
     mock_client.assert_called_once_with(["REF1", "REF2"])
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_platform_admin_submit_empty_returned_letters(
     client_request,
     platform_admin_user,
@@ -185,7 +183,6 @@ def test_clear_cache_shows_form(
     }
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "model_type, expected_calls, expected_confirmation",
     (
@@ -279,7 +276,6 @@ def test_clear_cache_submits_and_tells_you_how_many_things_were_deleted(
     assert flash_banner.text.strip() == expected_confirmation
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_clear_cache_requires_option(
     client_request,
     platform_admin_user,
@@ -294,7 +290,6 @@ def test_clear_cache_requires_option(
     assert not redis.delete_by_pattern.called
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_reports_page(
     client_request,
     platform_admin_user,
@@ -388,7 +383,6 @@ def test_get_notifications_sent_by_service_shows_date_form(
     ]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_get_notifications_sent_by_service_validates_form(
     client_request,
     platform_admin_user,
@@ -415,7 +409,6 @@ def test_get_notifications_sent_by_service_validates_form(
     assert mock_get_stats_from_api.called is False
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_get_billing_report_when_no_results_for_date(client_request, platform_admin_user, mocker):
     client_request.login(platform_admin_user)
 
@@ -489,7 +482,6 @@ def test_get_billing_report_calls_api_and_download_data(client_request, platform
 
 
 class TestGetDvlaBillingReport:
-    @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
     def test_when_no_results_for_date(self, client_request, platform_admin_user, mocker):
         client_request.login(platform_admin_user)
 
@@ -507,7 +499,6 @@ class TestGetDvlaBillingReport:
         error = page.select_one(".banner-dangerous")
         assert normalize_spaces(error.text) == "No results for dates"
 
-    @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
     def test_calls_api_and_downloads_data(self, client_request, platform_admin_user, mocker):
         mocker.patch(
             "app.main.views_nl.platform_admin.billing_api_client.get_data_for_dvla_billing_report",
@@ -760,12 +751,10 @@ class TestPlatformAdminSearch:
     def test_page_requires_platform_admin(self, client_request):
         client_request.get(".platform_admin_search", _expected_status=403)
 
-    @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
     def test_page_loads(self, client_request, platform_admin_user):
         client_request.login(platform_admin_user)
         client_request.get(".platform_admin_search")
 
-    @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
     def test_can_search_for_user(self, client_request, platform_admin_user, active_caseworking_user, mocker):
         mocker.patch(
             "app.main.views_nl.platform_admin.user_api_client.find_users_by_full_or_partial_email",
@@ -797,7 +786,6 @@ class TestPlatformAdminSearch:
         assert found_user_links[0].text == "caseworker@example.gov.uk"
         assert found_user_links[0].get("href") == "/users/6ce466d0-fd6a-11e5-82f5-e0accb9d11a6"
 
-    @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
     def test_can_search_for_services(self, client_request, platform_admin_user, service_one, service_two, mocker):
         mocker.patch(
             "app.main.views_nl.platform_admin.user_api_client.find_users_by_full_or_partial_email",
@@ -827,7 +815,6 @@ class TestPlatformAdminSearch:
         assert found_service_links[1].text == "service two"
         assert found_service_links[1].get("href") == "/services/147ad62a-2951-4fa1-9ca0-093cd1a52c52"
 
-    @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
     def test_can_search_for_organisations(self, client_request, platform_admin_user, organisation_one, mocker):
         mocker.patch(
             "app.main.views_nl.platform_admin.user_api_client.find_users_by_full_or_partial_email",
@@ -855,7 +842,6 @@ class TestPlatformAdminSearch:
         assert found_service_links[0].text == "organisation one"
         assert found_service_links[0].get("href") == "/organisations/c011fa40-4cbe-4524-b415-dde2f421bd9c"
 
-    @pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
     def test_shows_results_from_all_categories(
         self,
         client_request,
@@ -1031,7 +1017,6 @@ def test_build_live_service_permissions_for_users_list_csv():
     assert result == "Service 1: manage_service; Service 2: send_messages"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_platform_admin_users_list_without_any_filters(client_request, platform_admin_user, mocker):
     client_request.login(platform_admin_user)
 
@@ -1044,7 +1029,6 @@ def test_platform_admin_users_list_without_any_filters(client_request, platform_
     assert "You must provide at least one filter option" in page.select_one(".govuk-error-summary__list").text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_platform_admin_users_list_when_no_results_for_filters(client_request, platform_admin_user, mocker):
     client_request.login(platform_admin_user)
 
@@ -1107,7 +1091,6 @@ def test_platform_admin_users_list_csv_export(client_request, platform_admin_use
     assert csv_content == expected_csv
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_platform_admin_users_list_with_invalid_date_range(client_request, platform_admin_user, mocker):
     client_request.login(platform_admin_user)
 

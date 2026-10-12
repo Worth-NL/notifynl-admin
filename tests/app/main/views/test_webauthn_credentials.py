@@ -159,7 +159,6 @@ def test_complete_register_creates_credential(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_complete_register_clears_session(
     client_request,
     platform_admin_user,

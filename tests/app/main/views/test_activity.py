@@ -29,7 +29,6 @@ from tests.conftest import (
 )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "user,extra_args,expected_update_endpoint,expected_limit_days,page_title",
     [
@@ -216,7 +215,6 @@ def test_can_show_notifications(
         )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_can_show_notifications_if_data_retention_not_available(
     client_request,
     mock_get_notifications,
@@ -479,7 +477,6 @@ def test_download_not_available_to_users_if_invalid_message_type(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_letters_with_status_virus_scan_failed_shows_a_failure_description(
     client_request,
     service_one,
@@ -534,7 +531,6 @@ def test_should_not_show_preview_link_for_precompiled_letters_in_virus_states(
     assert not page.select_one("a.notify-summary-list__filename")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_shows_message_when_no_notifications(
     client_request,
     mock_get_service_statistics,
@@ -552,7 +548,6 @@ def test_shows_message_when_no_notifications(
     assert normalize_spaces(page.select_one(".no-data").text) == "No messages found (messages are kept for 7 days)"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "initial_query_arguments,form_post_data,expected_search_box_label,expected_search_box_contents",
     [
@@ -669,7 +664,6 @@ def test_search_recipient_form(
         )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "message_type, expected_search_box_label",
     [
@@ -697,7 +691,6 @@ def test_api_users_are_told_they_can_search_by_reference_when_service_has_api_ke
     assert page.select_one("label[for=to]").text.strip() == expected_search_box_label
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "message_type, expected_search_box_label",
     [
@@ -752,7 +745,6 @@ def test_should_show_notifications_for_a_service_with_next_previous(
     assert "page 1" in prev_page_link.text.strip()
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_doesnt_show_pagination_with_search_term(
     client_request,
     service_one,
@@ -849,7 +841,6 @@ def test_html_contains_notification_id(
         assert uuid.UUID(tr.attrs["id"])
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_html_contains_links_for_failed_notifications(
     client_request,
     mock_get_service_statistics,
@@ -939,7 +930,6 @@ def test_big_numbers_dont_show_for_letters(
     assert (len(page.select("[type=search]")) > 0) is True
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2017-09-27 16:30:00.000000")
 @pytest.mark.parametrize(
     "message_type, status, expected_hint_status, has_link",

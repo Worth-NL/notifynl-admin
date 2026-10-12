@@ -168,7 +168,6 @@ def test_get_page_counts_for_letter_does_not_cache_for_personalised_letters(
     assert len(mock_get_page_count.call_args_list) == 3
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Postage changes ")
 @freeze_time("2012-12-12 12:12:12")
 @pytest.mark.parametrize(
     "postage_argument",
@@ -245,7 +244,6 @@ def test_letter_image_renderer_pagination(mocker, page_image_url):
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Postage changes ")
 def test_letter_image_renderer_requires_valid_postage():
     with pytest.raises(TypeError) as exception:
         TemplatedLetterImageTemplate(
@@ -255,7 +253,6 @@ def test_letter_image_renderer_requires_valid_postage():
     assert str(exception.value) == ("postage must be None, 'first', 'second', 'economy', 'europe' or 'rest-of-world'")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Postage changes ")
 @pytest.mark.parametrize(
     "initial_postage_value",
     (
@@ -297,7 +294,6 @@ def test_letter_image_renderer_requires_image_url_to_render():
     assert str(exception.value) == "image_url is required to render TemplatedLetterImageTemplate"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue, and postage changes")
 @pytest.mark.parametrize(
     "postage, expected_attribute_value, expected_postage_text",
     (
@@ -356,7 +352,6 @@ def test_letter_image_renderer_passes_postage_to_html_attribute(
         assert not template.select(".letter-postage")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue, and postage changes")
 @freeze_time("2012-12-12 12:12:12")
 @pytest.mark.parametrize(
     "page_count, expected_oversized, expected_page_numbers",
@@ -558,7 +553,6 @@ def test_subject_line_gets_replaced(
     assert template.subject == "Jo"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] postalAddress changes only 6 lines")
 @pytest.mark.parametrize(
     "template_class, template_type, extra_args, expected_field_calls",
     [
@@ -924,7 +918,6 @@ def test_no_smart_quotes_in_email_addresses_in_email_preview_template(content):
     assert template.subject == "first.o'last@example.com"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "extra_args",
     [
@@ -948,7 +941,6 @@ def test_email_preview_escapes_html_in_from_name():
     assert '&lt;script&gt;alert("")&lt;/script&gt;' in str(template)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "extra_args",
     [
@@ -1131,7 +1123,6 @@ def test_templates_make_quotes_smart_and_dashes_en(
     mock_en_dash_replacement.assert_has_calls(expected_calls)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "subject, expected_subject, expected_classes",
     (

@@ -20,7 +20,6 @@ def mock_email_validated_recently(mocker):
     return mocker.patch("app.models.user.User.email_needs_revalidating", new_callable=PropertyMock, return_value=False)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize("request_url", ["two_factor_email_sent", "revalidate_email_sent"])
 @pytest.mark.parametrize("redirect_url", [None, f"/services/{SERVICE_ONE_ID}/templates"])
 @pytest.mark.parametrize("email_resent, page_title", [(None, "Check your inbox"), (True, "Email resent")])
@@ -40,7 +39,6 @@ def test_two_factor_email_sent_page(client_request, email_resent, page_title, re
     assert resend_email_link["href"] == url_for("main.email_not_received", next=redirect_url)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "redirect_url",
     [
@@ -220,7 +218,6 @@ def test_two_factor_sms_should_set_password_when_new_password_exists_in_session(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize("new_password", ["just-a-string", b"bytes-string"])
 def test_two_factor_sms_should_return_error_if_new_password_not_encrypted(
     client_request,
@@ -255,7 +252,6 @@ def test_two_factor_sms_should_return_error_if_new_password_not_encrypted(
     mock_update_user_password.assert_not_called()
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_two_factor_sms_should_return_error_if_new_password_encrypted_with_wrong_key(
     client_request, api_user_active, mock_update_user_password, mock_email_validated_recently, caplog
 ):
@@ -322,7 +318,6 @@ def test_two_factor_endpoints_get_should_redirect_to_sign_in_if_user_not_in_sess
     client_request.get(endpoint, _expected_redirect=url_for("main.sign_in"))
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_two_factor_webauthn_should_have_auth_signin_button(
     client_request,
     platform_admin_user,
@@ -378,7 +373,6 @@ def test_two_factor_sms_should_activate_pending_user(
     assert mock_activate_user.called
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "extra_args, expected_encoded_next_arg",
     (
@@ -431,7 +425,6 @@ def test_valid_two_factor_email_link_logs_in_user(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "redirect_url",
     [
@@ -472,7 +465,6 @@ def test_two_factor_email_link_is_invalid(client_request):
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "redirect_url",
     [
@@ -497,7 +489,6 @@ def test_two_factor_email_link_is_already_used(
     assert mock_send_verify_code.called is False
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_two_factor_email_link_when_user_is_locked_out(client_request, valid_token, mocker, mock_send_verify_code):
     client_request.logout()
     mocker.patch("app.user_api_client.check_verify_code", return_value=(False, "Code not found"))

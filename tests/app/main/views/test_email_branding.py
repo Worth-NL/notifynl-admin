@@ -10,7 +10,6 @@ from app.models.branding import get_insignia_asset_path
 from tests.conftest import create_email_branding, normalize_spaces
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_email_branding_page_shows_full_branding_list(client_request, platform_admin_user, mock_get_all_email_branding):
     client_request.login(platform_admin_user)
     page = client_request.get(".email_branding")
@@ -66,7 +65,6 @@ def test_view_email_branding_requires_platform_admin(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_view_email_branding_with_services_but_no_orgs(
     client_request,
     platform_admin_user,
@@ -91,7 +89,6 @@ def test_view_email_branding_with_services_but_no_orgs(
     assert link_2["href"] == url_for(".service_settings", service_id="5678")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_view_email_branding_with_org_but_no_services(
     client_request,
     platform_admin_user,
@@ -112,7 +109,6 @@ def test_view_email_branding_with_org_but_no_services(
     assert link_1["href"] == url_for(".organisation_settings", org_id="1234")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "created_at, updated_at", [("2022-12-06T09:59:56.000000Z", "2023-01-20T11:59:56.000000Z"), (None, None)]
 )
@@ -155,7 +151,6 @@ def test_view_email_branding_shows_created_by_and_helpful_dates_if_available(
         assert "on Friday 20 January 2023" in page.select("p")[-1].text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_view_email_branding_bottom_links(
     client_request,
     platform_admin_user,
@@ -220,7 +215,6 @@ def test_create_email_branding_can_be_populated_from_querystring(client_request,
     assert page.select_one("#brand_type input")["value"] == "both"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "extra_kwargs, expected_backlink",
     (
@@ -308,7 +302,6 @@ def test_create_new_email_branding_with_unique_name_conflict(
     assert "An email branding with that name already exists." in resp.text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_create_email_branding_requires_a_name_when_submitting_logo_details(
     client_request,
     mock_create_email_branding,
@@ -451,7 +444,6 @@ def test_create_new_email_branding_when_branding_saved(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_create_email_branding_shows_error_with_neither_alt_text_and_text(
     client_request,
     mock_create_email_branding,
@@ -474,7 +466,6 @@ def test_create_email_branding_shows_error_with_neither_alt_text_and_text(
     assert not mock_create_email_branding.called
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_create_email_branding_shows_error_with_both_alt_text_and_text(
     client_request,
     mock_create_email_branding,
@@ -615,7 +606,6 @@ def test_update_existing_branding_does_not_reupload_logo_if_unchanged(
     assert not mock_save_permanent.called
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_update_email_branding_shows_error_with_neither_alt_text_and_text(
     client_request,
     mocker,
@@ -645,7 +635,6 @@ def test_update_email_branding_shows_error_with_neither_alt_text_and_text(
     assert not mock_update_email_branding.called
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_update_email_branding_shows_error_with_both_alt_text_and_text(
     client_request, mocker, mock_get_email_branding, mock_update_email_branding, platform_admin_user, fake_uuid
 ):
@@ -712,7 +701,6 @@ def test_update_email_branding_with_unique_name_conflict(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_platform_admin_confirm_archive_email_branding(
     client_request,
     platform_admin_user,
@@ -731,7 +719,6 @@ def test_platform_admin_confirm_archive_email_branding(
     assert page.select_one(".banner-dangerous form")["method"] == "post"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_platform_admin_confirm_archive_email_branding_that_is_in_use(
     client_request,
     platform_admin_user,
