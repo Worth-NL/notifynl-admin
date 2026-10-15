@@ -109,3 +109,35 @@ def test_get_letter_validation_error_for_address_placement_mismatch_interpolates
     # AdminServiceLetterAddressPlacementForm.choices for where "Pingen" is intentionally kept.
     assert "Pingen" not in error["detail"]
     assert "Pingen" not in error["summary"]
+
+
+@pytest.mark.parametrize(
+    "validation_message, expected_detail, expected_summary",
+    (
+        (
+            "not-a-real-uk-postcode",
+            "De laatste regel van het adres moet een geldige postcode en plaatsnaam zijn.",
+            "De validatie is mislukt omdat de laatste regel van het adres geen geldige postcode en plaatsnaam is.",
+        ),
+        (
+            "not-a-real-uk-postcode-or-country",
+            "De laatste regel van het adres moet een geldige postcode en plaatsnaam of een ander land zijn.",
+            (
+                "De validatie is mislukt omdat de laatste regel van het adres geen geldige postcode en plaatsnaam "
+                "of een ander land is."
+            ),
+        ),
+    ),
+)
+def test_get_letter_validation_error_for_invalid_last_address_line_does_not_mention_uk(
+    notify_admin, validation_message, expected_detail, expected_summary
+):
+    # The error codes keep their upstream "uk" names (shared with template-preview and api), but the
+    # check behind them is the Dutch postcode + city check, so the message must not ask for a UK postcode.
+    with notify_admin.test_request_context():
+        error = get_letter_validation_error(validation_message, invalid_pages=[1])
+
+    assert error["detail"] == expected_detail
+    assert error["summary"] == expected_summary
+    assert "VK" not in error["detail"]
+    assert "VK" not in error["summary"]

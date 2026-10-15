@@ -122,8 +122,10 @@ LETTER_VALIDATION_MESSAGES = {
     },
     "not-a-real-uk-postcode": {
         "title": "Er is een probleem met het adres voor deze brief",
-        "detail": "De laatste regel van het adres moet een geldige postcode uit het VK zijn.",
-        "summary": "De validatie is mislukt omdat de laatste regel van het adres geen geldige postcode uit het VK is.",
+        "detail": "De laatste regel van het adres moet een geldige postcode en plaatsnaam zijn.",
+        "summary": (
+            "De validatie is mislukt omdat de laatste regel van het adres geen geldige postcode en plaatsnaam is."
+        ),
     },
     "cant-send-international-letters": {
         "title": "Er is een probleem met het adres voor deze brief",
@@ -132,9 +134,9 @@ LETTER_VALIDATION_MESSAGES = {
     },
     "not-a-real-uk-postcode-or-country": {
         "title": "Er is een probleem met het adres voor deze brief",
-        "detail": "De laatste regel van het adres moet een postcode uit het VK of een ander land zijn.",
+        "detail": "De laatste regel van het adres moet een geldige postcode en plaatsnaam of een ander land zijn.",
         "summary": (
-            "De validatie is mislukt omdat de laatste regel van het adres geen postcode uit het VK "
+            "De validatie is mislukt omdat de laatste regel van het adres geen geldige postcode en plaatsnaam "
             "of een ander land is."
         ),
     },
