@@ -238,7 +238,7 @@ class Organisation(JSONModel):
             self.id, cached_service_ids=self.service_ids if delete_services_cache else None, **kwargs
         )
 
-    ### [NotifyNL] #####################################################################################################
+    # [NotifyNL] organisation letter provider
     @property
     def letter_provider_identifier(self):
         # an organisation without a letter provider sends its letters with Pingen
@@ -246,8 +246,6 @@ class Organisation(JSONModel):
 
     def set_letter_provider(self, **data):
         return organisations_client.set_organisation_letter_provider(self.id, data, cached_service_ids=self.service_ids)
-
-    ####################################################################################################################
 
     def associate_service(self, service_id):
         organisations_client.update_service_organisation(service_id, self.id)
