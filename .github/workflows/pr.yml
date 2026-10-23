@@ -226,7 +226,8 @@ jobs:
           --reset-then-reuse-values \
           $HELM_SET_ARGS \
           --rollback-on-failure \
-          --dry-run=server
+          --dry-run=server \
+          > /dev/null
 
       - name: Deploy new tag
         id: helm-deploy
