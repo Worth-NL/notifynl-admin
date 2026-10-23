@@ -201,6 +201,9 @@ class ConfigNL(Config):
 class DevNL(ConfigNL):
     NOTIFY_ENVIRONMENT = "development"
 
+    # like notifynl-api's: the local letter endpoint stub is plain http on a private host
+    LETTER_ENDPOINT_ALLOW_INSECURE = True
+
     SERVER_NAME = os.getenv("SERVER_NAME")
     DEBUG = True
     SESSION_COOKIE_SECURE = False
@@ -221,6 +224,7 @@ class DevNL(ConfigNL):
     ADMIN_CLIENT_SECRET = "dev-notify-secret-key"
     DANGEROUS_SALT = "dev-notify-salt"
     SECRET_KEY = "dev-notify-secret-key"
+    NEW_PASSWORD_ENCRYPTION_KEY = "vGUd-3kOibOKqJVMIdfLPOXB4OmSbzRRHr8832ItpzM="
     API_HOST_NAME = os.environ.get("API_HOST_NAME", "http://localhost:6011")
     ANTIVIRUS_API_HOST = os.environ.get("ANTIVIRUS_API_HOST", "http://localhost:6016")
     ANTIVIRUS_API_KEY = "test-key"

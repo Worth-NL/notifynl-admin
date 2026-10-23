@@ -72,8 +72,16 @@
             </p>
           {% endif %}
         {% else %}
-          <p class="govuk-body">
-            {{ notification.letter_print_day }}
+          <p class="govuk-body" id="letter-status">
+            {% if notification.status == 'sent' %}
+              {{ notification|format_notification_status_text }}
+            {% elif notification.status == 'delivered' %}
+              Aan de post overgedragen
+            {% elif notification.status == 'returned-letter' %}
+              Teruggestuurd
+            {% else %}
+              Wordt naar de printleverancier gestuurd
+            {% endif %}
           </p>
           <p class="govuk-body">
             Geschatte levering door {{ notification.estimated_letter_delivery_date|format_day_of_week }} {{ notification.estimated_letter_delivery_date|format_date_short }}
