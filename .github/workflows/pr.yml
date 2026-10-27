@@ -202,13 +202,12 @@ jobs:
         with:
           version: v4.2.2
 
-      - name: Add chart repositories
-        run: |
-          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-          helm repo add grafana https://grafana.github.io/helm-charts
-
-      - name: Helm chart dependency build
-        run: helm dependency build
+      # `update` (unlike `build`) fetches any repository listed in
+      # notifynl-full's Chart.yaml on its own, so new chart dependencies
+      # need no `helm repo add` here. Versions there are pinned exactly, so
+      # it resolves the same charts Chart.lock records.
+      - name: Helm chart dependency update
+        run: helm dependency update
         working-directory: ${{ github.workspace }}/notifynl-full
 
       # Renders the chart and validates against the live cluster API/CRDs
@@ -224,7 +223,8 @@ jobs:
           --reset-then-reuse-values \
           $HELM_SET_ARGS \
           --rollback-on-failure \
-          --dry-run=server
+          --dry-run=server \
+          > /dev/null
 
       - name: Deploy new tag
         id: helm-deploy

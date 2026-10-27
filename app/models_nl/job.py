@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -147,13 +147,7 @@ class Job(JSONModel):
     def letter_printing_statement(self):
         if self.upload_type != "letter_day":
             raise TypeError
-        return get_letter_printing_statement(
-            "created",
-            # We have to make the time just before 5:30pm because a
-            # letter uploaded at 5:30pm will be printed the next day
-            (self.created_at - timedelta(minutes=1)).astimezone(UTC).isoformat(),
-            long_form=False,
-        )
+        return get_letter_printing_statement("created", self.created_at, long_form=False)
 
     @cached_property
     def all_notifications(self):

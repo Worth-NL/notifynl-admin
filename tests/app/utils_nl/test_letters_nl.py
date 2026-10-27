@@ -1,90 +1,51 @@
 import pytest
 from freezegun import freeze_time
 
-from app.utils_nl.letters import get_letter_printing_statement, get_letter_validation_error, printing_today_or_tomorrow
-
-
-@pytest.mark.parametrize(
-    "utc_datetime",
-    [
-        "2018-08-01T23:00:00+00:00",
-        "2018-08-01T16:29:00+00:00",
-        "2018-11-01T00:00:00+00:00",
-        "2018-11-01T10:00:00+00:00",
-        "2018-11-01T17:29:00+00:00",
-    ],
-)
-def test_printing_today_or_tomorrow_returns_vandaag(utc_datetime):
-    with freeze_time(utc_datetime):
-        assert printing_today_or_tomorrow(utc_datetime) == "vandaag"
-
-
-@pytest.mark.parametrize(
-    "utc_datetime",
-    [
-        "2018-08-01T22:59:00+00:00",
-        "2018-08-01T16:30:00+00:00",
-        "2018-11-01T17:30:00+00:00",
-        "2018-11-01T21:00:00+00:00",
-        "2018-11-01T23:59:00+00:00",
-    ],
-)
-def test_printing_today_or_tomorrow_returns_morgen(utc_datetime):
-    with freeze_time(utc_datetime):
-        assert printing_today_or_tomorrow(utc_datetime) == "morgen"
+from app.utils_nl.letters import get_letter_printing_statement, get_letter_validation_error
 
 
 @pytest.mark.parametrize(
     "created_at, current_datetime",
     [
-        ("2017-07-07T12:00:00+00:00", "2017-07-07 16:29:00"),  # created today, summer
-        ("2017-07-06T23:30:00+00:00", "2017-07-07 16:29:00"),  # created just after midnight, summer
-        ("2017-12-12T12:00:00+00:00", "2017-12-12 17:29:00"),  # created today, winter
-        ("2017-12-12T21:30:00+00:00", "2017-12-13 17:29:00"),  # created after 5:30pm yesterday
-        ("2017-03-25T17:31:00+00:00", "2017-03-26 16:29:00"),  # over clock change period on 2017-03-26
+        ("2017-07-07T09:00:00+00:00", "2017-07-07 09:05:00"),  # just sent
+        ("2017-07-07T09:00:00+00:00", "2017-07-07 16:31:00"),  # after 17:30, summer
+        ("2017-12-12T18:00:00+00:00", "2017-12-13 17:00:00"),  # sent after 17:30 the day before
+        ("2017-12-01T00:00:00+00:00", "2017-12-12 12:00:00"),  # long ago
     ],
 )
-def test_get_letter_printing_statement_when_letter_prints_vandaag(created_at, current_datetime):
+def test_get_letter_printing_statement_for_many_letters_depends_on_neither_time_nor_status(
+    created_at, current_datetime
+):
     with freeze_time(current_datetime):
-        statement = get_letter_printing_statement("created", created_at)
-
-    assert statement == "Het printen start vandaag om 17:30 uur"
+        for status in ("created", "sending", "delivered"):
+            assert get_letter_printing_statement(status, created_at) == (
+                "NotifyNL stuurt brieven binnen enkele minuten naar de printleverancier."
+            )
 
 
 @pytest.mark.parametrize(
-    "created_at, current_datetime",
+    "created_at, expected_statement",
     [
-        ("2017-07-07T16:31:00+00:00", "2017-07-07 22:59:00"),  # created today, summer
-        ("2017-12-12T17:31:00+00:00", "2017-12-12 23:59:00"),  # created today, winter
+        ("2017-07-07T09:00:00+00:00", "Verstuurd vandaag"),
+        # notifynl-api groups letters uploaded after 17:30 under the next day
+        ("2017-07-08T16:30:00+00:00", "Verstuurd vandaag"),
+        ("2017-07-06T16:29:00+00:00", "Verstuurd gisteren"),
+        ("2017-06-01T00:00:00+00:00", "Verstuurd op 1 juni"),
+        ("2017-03-26T12:00:00+00:00", "Verstuurd op 26 maart"),
     ],
 )
-def test_get_letter_printing_statement_when_letter_prints_morgen(created_at, current_datetime):
-    with freeze_time(current_datetime):
-        statement = get_letter_printing_statement("created", created_at)
-
-    assert statement == "Het printen start morgen om 17:30 uur"
+@freeze_time("2017-07-07 19:00:00")
+def test_get_letter_printing_statement_short_form_says_when_the_letters_were_sent(created_at, expected_statement):
+    assert get_letter_printing_statement("created", created_at, long_form=False) == expected_statement
 
 
-def test_get_letter_printing_statement_short_form():
-    with freeze_time("2017-07-07 16:29:00"):
-        statement = get_letter_printing_statement("created", "2017-07-07T12:00:00+00:00", long_form=False)
-
-    assert statement == "Printen vandaag om 17:30 uur"
-
-
-@pytest.mark.parametrize(
-    "created_at, expected_print_day",
-    [
-        ("2017-07-06T16:29:00+00:00", "gisteren"),
-        ("2017-12-01T00:00:00+00:00", "op 1 december"),
-        ("2017-03-26T12:00:00+00:00", "op 26 maart"),
-    ],
-)
+@pytest.mark.parametrize("status", ["created", "sending", "sent", "delivered"])
 @freeze_time("2017-07-07 12:00:00")
-def test_get_letter_printing_statement_for_letter_that_has_been_sent(created_at, expected_print_day):
-    statement = get_letter_printing_statement("delivered", created_at)
-
-    assert statement == f"Geprint {expected_print_day} om 17:30 uur"
+def test_get_letter_printing_statement_never_mentions_a_print_run(status):
+    # letters go to their print provider within minutes, there's no daily print run
+    for created_at in ("2017-07-07T11:00:00+00:00", "2017-07-01T11:00:00+00:00"):
+        assert "17:30" not in get_letter_printing_statement(status, created_at)
+        assert "print" not in get_letter_printing_statement(status, created_at).lower().replace("printleverancier", "")
 
 
 @pytest.mark.parametrize(
@@ -141,3 +102,19 @@ def test_get_letter_validation_error_for_invalid_last_address_line_does_not_ment
     assert error["summary"] == expected_summary
     assert "VK" not in error["detail"]
     assert "VK" not in error["summary"]
+
+
+def test_get_letter_validation_error_for_address_placement_decided_by_the_print_provider(notify_admin):
+    with notify_admin.test_request_context():
+        error = get_letter_validation_error(
+            "address-placement-mismatch",
+            letter_address_placement="60mm",
+            address_placement_decided_by_provider=True,
+        )
+
+    assert error["title"] == "De positie van het adres komt niet overeen met uw printleverancier"
+    assert "de printleverancier van uw organisatie gebruikt (60mm)" in error["detail"]
+    assert "printleverancier van uw organisatie (60mm)" in error["summary"]
+    # the service can't change a placement its print provider decides
+    assert "standaard" not in error["detail"] + error["summary"]
+    assert "wijzig" not in error["detail"]
