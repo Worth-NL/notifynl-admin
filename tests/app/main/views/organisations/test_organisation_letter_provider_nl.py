@@ -250,7 +250,10 @@ def test_letter_provider_page_warns_about_an_incomplete_rest_endpoint(logged_in_
 
     page = logged_in_org_member.get("main.organisation_settings", org_id=ORGANISATION_ID)
 
-    assert "stuurt NotifyNL uw brieven naar Pingen" in normalize_spaces(page.select_one(".govuk-warning-text").text)
+    warning = normalize_spaces(page.select_one(".govuk-warning-text").text)
+    assert "stuurt NotifyNL uw brieven naar Pingen" in warning
+    # where notifynl-api validates the address until then, whatever the stored endpoint says
+    assert "moet het adres op 60 mm vanaf de bovenkant staan" in warning
 
 
 def test_change_letter_provider_page_warns_about_letters_in_progress(logged_in_org_member):
