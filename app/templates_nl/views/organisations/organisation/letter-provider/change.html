@@ -25,6 +25,13 @@
       "iconFallbackText": "Waarschuwing"
     }) }}
 
+    {% if has_stored_endpoint %}
+      {{ govukWarningText({
+        "text": "Kiest u Pingen, dan verwijdert NotifyNL de instellingen en inloggegevens van uw eigen printleverancier.",
+        "iconFallbackText": "Waarschuwing"
+      }) }}
+    {% endif %}
+
     {{ page_footer('Doorgaan') }}
   {% endcall %}
 {% endblock %}

@@ -1,4 +1,4 @@
-from flask import current_app, redirect, render_template, url_for
+from flask import current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 from notifications_python_client.errors import HTTPError
 
@@ -12,6 +12,7 @@ from app.main.overrides_nl.forms import (
     OrganisationLetterEndpointForm,
     OrganisationLetterProviderForm,
 )
+from app.main.views_nl.organisations.index import organisation_settings
 from app.utils.user import user_has_permissions
 
 # Any member of the organisation can choose its letter provider, not just platform admins. Its summary is a section
@@ -28,18 +29,44 @@ def organisation_change_letter_provider(org_id):
             return redirect(url_for(".organisation_letter_endpoint", org_id=org_id))
 
         stored = organisations_client.get_organisation_letter_provider(org_id)
+        if _is_rest_endpoint(stored):
+            return redirect(url_for(".organisation_confirm_pingen_letter_provider", org_id=org_id))
         if not stored or stored["identifier"] != "pingen":
             _save_letter_provider({"provider": "pingen"}, stored)
         return redirect(url_for(".organisation_settings", org_id=org_id))
 
-    return render_template("views/organisations/organisation/letter-provider/change.html", form=form)
+    return render_template(
+        "views/organisations/organisation/letter-provider/change.html",
+        form=form,
+        has_stored_endpoint=current_organisation.letter_provider_identifier == "rest-endpoint",
+    )
+
+
+@main.route("/organisations/<uuid:org_id>/letter-provider/pingen", methods=["GET", "POST"])
+@user_has_permissions()
+def organisation_confirm_pingen_letter_provider(org_id):
+    # switching to Pingen makes notifynl-api delete the endpoint's settings and login details, so ask first
+    stored = organisations_client.get_organisation_letter_provider(org_id)
+    if not _is_rest_endpoint(stored):
+        return redirect(url_for(".organisation_change_letter_provider", org_id=org_id))
+
+    if request.method == "POST":
+        _save_letter_provider({"provider": "pingen"}, stored)
+        return redirect(url_for(".organisation_settings", org_id=org_id))
+
+    flash(
+        "Weet u zeker dat u naar Pingen wilt overstappen? NotifyNL verwijdert dan de instellingen en inloggegevens "
+        "van uw eigen printleverancier. Die moet u opnieuw invullen als u later terug wilt.",
+        "delete",
+    )
+    return organisation_settings(org_id)
 
 
 @main.route("/organisations/<uuid:org_id>/letter-provider/rest-endpoint", methods=["GET", "POST"])
 @user_has_permissions()
 def organisation_letter_endpoint(org_id):
     stored = organisations_client.get_organisation_letter_provider(org_id)
-    stored_endpoint = stored if stored and stored["identifier"] == "rest-endpoint" else None
+    stored_endpoint = stored if _is_rest_endpoint(stored) else None
     form = OrganisationLetterEndpointForm(
         stored=stored_endpoint,
         allow_insecure=current_app.config.get("LETTER_ENDPOINT_ALLOW_INSECURE", False),
@@ -61,6 +88,10 @@ def organisation_letter_endpoint(org_id):
         form=form,
         has_stored_endpoint=bool(stored_endpoint),
     )
+
+
+def _is_rest_endpoint(stored):
+    return bool(stored) and stored["identifier"] == "rest-endpoint"
 
 
 def _form_data(stored_endpoint):

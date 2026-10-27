@@ -120,12 +120,14 @@ def test_platform_admins_can_manage_the_letter_provider(
     [
         ("main.organisation_settings", "get"),
         ("main.organisation_change_letter_provider", "post"),
+        ("main.organisation_confirm_pingen_letter_provider", "post"),
         ("main.organisation_letter_endpoint", "post"),
     ],
 )
 def test_other_users_cannot_manage_the_letter_provider(
     client_request, mock_get_organisation, letter_provider, mock_set_letter_provider, endpoint, method
 ):
+    letter_provider.return_value = REST_ENDPOINT
     client_request.login(create_user(id=sample_uuid(), organisations=[sample_uuid()]))
 
     getattr(client_request, method)(endpoint, org_id=ORGANISATION_ID, _expected_status=403)
@@ -260,8 +262,22 @@ def test_choosing_a_rest_endpoint_goes_to_its_settings(logged_in_org_member, moc
     assert not mock_set_letter_provider.called
 
 
-def test_choosing_pingen_saves_it_and_logs_an_event(
-    logged_in_org_member, org_member, letter_provider, mock_set_letter_provider, organisation_services, mock_events
+@pytest.mark.parametrize("stored, expected_warning", [(REST_ENDPOINT, True), (PINGEN, False), (None, False)])
+def test_change_letter_provider_page_warns_that_pingen_deletes_a_stored_endpoint(
+    logged_in_org_member, letter_provider, stored, expected_warning
+):
+    letter_provider.return_value = stored
+
+    page = logged_in_org_member.get("main.organisation_change_letter_provider", org_id=ORGANISATION_ID)
+
+    warnings = [normalize_spaces(warning.text) for warning in page.select(".govuk-warning-text")]
+    assert any("verwijdert NotifyNL de instellingen en inloggegevens" in warning for warning in warnings) is (
+        expected_warning
+    )
+
+
+def test_choosing_pingen_with_a_stored_rest_endpoint_asks_first(
+    logged_in_org_member, letter_provider, mock_set_letter_provider, mock_events
 ):
     letter_provider.return_value = REST_ENDPOINT
 
@@ -269,6 +285,75 @@ def test_choosing_pingen_saves_it_and_logs_an_event(
         "main.organisation_change_letter_provider",
         org_id=ORGANISATION_ID,
         _data={"provider": "pingen"},
+        _expected_redirect=url_for("main.organisation_confirm_pingen_letter_provider", org_id=ORGANISATION_ID),
+    )
+
+    assert not mock_set_letter_provider.called
+    assert not mock_events.called
+
+
+def test_confirm_pingen_page_asks_before_deleting_the_rest_endpoint(
+    logged_in_org_member, letter_provider, mock_set_letter_provider
+):
+    letter_provider.return_value = REST_ENDPOINT
+
+    page = logged_in_org_member.get("main.organisation_confirm_pingen_letter_provider", org_id=ORGANISATION_ID)
+
+    banner = page.select_one(".banner-dangerous")
+    assert "verwijdert dan de instellingen en inloggegevens van uw eigen printleverancier" in normalize_spaces(
+        banner.text
+    )
+    assert normalize_spaces(banner.select_one("button").text) == "Ja, verwijderen"
+    assert banner.select_one("form")["action"] == url_for(
+        "main.organisation_confirm_pingen_letter_provider", org_id=ORGANISATION_ID
+    )
+    # the settings below it still show the endpoint that would be deleted
+    assert ENDPOINT_URL in normalize_spaces(page.select_one(".govuk-summary-list").text)
+    assert not mock_set_letter_provider.called
+
+
+@pytest.mark.parametrize("stored", [PINGEN, None])
+@pytest.mark.parametrize("method", ["get", "post"])
+def test_confirm_pingen_page_without_a_stored_rest_endpoint_goes_back(
+    logged_in_org_member, letter_provider, mock_set_letter_provider, stored, method
+):
+    letter_provider.return_value = stored
+
+    getattr(logged_in_org_member, method)(
+        "main.organisation_confirm_pingen_letter_provider",
+        org_id=ORGANISATION_ID,
+        _expected_redirect=url_for("main.organisation_change_letter_provider", org_id=ORGANISATION_ID),
+    )
+
+    assert not mock_set_letter_provider.called
+
+
+def test_choosing_pingen_without_a_stored_letter_provider_saves_it(
+    logged_in_org_member, org_member, letter_provider, mock_set_letter_provider, organisation_services, mock_events
+):
+    letter_provider.return_value = None
+
+    logged_in_org_member.post(
+        "main.organisation_change_letter_provider",
+        org_id=ORGANISATION_ID,
+        _data={"provider": "pingen"},
+        _expected_redirect=url_for("main.organisation_settings", org_id=ORGANISATION_ID),
+    )
+
+    mock_set_letter_provider.assert_called_once_with(
+        ORGANISATION_ID, {"provider": "pingen", "updated_by_id": org_member["id"]}, cached_service_ids=["service-1"]
+    )
+    assert mock_events.called
+
+
+def test_confirming_pingen_saves_it_and_logs_an_event(
+    logged_in_org_member, org_member, letter_provider, mock_set_letter_provider, organisation_services, mock_events
+):
+    letter_provider.return_value = REST_ENDPOINT
+
+    logged_in_org_member.post(
+        "main.organisation_confirm_pingen_letter_provider",
+        org_id=ORGANISATION_ID,
         _expected_redirect=url_for("main.organisation_settings", org_id=ORGANISATION_ID),
     )
 

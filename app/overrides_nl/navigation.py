@@ -422,6 +422,7 @@ class OrgNavigation(Navigation):
             "organisation_letter_branding",
             "organisation_settings",
             "organisation_change_letter_provider",
+            "organisation_confirm_pingen_letter_provider",
             "organisation_letter_endpoint",
         },
         "team-members": {
