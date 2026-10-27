@@ -114,11 +114,25 @@ def _form_data(stored_endpoint):
 
 def _save_letter_provider(data, stored):
     letter_provider = current_organisation.set_letter_provider(**data, updated_by_id=current_user.id)
+    stored = stored or {}
     Events.update_organisation_letter_provider(
         organisation_id=current_organisation.id,
         updated_by_id=current_user.id,
-        old_provider=stored["identifier"] if stored else None,
+        old_provider=stored.get("identifier"),
         new_provider=letter_provider["identifier"],
-        old_endpoint_url=stored["endpoint_url"] if stored else None,
+        old_endpoint_url=stored.get("endpoint_url"),
         new_endpoint_url=letter_provider["endpoint_url"],
+        old_auth_method=stored.get("auth_method"),
+        new_auth_method=letter_provider["auth_method"],
+        old_auth_config=_without_secrets(stored.get("auth_config")),
+        new_auth_config=_without_secrets(letter_provider.get("auth_config")),
+        old_address_placement=stored.get("address_placement"),
+        new_address_placement=letter_provider["address_placement"],
+        # only whether login details were typed in: the secrets themselves never go in the event
+        credentials_entered=any(data.get("auth_config", {}).get(name) for name in LETTER_ENDPOINT_SECRET_FIELDS),
     )
+
+
+def _without_secrets(auth_config):
+    # notifynl-api never returns secrets, but the audit event mustn't rely on that
+    return {name: value for name, value in (auth_config or {}).items() if name not in LETTER_ENDPOINT_SECRET_FIELDS}

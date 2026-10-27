@@ -31,6 +31,7 @@ REST_ENDPOINT = PINGEN | {
 }
 # what notifynl-api's serialize_summary puts in the organisation JSON
 SUMMARY_FIELDS = ("identifier", "display_name", "endpoint_url", "auth_method", "address_placement", "has_credentials")
+SECRETS = {"password", "api_key", "client_secret"}
 
 
 @pytest.fixture
@@ -59,7 +60,15 @@ def mock_get_organisation(notify_admin, mocker, letter_provider):
 @pytest.fixture
 def mock_set_letter_provider(notify_admin, mocker):
     def _set(org_id, data, cached_service_ids=None):
-        return {"pingen": PINGEN}.get(data["provider"], REST_ENDPOINT | {"endpoint_url": data.get("endpoint_url")})
+        if data["provider"] == "pingen":
+            return PINGEN
+        # like notifynl-api: what was saved, without the secrets
+        return REST_ENDPOINT | {
+            "endpoint_url": data["endpoint_url"],
+            "auth_method": data["auth_method"],
+            "auth_config": {name: value for name, value in data["auth_config"].items() if name not in SECRETS},
+            "address_placement": data["address_placement"],
+        }
 
     return mocker.patch("app.organisations_client.set_organisation_letter_provider", side_effect=_set)
 
@@ -369,6 +378,13 @@ def test_confirming_pingen_saves_it_and_logs_an_event(
         "new_provider": "pingen",
         "old_endpoint_url": ENDPOINT_URL,
         "new_endpoint_url": None,
+        "old_auth_method": "basic",
+        "new_auth_method": None,
+        "old_auth_config": {"username": "denhaag"},
+        "new_auth_config": {},
+        "old_address_placement": "50mm",
+        "new_address_placement": "60mm",
+        "credentials_entered": False,
     }
 
 
@@ -466,9 +482,90 @@ def test_saving_a_rest_endpoint(
     _, event_data = mock_events.call_args.args
     assert (event_data["old_provider"], event_data["new_provider"]) == ("pingen", "rest-endpoint")
     assert (event_data["old_endpoint_url"], event_data["new_endpoint_url"]) == (None, ENDPOINT_URL)
+    assert (event_data["old_auth_method"], event_data["new_auth_method"]) == (None, form_data["auth_method"])
+    assert event_data["new_auth_config"] == {
+        name: value for name, value in expected_auth_config.items() if name not in SECRETS
+    }
+    assert event_data["credentials_entered"] is True
     # never any credentials in the audit event
-    assert not {"auth_config", "password", "api_key", "client_secret"} & set(event_data)
-    assert not {"hunter2", "k3y", "s3cret"} & {str(value) for value in event_data.values()}
+    assert not {"auth_config", *SECRETS} & set(event_data)
+    assert not any(secret in str(event_data) for secret in ("hunter2", "k3y", "s3cret"))
+
+
+def _event_changes(mock_events):
+    """The old and new value of every letter provider setting that the event says changed"""
+    _, event_data = mock_events.call_args.args
+    return {
+        key.removeprefix("new_"): (event_data[f"old_{key.removeprefix('new_')}"], value)
+        for key, value in event_data.items()
+        if key.startswith("new_") and event_data[f"old_{key.removeprefix('new_')}"] != value
+    }
+
+
+def test_saving_a_rest_endpoint_logs_a_changed_address_placement(
+    logged_in_org_member, letter_provider, mock_set_letter_provider, organisation_services, mock_events
+):
+    letter_provider.return_value = REST_ENDPOINT
+
+    logged_in_org_member.post(
+        "main.organisation_letter_endpoint",
+        org_id=ORGANISATION_ID,
+        _data={
+            "endpoint_url": ENDPOINT_URL,
+            "address_placement": "60mm",
+            "auth_method": "basic",
+            "username": "denhaag",
+            "password": "secret_set",
+        },
+        _expected_status=302,
+    )
+
+    assert _event_changes(mock_events) == {"address_placement": ("50mm", "60mm")}
+    assert mock_events.call_args.args[1]["credentials_entered"] is False
+
+
+def test_saving_an_oauth_endpoint_logs_a_changed_token_url(
+    logged_in_org_member, letter_provider, mock_set_letter_provider, organisation_services, mock_events
+):
+    letter_provider.return_value = REST_ENDPOINT | {
+        "auth_method": "oauth",
+        "auth_config": {"token_endpoint": "https://login.example.com/token", "client_id": "notify"},
+    }
+
+    logged_in_org_member.post(
+        "main.organisation_letter_endpoint",
+        org_id=ORGANISATION_ID,
+        _data={
+            "endpoint_url": ENDPOINT_URL,
+            "address_placement": "50mm",
+            "auth_method": "oauth",
+            "token_endpoint": "https://elsewhere.example.com/token",
+            "client_id": "notify",
+            "client_secret": "n3w-s3cret",
+            "scope": "",
+        },
+        _expected_status=302,
+    )
+
+    assert _event_changes(mock_events) == {
+        "auth_config": (
+            {"token_endpoint": "https://login.example.com/token", "client_id": "notify"},
+            {"token_endpoint": "https://elsewhere.example.com/token", "client_id": "notify", "scope": ""},
+        )
+    }
+    assert mock_events.call_args.args[1]["credentials_entered"] is True
+    assert "n3w-s3cret" not in str(mock_events.call_args.args[1])
+
+
+def test_letter_provider_event_leaves_out_secrets_even_if_the_api_returned_them(
+    logged_in_org_member, letter_provider, mock_set_letter_provider, organisation_services, mock_events
+):
+    letter_provider.return_value = REST_ENDPOINT | {"auth_config": {"username": "denhaag", "password": "hunter2"}}
+
+    logged_in_org_member.post("main.organisation_confirm_pingen_letter_provider", org_id=ORGANISATION_ID)
+
+    assert mock_events.call_args.args[1]["old_auth_config"] == {"username": "denhaag"}
+    assert "hunter2" not in str(mock_events.call_args.args[1])
 
 
 def test_saving_a_rest_endpoint_keeps_the_stored_secret_when_it_is_left_as_is(

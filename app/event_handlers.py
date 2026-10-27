@@ -98,6 +98,13 @@ class Events:
         new_provider,
         old_endpoint_url,
         new_endpoint_url,
+        old_auth_method,
+        new_auth_method,
+        old_auth_config,
+        new_auth_config,
+        old_address_placement,
+        new_address_placement,
+        credentials_entered,
     ) -> None:
         pass
 
