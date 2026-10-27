@@ -74,7 +74,7 @@ class Organisation(JSONModel):
     purchase_order_number: str
     notes: str
     area_boundary: Any
-    letter_provider: Any
+    letter_provider: Any = None  # [NotifyNL] None when talking to a notifynl-api without letter providers
     can_approve_own_go_live_requests: bool
     permissions: list
 

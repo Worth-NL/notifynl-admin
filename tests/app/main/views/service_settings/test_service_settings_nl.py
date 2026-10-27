@@ -482,6 +482,19 @@ def test_letter_address_placement_page_is_gone_once_the_print_provider_decides_i
     assert not mock_update_service.called
 
 
+@pytest.mark.parametrize(
+    "endpoint",
+    ["main.service_set_letter_address_placement", "main.service_set_send_client_reference_to_letter_provider"],
+)
+def test_letter_settings_pages_work_with_service_json_cached_before_the_letter_provider_fields(
+    client_request, service_one, endpoint
+):
+    del service_one["letter_address_placement_decided_by_provider"]
+    del service_one["send_client_reference_to_letter_provider"]
+
+    client_request.get(endpoint, service_id=SERVICE_ONE_ID)
+
+
 @pytest.mark.parametrize("enabled, expected_value", [(True, "Aan"), (False, "Uit")])
 def test_send_client_reference_to_letter_provider_setting_row(
     client_request,

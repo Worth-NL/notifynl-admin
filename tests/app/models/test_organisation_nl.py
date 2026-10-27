@@ -19,6 +19,17 @@ def test_organisation_letter_provider(letter_provider, expected_identifier):
     assert organisation.letter_provider_identifier == expected_identifier
 
 
+def test_organisation_json_without_a_letter_provider_field_sends_letters_with_pingen():
+    # organisation JSON from a notifynl-api that predates letter providers
+    organisation_dict = organisation_json()
+    del organisation_dict["letter_provider"]
+
+    organisation = Organisation(organisation_dict)
+
+    assert organisation.letter_provider is None
+    assert organisation.letter_provider_identifier == "pingen"
+
+
 def test_set_letter_provider_clears_the_organisations_cached_services(notify_admin, mocker):
     mocker.patch(
         "app.organisations_client.get_organisation_services",
