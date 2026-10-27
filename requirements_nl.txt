@@ -708,7 +708,7 @@ mistune==3.3.3 \
 notifications-python-client==12.2.0 \
     --hash=sha256:5552f83d26ca0bba2b69b8477c8db691645bfd53fd6e591421318c81fa077b7a
     # via -r requirements_nl.in
-notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@0e80aef9d8ed187e7f8e7339caa97660a2dcf7b2
+notifications-utils @ git+https://github.com/Worth-NL/notifynl-utils.git@020528e636ef624f33ec3916fe1ead68218e7a9a
     # via -r requirements_nl.in
 notifynl-frontend-jinja @ git+https://github.com/Worth-NL/LandRegistry-frontend-jinja@26fc51cfdcea6b088ca0291be8dc9e9df3ed0d14
     # via -r requirements_nl.in
