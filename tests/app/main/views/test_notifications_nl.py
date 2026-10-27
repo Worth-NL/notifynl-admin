@@ -101,3 +101,47 @@ def test_letter_notification_page_says_where_the_letter_is(
     assert normalize_spaces(page.select_one("#letter-status").text) == expected_status
     # letters go to their print provider within minutes: no daily print run
     assert "17:30" not in page.text
+
+
+@pytest.mark.parametrize(
+    "status, expected_status, expects_delivery_estimate",
+    [
+        ("pending-virus-check", "Wordt gecontroleerd op virussen", True),
+        ("delivered", "Aan de post overgedragen", True),
+        ("returned-letter", "Teruggestuurd", False),
+    ],
+)
+@freeze_time("2026-09-30 10:00")
+def test_letter_notification_page_only_estimates_delivery_for_letters_on_their_way(
+    client_request,
+    mocker,
+    fake_uuid,
+    mock_get_page_counts_for_letter,
+    status,
+    expected_status,
+    expects_delivery_estimate,
+):
+    notification = create_notification(template_type="letter", notification_status=status)
+    mocker.patch("app.notification_api_client.get_notification", return_value=notification)
+
+    page = client_request.get("main.view_notification", service_id=SERVICE_ONE_ID, notification_id=fake_uuid)
+
+    assert normalize_spaces(page.select_one("#letter-status").text) == expected_status
+    assert bool(page.select_one("#estimated-delivery")) is expects_delivery_estimate
+
+
+@freeze_time("2026-09-30 10:00")
+def test_letter_notification_page_for_a_letter_with_a_virus(
+    client_request, mocker, fake_uuid, mock_get_page_counts_for_letter
+):
+    notification = create_notification(template_type="letter", notification_status="virus-scan-failed")
+    mocker.patch("app.notification_api_client.get_notification", return_value=notification)
+
+    page = client_request.get("main.view_notification", service_id=SERVICE_ONE_ID, notification_id=fake_uuid)
+
+    assert normalize_spaces(page.select_one("p.notification-status-cancelled").text) == (
+        "Virus gedetecteerd – Er is een virus gevonden in deze brief. Uw brief wordt niet verzonden."
+    )
+    assert not page.select_one("#letter-status")
+    assert not page.select_one("#estimated-delivery")
+    assert "Geschatte levering" not in page.text

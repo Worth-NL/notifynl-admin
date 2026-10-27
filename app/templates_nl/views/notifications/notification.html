@@ -60,6 +60,10 @@
       {% elif notification.status == 'technical-failure' %}
         <p class="notification-status-cancelled">
           <a class="govuk-link govuk-link--destructive" href="{{ url_for('main.guidance_message_status', notification_type='letter') }}">Technische fout</a> – Probeer niet om deze brief opnieuw te versturen        </p>
+      {% elif notification.status == 'virus-scan-failed' %}
+        <p class="notification-status-cancelled">
+          Virus gedetecteerd – Er is een virus gevonden in deze brief. Uw brief wordt niet verzonden.
+        </p>
       {% else %}
         {% if notification.sent_with_test_key %}
           {% if notification.is_precompiled_letter %}
@@ -79,13 +83,17 @@
               Aan de post overgedragen
             {% elif notification.status == 'returned-letter' %}
               Teruggestuurd
+            {% elif notification.status == 'pending-virus-check' %}
+              Wordt gecontroleerd op virussen
             {% else %}
               Wordt naar de printleverancier gestuurd
             {% endif %}
           </p>
-          <p class="govuk-body">
-            Geschatte levering door {{ notification.estimated_letter_delivery_date|format_day_of_week }} {{ notification.estimated_letter_delivery_date|format_date_short }}
-          </p>
+          {% if notification.status != 'returned-letter' %}
+            <p class="govuk-body" id="estimated-delivery">
+              Geschatte levering door {{ notification.estimated_letter_delivery_date|format_day_of_week }} {{ notification.estimated_letter_delivery_date|format_date_short }}
+            </p>
+          {% endif %}
         {% endif %}
       {% endif %}
     {% endif %}
