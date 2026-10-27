@@ -364,8 +364,7 @@ class FileIsVirusFree:
         if field.data:
             if current_app.config["ANTIVIRUS_ENABLED"]:
                 try:
-                    # the underlying file: requests can't encode a FileStorage, whose read() it doesn't recognise
-                    virus_free = antivirus_client.scan(field.data.stream)
+                    virus_free = antivirus_client.scan(field.data)
                     if not virus_free:
                         raise StopValidation("Dit bestand bevat een virus")
                 finally:
