@@ -1,0 +1,138 @@
+from flask import current_app, flash, redirect, render_template, request, url_for
+from flask_login import current_user
+from notifications_python_client.errors import HTTPError
+
+from app import current_organisation, organisations_client
+from app.event_handlers import Events
+from app.main import main
+from app.main.overrides_nl.forms import (
+    LETTER_ENDPOINT_AUTH_FIELDS,
+    LETTER_ENDPOINT_DUMMY_SECRET,
+    LETTER_ENDPOINT_SECRET_FIELDS,
+    OrganisationLetterEndpointForm,
+    OrganisationLetterProviderForm,
+)
+from app.main.views_nl.organisations.index import organisation_settings
+from app.utils.user import user_has_permissions
+
+# Any member of the organisation can choose its letter provider, not just platform admins. Its summary is a section
+# of the organisation's settings page, which org members see with nothing else on it.
+
+
+@main.route("/organisations/<uuid:org_id>/letter-provider/change", methods=["GET", "POST"])
+@user_has_permissions()
+def organisation_change_letter_provider(org_id):
+    form = OrganisationLetterProviderForm(provider=current_organisation.letter_provider_identifier)
+
+    if form.validate_on_submit():
+        if form.provider.data == "rest-endpoint":
+            return redirect(url_for(".organisation_letter_endpoint", org_id=org_id))
+
+        stored = organisations_client.get_organisation_letter_provider(org_id)
+        if _is_rest_endpoint(stored):
+            return redirect(url_for(".organisation_confirm_pingen_letter_provider", org_id=org_id))
+        if not stored or stored["identifier"] != "pingen":
+            _save_letter_provider({"provider": "pingen"}, stored)
+        return redirect(url_for(".organisation_settings", org_id=org_id))
+
+    return render_template(
+        "views/organisations/organisation/letter-provider/change.html",
+        form=form,
+        has_stored_endpoint=current_organisation.letter_provider_identifier == "rest-endpoint",
+    )
+
+
+@main.route("/organisations/<uuid:org_id>/letter-provider/pingen", methods=["GET", "POST"])
+@user_has_permissions()
+def organisation_confirm_pingen_letter_provider(org_id):
+    # switching to Pingen makes notifynl-api delete the endpoint's settings and login details, so ask first
+    stored = organisations_client.get_organisation_letter_provider(org_id)
+    if not _is_rest_endpoint(stored):
+        return redirect(url_for(".organisation_change_letter_provider", org_id=org_id))
+
+    if request.method == "POST":
+        _save_letter_provider({"provider": "pingen"}, stored)
+        return redirect(url_for(".organisation_settings", org_id=org_id))
+
+    flash(
+        "Weet u zeker dat u naar Pingen wilt overstappen? NotifyNL verwijdert dan de instellingen en inloggegevens "
+        "van uw eigen printleverancier. Die moet u opnieuw invullen als u later terug wilt.",
+        "delete",
+    )
+    return organisation_settings(org_id)
+
+
+@main.route("/organisations/<uuid:org_id>/letter-provider/rest-endpoint", methods=["GET", "POST"])
+@user_has_permissions()
+def organisation_letter_endpoint(org_id):
+    stored = organisations_client.get_organisation_letter_provider(org_id)
+    stored_endpoint = stored if _is_rest_endpoint(stored) else None
+    form = OrganisationLetterEndpointForm(
+        stored=stored_endpoint,
+        allow_insecure=current_app.config.get("LETTER_ENDPOINT_ALLOW_INSECURE", False),
+        **_form_data(stored_endpoint),
+    )
+
+    if form.validate_on_submit():
+        try:
+            _save_letter_provider(form.api_data(), stored)
+        except HTTPError as e:
+            if e.status_code != 400:
+                raise
+            form.add_api_error(e.message)
+        else:
+            return redirect(url_for(".organisation_settings", org_id=org_id))
+
+    return render_template(
+        "views/organisations/organisation/letter-provider/rest-endpoint.html",
+        form=form,
+        has_stored_endpoint=bool(stored_endpoint),
+    )
+
+
+def _is_rest_endpoint(stored):
+    return bool(stored) and stored["identifier"] == "rest-endpoint"
+
+
+def _form_data(stored_endpoint):
+    if not stored_endpoint:
+        return {"address_placement": "50mm"}  # 60mm is only for Pingen
+
+    auth_method = stored_endpoint["auth_method"]
+    data = {
+        "endpoint_url": stored_endpoint["endpoint_url"],
+        "address_placement": stored_endpoint["address_placement"],
+        "auth_method": auth_method,
+        **{name: value for name, value in stored_endpoint["auth_config"].items() if value},
+    }
+    if stored_endpoint["has_credentials"]:
+        for name in LETTER_ENDPOINT_AUTH_FIELDS.get(auth_method, ()):
+            if name in LETTER_ENDPOINT_SECRET_FIELDS:
+                data[name] = LETTER_ENDPOINT_DUMMY_SECRET
+    return data
+
+
+def _save_letter_provider(data, stored):
+    letter_provider = current_organisation.set_letter_provider(**data, updated_by_id=current_user.id)
+    stored = stored or {}
+    Events.update_organisation_letter_provider(
+        organisation_id=current_organisation.id,
+        updated_by_id=current_user.id,
+        old_provider=stored.get("identifier"),
+        new_provider=letter_provider["identifier"],
+        old_endpoint_url=stored.get("endpoint_url"),
+        new_endpoint_url=letter_provider["endpoint_url"],
+        old_auth_method=stored.get("auth_method"),
+        new_auth_method=letter_provider["auth_method"],
+        old_auth_config=_without_secrets(stored.get("auth_config")),
+        new_auth_config=_without_secrets(letter_provider.get("auth_config")),
+        old_address_placement=stored.get("address_placement"),
+        new_address_placement=letter_provider["address_placement"],
+        # only whether login details were typed in: the secrets themselves never go in the event
+        credentials_entered=any(data.get("auth_config", {}).get(name) for name in LETTER_ENDPOINT_SECRET_FIELDS),
+    )
+
+
+def _without_secrets(auth_config):
+    # notifynl-api never returns secrets, but the audit event mustn't rely on that
+    return {name: value for name, value in (auth_config or {}).items() if name not in LETTER_ENDPOINT_SECRET_FIELDS}

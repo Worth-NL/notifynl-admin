@@ -228,9 +228,13 @@ def cancel_invited_org_user(org_id, invited_user_id):
 
 
 @main.route("/organisations/<uuid:org_id>/settings/", methods=["GET"])
-@user_is_platform_admin
+@user_has_permissions()  # [NotifyNL] org members see only the letter provider, every other setting stays admin-only
 def organisation_settings(org_id):
-    return render_template("views/organisations/organisation/settings/index.html")
+    # the organisation JSON only summarises its letter provider, without its login details or completeness
+    letter_provider = None
+    if current_organisation.letter_provider:
+        letter_provider = organisations_client.get_organisation_letter_provider(org_id)
+    return render_template("views/organisations/organisation/settings/index.html", letter_provider=letter_provider)
 
 
 @main.route("/organisations/<uuid:org_id>/settings/edit-name", methods=["GET", "POST"])

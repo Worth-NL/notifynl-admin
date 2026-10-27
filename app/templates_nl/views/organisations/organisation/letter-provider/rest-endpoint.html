@@ -1,0 +1,79 @@
+{% extends "org_template.html" %}
+{% from "components/page-header.html" import page_header %}
+{% from "components/page-footer.html" import page_footer %}
+{% from "components/form.html" import form_wrapper %}
+{% from "govuk_frontend_jinja/components/warning-text/macro.html" import govukWarningText %}
+{% from "govuk_frontend_jinja/components/inset-text/macro.html" import govukInsetText %}
+{% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
+
+{% set page_title = "Eigen printleverancier" %}
+
+{% block org_page_title %}
+  {{ page_title }}
+{% endblock %}
+
+{% block backLink %}
+  {{ govukBackLink({ "href": url_for('main.organisation_change_letter_provider', org_id=current_org.id) }) }}
+{% endblock %}
+
+{% block maincolumn_content %}
+  {{ page_header(page_title) }}
+
+  <p class="govuk-body">
+    NotifyNL stuurt elke brief als PDF naar het REST-endpoint van uw printleverancier.
+  </p>
+
+  {% set secret_hint = {
+    "hint": {
+      "text": "Laat staan om de opgeslagen waarde te houden. Als u een URL wijzigt, moet u dit opnieuw invullen."
+    }
+  } if has_stored_endpoint else {} %}
+
+  {% call form_wrapper() %}
+    {{ form.endpoint_url(param_extensions={
+      "hint": {"text": "Bijvoorbeeld https://print.voorbeeld.nl/brieven"},
+      "classes": "govuk-!-width-full"
+    }) }}
+
+    {% set basic_html %}
+      {{ form.username }}
+      {{ form.password(param_extensions=secret_hint) }}
+    {% endset %}
+    {% set api_key_html %}
+      {{ form.api_key_header(param_extensions={"hint": {"text": "Bijvoorbeeld X-Api-Key"}}) }}
+      {{ form.api_key(param_extensions=secret_hint) }}
+    {% endset %}
+    {% set oauth_html %}
+      {{ form.token_endpoint(param_extensions={
+        "hint": {"text": "Waar NotifyNL een toegangstoken ophaalt, bijvoorbeeld https://login.voorbeeld.nl/token"},
+        "classes": "govuk-!-width-full"
+      }) }}
+      {{ form.client_id }}
+      {{ form.client_secret(param_extensions=secret_hint) }}
+      {{ form.scope }}
+    {% endset %}
+
+    {{ form.auth_method(param_extensions={
+      "items": [
+        {"conditional": {"html": basic_html}},
+        {"conditional": {"html": api_key_html}},
+        {"conditional": {"html": oauth_html}},
+      ]
+    }) }}
+
+    {{ form.address_placement(param_extensions={
+      "hint": {"text": "Waar het adres moet staan voor de vensterenveloppen van uw printleverancier."}
+    }) }}
+
+    {{ govukInsetText({
+      "text": "Vraagt uw printleverancier om een clientcertificaat (mutual TLS)? Neem dan contact op met het platformteam van NotifyNL."
+    }) }}
+
+    {{ govukWarningText({
+      "text": "Brieven die nog niet naar een printleverancier zijn gestuurd, gaan naar de nieuwe instellingen.",
+      "iconFallbackText": "Waarschuwing"
+    }) }}
+
+    {{ page_footer('Opslaan') }}
+  {% endcall %}
+{% endblock %}

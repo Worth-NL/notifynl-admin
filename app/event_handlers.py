@@ -90,6 +90,26 @@ class Events:
 
     @staticmethod
     @event_creator
+    def update_organisation_letter_provider(  # [NotifyNL] never any credentials
+        *,
+        organisation_id,
+        updated_by_id,
+        old_provider,
+        new_provider,
+        old_endpoint_url,
+        new_endpoint_url,
+        old_auth_method,
+        new_auth_method,
+        old_auth_config,
+        new_auth_config,
+        old_address_placement,
+        new_address_placement,
+        credentials_entered,
+    ) -> None:
+        pass
+
+    @staticmethod
+    @event_creator
     def set_inbound_sms_on(*, user_id, service_id, inbound_number_id) -> None:
         pass
 

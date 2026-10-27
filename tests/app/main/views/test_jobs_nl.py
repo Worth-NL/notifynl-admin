@@ -9,11 +9,11 @@ from tests.conftest import SERVICE_ONE_ID
 
 @freeze_time("2019-06-20 17:30:00.000001")
 @pytest.mark.parametrize(
-    "job_created_at, expected_fragment",
+    "job_created_at",
     [
-        ("2019-06-20T15:30:00.000001+00:00", "vandaag"),
-        ("2019-06-19T15:30:00.000001+00:00", "gisteren"),
-        ("2019-06-18T15:30:00.000001+00:00", "op 18 juni"),
+        "2019-06-20T15:30:00.000001+00:00",
+        "2019-06-19T15:30:00.000001+00:00",
+        "2019-06-18T15:30:00.000001+00:00",
     ],
 )
 def test_should_not_show_cancel_link_for_letter_job_if_too_late(
@@ -23,7 +23,6 @@ def test_should_not_show_cancel_link_for_letter_job_if_too_late(
     mock_get_service_data_retention,
     active_user_with_permissions,
     job_created_at,
-    expected_fragment,
 ):
     job_id = uuid.uuid4()
     job = job_json(SERVICE_ONE_ID, active_user_with_permissions, job_id=job_id, created_at=job_created_at)
@@ -34,4 +33,6 @@ def test_should_not_show_cancel_link_for_letter_job_if_too_late(
     page = client_request.get("main.view_job", service_id=SERVICE_ONE_ID, job_id=str(job_id))
 
     assert "Cancel sending these letters" not in page
-    assert page.select_one("p#printing-info").text.strip() == f"Geprint {expected_fragment} om 17:30 uur"
+    assert page.select_one("p#printing-info").text.strip() == (
+        "NotifyNL stuurt brieven binnen enkele minuten naar de printleverancier."
+    )

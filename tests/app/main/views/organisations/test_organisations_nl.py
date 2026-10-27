@@ -24,8 +24,8 @@ def test_organisation_left_hand_nav_for_platform_admin_users(
 @pytest.mark.parametrize(
     "user_org_permissions, expected_nav_items",
     [
-        ([], ["Gebruik", "Teamleden"]),
-        ([PERMISSION_CAN_MAKE_SERVICES_LIVE], ["Gebruik", "Teamleden", "Proefdiensten"]),
+        ([], ["Gebruik", "Teamleden", "Instellingen"]),
+        ([PERMISSION_CAN_MAKE_SERVICES_LIVE], ["Gebruik", "Teamleden", "Instellingen", "Proefdiensten"]),
     ],
 )
 def test_organisation_left_hand_nav_for_org_users(
