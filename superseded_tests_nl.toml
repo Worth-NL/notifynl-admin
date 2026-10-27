@@ -343,6 +343,11 @@ nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organis
 reason = "Translation issue"
 
 [[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_settings_platform_admin_only"
+reason = "NL lets organisation members see the letter provider in the settings"
+counterpart = ["tests/app/main/views/organisations/test_organisation_letter_provider_nl.py::test_organisation_members_see_only_the_letter_provider_in_the_settings"]
+
+[[test]]
 nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_settings_shows_delete_link"
 reason = "Translation issue"
 

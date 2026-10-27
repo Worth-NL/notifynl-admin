@@ -1084,9 +1084,6 @@ def test_remove_user_from_organisation_makes_api_request_to_remove_user(
     mock_remove_user.assert_called_with(ORGANISATION_ID, fake_uuid)
 
 
-@pytest.mark.skip(
-    reason="[NOTIFYNL] Org members see the letter provider in the settings, see test_organisation_letter_provider_nl.py"
-)
 def test_organisation_settings_platform_admin_only(client_request, mock_get_organisation, organisation_one):
     client_request.get(
         ".organisation_settings",
