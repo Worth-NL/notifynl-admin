@@ -1,9 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
-from dateutil import parser
 from flask import url_for
 from notifications_utils.formatters import unescaped_formatted_list
-from notifications_utils.letter_timings import letter_can_be_cancelled
 from notifications_utils.recipient_validation.notifynl.postal_address import PostalAddress
 from notifications_utils.template import BaseLetterTemplate
 from notifications_utils.timezones import (
@@ -17,23 +15,23 @@ from app.overrides_nl.formatters import _format_datetime_short
 def get_letter_printing_statement(status, created_at, long_form=True):
     """
     Letters go to their print provider within minutes of being sent, not in a daily print run at 17:30 as in GOV.UK
-    Notify: so say when a letter went to the print provider, rather than when it will be printed.
+    Notify. The pages that show this cover many letters (a job, a day of uploads) and always pass "created", so it
+    doesn't depend on `status`: it says how the letters are sent, and the list below it shows each letter's status.
     """
+    if long_form:
+        return "NotifyNL stuurt brieven binnen enkele minuten naar de printleverancier."
+
     if isinstance(created_at, datetime):
         created_at = created_at.astimezone(UTC).isoformat()
-    created_at_dt = parser.parse(created_at).replace(tzinfo=None)
-    if letter_can_be_cancelled(status, created_at_dt):
-        return "Wordt naar de printleverancier gestuurd"
-
     sent_at = utc_string_to_aware_gmt_datetime(created_at)
     today = datetime.now(local_timezone).date()
-    if sent_at.date() == today:
-        when = "vandaag"
-    elif sent_at.date() == today - timedelta(days=1):
-        when = "gisteren"
-    else:
-        when = f"op {_format_datetime_short(sent_at)}"
-    return f"{'Naar de printleverancier gestuurd' if long_form else 'Verstuurd'} {when}"
+    # notifynl-api still groups uploaded letters into days that end at 17:30 (upstream's print run), so letters
+    # uploaded this evening are in tomorrow's group: they were sent today
+    if sent_at.date() >= today:
+        return "Verstuurd vandaag"
+    if sent_at.date() == today - timedelta(days=1):
+        return "Verstuurd gisteren"
+    return f"Verstuurd op {_format_datetime_short(sent_at)}"
 
 
 LETTER_VALIDATION_MESSAGES = {

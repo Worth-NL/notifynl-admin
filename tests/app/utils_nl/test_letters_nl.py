@@ -7,31 +7,36 @@ from app.utils_nl.letters import get_letter_printing_statement, get_letter_valid
 @pytest.mark.parametrize(
     "created_at, current_datetime",
     [
-        ("2017-07-07T12:00:00+00:00", "2017-07-07 16:29:00"),  # created today, summer
-        ("2017-12-12T12:00:00+00:00", "2017-12-12 17:29:00"),  # created today, winter
+        ("2017-07-07T09:00:00+00:00", "2017-07-07 09:05:00"),  # just sent
+        ("2017-07-07T09:00:00+00:00", "2017-07-07 16:31:00"),  # after 17:30, summer
+        ("2017-12-12T18:00:00+00:00", "2017-12-13 17:00:00"),  # sent after 17:30 the day before
+        ("2017-12-01T00:00:00+00:00", "2017-12-12 12:00:00"),  # long ago
     ],
 )
-def test_get_letter_printing_statement_for_a_letter_still_to_be_sent(created_at, current_datetime):
+def test_get_letter_printing_statement_for_many_letters_depends_on_neither_time_nor_status(
+    created_at, current_datetime
+):
     with freeze_time(current_datetime):
-        assert get_letter_printing_statement("created", created_at) == "Wordt naar de printleverancier gestuurd"
-        assert get_letter_printing_statement("created", created_at, long_form=False) == (
-            "Wordt naar de printleverancier gestuurd"
-        )
+        for status in ("created", "sending", "delivered"):
+            assert get_letter_printing_statement(status, created_at) == (
+                "NotifyNL stuurt brieven binnen enkele minuten naar de printleverancier."
+            )
 
 
 @pytest.mark.parametrize(
-    "created_at, expected_day",
+    "created_at, expected_statement",
     [
-        ("2017-07-07T09:00:00+00:00", "vandaag"),
-        ("2017-07-06T16:29:00+00:00", "gisteren"),
-        ("2017-12-01T00:00:00+00:00", "op 1 december"),
-        ("2017-03-26T12:00:00+00:00", "op 26 maart"),
+        ("2017-07-07T09:00:00+00:00", "Verstuurd vandaag"),
+        # notifynl-api groups letters uploaded after 17:30 under the next day
+        ("2017-07-08T16:30:00+00:00", "Verstuurd vandaag"),
+        ("2017-07-06T16:29:00+00:00", "Verstuurd gisteren"),
+        ("2017-06-01T00:00:00+00:00", "Verstuurd op 1 juni"),
+        ("2017-03-26T12:00:00+00:00", "Verstuurd op 26 maart"),
     ],
 )
-@freeze_time("2017-07-07 12:00:00")
-def test_get_letter_printing_statement_for_a_letter_that_has_been_sent(created_at, expected_day):
-    assert get_letter_printing_statement("delivered", created_at) == f"Naar de printleverancier gestuurd {expected_day}"
-    assert get_letter_printing_statement("delivered", created_at, long_form=False) == f"Verstuurd {expected_day}"
+@freeze_time("2017-07-07 19:00:00")
+def test_get_letter_printing_statement_short_form_says_when_the_letters_were_sent(created_at, expected_statement):
+    assert get_letter_printing_statement("created", created_at, long_form=False) == expected_statement
 
 
 @pytest.mark.parametrize("status", ["created", "sending", "sent", "delivered"])
