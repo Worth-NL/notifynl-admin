@@ -7,7 +7,6 @@ from app.models.user import User
 from tests.conftest import SERVICE_ONE_ID, normalize_spaces
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_render_sign_in_template_for_new_user(client_request):
     client_request.logout()
     page = client_request.get("main.sign_in")
@@ -25,7 +24,6 @@ def test_render_sign_in_template_for_new_user(client_request):
     assert "Sign in again" not in normalize_spaces(page.text)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_render_sign_in_template_with_next_link_for_password_reset(client_request):
     client_request.logout()
     page = client_request.get(
@@ -36,14 +34,12 @@ def test_render_sign_in_template_with_next_link_for_password_reset(client_reques
     assert forgot_password_link["href"] == url_for("main.forgot_password", next=f"/services/{SERVICE_ONE_ID}/templates")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_sign_in_explains_session_timeout(client_request):
     client_request.logout()
     page = client_request.get("main.sign_in", next="/foo")
     assert "We signed you out because you have not used Notify for a while." in page.text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_sign_in_explains_other_browser(client_request, api_user_active, mocker):
     api_user_active["current_session_id"] = str(uuid.UUID(int=1))
     mocker.patch("app.user_api_client.get_user", return_value=api_user_active)
@@ -56,7 +52,6 @@ def test_sign_in_explains_other_browser(client_request, api_user_active, mocker)
     assert "We signed you out because you logged in to Notify on another device" in page.text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_doesnt_redirect_to_sign_in_if_no_session_info(
     client_request,
     api_user_active,
@@ -213,7 +208,6 @@ def test_process_webauthn_auth_sign_in_redirects_to_webauthn_with_next_redirect(
     mock_get_user_by_email.assert_called_once_with("valid@example.gov.uk")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_return_locked_out_true_when_user_is_locked(
     client_request,
     mock_get_user_by_email_locked,
@@ -232,7 +226,6 @@ def test_should_return_locked_out_true_when_user_is_locked(
     assert not mock_verify_password.mock_calls
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_return_200_when_user_does_not_exist(
     client_request,
     mock_get_user_by_email_not_found,
@@ -313,7 +306,6 @@ def test_email_address_is_treated_case_insensitively_when_signing_in_as_invited_
     mock_get_invited_user_by_id.assert_called_once_with(sample_invite["id"])
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_when_signing_in_as_invited_user_you_cannot_accept_an_invite_for_another_email_address(
     client_request,
     mocker,

@@ -7,7 +7,6 @@ from flask import url_for
 from tests.conftest import SERVICE_ONE_ID, normalize_spaces
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "service_has_api_keys, expected_paragraphs",
     (
@@ -61,7 +60,6 @@ def test_returned_letter_summary(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_returned_letter_summary_with_one_letter(client_request, mock_get_api_keys, mocker):
     summary_data = [{"returned_letter_count": 1, "reported_at": "2019-12-24"}]
     mock = mocker.patch("app.service_api_client.get_returned_letter_summary", return_value=summary_data)
@@ -74,7 +72,6 @@ def test_returned_letter_summary_with_one_letter(client_request, mock_get_api_ke
     assert normalize_spaces(page.select_one(".returned-letters-list li").text) == "24 December 2019 1 letter"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_returned_letters_page(client_request, mocker):
     data = {
         "returned_letters": [
@@ -120,7 +117,6 @@ def test_returned_letters_page(client_request, mocker):
     ] == [normalize_spaces(list_item.text) for list_item in page.select(".govuk-summary-list__row")]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "orphaned_count, orphaned_expected_message",
     (

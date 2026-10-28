@@ -1,0 +1,3921 @@
+[[test]]
+nodeid = "tests/app/main/forms/test_placeholder_form.py::test_validates_recipients"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/forms/test_register_user_form.py::test_should_raise_validation_error_for_password"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/forms/test_register_user_form.py::test_valid_email_in_valid_domains"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/forms/test_service_contact_details_form.py::test_form_phone_number_allows_non_emergency_3_digit_numbers"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/test_errorhandlers.py::test_405_returns_something_went_wrong_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/test_errorhandlers.py::test_api_error_response_logging"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/test_errorhandlers.py::test_bad_url_returns_page_not_found"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/test_errorhandlers.py::test_csrf_returns_400"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/test_errorhandlers.py::test_malformed_token_returns_page_not_found"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/test_permissions.py::test_service_navigation_for_org_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/test_permissions.py::test_service_user_without_manage_service_permission_can_see_usage_page_when_org_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/test_permissions.py::test_services_pages_that_org_users_are_allowed_to_see[main.manage_users-extra_args1-user_services0-user_organisations0-200-False]"
+reason = "email_domains.txt change breaks this."
+twin = ["tests/app/main/test_permissions_nl.py::test_manage_users_page_that_org_users_are_allowed_to_see"]
+
+[[test]]
+nodeid = "tests/app/main/test_permissions.py::test_services_pages_that_org_users_are_allowed_to_see[main.manage_users-extra_args1-user_services1-user_organisations1-200-False]"
+reason = "email_domains.txt change breaks this."
+twin = ["tests/app/main/test_permissions_nl.py::test_manage_users_page_that_org_users_are_allowed_to_see"]
+
+[[test]]
+nodeid = "tests/app/main/test_permissions.py::test_services_pages_that_org_users_are_allowed_to_see[main.manage_users-extra_args1-user_services2-user_organisations2-200-True]"
+reason = "email_domains.txt change breaks this."
+twin = ["tests/app/main/test_permissions_nl.py::test_manage_users_page_that_org_users_are_allowed_to_see"]
+
+[[test]]
+nodeid = "tests/app/main/test_permissions.py::test_services_pages_that_org_users_are_allowed_to_see[main.manage_users-extra_args1-user_services3-user_organisations3-200-False]"
+reason = "email_domains.txt change breaks this."
+twin = ["tests/app/main/test_permissions_nl.py::test_manage_users_page_that_org_users_are_allowed_to_see"]
+
+[[test]]
+nodeid = "tests/app/main/test_permissions.py::test_services_pages_that_org_users_are_allowed_to_see[main.manage_users-extra_args1-user_services6-user_organisations6-200-True]"
+reason = "email_domains.txt change breaks this."
+twin = ["tests/app/main/test_permissions_nl.py::test_manage_users_page_that_org_users_are_allowed_to_see"]
+
+[[test]]
+nodeid = "tests/app/main/test_permissions.py::test_services_pages_that_org_users_are_allowed_to_see[main.manage_users-extra_args1-user_services7-user_organisations7-200-False]"
+reason = "email_domains.txt change breaks this."
+twin = ["tests/app/main/test_permissions_nl.py::test_manage_users_page_that_org_users_are_allowed_to_see"]
+
+[[test]]
+nodeid = "tests/app/main/test_permissions.py::test_services_pages_that_org_users_are_allowed_to_see[main.manage_users-extra_args1-user_services9-user_organisations9-200-True]"
+reason = "email_domains.txt change breaks this."
+twin = ["tests/app/main/test_permissions_nl.py::test_manage_users_page_that_org_users_are_allowed_to_see"]
+
+[[test]]
+nodeid = "tests/app/main/test_validators.py::test_valid_list_of_white_list_email_domains"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/accounts/test_your_services.py::test_should_not_show_back_to_service_if_user_doesnt_belong_to_service"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/accounts/test_your_services.py::test_should_show_notification_banner_when_newly_activated_user"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/accounts/test_your_services.py::test_should_show_your_services_navigation_link_if_user_belongs_to_service"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/accounts/test_your_services.py::test_your_services_should_not_show_back_to_service_link_if_no_service_in_session"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/accounts/test_your_services.py::test_your_services_should_not_show_back_to_service_link_if_service_archived"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/accounts/test_your_services.py::test_your_services_should_not_show_your_services_navigation_link_if_not_signed_in"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/accounts/test_your_services.py::test_your_services_should_show_back_to_service_link"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/accounts/test_your_services.py::test_your_services_should_show_join_service_button"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/accounts/test_your_services.py::test_your_services_should_show_organisations_link_for_org_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/accounts/test_your_services.py::test_your_services_should_show_organisations_link_for_platform_admin"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/accounts/test_your_services.py::test_your_services_should_show_your_services_page"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/accounts/test_your_services.py::test_your_services_should_show_your_services_page_if_no_services"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_add_organisation_email_branding_options_calls_api_client_with_chosen_branding"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_add_organisation_email_branding_options_shows_branding_not_in_branding_pool"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_add_organisation_email_branding_options_shows_error_if_no_branding_selected"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_add_organisation_letter_branding_options_calls_api_client_with_chosen_branding"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_add_organisation_letter_branding_options_shows_branding_not_in_branding_pool"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_add_organisation_letter_branding_options_shows_error_if_no_branding_selected"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_change_default_org_email_branding_shows_confirmation_question_from_govuk"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_change_default_org_letter_branding_shows_confirmation_question_when_changing_from_no_branding"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_get_organisation_email_branding_page_with_remove_param"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_get_organisation_letter_branding_page_with_remove_param_shows_confirmation"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_organisation_email_branding_page_shows_all_branding_pool_options"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_organisation_email_branding_page_shows_remove_brand_links"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_organisation_letter_branding_page_shows_all_branding_pool_options"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_organisation_letter_branding_page_shows_confirmation_when_making_none_default"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_organisation_letter_branding_page_shows_remove_links"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_post_organisation_letter_branding_page_with_remove_param_calls_client_and_redirects"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_branding.py::test_reset_org_email_branding_to_govuk_only_for_central_government"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_invites.py::TestEditOrganisationUser::test_edit_organisation_user_shows_the_delete_confirmation_banner"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_invites.py::test_cancel_invited_org_user_cancels_user_invitations"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_invites.py::test_cancelled_invite_opened_by_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_invites.py::test_invite_org_user_errors_when_same_email_as_inviter"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_invites.py::test_invite_org_user_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisation_invites.py::test_registration_from_org_invite_has_bad_data"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_add_organisation_from_gp_service_when_that_org_name_already_exists"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_archive_organisation_after_confirmation"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_archive_organisation_prompts_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_create_new_organisation_fails_with_duplicate_name"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_create_new_organisation_fails_with_incorrect_input"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_create_new_organisation_validates"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_download_organisation_usage_report"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_get_can_approve_own_go_live_requests"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_get_can_ask_to_join_a_service"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_gps_can_create_own_organisations"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_gps_can_name_their_organisation"
+reason = "NHS and GP features are not offered in NL"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_manage_org_users_should_show_live_search_if_more_than_7_users"
+reason = "staus doesnt exist on user ???"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_manage_org_users_shows_correct_link_next_to_each_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_manage_org_users_shows_no_link_for_cancelled_users"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_nhs_local_assigns_to_selected_organisation"
+reason = "NHS and GP features are not offered in NL"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_nhs_local_can_create_own_organisations"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_billing_page_when_the_agreement_is_not_signed"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_billing_page_when_the_agreement_is_signed_by_a_known_person"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_billing_page_when_the_agreement_is_signed_by_an_unknown_person"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_left_hand_nav_for_org_users"
+reason = "Translation issue"
+twin = ["tests/app/main/views/organisations/test_organisations_nl.py::test_organisation_left_hand_nav_for_org_users"]
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_left_hand_nav_for_platform_admin_users"
+reason = "Translation issue"
+twin = ["tests/app/main/views/organisations/test_organisations_nl.py::test_organisation_left_hand_nav_for_platform_admin_users"]
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_page_shows_all_organisations"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_services_hides_search_bar_for_7_or_fewer_services"
+reason = "new letters_sent param to avoid showing pricing, see test_organisations_nl.py"
+twin = ["tests/app/main/views/organisations/test_organisations_nl.py::test_organisation_services_hides_search_bar_for_7_or_fewer_services"]
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_services_links_to_downloadable_report"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_services_shows_live_services_and_usage"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_services_shows_live_services_and_usage_with_count_of_1"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_services_shows_search_bar"
+reason = "new letters_sent param to avoid showing pricing, see test_organisations_nl.py"
+twin = ["tests/app/main/views/organisations/test_organisations_nl.py::test_organisation_services_shows_search_bar"]
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_services_shows_usage_in_correct_font_size"
+reason = "new letters_sent param to avoid showing pricing, see test_organisations_nl.py"
+twin = ["tests/app/main/views/organisations/test_organisations_nl.py::test_organisation_services_shows_usage_in_correct_font_size"]
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_settings_for_platform_admin"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_settings_platform_admin_only"
+reason = "NL lets organisation members see the letter provider in the settings"
+counterpart = ["tests/app/main/views/organisations/test_organisation_letter_provider_nl.py::test_organisation_members_see_only_the_letter_provider_in_the_settings"]
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_settings_shows_delete_link"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_settings_table_shows_email_branding_pool"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_settings_table_shows_email_branding_pool_govuk_default"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_settings_table_shows_email_branding_pool_non_govuk_default"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_settings_table_shows_letter_branding_pool"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_organisation_settings_table_shows_letter_branding_pool_with_brand_as_default"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_page_to_create_new_organisation"
+reason = "NHS and GP features are not offered in NL"
+counterpart = ["tests/app/main/views/organisations/test_organisations_nl.py::test_page_to_create_new_organisation_only_offers_nl_organisation_types"]
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_update_organisation_domains_nhs_domains"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_update_organisation_domains_when_domain_already_exists"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_update_organisation_domains_with_more_than_just_domain"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_update_organisation_settings[user0-.edit_organisation_type-post_data2-expected_persisted2]"
+reason = "NHS and GP features are not offered in NL"
+counterpart = ["tests/app/main/views/organisations/test_organisations_nl.py::test_edit_organisation_type_rejects_nhs_types"]
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_update_organisation_settings[user1-.edit_organisation_type-post_data2-expected_persisted2]"
+reason = "NHS and GP features are not offered in NL"
+counterpart = ["tests/app/main/views/organisations/test_organisations_nl.py::test_edit_organisation_type_rejects_nhs_types"]
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_update_organisation_with_incorrect_input"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_update_organisation_with_non_unique_name"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_validation_of_gps_creating_organisations"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_view_edit_organisation_billing_details"
+reason = "Translation issue"
+twin = ["tests/app/main/views/organisations/test_organisations_nl.py::test_view_edit_organisation_billing_details"]
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_view_edit_organisation_notes"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_view_organisation_settings"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/organisations/test_organisations.py::test_view_organisation_shows_the_correct_organisation"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_GET_email_branding_choose_banner_colour"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_GET_email_branding_enter_government_identity_logo_text"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_GET_email_branding_enter_government_identity_logo_text_protects_against_xss"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_GET_email_branding_set_alt_text_shows_current_org_in_hint_text"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_GET_email_branding_set_alt_text_shows_form"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_GET_email_branding_upload_logo"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_POST_email_branding_choose_banner_colour_invalid_hex_code"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_POST_email_branding_enter_government_identity_logo_text"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_POST_email_branding_set_alt_text_creates_branding_adds_to_pool_and_redirects"
+reason = "Translation issue"
+twin = ["tests/app/main/views/service_settings/test_email_branding_requests_nl.py::test_POST_email_branding_set_alt_text_creates_branding_adds_to_pool_and_redirects"]
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_POST_email_branding_set_alt_text_shows_error"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_POST_email_branding_upload_logo_enforces_minimum_logo_height"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_POST_email_branding_upload_logo_resizes_and_pads_wide_short_logo"
+reason = "Issue with 2 forms.py files not solved"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_POST_email_branding_upload_logo_validation_errors"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_choose_banner_type_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_choose_banner_type_shows_error_summary_on_invalid_data"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_choose_logo_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_choose_logo_page_shows_not_setup_message"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_create_government_identity_logo"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_govuk_and_nhs_pages"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_govuk_submit"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_nhs_submit"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_option_preview_changes_email_branding_when_user_confirms"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_option_preview_page_displays_preview_of_chosen_branding"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_options_does_not_show_nhs_branding_twice"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_options_page_redirects_nhs_specific_page"
+reason = "NHS and GP features are not offered in NL"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_options_page_shows_branding_if_set"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_options_page_shows_branding_pool_options_if_branding_pool_set_for_org"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_options_page_shows_divider_if_there_are_lots_of_options"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_options_page_shows_preview_if_something_else_is_only_option"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_options_page_when_no_branding_is_set"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_options_submit"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_options_submit_when_no_radio_button_is_selected"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_pages_give_404_if_selected_branding_not_allowed"
+reason = "branding changes broke this"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_request_back_to_new_email_branding_query_params"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_request_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_request_page_back_link_from_args"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_request_submit"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_email_branding_request_submit_shows_error_if_textbox_is_empty"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_email_branding_requests.py::test_get_email_branding_request_page_is_only_option"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_inbound_sms_setting.py::test_set_inbound_sms_when_no_available_inbound_numbers"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_inbound_sms_setting.py::test_set_inbound_sms_when_service_already_has_sms"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_inbound_sms_setting.py::test_set_inbound_sms_when_service_does_not_have_sms"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_GET_letter_branding_request_renders_form"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_GET_letter_branding_set_name_renders"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_GET_letter_branding_set_name_shows_current_org_in_hint_text"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_GET_letter_branding_upload_branding_renders_form"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_GET_letter_branding_upload_branding_renders_form_with_prompt_if_user_clicked_organisation_choice"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_POST_letter_branding_request_creates_zendesk_ticket"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_POST_letter_branding_set_name_creates_branding_adds_to_pool_and_redirects"
+reason = "Translation issue"
+twin = ["tests/app/main/views/service_settings/test_letter_branding_requests_nl.py::test_POST_letter_branding_set_name_creates_branding_adds_to_pool_and_redirects"]
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_POST_letter_branding_set_name_shows_error"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_POST_letter_branding_upload_branding_rejects_non_svg_files"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_POST_letter_branding_upload_branding_scans_for_viruses"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_POST_letter_branding_upload_branding_validates_svg_file"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_letter_branding_nhs_changes_letter_branding_when_user_confirms"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_letter_branding_nhs_page_displays_preview"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_letter_branding_nhs_page_returns_404_if_service_not_nhs"
+reason = "NHS and GP features are not offered in NL"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_letter_branding_option_preview_changes_letter_branding_when_user_confirms"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_letter_branding_option_preview_page_displays_preview_of_chosen_branding"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_letter_branding_options_errors_when_no_option_selected"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_letter_branding_options_page_when_branding_is_set_already"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_letter_branding_options_page_when_no_branding_is_set"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_letter_branding_requests.py::test_letter_branding_options_redirects_to_nhs_page"
+reason = "NHS and GP features are not offered in NL"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_setting_permissions.py::test_service_set_permission[initial_permissions6-block_ofcom_protected_block-True-expected_update6]"
+reason = "OFCOM protected-range toggle is UK-only and not offered in NL"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_setting_permissions.py::test_service_set_permission[initial_permissions7-block_ofcom_protected_block-False-expected_update7]"
+reason = "OFCOM protected-range toggle is UK-only and not offered in NL"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_setting_permissions.py::test_service_setting_links_displayed_for_active_services"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_setting_permissions.py::test_service_setting_toggles_show"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_setting_permissions.py::test_service_settings_doesnt_show_option_if_parent_permission_disabled"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::TestServiceDataRetention::test_post_from_service_sending_over_1mil_notifications_does_not_change_retention"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::TestServiceDataRetention::test_post_from_service_that_declared_over_1mil_notifications_per_year_does_not_change_retention"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::TestServiceDataRetention::test_post_from_service_that_sent_over_1mil_notifications_last_year_does_not_change_retention"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::TestServiceDataRetention::test_post_from_trial_mode_service_does_not_change_retention"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::TestServiceDataRetention::test_post_input_validation"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::TestServiceDataRetention::test_post_updates_volumes_for_all_channels"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::TestServiceDataRetention::test_shown_guidance_if_declared_over_1mil_notifications_per_year"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::TestServiceDataRetention::test_shown_guidance_if_predicted_to_send_over_1mil_notifications_this_year"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::TestServiceDataRetention::test_shown_guidance_if_sent_over_1mil_notifications_last_year"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::TestServiceDataRetention::test_shown_guidance_if_service_is_in_trial_mode"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::TestServiceEmailSenderChange::test_service_email_sender_change_fails_if_new_name_fails_validation"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::TestServiceEmailSenderChange::test_service_email_sender_change_page_shows_your_current_email_sender_name"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::TestServiceEmailSenderChange::test_service_preview_email_sender_name_custom_sender"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::TestServiceEmailSenderChange::test_service_preview_email_sender_name_service_name"
+reason = "Translation issue"
+twin = ["tests/app/main/views/service_settings/test_service_settings_nl.py::test_service_preview_email_sender_name_service_name"]
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::TestSetAuthType::test_current_setting_selected"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_add_and_edit_reply_to_email_address"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_add_reply_to_email_address_fails_if_notification_not_delivered_in_45_sec"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_and_more_hint_appears_on_settings_with_more_than_just_a_single_sender"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_api_ids_dont_show_on_option_pages_with_a_single_sender"
+reason = "Translation issue"
+twin = ["tests/app/main/views/service_settings/test_service_settings_nl.py::test_api_ids_dont_show_on_option_pages_with_a_single_sender"]
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_archive_service_after_confirm"
+reason = "Translation issue"
+twin = ["tests/app/main/views/service_settings/test_service_settings_nl.py::test_archive_service_after_confirm"]
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_archive_service_prompts_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_confirm_delete_letter_contact_block"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_confirm_delete_reply_to_email_address"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_confirm_delete_sms_sender"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_default_box_shows_on_non_default_sender_details_while_editing"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_default_option_shows_for_default_sender"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_email_from_name_has_the_right_value"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_escapes_letter_contact_block"
+reason = "contact_block is now always rendered as a single line - see test_service_settings_nl.py"
+counterpart = ["tests/app/main/views/service_settings/test_service_settings_nl.py::test_letter_contact_block_is_single_line_and_escaped_in_settings_summary"]
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_get_service_receive_text_messages_start_shows_details"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_get_service_set_email_branding_add_to_branding_pool_step"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_get_service_set_letter_branding_add_to_branding_pool_step"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_get_service_set_letter_branding_add_to_branding_pool_step_protects_against_xss"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_inbound_sms_sender_is_not_deleteable"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_inbound_sms_sender_is_not_editable"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_incorrect_letter_contact_block_input"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_incorrect_reply_to_email_address_input"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_incorrect_sms_sender_input"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_incorrect_sms_sender_input_with_multiple_errors_only_shows_the_first"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_letter_contact_block_shows_none_if_not_set"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_no_go_live_link_for_service_without_organisation"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_no_senders_message_shows"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_organisation_name_links_to_org_dashboard"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_post_service_receive_text_messages_start_turns_on_feature_and_redirects"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_remove_default_from_default_letter_contact_block"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_select_organisation_shows_message_if_no_orgs"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_send_files_by_email_contact_details_displays_error_message_when_no_radio_button_selected"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_send_files_by_email_contact_details_does_not_update_invalid_contact_details"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_send_files_by_email_contact_details_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_send_files_by_email_contact_details_updates_contact_details_and_redirects_to_settings_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_send_files_by_email_in_page_guidance"
+reason = "Translation issue"
+twin = ["tests/app/main/views/service_settings/test_service_settings_nl.py::test_send_files_by_email_in_page_guidance"]
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_send_files_by_email_row_on_settings_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_sender_details_are_escaped"
+reason = "contact_block is now always rendered as a single line - see test_service_settings_nl.py"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_confirm_free_allowance_terms"
+reason = "UK-only free text message allowance; not routed in NL"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_confirm_free_allowance_terms_hides_checkbox_if_terms_already_accepted"
+reason = "UK-only free text message allowance; not routed in NL"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_confirm_free_allowance_terms_redirects_when_checkbox_is_checked"
+reason = "UK-only free text message allowance; not routed in NL"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_confirm_free_allowance_terms_requires_checkbox_to_be_checked"
+reason = "UK-only free text message allowance; not routed in NL"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_name_change_fails_if_new_name_fails_validation"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_preview_letter_branding_shows_preview_letter"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_receive_text_messages_stop"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_receive_text_messages_stop_fails_when_inbound_number_is_default_sender"
+reason = "Translation issue"
+twin = ["tests/app/main/views/service_settings/test_service_settings_nl.py::test_service_receive_text_messages_stop_fails_when_inbound_number_is_default_sender_nl"]
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_receive_text_messages_stop_handles_error"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_receive_text_messages_stop_platform_admin"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_receive_text_messages_when_inbound_number_is_not_set"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_receive_text_messages_when_inbound_number_is_set"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_set_email_branding_add_to_branding_pool_step_choices_yes_or_no"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_set_letter_branding_add_to_branding_pool_step_choices_yes_or_no"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_set_letter_branding_prepopulates"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_settings_page_visible_settings_depend_on_user_and_service_permissions"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_service_verify_reply_to_address"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_set_email_page_markup"
+reason = "Translation issue"
+twin = ["tests/app/main/views/service_settings/test_service_settings_nl.py::test_set_email_page_markup"]
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_should_error_if_all_volumes_zero"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_should_error_if_bad_estimations_given"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_should_not_default_to_zero_if_some_fields_dont_validate"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_should_show_branding_styles"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_should_show_daily_message_limit_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_should_show_error_for_invalid_message_limits"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_should_show_estimate_volumes"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_should_show_overview_for_service_with_more_things_set"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_should_show_page_to_set_per_day_international_sms_message_limit"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_should_show_page_to_set_per_day_message_limit"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_should_show_page_to_set_per_minute_rate_limit"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_should_show_page_to_set_sms_allowance"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_should_show_service_name_content"
+reason = "Translation issue"
+twin = ["tests/app/main/views/service_settings/test_service_settings_nl.py::test_should_show_service_name_content"]
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_show_limits_for_live_service"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_show_live_service"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_show_service_data_retention"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_show_sms_prefixing_setting_page"
+reason = "Translation issue"
+twin = ["tests/app/main/views/service_settings/test_service_settings_nl.py::test_show_sms_prefixing_setting_page"]
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_show_switch_service_to_count_as_live_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_shows_delete_link_for_error_on_post_request_for_edit_email_reply_to_address"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_shows_delete_link_for_get_request_for_edit_email_reply_to_address"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_shows_delete_link_for_sms_sender"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_shows_individual_data_retentions_if_different"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_switch_email_on_from_tasklist_form"
+reason = "Translation issue"
+twin = ["tests/app/main/views/service_settings/test_service_settings_nl.py::test_switch_email_on_from_tasklist_form"]
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_switch_service_channels_on_and_off"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_update_service_data_retention_return_validation_error_for_negative_days_of_retention"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_update_service_organisation_sets_daily_sms_limit_to_zero_for_trial_mode_gp"
+reason = "NHS and GP features are not offered in NL"
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_view_edit_service_billing_details"
+reason = "Translation issue"
+twin = ["tests/app/main/views/service_settings/test_service_settings_nl.py::test_view_edit_service_billing_details"]
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_view_edit_service_notes"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_accept_invite.py::test_cancelled_invited_user_accepts_invited_redirect_to_cancelled_invitation"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_accept_invite.py::test_existing_signed_out_user_accept_invite_redirects_to_sign_in"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_accept_invite.py::test_existing_user_of_service_get_redirected_to_signin"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_accept_invite.py::test_if_existing_user_accepts_twice_they_redirect_to_sign_in"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_accept_invite.py::test_new_user_accept_invite_calls_api_and_views_registration_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_accept_invite.py::test_signed_in_existing_user_cannot_use_anothers_invite"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_activity.py::test_api_users_are_not_told_they_can_search_by_reference_when_service_has_no_api_keys"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_activity.py::test_api_users_are_told_they_can_search_by_reference_when_service_has_api_keys"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_activity.py::test_can_show_notifications"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_activity.py::test_can_show_notifications_if_data_retention_not_available"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_activity.py::test_doesnt_show_pagination_with_search_term"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_activity.py::test_letters_with_status_virus_scan_failed_shows_a_failure_description"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_activity.py::test_search_recipient_form"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_activity.py::test_sending_status_hint_displays_correctly_on_notifications_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_activity.py::test_shows_message_when_no_notifications"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_add_service.py::test_add_service_fails_if_service_name_fails_validation"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_add_service.py::test_add_service_for_nhs_notify_user_sets_nhs_notify_org_type_automatically_without_org_type_being_provided"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_add_service.py::test_add_service_has_to_choose_org_type"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_add_service.py::test_add_service_sets_daily_sms_limit_to_zero_for_nhs_services_with_no_allowance_when_user_already_has_services"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_add_service.py::test_add_service_sets_daily_sms_limit_to_zero_for_nhs_services_with_no_allowance_when_user_has_no_other_services"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_add_service.py::test_email_auth_user_creates_service_with_email_auth_permission"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_add_service.py::test_get_name_service_should_not_render_org_type_radios_for_nhs_notify_user"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_add_service.py::test_get_should_not_render_radios_if_org_type_known"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_add_service.py::test_get_should_only_show_nhs_org_types_radios_if_user_has_nhs_email"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_add_service.py::test_get_should_render_add_service_template"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_add_service.py::test_gov_user_can_see_trial_mode_guidance_page"
+reason = "email_domains.txt change breaks this."
+twin = ["tests/app/main/views/test_add_service_nl.py::test_gov_user_can_see_trial_mode_guidance_page"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_add_service.py::test_should_add_service_and_redirect_to_dashboard_when_existing_service"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_add_service.py::test_should_add_service_and_redirect_to_tour_when_no_services"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_add_service.py::test_should_return_form_errors_with_duplicate_service_name_regardless_of_case"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_add_service.py::test_shows_back_link_if_come_from_your_services_page"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_agreement.py::test_accept_agreement_page_persists"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_agreement.py::test_accept_agreement_page_validates"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_agreement.py::test_show_accept_agreement_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_agreement.py::test_show_confirm_agreement_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_agreement.py::test_unknown_gps_and_trusts_are_redirected"
+reason = "NHS and GP features are not offered in NL"
+
+[[test]]
+nodeid = "tests/app/main/views/test_api_integration.py::test_callback_forms_validation"
+reason = "[FIXME] Empty strings"
+
+[[test]]
+nodeid = "tests/app/main/views/test_api_integration.py::test_callbacks_page_lists_correct_rows_depending_on_service_permissions"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_api_integration.py::test_callbacks_page_redirects_to_delivery_status_if_service_has_no_inbound_sms_or_letter_permissions"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_api_integration.py::test_callbacks_page_works_when_no_apis_set"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_api_integration.py::test_letter_notifications_should_have_link_to_view_letter"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_api_integration.py::test_should_show_api_keys_page"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_api_integration_nl.py::test_should_show_api_keys_page_nl"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_api_integration.py::test_should_show_api_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_api_integration.py::test_should_show_api_page_with_lots_of_notifications"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_api_integration.py::test_should_show_api_page_with_no_notifications"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_api_integration.py::test_should_show_confirm_revoke_api_key"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_api_integration.py::test_should_show_create_api_key_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_api_integration.py::test_should_show_empty_api_keys_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_api_integration.py::test_should_show_service_retention_on_api_page_with_lots_of_notifications"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_api_integration.py::test_should_show_service_retention_on_api_page_with_no_notifications"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_api_integration.py::test_should_update_guestlist"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_api_integration.py::test_should_validate_guestlist_items"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_code_not_received.py::test_should_render_correct_email_not_received_template_for_active_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_code_not_received.py::test_should_render_correct_email_not_received_template_for_email_auth"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_code_not_received.py::test_should_render_correct_resend_template_for_active_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_code_not_received.py::test_should_render_correct_resend_template_for_pending_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_code_not_received.py::test_should_render_email_verification_resend_show_email_address_and_resend_verify_email"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_conversation.py::test_conversation_reply_redirects_with_phone_number_from_notification"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_conversation.py::test_conversation_reply_shows_link_to_add_templates_if_service_has_no_templates"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_conversation.py::test_conversation_reply_shows_templates"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_conversation.py::test_conversation_reply_with_template_adds_values_to_session"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_conversation.py::test_get_user_phone_number_when_only_inbound_exists"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_conversation.py::test_get_user_phone_number_when_only_outbound_exists"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_conversation.py::test_view_conversation"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_conversation.py::test_view_conversation_updates"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_breadcrumb_shows_if_service_is_archived"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_dashboard_shows_count_of_unsubscribe_requests"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_download_inbox"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_empty_inbox"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_get_started"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_inbound_messages_shows_count_of_messages_when_there_are_messages"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_inbound_messages_shows_count_of_messages_when_there_are_no_messages"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_inbox_showing_inbound_messages"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_monthly_shows_letters_in_breakdown"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_org_breadcrumbs_do_not_show_if_user_is_not_an_org_member"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_returned_letters_only_counts_recently_returned_letters"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_returned_letters_shows_count_of_recently_returned_letters"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_service_dashboard_shows_free_allowance"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_service_dashboard_shows_usage"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_service_dashboard_shows_usage_in_correct_font_size"
+reason = "Dashboard text removal"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_service_dashboard_skeleton"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_dashboard_nl.py::test_service_dashboard_skeleton"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_service_dashboard_totals_link_to_view_notifications"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_service_navigation_shows_if_service_is_in_trial_mode"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_dashboard_nl.py::test_service_navigation_shows_if_service_is_in_trial_mode"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_should_not_show_recent_templates_on_dashboard_if_only_one_template_used"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_should_show_monthly_breakdown_of_template_usage"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_should_show_recent_templates_on_dashboard"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_should_show_upcoming_jobs_on_dashboard"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_usage_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_usage_page_font_size"
+reason = "broken after removing free message limits on usage page"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_usage_page_letter_breakdown_ordered_by_postage_and_rate"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_usage_page_monthly_breakdown"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_usage_page_no_sms_spend"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_usage_page_with_0_free_allowance"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_document_download.py::test_banner_on_all_pages"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_document_download_nl.py::test_banner_on_all_pages"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_document_download.py::test_confirm_email_page_shows_errors"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_document_download_nl.py::test_confirm_email_page_shows_errors"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_document_download.py::test_confirm_email_page_shows_form_if_confirmation_required"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_document_download_nl.py::test_confirm_email_page_shows_form_if_confirmation_required"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_document_download.py::test_document_download_download_document_displays_the_right_file_metadata"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_document_download_nl.py::test_document_download_download_document_displays_the_right_file_metadata"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_document_download.py::test_landing_page"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_document_download_nl.py::test_landing_page"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_email_branding.py::test_create_email_branding_requires_a_name_when_submitting_logo_details"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_email_branding.py::test_create_email_branding_shows_error_with_both_alt_text_and_text"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_email_branding.py::test_create_email_branding_shows_error_with_neither_alt_text_and_text"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_email_branding.py::test_email_branding_page_shows_full_branding_list"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_email_branding.py::test_platform_admin_confirm_archive_email_branding"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_email_branding.py::test_platform_admin_confirm_archive_email_branding_that_is_in_use"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_email_branding.py::test_update_email_branding_shows_error_with_both_alt_text_and_text"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_email_branding.py::test_update_email_branding_shows_error_with_neither_alt_text_and_text"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_email_branding.py::test_view_email_branding_bottom_links"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_email_branding.py::test_view_email_branding_shows_created_by_and_helpful_dates_if_available"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_email_branding.py::test_view_email_branding_with_org_but_no_services"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_email_branding.py::test_view_email_branding_with_services_but_no_orgs"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_email_preview.py::test_displays_both_branding"
+reason = "dutchification of email template, see test_email_preview_nl/"
+twin = ["tests/app/main/views/test_email_preview_nl.py::test_displays_both_branding"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_email_preview.py::test_displays_govuk_branding"
+reason = "dutchification of email template, see test_email_preview_nl/"
+twin = ["tests/app/main/views/test_email_preview_nl.py::test_displays_govuk_branding"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_email_preview.py::test_displays_govuk_branding_by_default"
+reason = "dutchification of email template, see test_email_preview_nl/"
+twin = ["tests/app/main/views/test_email_preview_nl.py::test_displays_govuk_branding_by_default"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_email_preview.py::test_displays_org_branding_with_banner"
+reason = "org banner brand text not yet implemented"
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_back_link_from_form"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_back_link_from_form"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_bat_email_page"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_bat_email_page"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_choose_problem_support_type_shows_problem_type_form"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_choose_problem_support_type_shows_problem_type_form"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_choose_question_support_type_shows_feedback_form"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_choose_question_support_type_shows_feedback_form"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_email_address_must_be_valid_if_provided_to_support_form"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_email_address_required_for_problems_and_questions"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_email_address_required_for_problems_and_questions"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_get_support_as_member_of_public"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_get_support_as_someone_in_the_public_sector"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_get_support_as_someone_in_the_public_sector"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_get_support_index_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_get_support_index_page_when_signed_out"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_get_support_what_do_you_want_to_do_page"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_get_support_what_do_you_want_to_do_page"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_get_support_what_happened_page"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_get_support_what_happened_page"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_name_required_for_problems_and_questions"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_name_required_for_problems_and_questions"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_cannot_sign_in"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_cannot_sign_in"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_email_address_account_details_submits_zendesk_ticket"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_email_address_account_details_submits_zendesk_ticket"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_email_address_changed"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_email_address_changed"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_email_address_changed_account_details_form_requires_all_fields"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_email_address_changed_account_details_form_requires_all_fields"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_email_address_changed_account_details_shows_form"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_email_address_changed_account_details_shows_form"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_mobile_number_changed"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_mobile_number_changed"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_mobile_number_changed_account_details_form_requires_all_fields"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_mobile_number_changed_account_details_form_requires_all_fields"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_mobile_number_changed_account_details_shows_form"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_mobile_number_changed_account_details_shows_form"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_mobile_number_changed_account_details_submits_zendesk_ticket"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_no_email_link"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_no_email_link"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_no_email_link_account_details_form_requires_all_fields"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_no_email_link_account_details_form_requires_all_fields"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_no_email_link_account_details_shows_form"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_no_email_link_account_details_shows_form"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_no_email_link_account_details_submits_zendesk_ticket"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_no_email_link_account_details_submits_zendesk_ticket"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_no_security_code"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_no_security_code"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_no_security_code_account_details_form_requires_all_fields"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_no_security_code_account_details_form_requires_all_fields"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_no_security_code_account_details_shows_form"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_no_security_code_account_details_shows_form"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_no_security_code_account_details_submits_zendesk_ticket"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_problem_when_user_is_logged_in"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_problem_when_user_is_logged_in"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_support_problem_when_user_is_logged_out"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_feedback_nl.py::test_support_problem_when_user_is_logged_out"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_thanks"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_feedback.py::test_urgency"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_find_users.py::test_archive_user_prompts_for_confirmation"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_find_users_nl.py::test_archive_user_prompts_for_confirmation"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_find_users.py::test_archive_user_shows_error_message_if_user_cannot_be_archived"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_find_users_nl.py::test_archive_user_shows_error_message_if_user_cannot_be_archived"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_find_users.py::test_remove_platform_admin_prompts_for_confirmation"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_find_users.py::test_user_information_page_displays_if_there_are_failed_login_attempts"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_find_users.py::test_user_information_page_shows_archive_link_for_active_users"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_find_users.py::test_user_information_page_shows_change_auth_type_link"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_find_users.py::test_user_information_page_shows_if_user_is_platform_admin"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_find_users.py::test_user_information_page_shows_information_about_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_forgot_password.py::test_should_redirect_to_password_reset_sent_for_missing_email"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_forgot_password.py::test_should_redirect_to_password_reset_sent_for_valid_email"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_forgot_password.py::test_should_render_forgot_password"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_history.py::test_history"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_inbound_sms_admin.py::test_inbound_sms_admin"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_index.py::test_guidance_daily_limits"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_index.py::test_letter_spec_redirect"
+reason = "NL has no generic letter specification PDF"
+counterpart = ["tests/app/main/views/test_index_nl.py::test_letter_spec_pdf_is_not_offered"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_index.py::test_letter_spec_redirect_with_non_logged_in_user"
+reason = "NL has no generic letter specification PDF"
+counterpart = ["tests/app/main/views/test_index_nl.py::test_letter_spec_pdf_is_not_offered"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_index.py::test_non_logged_in_user_can_see_homepage"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_index.py::test_sms_price"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_index.py::test_static_pages[guidance_pricing_free_text_message_allowance-view_vars21]"
+reason = "UK-only free text message allowance; not routed in NL"
+
+[[test]]
+nodeid = "tests/app/main/views/test_index.py::test_terms_page_has_correct_content"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_index.py::test_trial_mode_sending_limits"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_index_nl.py::test_trial_mode_sending_limits"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_dont_cancel_letter_job_when_too_early_to_cancel"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_get_jobs_should_tell_user_if_more_than_one_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_should_not_show_cancel_link_for_letter_job_if_too_late"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_jobs_nl.py::test_should_not_show_cancel_link_for_letter_job_if_too_late"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_should_show_cancel_link_for_letter_job"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_should_show_job_in_progress"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_should_show_job_with_sending_limit_exceeded_status"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_should_show_job_without_notifications"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_should_show_letter_job"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_should_show_letter_job_with_banner_after_sending_after_1730"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_should_show_letter_job_with_banner_after_sending_before_1730"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_should_show_letter_job_with_banner_when_there_are_multiple_CSV_rows"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_should_show_letter_job_with_first_class_if_no_notifications"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_should_show_letter_job_with_first_class_if_notifications_are_first_class"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_should_show_old_job"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_should_show_page_for_one_job"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_should_show_scheduled_job"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_should_show_updates_for_one_job_as_json"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_jobs.py::test_should_show_updates_for_scheduled_job_as_json"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_join_service.py::test_cannot_join_service_for_different_organisation"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_join_service.py::test_cannot_join_service_without_organisation"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_join_service.py::test_cannot_join_service_without_organisation_permission"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_join_service.py::test_confirmation_page"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_join_service.py::test_join_service_choose_service"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_join_service.py::test_page_does_not_show_form_if_no_users_have_permission_to_approve_the_request"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_join_service.py::test_page_lists_team_members_of_service"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_join_service.py::test_page_redirects_on_post"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_join_service.py::test_redirect_if_already_member_of_service"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_create_letter_branding_fails_validation_when_uploading_SVG_with_bad_element"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_create_letter_branding_shows_an_error_when_submitting_details_with_no_logo"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_create_letter_branding_shows_database_errors_on_name_fields"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_create_letter_branding_shows_form_errors_on_name_field"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_create_letter_branding_when_uploading_invalid_file"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_create_new_letter_branding_shows_preview_of_logo"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_letter_branding_page_shows_full_branding_list"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_update_letter_branding_does_not_save_to_db_if_uploading_fails"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_update_letter_branding_shows_database_errors_on_name_field"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_update_letter_branding_shows_form_errors_on_name_fields"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_update_letter_branding_shows_the_current_letter_brand"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_update_letter_branding_when_uploading_invalid_file"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_view_letter_branding_bottom_links"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_view_letter_branding_requires_platform_admin"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_view_letter_branding_shows_created_by_and_helpful_dates_if_available"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_view_letter_branding_with_org_but_no_services"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letter_branding.py::test_view_letter_branding_with_services_but_no_orgs"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_letters.py::test_given_option_to_add_letters_if_allowed"
+reason = "Translation issue - now on test_letters_nl.py"
+twin = ["tests/app/main/views/test_letters_nl.py::test_given_option_to_add_letters_if_allowed"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_confirm_service_is_unique_fails_validation"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_make_your_service_live_nl.py::test_confirm_service_is_unique_fails_validation"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_gp_without_organisation_is_shown_agreement_step"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_non_gov_user_is_told_they_cant_go_live"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_make_your_service_live_nl.py::test_non_gov_user_is_told_they_cant_go_live"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_request_to_go_live_displays_go_live_notes_in_zendesk_ticket"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_request_to_go_live_displays_mou_signatories"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_request_to_go_live_is_sent_to_organiation_if_can_be_approved_by_organisation"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_request_to_go_live_redirects_if_service_already_live"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_make_your_service_live_nl.py::test_request_to_go_live_redirects_if_service_already_live"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_route_for_platform_admin"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_route_permissions"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_service_where_organisation_has_agreement_accepted"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_service_where_organisation_has_agreement_accepted_by_same_user"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_service_without_organisation_is_shown_agreement_text"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_be_able_to_request_to_go_live_with_no_organisation"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_confirm_service_is_unique_task"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_for_email_from_name_on_go_live"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_for_mou_on_request_to_go_live"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_for_reply_to_on_go_live"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_for_sending_things_right[0-Add templates with examples of your content Incomplete-1-0-0-Finish setting up your team Incomplete]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_make_your_service_live_nl.py::test_should_check_for_sending_things_right"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_for_sending_things_right[0-Add templates with examples of your content Incomplete-1-0-1-Finish setting up your team Incomplete]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_make_your_service_live_nl.py::test_should_check_for_sending_things_right"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_for_sending_things_right[0-Add templates with examples of your content Incomplete-1-1-0-Finish setting up your team Incomplete]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_make_your_service_live_nl.py::test_should_check_for_sending_things_right"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_for_sending_things_right[0-Add templates with examples of your content Incomplete-2-0-0-Finish setting up your team Completed]"
+reason = "email_domains.txt change breaks this."
+twin = ["tests/app/main/views/test_make_your_service_live_nl.py::test_should_check_for_sending_things_right"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_for_sending_things_right[1-Add templates with examples of your content Completed-1-0-0-Finish setting up your team Incomplete]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_make_your_service_live_nl.py::test_should_check_for_sending_things_right"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_for_sending_things_right[1-Add templates with examples of your content Completed-1-0-1-Finish setting up your team Incomplete]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_make_your_service_live_nl.py::test_should_check_for_sending_things_right"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_for_sending_things_right[1-Add templates with examples of your content Completed-1-1-0-Finish setting up your team Incomplete]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_make_your_service_live_nl.py::test_should_check_for_sending_things_right"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_for_sending_things_right[1-Add templates with examples of your content Completed-2-0-0-Finish setting up your team Completed]"
+reason = "email_domains.txt change breaks this."
+twin = ["tests/app/main/views/test_make_your_service_live_nl.py::test_should_check_for_sending_things_right"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_for_sending_things_right[2-Add templates with examples of your content Completed-1-0-0-Finish setting up your team Incomplete]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_make_your_service_live_nl.py::test_should_check_for_sending_things_right"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_for_sending_things_right[2-Add templates with examples of your content Completed-1-0-1-Finish setting up your team Incomplete]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_make_your_service_live_nl.py::test_should_check_for_sending_things_right"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_for_sending_things_right[2-Add templates with examples of your content Completed-1-1-0-Finish setting up your team Incomplete]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_make_your_service_live_nl.py::test_should_check_for_sending_things_right"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_for_sending_things_right[2-Add templates with examples of your content Completed-2-0-0-Finish setting up your team Completed]"
+reason = "email_domains.txt change breaks this."
+twin = ["tests/app/main/views/test_make_your_service_live_nl.py::test_should_check_for_sending_things_right"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_for_sms_sender_on_go_live"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_check_if_estimated_volumes_provided"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_not_show_go_live_button_if_service_already_has_go_live_request[False-True]"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_not_show_go_live_button_if_service_already_has_go_live_request[True-False]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_make_your_service_live_nl.py::test_should_not_show_go_live_button_if_service_already_has_active_go_live_request"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_render_the_same_page_after_request_to_go_live"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_make_your_service_live.py::test_should_show_an_error_if_not_all_tasks_completed"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_can_invite_user_as_platform_admin"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_cancel_invited_user_cancels_user_invitations"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_cant_edit_user_folder_permissions_for_platform_admin_users"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_confirm_edit_user_email_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_confirm_edit_user_email_page_redirects_if_session_empty"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_confirm_edit_user_mobile_number_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_download_csv_of_users"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_manage_users_nl.py::test_download_csv_of_users"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_edit_user_email_cannot_change_a_gov_email_address_to_a_non_gov_email_address"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_edit_user_email_page"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_edit_user_email_redirects_to_confirmation"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_edit_user_email_without_changing_goes_back_to_team_members"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_edit_user_mobile_number_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_edit_user_mobile_number_redirects_to_confirmation"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_edit_user_permissions_hides_authentication_for_webauthn_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_edit_user_permissions_when_api_gives_error_that_permissions_cannot_be_changed[False-You cannot change this team member\\u2019s permissions Your service needs at least 2 team members: from a public sector organisation with the \\u2018manage settings, team and usage\\u2019 permission Add new team members or update the permissions for your team, then try again.]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_manage_users_nl.py::test_edit_user_permissions_when_api_gives_error_that_permissions_cannot_be_changed"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_edit_user_permissions_when_api_gives_error_that_permissions_cannot_be_changed[True-You cannot change this team member\\u2019s permissions Your service needs at least 2 team members: from your organisation with the \\u2018manage settings, team and usage\\u2019 permission Add new team members or update the permissions for your team, then try again.]"
+reason = "email_domains.txt change breaks this."
+twin = ["tests/app/main/views/test_manage_users_nl.py::test_edit_user_permissions_when_api_gives_error_that_permissions_cannot_be_changed"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_edit_user_permissions_when_user_is_platform_admin_and_api_gives_error_that_permissions_cannot_be_changed"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_edit_user_permissions_with_delete_query_shows_banner"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_invite_user"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_invite_user_with_email_auth_service"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_join_a_service_user_with_no_mobile_number_cant_be_set_to_sms_auth"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_join_request_updates_auth_type_for_non_webauthn_users"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_manage_settings_user_can_see_download_users_link"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_manage_user_page_doesnt_show_folder_hint_if_service_cant_edit_folder_permissions"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_manage_user_page_doesnt_show_folder_hint_if_service_has_no_folders"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_manage_user_page_shows_how_many_folders_user_can_view"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_manage_users_does_not_show_accepted_invite"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_manage_users_page_does_not_link_to_user_profile_page_if_not_platform_admins"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_manage_users_page_does_not_links_to_user_profile_page_if_user_only_invited"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_manage_users_page_links_to_user_profile_page_for_platform_admins"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_manage_users_page_shows_member_auth_type_if_service_has_email_auth_activated"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_manage_users_shows_add_team_member_banner"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_manage_users_shows_invited_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_no_permission_manage_users_page"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_org_user_can_see_download_users_link"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_remove_user_from_service_when_user_api_gives_error_for_platform_admin_user"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_remove_user_from_service_when_user_api_gives_error_x[False-Your service needs at least 2 team members: from a public sector organisation]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_manage_users_nl.py::test_remove_user_from_service_when_user_api_gives_error_x"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_remove_user_from_service_when_user_api_gives_error_x[True-Your service needs at least 2 team members: from your organisation]"
+reason = "email_domains.txt change breaks this."
+twin = ["tests/app/main/views/test_manage_users_nl.py::test_remove_user_from_service_when_user_api_gives_error_x"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_service_join_request_already_joined"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_service_join_request_approved"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_service_join_request_approved_flash_message"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_service_join_request_choose_permissions"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_service_join_request_pending"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_service_join_request_refused"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_service_join_request_rejected"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_service_join_request_shows_rejected_message_on_reject"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_should_show_caseworker_on_overview_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_should_show_change_details_link"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_should_show_folder_permission_form_if_service_has_folder_permissions_enabled"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_should_show_live_search_if_more_than_7_users"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_should_show_overview_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_should_show_page_for_inviting_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_should_show_page_for_inviting_user_with_email_prefilled"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_should_show_page_if_prefilled_user_is_already_a_team_member"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_should_show_page_if_prefilled_user_is_already_invited"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_user_cant_invite_themselves"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_user_with_no_mobile_number_cant_be_set_to_sms_auth"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_manage_users.py::test_view_only_user_cannot_see_download_users_link"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_new_password.py::test_should_render_new_password_template"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_notifications.py::test_cancel_letter_catches_errors_from_API"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_notifications.py::test_notification_page_doesnt_link_to_template_in_tour"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_notifications.py::test_notification_page_has_link_to_send_another_for_sms"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_notifications.py::test_notification_page_shows_cancel_link_for_letter_which_can_be_cancelled"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_notifications.py::test_notification_page_shows_cancelled_or_failed_letter"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_notifications.py::test_notification_page_shows_error_message_if_precompiled_letter_cannot_be_opened"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_notifications.py::test_notification_page_shows_page_for_letter_notification"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_notifications.py::test_notification_page_shows_page_for_letter_sent_with_test_key"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_notifications.py::test_notification_page_shows_page_for_other_postage_classes"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_notifications.py::test_notification_page_shows_uploaded_letter"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_notifications.py::test_notification_page_shows_validation_failed_precompiled_letter"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_notifications_nl.py::test_notification_page_shows_validation_failed_precompiled_letter"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_notifications.py::test_notification_status_page_shows_details"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_notifications.py::test_should_show_image_of_templated_letter_notification_that_failed_validation_because_letter_is_too_long"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_notifications_nl.py::test_should_show_image_of_templated_letter_notification_that_failed_validation_because_letter_is_too_long"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_notifications.py::test_show_cancel_letter_confirmation"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_notifications_nl.py::test_show_cancel_letter_confirmation"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_org_member_make_service_live.py::test_get_org_member_make_service_live_contact_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_org_member_make_service_live.py::test_get_org_member_make_service_live_decision"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_org_member_make_service_live.py::test_get_org_member_make_service_live_service_name"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_org_member_make_service_live.py::test_get_org_member_make_service_live_start"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_org_member_make_service_live.py::test_get_org_member_make_service_live_unique_service"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_org_member_make_service_live.py::test_make_service_live_start_with_no_organisation_platform_admin"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_org_member_make_service_live.py::test_post_org_member_make_service_live_decision_error_summary"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_org_member_make_service_live.py::test_post_org_member_make_service_live_service_name_error_summary"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_org_member_make_service_live.py::test_post_org_member_make_service_live_unique_service_error_summary"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_performance.py::test_should_render_performance_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_platform_admin.py::TestGetDvlaBillingReport::test_calls_api_and_downloads_data"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_platform_admin.py::TestGetDvlaBillingReport::test_when_no_results_for_date"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_platform_admin_nl.py::TestGetDvlaBillingReport::test_when_no_results_for_date"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_platform_admin.py::TestPlatformAdminSearch::test_can_search_for_organisations"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_platform_admin.py::TestPlatformAdminSearch::test_can_search_for_services"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_platform_admin.py::TestPlatformAdminSearch::test_can_search_for_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_platform_admin.py::TestPlatformAdminSearch::test_shows_results_from_all_categories"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_platform_admin.py::test_clear_cache_requires_option"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_platform_admin.py::test_get_billing_report_when_no_results_for_date"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_platform_admin_nl.py::test_get_billing_report_when_no_results_for_date"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_platform_admin.py::test_get_notifications_sent_by_service_validates_form"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_platform_admin.py::test_platform_admin_list_complaints"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_platform_admin.py::test_platform_admin_submit_empty_returned_letters"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_platform_admin.py::test_platform_admin_users_list_when_no_results_for_filters"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_platform_admin_nl.py::test_platform_admin_users_list_when_no_results_for_filters"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_platform_admin.py::test_platform_admin_users_list_with_invalid_date_range"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_platform_admin.py::test_platform_admin_users_list_without_any_filters"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_platform_admin.py::test_reports_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_pricing.py::test_guidance_pricing_letters"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_pricing.py::test_guidance_pricing_sms"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_providers.py::test_edit_sms_provider_submit_invalid_percentages"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_providers.py::test_view_provider_shows_version_history"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_providers_nl.py::test_view_provider_shows_reason_column_in_dutch"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_providers.py::test_view_providers_shows_all_providers"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_register.py::test_cannot_register_with_sms_auth_and_missing_mobile_number"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_register.py::test_process_register_returns_200_when_mobile_number_is_invalid"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_register.py::test_register_creates_new_user_and_redirects_to_continue_page"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_register.py::test_register_form_returns_error_when_name_contains_url"
+reason = "Missing mock in overriden views"
+
+[[test]]
+nodeid = "tests/app/main/views/test_register.py::test_register_with_existing_email_sends_emails"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_register.py::test_registration_continue_page"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_register_nl.py::test_registration_continue_page"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_register.py::test_render_register_returns_template_with_form"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_register.py::test_should_add_user_details_to_session"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_register.py::test_should_return_200_if_password_is_on_list_of_commonly_used_passwords"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_register.py::test_should_return_200_when_email_is_not_gov_uk"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_register.py::test_shows_hidden_email_address_on_registration_page_from_invite"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_report_requests.py::test_report_ready_redirects_not_found_when_report_does_not_exist"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_report_requests.py::test_report_ready_renders_ready_template_if_report_ready"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_report_requests.py::test_report_request_renders_error_template_if_report_failed"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_report_requests.py::test_report_request_renders_preparing_template_if_report_in_progress"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_report_requests.py::test_report_request_renders_unavailable_template_if_report_not_found"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_returned_letters.py::test_returned_letter_summary"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_returned_letters.py::test_returned_letter_summary_with_one_letter"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_returned_letters.py::test_returned_letters_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_returned_letters.py::test_returned_letters_page_with_many_letters"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_security_policy.py::test_security_policy_redirects_to_policy"
+reason = "NL serves its own security.txt, see test_security_policy_nl.py"
+counterpart = ["tests/app/main/views/test_security_policy_nl.py::test_legacy_security_txt_redirects_to_well_known", "tests/app/main/views/test_security_policy_nl.py::test_security_txt_is_served_as_plain_text"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_can_send_from_emergency_contact_list_with_error_rows"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_check_messages_adds_sender_id_in_session_to_metadata"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_check_messages_column_error_doesnt_show_optional_columns"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_check_messages_does_not_add_sender_id_in_session_to_metadata_for_letter_template"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_check_messages_does_not_allow_to_send_letter_longer_than_10_pages"
+reason = "postalAddress issue"
+twin = ["tests/app/main/views/test_send_nl.py::test_check_messages_does_not_allow_to_send_letter_longer_than_10_pages"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_check_messages_shows_data_errors_before_trial_mode_errors_for_letters"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_check_messages_shows_over_max_row_error"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_check_messages_shows_too_many_international_sms_messages_errors"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_check_messages_shows_too_many_messages_errors"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_check_messages_shows_trial_mode_error"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_check_messages_shows_trial_mode_error_for_letters"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_check_notification_shows_back_link"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_check_notification_shows_cost_of_text_message"
+reason = "SMS cost prompts are not shown in NL"
+counterpart = ["tests/app/main/views/test_send_nl.py::test_check_notification_does_not_show_cost_of_text_message_nl"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_check_notification_shows_preview"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_choose_from_contact_list"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_choose_from_contact_list_with_no_lists"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_choose_from_contact_list_with_personalised_template"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_download_example_csv_for_letter_template"
+reason = "Translation issue and NLpostal address can only have 6 lines"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_example_spreadsheet_for_letters"
+reason = "Translation issue and NLpostal address can only have 6 lines"
+twin = ["tests/app/main/views/test_send_nl.py::test_example_spreadsheet_for_letters"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_job_from_contact_list_knows_where_its_come_from"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_job_not_from_emergency_contact_list_with_error_rows"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_letter_can_only_be_sent_now"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_letters_from_csv_files_dont_have_download_link"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_no_link_to_use_existing_list_for_service_without_lists"
+reason = "broken by Translation issue - column name change  - see test_send_nl"
+twin = ["tests/app/main/views/test_send_nl.py::test_no_link_to_use_existing_list_for_service_without_lists"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_one_off_letters_have_download_link"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_button_is_correctly_labelled"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_notification_shows_email_error_in_trial_mode"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_notification_shows_error_if_400"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_one_off_back_link_populates_address_textarea"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_one_off_does_not_send_without_the_correct_permissions"
+reason = "Translation issue - see test_send_nl"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_one_off_email_to_self_without_placeholders_redirects_to_check_page"
+reason = "broken by Translation issue - column name change  - see test_send_nl"
+twin = ["tests/app/main/views/test_send_nl.py::test_send_one_off_email_to_self_without_placeholders_redirects_to_check_page"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_one_off_has_correct_page_title"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_one_off_has_link_to_use_existing_list"
+reason = "broken by Translation issue - column name change  - see test_send_nl"
+twin = ["tests/app/main/views/test_send_nl.py::test_send_one_off_has_link_to_use_existing_list"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_one_off_has_skip_link"
+reason = "Translation issue - see test_send_nl"
+twin = ["tests/app/main/views/test_send_nl.py::test_send_one_off_has_skip_link"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_one_off_has_sticky_header_for_letter_on_non_address_placeholders"
+reason = "broken because NL Postal address validation - see test_send_nl"
+twin = ["tests/app/main/views/test_send_nl.py::test_send_one_off_has_sticky_header_for_letter_on_non_address_placeholders"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_one_off_letter_address_goes_to_next_placeholder"
+reason = "broke because PostalAddress changes"
+twin = ["tests/app/main/views/test_send_nl.py::test_send_one_off_letter_address_goes_to_next_placeholder"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_one_off_letter_address_populates_address_fields_in_session"
+reason = "NL postalAddress can only have 6 lines"
+twin = ["tests/app/main/views/test_send_nl.py::test_send_one_off_letter_address_populates_address_fields_in_session"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_one_off_letter_address_rejects_bad_addresses"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_one_off_letter_address_shows_form"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_one_off_letter_copes_with_placeholder_from_address_block"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_one_off_letter_errors_in_trial_mode"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_one_off_letter_qr_code_placeholder_too_big"
+reason = "broken by postal address change - see test_send_nl"
+twin = ["tests/app/main/views/test_send_nl.py::test_send_one_off_letter_qr_code_placeholder_too_big"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_one_off_letter_shows_international_postage"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_send_one_off_offers_link_to_upload"
+reason = "broken by Translation issue - column name change  - see test_send_nl"
+twin = ["tests/app/main/views/test_send_nl.py::test_send_one_off_offers_link_to_upload"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_should_not_allow_files_to_be_uploaded_without_the_correct_permission"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_show_all_columns_if_there_are_duplicate_recipient_columns"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_show_correct_title_and_description_for_email_sender_type"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_show_correct_title_and_description_for_sms_sender_type"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_shows_error_if_parsing_exception"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_sms_sender_is_previewed"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_test_message_can_only_be_sent_now"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_upload_csv_file_limits_number_of_columns_displayed_when_error"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_send_nl.py::test_upload_csv_file_limits_number_of_columns_displayed_when_error"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_upload_csv_file_with_bad_bfpo_postal_address_shows_check_page_with_errors"
+reason = "broken because NL Postal address validation - see test_send_nl"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_upload_csv_file_with_bad_postal_address_shows_check_page_with_errors"
+reason = "broken because NL Postal address validation - see test_send_nl"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_upload_csv_file_with_empty_message_shows_check_page_with_errors"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_upload_csv_file_with_errors_shows_check_page_with_errors"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_upload_csv_file_with_international_letters_permission_shows_appropriate_errors"
+reason = "broken because NL Postal address validation - see test_send_nl"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_upload_csv_file_with_international_letters_permission_shows_correct_postage"
+reason = "broken because NL Postal address validation - see test_send_nl"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_upload_csv_file_with_missing_columns_shows_error"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_upload_csv_file_with_very_long_placeholder_shows_check_page_with_errors"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_upload_csv_invalid_extension"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_upload_csv_size_too_big"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_upload_csvfile_with_valid_phone_shows_all_numbers"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_upload_file_with_excessive_rows"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_send_nl.py::test_upload_file_with_excessive_rows"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_upload_files_in_different_formats"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_upload_files_with_excessive_header_columns"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_send_nl.py::test_upload_files_with_excessive_header_columns"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_upload_valid_csv_shows_preview_and_table"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_send.py::test_warns_if_file_sent_already"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_service_navigation.py::test_header_navigation"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_sign_in.py::test_doesnt_redirect_to_sign_in_if_no_session_info"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_sign_in.py::test_render_sign_in_template_for_new_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_sign_in.py::test_render_sign_in_template_with_next_link_for_password_reset"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_sign_in.py::test_should_return_200_when_user_does_not_exist"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_sign_in_nl.py::test_should_return_200_when_user_does_not_exist"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_sign_in.py::test_should_return_locked_out_true_when_user_is_locked"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_sign_in_nl.py::test_should_return_locked_out_true_when_user_is_locked"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_sign_in.py::test_sign_in_explains_other_browser"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_sign_in.py::test_sign_in_explains_session_timeout"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_sign_in.py::test_when_signing_in_as_invited_user_you_cannot_accept_an_invite_for_another_email_address"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_sign_in_nl.py::test_when_signing_in_as_invited_user_you_cannot_accept_an_invite_for_another_email_address"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_cannot_upload_file_with_lots_of_email_addresses"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_cannot_upload_file_with_lots_of_email_addresses_nl"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_change_retention_period_page"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_change_retention_period_page"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_create_file_redirects_to_manage_files_page"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_create_file_redirects_to_manage_files_page"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_file_settings_pages_for_email_validation"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_file_settings_pages_for_email_validation"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_file_settings_pages_for_link_text_and_retention_period"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_file_settings_pages_for_link_text_and_retention_period"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_get_upload_file_page[email-http://example.com-200]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_get_upload_file_page"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_make_live_endpoint_calls_update_with_correct_args"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_make_live_endpoint_calls_update_with_correct_args"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_manage_a_template_email_file"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_manage_a_template_email_file"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_post_delete_to_manage_a_template_email_file_updates_and_redirects"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_post_delete_to_manage_a_template_email_file_updates_and_redirects"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_setup_template_email_files_page"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_setup_template_email_files_page"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_setup_template_email_files_page_without_manage_service_permission"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_setup_template_email_files_page_without_manage_service_permission"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_template_email_files_manage_files_page_displays_the_right_files_in_the_right_order"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_template_email_files_manage_files_page_displays_the_right_files_in_the_right_order"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_upload_file_page_requires_file"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_upload_file_page_requires_file"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_upload_file_page_validates_extensions[tests/spreadsheet_files/equivalents/EXCEL_95.XLS-.XLS is not an allowed file format]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_upload_file_page_validates_extensions"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_upload_file_page_validates_extensions[tests/test_pdf_files/big.pdf-The file must be smaller than 2MB]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_upload_file_page_validates_extensions"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_upload_file_page_validates_extensions[tests/text_files/no extension-Not an allowed file format]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_upload_file_page_validates_extensions"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_upload_file_page_validates_extensions[tests/text_files/with (brackets).txt-File name cannot contain brackets]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_upload_file_page_validates_extensions"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_upload_file_returns_error_if_file_fails_antivirus_check"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_upload_file_returns_error_if_file_is_empty"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_upload_file_returns_error_if_file_is_empty_nl"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_upload_file_returns_error_if_file_with_same_name_exists"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_upload_file_returns_error_if_file_with_same_name_exists"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_upload_file_returns_error_if_filename_is_too_long[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.pdf-101-200-False]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_upload_file_returns_error_if_filename_is_too_long"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_upload_file_returns_error_if_placeholder_exists_in_subject"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_upload_file_returns_error_if_placeholder_exists_in_subject"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_email_files.py::test_validate_retention_period"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_email_files_nl.py::test_validate_retention_period"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_folders.py::test_delete_template_folder_should_request_confirmation"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_folders.py::test_get_manage_folder_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_folders.py::test_get_manage_folder_viewing_permissions_for_users"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_folders.py::test_get_manage_folder_viewing_permissions_for_users_not_visible_for_services_with_one_user"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_folders.py::test_get_manage_folder_viewing_permissions_for_users_not_visible_when_no_manage_settings_permission"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_folders.py::test_move_folder_form_does_not_show_current_folder_hint_at_the_top_level"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_folders.py::test_move_folder_form_shows_current_folder_hint_when_in_a_folder"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_folders.py::test_radio_button_with_no_value_shows_custom_error_message"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_folders.py::test_should_filter_templates_folder_page_based_on_user_permissions"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_folders.py::test_should_show_radios_and_buttons_for_move_destination_if_correct_permissions"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_folders.py::test_should_show_templates_folder_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_folders.py::test_show_custom_error_message[data0-Select at least one template or folder]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_folders_nl.py::test_show_custom_error_message"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_folders.py::test_show_custom_error_message[data1-Select at least one template or folder]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_template_folders_nl.py::test_show_custom_error_message"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_folders.py::test_template_id_is_searchable_for_services_with_api_keys"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_history.py::test_view_template_version"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_template_history.py::test_view_template_versions_pages"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_GET_edit_service_template_for_welsh_letter"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_GET_letter_template_attach_pages"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_GET_letter_template_change_language"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_add_email_template_should_have_unsubscribe_checkbox"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_add_service_template_should_include_save_and_preview_button"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_add_service_template_should_include_save_and_preview_button"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_add_template_page_furniture"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_attach_files_button[email-None-Attach files-main.template_email_files-No files added]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_attach_files_button_email_translation"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_attach_files_button[email-email_files1-Manage files-main.template_email_files-1 file added]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_attach_files_button_email_translation"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_attach_files_button[email-email_files2-Manage files-main.template_email_files-2 files added]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_attach_files_button_email_translation"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_attach_files_button[letter-None-Attach pages-main.letter_template_attach_pages-None]"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_attach_files_button_letter_translation"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_attach_pages_with_letter_attachment_id_in_template_shows_manage_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_caseworker_sees_template_page_if_template_is_deleted"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_choose_a_template_to_copy"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_choose_a_template_to_copy_from_folder_within_service"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_choose_a_template_to_copy_passes_through_folder_id"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_choose_a_template_to_copy_when_user_has_one_service"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_choose_template_for_email_sms"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_content_count_json_endpoint"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_content_count_json_endpoint_nl"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_content_count_json_endpoint_formats_multiple_suggestions_as_list"
+reason = "SMS cost prompts are not shown in NL"
+counterpart = ["tests/app/main/views/test_templates_nl.py::test_content_count_json_endpoint_shows_no_cost_reduction_tips_nl"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_edit_email_template_should_have_unsubscribe_checkbox"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_edit_letter_template_displays_all_postage_options"
+reason = "Translation issue, and postage"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_edit_letter_template_postage_page_displays_correctly"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_edit_letter_templates_postage_updates_postage"
+reason = "broken because NL Postal address - see test_templates_nl.py"
+twin = ["tests/app/main/views/test_templates_nl.py::test_edit_letter_templates_postage_updates_postage"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_edit_service_template_archives_email_files"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_edit_service_template_archives_email_files"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_edit_service_template_asks_confirmation_when_removing_email_files"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_edit_service_template_asks_confirmation_when_removing_email_files"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_edit_service_template_does_not_allow_email_file_in_subject"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_edit_service_template_does_not_allow_email_file_in_subject_nl"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_edit_service_template_should_include_save_and_preview_button"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_edit_service_template_should_include_save_and_preview_button"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_edit_service_template_should_show_interstitial_when_making_breaking_change"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_get_delete_letter_attachment_shows_confirmation"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_get_delete_letter_attachment_shows_confirmation"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_letter_page_has_rename_link"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_letter_with_default_branding_has_add_logo_button"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_name_required_to_rename_template"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_post_attach_pages_doesnt_replace_existing_attachment_if_new_attachment_errors"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_post_attach_pages_errors_when_base_template_plus_attachment_too_long"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_post_attach_pages_errors_when_content_outside_printable_area"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_post_copy_template_with_email_files_without_contact_link_redirects"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_post_copy_template_with_email_files_without_contact_link_redirects_nl"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_be_able_to_view_a_letter_template_with_links"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_be_able_to_view_a_template_with_links"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_label_search_by_id_for_services_with_api_keys"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_not_allow_creation_of_a_template_without_correct_permission"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_not_allow_creation_of_template_through_form_without_correct_permission"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_not_allow_template_edits_without_correct_permission"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_not_create_too_big_template"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_should_not_create_too_big_template_nl"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_not_edit_letter_template_with_too_big_qr_code"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_should_not_edit_letter_template_with_too_big_qr_code"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_not_update_too_big_template"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_should_not_update_too_big_template_nl"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_show_add_template_form_if_service_has_folder_permission"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_show_delete_template_page_with_never_used_block"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_should_show_delete_template_page_with_never_used_block"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_show_delete_template_page_with_time_block"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_should_show_delete_template_page_with_time_block"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_show_delete_template_page_with_time_block_for_empty_notification"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_should_show_delete_template_page_with_time_block_for_empty_notification"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_show_empty_page_when_no_templates"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_show_hint_once_template_redacted"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_show_interstitial_when_making_breaking_change_to_sms_template"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_show_live_search_if_list_of_templates_taller_than_screen"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_show_message_before_redacting_template"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_show_message_with_prefix_hint_if_enabled_for_service"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_show_new_template_choices_if_service_has_folder_permission"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_show_page_for_a_deleted_template"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_show_page_for_email_template"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_show_page_for_sms_template"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_should_show_page_for_sms_template"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_show_page_to_rename_template"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_should_show_redact_template"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_templates_nl.py::test_should_show_redact_template"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_user_with_only_send_and_view_sees_letter_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_view_letter_template_displays_change_language_button"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_templates.py::test_view_letter_template_displays_postage"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_tour.py::test_post_tour_step_raises_validation_error_for_form_error"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_tour.py::test_should_200_for_check_tour_notification"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_tour.py::test_should_200_for_get_tour_step"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_tour.py::test_should_200_for_tour_start"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_two_factor.py::test_should_render_two_factor_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_two_factor.py::test_two_factor_email_link_has_expired"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_two_factor.py::test_two_factor_email_link_is_already_used"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_two_factor.py::test_two_factor_email_link_when_user_is_locked_out"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_two_factor.py::test_two_factor_email_sent_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_two_factor.py::test_two_factor_sms_should_return_error_if_new_password_encrypted_with_wrong_key"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_two_factor_nl.py::test_two_factor_sms_should_return_error_if_new_password_encrypted_with_wrong_key"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_two_factor.py::test_two_factor_sms_should_return_error_if_new_password_not_encrypted"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_two_factor_nl.py::test_two_factor_sms_should_return_error_if_new_password_not_encrypted"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_two_factor.py::test_two_factor_webauthn_should_have_auth_signin_button"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_two_factor.py::test_valid_two_factor_email_link_shows_interstitial"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_unsubscribe_requests.py::test_no_unsubscribe_request_reports_summary_to_display"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_unsubscribe_requests.py::test_non_existing_unsubscribe_request_report_batch_id_returns_404"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_unsubscribe_requests.py::test_unsubscribe_confirmation_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_unsubscribe_requests.py::test_unsubscribe_example_confirmation_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_unsubscribe_requests.py::test_unsubscribe_example_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_unsubscribe_requests.py::test_unsubscribe_landing_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_unsubscribe_requests.py::test_unsubscribe_request_not_found"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_unsubscribe_requests.py::test_unsubscribe_request_report_for_processed_batched_reports"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_unsubscribe_requests.py::test_unsubscribe_request_report_for_unbatched_reports"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_unsubscribe_requests.py::test_unsubscribe_request_report_for_unprocessed_batched_reports"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_unsubscribe_requests.py::test_unsubscribe_request_reports_summary"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_verify.py::test_should_return_verify_template"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_verify.py::test_verify_email_redirects_to_sign_in_if_user_active"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_verify_nl.py::test_verify_email_redirects_to_sign_in_if_user_active"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_verify.py::test_verify_email_shows_flash_message_if_token_expired"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_verify_nl.py::test_verify_email_shows_flash_message_if_token_expired"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_webauthn_credentials.py::test_complete_register_clears_session"
+reason = "Translation issue"
+twin = ["tests/app/main/views/test_webauthn_credentials_nl.py::test_complete_register_clears_session"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_change_your_mobile_number_page_doesnt_show_delete_link_if_user_has_no_mobile_number"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_change_your_mobile_number_page_shows_delete_link_if_user_on_email_auth"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_confirm_delete_mobile_number"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_confirm_delete_security_key"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_delete_security_key_handles_last_credential_error"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_get_your_account_get_emails_about_new_features"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_get_your_account_take_part_in_user_research"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_non_gov_user_cannot_see_change_email_link"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_overview_page_change_links_for_regular_user"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_overview_page_shows_disable_for_platform_admin"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_overview_page_shows_security_keys_if_user_they_can_use_webauthn"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_platform_admin_can_see_disable_platform_admin_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_should_not_allow_urls_in_name"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_should_redirect_after_email_change"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_should_render_change_email_continue_after_authenticate_email"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_should_show_authenticate_after_email_change"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_should_show_authenticate_after_mobile_number_change"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_should_show_confirm_after_mobile_number_change"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_should_show_email_page"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_should_show_errors_if_new_email_address_does_not_validate"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_should_show_manage_security_key_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_should_show_mobile_number_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_should_show_name_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_should_show_overview_page"
+reason = "email_domains.txt change breaks this."
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_should_show_password_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_should_show_security_keys_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/test_your_account.py::test_shows_delete_link_for_security_key"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_contact_list.py::test_confirm_delete_contact_list"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_contact_list.py::test_upload_contact_list_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_contact_list.py::test_upload_csv_file_shows_error_banner"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_contact_list.py::test_upload_csv_file_shows_error_banner_for_too_many_rows"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_contact_list.py::test_upload_csv_shows_error_with_invalid_extension"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_contact_list.py::test_upload_csv_shows_ok_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_contact_list.py::test_upload_csv_shows_trial_mode_error"
+reason = "Dutch phone number implementation breaks this test"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_contact_list.py::test_view_contact_list"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_contact_list.py::test_view_jobs_for_contact_list"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_hub.py::test_all_users_have_upload_contact_list"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_hub.py::test_get_upload_hub_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_hub.py::test_get_upload_hub_with_no_uploads"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_hub.py::test_get_uploaded_letters"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_hub.py::test_upload_letters_button_only_with_letters_permission"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_hub.py::test_uploads_page_shows_contact_lists_first"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_hub.py::test_uploads_page_shows_scheduled_jobs"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_get_upload_letter"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_post_choose_upload_letter_attachment_when_file_is_malformed"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_post_choose_upload_letter_when_file_is_malformed"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_post_upload_letter_redirects_for_valid_file"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_post_upload_letter_shows_letter_preview_for_invalid_file"
+reason = "broken because NL Postal address - see test_upload_letter_nl.py"
+twin = ["tests/app/main/views/uploads/test_upload_letter_nl.py::test_post_upload_letter_shows_letter_preview_for_invalid_file"]
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_post_upload_letter_shows_letter_preview_for_valid_file"
+reason = "PostalAddress postage changes"
+twin = ["tests/app/main/views/uploads/test_upload_letter_nl.py::test_post_upload_letter_shows_letter_preview_for_valid_file"]
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_post_upload_letter_with_invalid_file"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_send_uploaded_letter_sends_letter_and_redirects_to_notification_page"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_upload_international_letter_shows_preview_with_no_choice_of_postage"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_uploaded_letter_preview_displays_all_postage_for_service_with_permission"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_uploaded_letter_preview_does_not_show_send_button_if_service_in_trial_mode"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_uploading_a_letter_attachment_errors_when_file_is_too_big"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_uploading_a_letter_attachment_shows_error_when_file_contains_virus"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_uploading_a_letter_attachment_shows_error_when_file_is_not_a_pdf"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_uploading_a_letter_attachment_shows_error_when_no_file_uploaded"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_uploading_a_letter_errors_when_file_is_too_big"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_uploading_a_letter_shows_error_when_file_contains_virus"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_uploading_a_letter_shows_error_when_file_is_not_a_pdf"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_uploading_a_letter_shows_error_when_no_file_uploaded"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/test_navigation.py::test_a_page_should_have_selected_header_navigation_item"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/test_navigation.py::test_a_page_should_nave_selected_navigation_item"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/test_navigation.py::test_a_page_should_nave_selected_org_navigation_item"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/test_navigation.py::test_a_page_should_nave_selected_platform_admin_navigation_item"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/test_navigation.py::test_caseworkers_get_caseworking_navigation"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/test_navigation.py::test_caseworkers_see_jobs_nav_if_jobs_exist"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/test_navigation.py::test_make_this_service_live_link_is_shown_in_limited_circumstances"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/test_navigation.py::test_make_your_service_live_link_shows_if_service_is_in_trial_mode_and_user_has_manage_settings_permission"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/test_navigation.py::test_navigation_and_custom_error_displayed_on_notification_page_404"
+reason = "Translation issue"
+twin = ["tests/app/test_navigation_nl.py::test_navigation_and_custom_error_displayed_on_notification_page_404_nl"]
+
+[[test]]
+nodeid = "tests/app/test_navigation.py::test_navigation_displayed_on_service_page_404"
+reason = "Translation issue"
+twin = ["tests/app/test_navigation_nl.py::test_navigation_displayed_on_service_page_404"]
+
+[[test]]
+nodeid = "tests/app/utils/test_branding.py::test_current_email_branding_is_not_displayed_in_email_branding_pool_options"
+reason = "govuk brandings were deleted"
+twin = ["tests/app/utils/test_branding_nl.py::test_current_email_branding_is_not_displayed_in_email_branding_pool_options"]
+
+[[test]]
+nodeid = "tests/app/utils/test_branding.py::test_get_choices_service_not_assigned_to_org"
+reason = "govuk brandings were deleted"
+
+[[test]]
+nodeid = "tests/app/utils/test_branding.py::test_get_email_choices_branding_name_in_use"
+reason = "govuk brandings were deleted"
+twin = ["tests/app/utils/test_branding_nl.py::test_get_email_choices_branding_name_in_use"]
+
+[[test]]
+nodeid = "tests/app/utils/test_branding.py::test_get_email_choices_org_has_default_branding"
+reason = "govuk brandings were deleted"
+twin = ["tests/app/utils/test_branding_nl.py::test_get_email_choices_org_has_default_branding"]
+
+[[test]]
+nodeid = "tests/app/utils/test_branding.py::test_get_email_choices_service_assigned_to_org"
+reason = "govuk brandings were deleted"
+
+[[test]]
+nodeid = "tests/app/utils/test_templates.py::test_email_preview_shows_from_name"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/utils/test_templates.py::test_email_preview_shows_reply_to_address"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/utils/test_templates.py::test_email_preview_template_doesnt_error_on_empty_subject"
+reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/utils/test_templates.py::test_letter_image_renderer"
+reason = "Translation issue, and postage changes"
+twin = ["tests/app/utils/test_templates_nl.py::test_letter_image_renderer"]
+
+[[test]]
+nodeid = "tests/app/utils/test_templates.py::test_letter_image_renderer_passes_postage_to_html_attribute"
+reason = "Translation issue, and postage changes"
+twin = ["tests/app/utils/test_templates_nl.py::test_letter_image_renderer_passes_postage_to_html_attribute"]
+
+[[test]]
+nodeid = "tests/app/utils/test_templates.py::test_letter_image_renderer_postage_can_be_overridden"
+reason = "Postage changes"
+twin = ["tests/app/utils/test_templates_nl.py::test_letter_image_renderer_postage_can_be_overridden"]
+
+[[test]]
+nodeid = "tests/app/utils/test_templates.py::test_letter_image_renderer_requires_valid_postage"
+reason = "Postage changes"
+twin = ["tests/app/utils/test_templates_nl.py::test_letter_image_renderer_requires_valid_postage"]
+
+[[test]]
+nodeid = "tests/app/utils/test_templates.py::test_letter_image_renderer_shows_international_post"
+reason = "Postage changes"
+twin = ["tests/app/utils/test_templates_nl.py::test_letter_image_renderer_shows_international_post"]
+
+[[test]]
+nodeid = "tests/templates/components/test_radios_with_images.py::test_govuk_frontend_jinja_overrides_on_design_system_v6"
+reason = "[TODO] REMOVE/RETEST AFTER SYNCING UPSTREAM"

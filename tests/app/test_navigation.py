@@ -511,7 +511,6 @@ def test_raises_on_invalid_navigation_item(client_request, navigation_instance):
     navigation_instance.is_selected("foo")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "endpoint, selected_nav_item",
     [
@@ -535,7 +534,6 @@ def test_a_page_should_nave_selected_navigation_item(
     assert selected_nav_items[0].text.strip() == selected_nav_item
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "endpoint, selected_nav_item",
     [
@@ -554,7 +552,6 @@ def test_a_page_should_have_selected_header_navigation_item(
     assert selected_nav_items[0].text.strip() == selected_nav_item
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "endpoint, selected_nav_item",
     [
@@ -578,7 +575,6 @@ def test_a_page_should_nave_selected_org_navigation_item(
     assert selected_nav_items[0].text.strip() == selected_nav_item
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "endpoint, selected_nav_item",
     [
@@ -628,7 +624,6 @@ def test_navigation_urls(
     ]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_caseworkers_get_caseworking_navigation(
     client_request,
     mock_get_template_folders,
@@ -644,7 +639,6 @@ def test_caseworkers_get_caseworking_navigation(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_caseworkers_see_jobs_nav_if_jobs_exist(
     client_request,
     mock_get_service_templates,
@@ -660,7 +654,6 @@ def test_caseworkers_see_jobs_nav_if_jobs_exist(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_make_this_service_live_link_is_shown_in_limited_circumstances(
     client_request,
     service_one,
@@ -688,7 +681,6 @@ def test_make_this_service_live_link_is_shown_in_limited_circumstances(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_make_your_service_live_link_shows_if_service_is_in_trial_mode_and_user_has_manage_settings_permission(
     client_request,
     service_one,
@@ -715,7 +707,6 @@ def test_make_your_service_live_link_shows_if_service_is_in_trial_mode_and_user_
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_navigation_displayed_on_service_page_404(
     client_request,
     mock_get_job_doesnt_exist,
@@ -732,7 +723,6 @@ def test_navigation_displayed_on_service_page_404(
     assert len(page.select("nav.navigation .navigation__item")) == 8
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_navigation_and_custom_error_displayed_on_notification_page_404(
     client_request,
     mocker,

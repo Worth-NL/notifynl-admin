@@ -35,7 +35,6 @@ def _folder(name, folder_id=None, parent=None, users_with_permission=None):
     }
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     (
         "expected_title_tag,"
@@ -486,7 +485,6 @@ def test_should_show_templates_folder_page(
     mock_get_service_templates.assert_called_once_with(SERVICE_ONE_ID)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_template_id_is_searchable_for_services_with_api_keys(
     client_request,
     mock_get_template_folders,
@@ -584,7 +582,6 @@ def test_can_create_email_template_with_parent_folder(client_request, mock_creat
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_get_manage_folder_page(
     client_request, active_user_with_permissions, service_one, mock_get_template_folders, mocker
 ):
@@ -610,7 +607,6 @@ def test_get_manage_folder_page(
     assert expected_delete_url in delete_link["href"]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_get_manage_folder_viewing_permissions_for_users(
     client_request,
     active_user_with_permissions,
@@ -652,7 +648,6 @@ def test_get_manage_folder_viewing_permissions_for_users(
     assert "Test User" in page.select_one("label[for=users_with_permission-1]").text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_get_manage_folder_viewing_permissions_for_users_not_visible_when_no_manage_settings_permission(
     client_request, active_user_with_permissions, service_one, mock_get_template_folders, mocker
 ):
@@ -695,7 +690,6 @@ def test_get_manage_folder_viewing_permissions_for_users_not_visible_when_no_man
     assert len(checkboxes) == 0
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_get_manage_folder_viewing_permissions_for_users_not_visible_for_services_with_one_user(
     client_request, active_user_with_permissions, service_one, mock_get_template_folders, mocker
 ):
@@ -939,7 +933,6 @@ def test_manage_folder_users_doesnt_change_permissions_current_user_cannot_manag
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_delete_template_folder_should_request_confirmation(
     client_request,
     service_one,
@@ -1109,7 +1102,6 @@ def test_should_not_show_radios_and_buttons_for_move_destination_if_incorrect_pe
     assert not page.select("button[name=operation]")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_radios_and_buttons_for_move_destination_if_correct_permissions(
     client_request,
     service_one,
@@ -1259,7 +1251,6 @@ def test_should_not_be_able_to_move_to_existing_folder_if_dont_have_permission(
     assert mock_move_to_template_folder.called is expected_called
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_move_folder_form_shows_current_folder_hint_when_in_a_folder(
     client_request,
     service_one,
@@ -1284,7 +1275,6 @@ def test_move_folder_form_shows_current_folder_hint_when_in_a_folder(
     assert normalize_spaces(page.select("div#move_to_folder_radios div .govuk-radios__hint")) == "current folder"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_move_folder_form_does_not_show_current_folder_hint_at_the_top_level(
     client_request,
     service_one,
@@ -1505,7 +1495,6 @@ def test_should_be_able_to_move_to_new_folder(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_radio_button_with_no_value_shows_custom_error_message(
     client_request,
     service_one,
@@ -1534,15 +1523,13 @@ def test_radio_button_with_no_value_shows_custom_error_message(
     "data, error_msg",
     [
         # nothing selected when moving
-        pytest.param(
+        (
             {"operation": "move-to-new-folder", "templates_and_folders": [], "move_to_new_folder_name": "foo"},
             "Select at least one template or folder",
-            marks=pytest.mark.skip(reason="[NOTIFYNL] Translation issue"),
         ),
-        pytest.param(
+        (
             {"operation": "move-to-existing-folder", "templates_and_folders": [], "move_to": PARENT_FOLDER_ID},
             "Select at least one template or folder",
-            marks=pytest.mark.skip(reason="[NOTIFYNL] Translation issue"),
         ),
         # api error (eg moving folder to itself)
         (
@@ -1583,7 +1570,6 @@ def test_show_custom_error_message(
     assert page.select_one("div.banner-dangerous").text.strip() == error_msg
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "extra_args,expected_displayed_items, expected_items, expected_empty_message ",
     [

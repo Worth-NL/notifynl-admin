@@ -84,7 +84,6 @@ def mock_complex_templates_and_folders(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "permissions, expected_message",
     (
@@ -116,7 +115,6 @@ def test_should_show_empty_page_when_no_templates(
     assert page.select_one("#add_new_template_form")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_add_template_form_if_service_has_folder_permission(
     client_request,
     service_one,
@@ -278,7 +276,6 @@ def test_should_not_show_live_search_if_list_of_templates_fits_onscreen(
     assert not page.select(".live-search")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_live_search_if_list_of_templates_taller_than_screen(
     client_request,
     mock_get_template_folders,
@@ -298,7 +295,6 @@ def test_should_show_live_search_if_list_of_templates_taller_than_screen(
     assert len(page.select(search["data-targets"])) == len(page.select("#template-list .govuk-label")) == 14
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_label_search_by_id_for_services_with_api_keys(
     client_request,
     mock_get_template_folders,
@@ -339,7 +335,6 @@ def test_should_show_live_search_if_service_has_lots_of_folders(
     assert count_of_templates == 4
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "service_permissions, expected_values, expected_labels",
     (
@@ -419,7 +414,6 @@ def test_choose_template_interruptible(
     assert mocker.call("InterruptibleChildRenderingGovukNestedRadiosField") in mock_interruptible.mock_calls
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "custom_email_sender_name, expected_email_from",
     (
@@ -481,7 +475,6 @@ def test_should_show_page_for_email_template_with_unsubscribe_link(
     assert normalize_spaces(unsubscribe_link.text) == "Unsubscribe from these emails"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "permissions, template_content, expected_hint_text",
     (
@@ -583,7 +576,6 @@ def test_should_show_page_for_one_template(
     mock_get_service_template.assert_called_with(SERVICE_ONE_ID, template_id, None)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "template_type",
     (
@@ -655,7 +647,6 @@ def test_edit_email_template_should_update_unsubscribe(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "template_type",
     (
@@ -711,7 +702,6 @@ def test_add_email_template_should_add_unsubscribe(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "template_type",
     (
@@ -736,7 +726,6 @@ def test_add_service_template_should_include_save_and_preview_button(
     assert "Save and preview" in page.text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "template_type",
     (
@@ -766,7 +755,6 @@ def test_editing_letter_template_should_have_hidden_name_field(
     assert name_input["type"] == "hidden"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_GET_edit_service_template_for_welsh_letter(
     client_request, mock_get_service_letter_template_welsh_language, fake_uuid, service_one
 ):
@@ -803,7 +791,6 @@ def test_caseworker_redirected_to_set_sender_for_one_off(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2020-01-01 15:00")
 def test_caseworker_sees_template_page_if_template_is_deleted(
     client_request,
@@ -853,7 +840,6 @@ def test_user_with_only_send_and_view_redirected_to_set_sender_for_one_off(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "permissions",
     (
@@ -906,7 +892,6 @@ def test_letter_page_has_rename_link(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "permissions",
     (
@@ -940,7 +925,6 @@ def test_user_with_only_send_and_view_sees_letter_page(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "letter_branding, expected_link, expected_link_text",
     (
@@ -990,7 +974,6 @@ def test_letter_with_default_branding_has_add_logo_button(
     assert edit_links[0].text == expected_link_text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "template_postage,expected_result",
     [
@@ -1066,7 +1049,6 @@ def test_view_letter_template_does_not_display_send_button_if_template_over_10_p
     assert page.select_one("h1", {"data-error-type": "letter-too-long"})
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_view_letter_template_displays_change_language_button(
     client_request,
     service_one,
@@ -1097,7 +1079,6 @@ def test_view_letter_template_displays_change_language_button(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_GET_letter_template_change_language(
     client_request, service_one, fake_uuid, mock_get_service_letter_template, active_user_with_permissions
 ):
@@ -1382,7 +1363,6 @@ def test_POST_letter_template_confirm_remove_welsh_resets_english_subject_and_co
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_GET_letter_template_attach_pages(client_request, service_one, fake_uuid, mock_get_service_letter_template):
     page = client_request.get(
         "main.letter_template_attach_pages",
@@ -1409,7 +1389,6 @@ def test_GET_letter_template_attach_pages_404s_if_invalid_template_id(client_req
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_post_attach_pages_errors_when_content_outside_printable_area(
     client_request,
     fake_uuid,
@@ -1468,7 +1447,6 @@ def test_post_attach_pages_errors_when_content_outside_printable_area(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_post_attach_pages_errors_when_base_template_plus_attachment_too_long(
     client_request,
     api_user_active,
@@ -1607,7 +1585,6 @@ def test_post_attach_pages_archives_existing_attachment_when_it_exists(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_post_attach_pages_doesnt_replace_existing_attachment_if_new_attachment_errors(
     client_request,
     fake_uuid,
@@ -1697,7 +1674,6 @@ def test_save_letter_attachment_saves_to_s3_and_db_and_redirects(notify_admin, s
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_attach_pages_with_letter_attachment_id_in_template_shows_manage_page(
     mock_get_service_letter_template_with_attachment, client_request, service_one
 ):
@@ -1749,7 +1725,6 @@ def test_post_delete_letter_attachment_calls_archive_letter_attachment(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_get_delete_letter_attachment_shows_confirmation(
     mock_get_service_letter_template_with_attachment,
     client_request,
@@ -1768,7 +1743,6 @@ def test_get_delete_letter_attachment_shows_confirmation(
     assert page.select_one("h1").text.strip() == "original file.pdf"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_edit_letter_template_postage_page_displays_correctly(
     client_request,
     service_one,
@@ -1786,7 +1760,6 @@ def test_edit_letter_template_postage_page_displays_correctly(
     assert page.select("input[checked]")[0].attrs["value"] == "netherlands"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue, and postage ")
 def test_edit_letter_template_displays_all_postage_options(
     client_request,
     service_one,
@@ -1825,7 +1798,6 @@ def test_edit_letter_template_postage_page_404s_if_template_is_not_a_letter(
     assert page.select_one("h1").text.strip() != "Edit postage"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] broken because NL Postal address - see test_templates_nl.py")
 def test_edit_letter_templates_postage_updates_postage(
     client_request,
     service_one,
@@ -1846,7 +1818,6 @@ def test_edit_letter_templates_postage_updates_postage(
     mock_update_template_postage.assert_called_with(SERVICE_ONE_ID, fake_uuid, postage="first")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "permissions, links_to_be_shown, permissions_warning_to_be_shown",
     [
@@ -1914,7 +1885,6 @@ def test_should_be_able_to_view_a_template_with_links(
     assert normalize_spaces(page.select_one("main p").text) == (permissions_warning_to_be_shown or "To: phone number")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_be_able_to_view_a_letter_template_with_links(
     client_request,
     mock_get_service_letter_template,
@@ -2182,7 +2152,6 @@ def test_should_let_letter_contact_block_be_changed_for_the_template(
         (False, None),
     ],
 )
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_message_with_prefix_hint_if_enabled_for_service(
     client_request, mock_get_service_template, service_one, fake_uuid, prefix_sms, expected_hint
 ):
@@ -2431,7 +2400,6 @@ def test_choosing_letter_creates(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_choose_a_template_to_copy(
     client_request,
     mock_get_service_templates,
@@ -2488,7 +2456,6 @@ def test_choose_a_template_to_copy(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_choose_a_template_to_copy_passes_through_folder_id(
     client_request,
     mock_get_service_templates,
@@ -2549,7 +2516,6 @@ def test_choose_a_template_to_copy_passes_through_folder_id(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_choose_a_template_to_copy_when_user_has_one_service(
     client_request,
     mock_get_service_templates,
@@ -2587,7 +2553,6 @@ def test_choose_a_template_to_copy_when_user_has_one_service(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_choose_a_template_to_copy_from_folder_within_service(
     client_request,
     mock_get_template_folders,
@@ -2890,7 +2855,6 @@ def test_post_copy_template(
     ]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_post_copy_template_with_email_files_without_contact_link_redirects(
     client_request,
     active_user_with_permissions,
@@ -3155,7 +3119,6 @@ def test_copy_letter_template_with_letter_attachment(
     ]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "template_type, expected_page_heading",
     [
@@ -3213,7 +3176,6 @@ def test_choose_template_for_letter(
     assert mock_get_template_folders.called
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "service_permissions, data, expected_error",
     (
@@ -3268,7 +3230,6 @@ def test_should_not_allow_creation_of_template_through_form_without_correct_perm
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize("method", ("get", "post"))
 @pytest.mark.parametrize(
     "type_of_template, expected_status, expected_error",
@@ -3342,7 +3303,6 @@ def test_should_redirect_to_one_off_if_template_type_is_letter(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_page_to_rename_template(
     client_request,
     mock_get_service_letter_template,
@@ -3388,7 +3348,6 @@ def test_should_show_rename_template(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_name_required_to_rename_template(
     client_request,
     mock_get_service_letter_template,
@@ -3480,7 +3439,6 @@ def test_should_redirect_when_saving_a_template(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_not_allow_template_edits_without_correct_permission(
     client_request,
     mock_get_service_template,
@@ -3506,7 +3464,6 @@ def test_should_not_allow_template_edits_without_correct_permission(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "old_content, new_content, expected_paragraphs, expected_placeholders",
     [
@@ -3588,7 +3545,6 @@ def test_should_show_interstitial_when_making_breaking_change_to_sms_template(
         assert page.select_one(f"input[name={key}]")["value"] == value
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "template_type, additional_data",
     (
@@ -3697,7 +3653,6 @@ def test_edit_service_template_should_show_interstitial_when_making_breaking_cha
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "old_content, new_content, extra_email_file, expected_paragraphs, expected_placeholders",
     [
@@ -3946,7 +3901,6 @@ def test_removing_placeholders_is_not_a_breaking_change(
     assert mock_update_service_template.called is True
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_not_create_too_big_template(
     client_request,
     mock_create_service_template,
@@ -3969,7 +3923,6 @@ def test_should_not_create_too_big_template(
     assert mock_create_service_template.called is False
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_not_update_too_big_template(
     client_request,
     mock_get_service_template,
@@ -3996,7 +3949,6 @@ def test_should_not_update_too_big_template(
     assert mock_update_service_template.called is False
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_not_edit_letter_template_with_too_big_qr_code(
     client_request,
     mock_get_service_letter_template,
@@ -4089,7 +4041,6 @@ def test_should_redirect_when_saving_a_template_email(
         ),
     ),
 )
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_edit_service_template_archives_email_files(
     client_request,
     fake_uuid,
@@ -4161,7 +4112,6 @@ def test_edit_service_template_archives_email_files(
     assert normalize_spaces(page.select(".banner-default-with-tick")[0].text) == expected_banner_text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_edit_service_template_does_not_allow_email_file_in_subject(
     client_request,
     fake_uuid,
@@ -4379,7 +4329,6 @@ def test_cannot_edit_welsh_content_for_email_or_sms_templates(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_delete_template_page_with_time_block(
     client_request, mock_get_service_template, mock_get_template_folders, mocker, fake_uuid
 ):
@@ -4402,7 +4351,6 @@ def test_should_show_delete_template_page_with_time_block(
     mock_get_service_template.assert_called_with(SERVICE_ONE_ID, fake_uuid, None)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_delete_template_page_with_time_block_for_empty_notification(
     client_request, mock_get_service_template, mock_get_template_folders, mocker, fake_uuid
 ):
@@ -4427,7 +4375,6 @@ def test_should_show_delete_template_page_with_time_block_for_empty_notification
     mock_get_service_template.assert_called_with(SERVICE_ONE_ID, fake_uuid, None)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_delete_template_page_with_never_used_block(
     client_request,
     mock_get_service_template,
@@ -4504,7 +4451,6 @@ def test_should_redirect_when_deleting_a_template(
     mock_delete_service_template.assert_called_with(SERVICE_ONE_ID, TEMPLATE_ONE_ID)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2016-01-01T15:00")
 def test_should_show_page_for_a_deleted_template(
     client_request,
@@ -4607,7 +4553,6 @@ def test_route_invalid_permissions(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "template_type, expected",
     (
@@ -4746,7 +4691,6 @@ def test_should_create_sms_template_without_downgrading_unicode_characters(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_message_before_redacting_template(
     client_request,
     mock_get_service_template,
@@ -4768,7 +4712,6 @@ def test_should_show_message_before_redacting_template(
     assert form["method"] == "post"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_redact_template(
     client_request,
     mock_get_service_template,
@@ -4812,7 +4755,6 @@ def test_redact_template_checks_folder_permission_before_calling_api(
     mock_redact_template.assert_not_called()
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_hint_once_template_redacted(
     client_request,
     mocker,
@@ -4924,7 +4866,6 @@ def test_set_template_sender_escapes_letter_contact_block_names(
     assert "<script>" not in radio_text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "prefix_sms, content, expected_message, expected_class",
     (
@@ -5105,7 +5046,6 @@ def test_content_count_json_endpoint(
         assert expected_class is None
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] SMS cost prompts are not shown in NL")
 def test_content_count_json_endpoint_formats_multiple_suggestions_as_list(
     client_request,
 ):
@@ -5186,15 +5126,14 @@ def test_letter_attachment_preview_image_shows_overlay_when_content_outside_prin
 @pytest.mark.parametrize(
     "template_type, email_files, expected_button_text, expected_button_endpoint, expected_hint",
     (
-        pytest.param(
+        (
             "email",
             None,
             "Attach files",
             "main.template_email_files",
             "No files added",
-            marks=pytest.mark.skip(reason="[NOTIFYNL] Translation issue"),
         ),
-        pytest.param(
+        (
             "email",
             [
                 {
@@ -5207,9 +5146,8 @@ def test_letter_attachment_preview_image_shows_overlay_when_content_outside_prin
             "Manage files",
             "main.template_email_files",
             "1 file added",
-            marks=pytest.mark.skip(reason="[NOTIFYNL] Translation issue"),
         ),
-        pytest.param(
+        (
             "email",
             [
                 {
@@ -5228,7 +5166,6 @@ def test_letter_attachment_preview_image_shows_overlay_when_content_outside_prin
             "Manage files",
             "main.template_email_files",
             "2 files added",
-            marks=pytest.mark.skip(reason="[NOTIFYNL] Translation issue"),
         ),
         (
             "sms",
@@ -5237,13 +5174,12 @@ def test_letter_attachment_preview_image_shows_overlay_when_content_outside_prin
             None,
             None,
         ),
-        pytest.param(
+        (
             "letter",
             None,
             "Attach pages",
             "main.letter_template_attach_pages",
             None,
-            marks=pytest.mark.skip(reason="[NOTIFYNL] Translation issue"),
         ),
     ),
 )

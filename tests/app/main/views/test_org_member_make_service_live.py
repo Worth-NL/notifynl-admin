@@ -96,7 +96,6 @@ test_user_auth_combinations = (
 )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(*test_user_auth_combinations)
 def test_get_org_member_make_service_live_start(
     client_request,
@@ -156,7 +155,6 @@ def test_make_service_live_start_with_no_organisation(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_make_service_live_start_with_no_organisation_platform_admin(
     client_request,
     service_one,
@@ -180,7 +178,6 @@ def test_make_service_live_start_with_no_organisation_platform_admin(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(*test_user_auth_combinations)
 def test_get_org_member_make_service_live_service_name(
     client_request,
@@ -219,7 +216,6 @@ def test_get_org_member_make_service_live_service_name(
         assert button.text.strip() == "Continue"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_post_org_member_make_service_live_service_name_error_summary(
     client_request,
     service_one,
@@ -356,7 +352,6 @@ def test_post_org_member_make_service_live_service_name(
     assert mock_notify.call_args_list == expected_notify_calls
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(*test_user_auth_combinations)
 def test_get_org_member_make_service_live_unique_service(
     client_request,
@@ -394,7 +389,6 @@ def test_get_org_member_make_service_live_unique_service(
         assert button.text.strip() == "Continue"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_post_org_member_make_service_live_unique_service_error_summary(
     client_request,
     service_one,
@@ -479,7 +473,6 @@ def test_post_org_member_make_service_live_unique_service(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "data, expected_redirect",
     (
@@ -531,7 +524,6 @@ def test_get_org_member_make_service_live_contact_user(
         )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(*test_user_auth_combinations)
 def test_get_org_member_make_service_live_decision(
     client_request,
@@ -573,7 +565,6 @@ def test_get_org_member_make_service_live_decision(
         ]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "post_data, expected_error_message",
     (

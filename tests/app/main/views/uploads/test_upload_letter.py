@@ -13,7 +13,6 @@ from tests.conftest import (
 )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_get_upload_letter(client_request):
     page = client_request.get("main.upload_letter", service_id=SERVICE_ONE_ID)
 
@@ -25,7 +24,6 @@ def test_get_upload_letter(client_request):
     assert normalize_spaces(page.select_one("input[type=file]")["data-button-text"]) == "Choose file"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "extra_permissions, expected_allow_international",
     (
@@ -114,7 +112,6 @@ def test_post_upload_letter_redirects_for_valid_file(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] PostalAddress postage changes")
 def test_post_upload_letter_shows_letter_preview_for_valid_file(
     active_user_with_permissions,
     service_one,
@@ -193,7 +190,6 @@ def test_post_upload_letter_shows_letter_preview_for_valid_file(
         )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_upload_international_letter_shows_preview_with_no_choice_of_postage(
     active_user_with_permissions,
     service_one,
@@ -284,7 +280,6 @@ def test_letter_attachment_pages_404_for_non_letter_template(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_uploading_a_letter_shows_error_when_file_is_not_a_pdf(
     client_request, service_one, mocker, mock_get_service_letter_template
 ):
@@ -305,7 +300,6 @@ def test_uploading_a_letter_shows_error_when_file_is_not_a_pdf(
     assert normalize_spaces(page.select_one("input[type=file]")["data-button-text"]) == "Choose file"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_uploading_a_letter_shows_error_when_no_file_uploaded(
     client_request, service_one, mock_get_service_letter_template
 ):
@@ -323,7 +317,6 @@ def test_uploading_a_letter_shows_error_when_no_file_uploaded(
     assert normalize_spaces(page.select_one("input[type=file]")["data-button-text"]) == "Choose file"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_uploading_a_letter_shows_error_when_file_contains_virus(
     client_request,
     service_one,
@@ -349,7 +342,6 @@ def test_uploading_a_letter_shows_error_when_file_contains_virus(
     mock_s3_backup.assert_not_called()
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_uploading_a_letter_errors_when_file_is_too_big(
     client_request,
     service_one,
@@ -373,7 +365,6 @@ def test_uploading_a_letter_errors_when_file_is_too_big(
     assert normalize_spaces(page.select_one("input[type=file]")["data-button-text"]) == "Choose file"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_post_choose_upload_letter_when_file_is_malformed(
     client_request,
     service_one,
@@ -397,7 +388,6 @@ def test_post_choose_upload_letter_when_file_is_malformed(
     assert normalize_spaces(page.select_one("input[type=file]")["data-button-text"]) == "Choose file"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_uploading_a_letter_attachment_shows_error_when_file_is_not_a_pdf(
     client_request, service_one, mocker, mock_get_service_letter_template
 ):
@@ -416,7 +406,6 @@ def test_uploading_a_letter_attachment_shows_error_when_file_is_not_a_pdf(
     assert page.select_one("input[type=file]")["accept"] == ".pdf"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_uploading_a_letter_attachment_shows_error_when_no_file_uploaded(
     client_request, service_one, mock_get_service_letter_template
 ):
@@ -431,7 +420,6 @@ def test_uploading_a_letter_attachment_shows_error_when_no_file_uploaded(
     assert normalize_spaces(page.select_one("input[type=file]")["data-button-text"]) == "Upload your file again"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_uploading_a_letter_attachment_shows_error_when_file_contains_virus(
     client_request,
     service_one,
@@ -454,7 +442,6 @@ def test_uploading_a_letter_attachment_shows_error_when_file_contains_virus(
     mock_s3_backup.assert_not_called()
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_uploading_a_letter_attachment_errors_when_file_is_too_big(
     client_request,
     service_one,
@@ -475,7 +462,6 @@ def test_uploading_a_letter_attachment_errors_when_file_is_too_big(
     assert normalize_spaces(page.select_one("input[type=file]")["data-button-text"]) == "Upload your file again"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_post_choose_upload_letter_attachment_when_file_is_malformed(
     client_request,
     service_one,
@@ -500,7 +486,6 @@ def test_post_choose_upload_letter_attachment_when_file_is_malformed(
     assert normalize_spaces(page.select_one("input[type=file]")["data-button-text"]) == "Upload your file again"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_post_upload_letter_with_invalid_file(
     client_request,
     fake_uuid,
@@ -561,7 +546,6 @@ def test_post_upload_letter_with_invalid_file(
     assert normalize_spaces(page.select_one("input[type=file]")["data-button-text"]) == "Upload your file again"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] broken because NL Postal address - see test_upload_letter_nl.py")
 def test_post_upload_letter_shows_letter_preview_for_invalid_file(
     client_request,
     fake_uuid,
@@ -690,7 +674,6 @@ def test_uploaded_letter_preview(
     assert page.select_one("form button")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_uploaded_letter_preview_does_not_show_send_button_if_service_in_trial_mode(
     client_request,
     fake_uuid,
@@ -748,10 +731,6 @@ def test_uploaded_letter_preview_redirects_if_file_not_in_s3(
     )
 
 
-@pytest.mark.skip(
-    reason="[NOTIFYNL] Moved to test_upload_letter_nl.py - the letter_address_placement "
-    "assertion below is NL-specific (the field doesn't exist upstream)"
-)
 @pytest.mark.parametrize(
     "invalid_pages, page_requested, overlay_expected",
     (
@@ -852,7 +831,6 @@ def test_uploaded_letter_preview_image_400s_for_bad_page_type(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_uploaded_letter_preview_displays_all_postage_for_service_with_permission(
     active_user_with_permissions,
     service_one,
@@ -923,7 +901,6 @@ def test_uploaded_letter_preview_displays_all_postage_for_service_with_permissio
     ]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "address, post_data, expected_postage",
     (

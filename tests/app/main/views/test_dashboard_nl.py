@@ -179,7 +179,7 @@ def test_service_dashboard_updates_shows_correct_totals_labels(
 
 
 @pytest.mark.parametrize("service_restricted, expected_tag", [(True, "Proefmodus"), (False, None)])
-def test_service_navigation_shows_proefmodus_tag_nl(
+def test_service_navigation_shows_if_service_is_in_trial_mode(
     mock_get_service_templates_when_no_templates_exist,
     mock_has_no_jobs,
     mock_get_unsubscribe_requests_statistics,

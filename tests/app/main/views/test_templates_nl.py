@@ -610,7 +610,7 @@ def test_content_count_json_endpoint_shows_no_cost_reduction_tips_nl(client_requ
         ({"manage_api_keys"}, "a" * 919, "Wordt in rekening gebracht als 7 SMS-berichten"),
     ),
 )
-def test_should_show_sms_fragment_count_on_template_page_nl(
+def test_should_show_page_for_sms_template(
     client_request,
     fake_uuid,
     active_user_with_permissions,

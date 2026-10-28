@@ -210,7 +210,6 @@ def test_404_if_document_not_found(
         ),
     ),
 )
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_landing_page(
     client_request,
     fake_uuid,
@@ -335,7 +334,6 @@ def test_confirm_email_page_redirects_if_confirmation_not_required(
         ),
     ),
 )
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_confirm_email_page_shows_form_if_confirmation_required(
     client_request,
     fake_uuid,
@@ -409,7 +407,6 @@ def test_confirm_email_page_shows_form_if_confirmation_required(
         ),
     ),
 )
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_confirm_email_page_shows_errors(
     client_request,
     fake_uuid,
@@ -518,7 +515,6 @@ def test_confirm_email_page_redirects_for_correct_email(
         ),
     ),
 )
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_banner_on_all_pages(
     client_request,
     fake_uuid,
@@ -579,7 +575,6 @@ def test_banner_on_all_pages(
     ],
 )
 @freeze_time("2026-01-01")
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_document_download_download_document_displays_the_right_file_metadata(
     client_request,
     fake_uuid,
