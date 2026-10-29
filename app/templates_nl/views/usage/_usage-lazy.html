@@ -1,0 +1,26 @@
+{% from "components/big-number.html" import big_number %}
+{% from "components/loading-indicator.html" import loading_indicator %}
+
+{# one root element, like _usage.html, so update-content can replace it #}
+<div>
+  <div class='govuk-grid-row'>
+    <div class='govuk-grid-column-one-third'>
+      <h2 class='heading-small'>E-mails</h2>
+      <div class="keyline-block">{{ big_number(loading_indicator(1), 'verzonden', smaller=True) }}</div>
+    </div>
+    <div class='govuk-grid-column-one-third'>
+      <h2 class='heading-small'>Sms-berichten</h2>
+      <div class="keyline-block">{{ big_number(loading_indicator(2), 'verzonden', smaller=True) }}</div>
+    </div>
+    <div class='govuk-grid-column-one-third'>
+      <h2 class='heading-small'>Brieven</h2>
+      <div class="keyline-block">{{ big_number(loading_indicator(3), 'verzonden', smaller=True) }}</div>
+    </div>
+  </div>
+  <div class='govuk-grid-row'>
+    <div class='govuk-grid-column-one-third'>
+      <h2 class='heading-small'>Berichtenbox</h2>
+      <div class="keyline-block">{{ big_number(loading_indicator(4), 'verzonden', smaller=True) }}</div>
+    </div>
+  </div>
+</div>

@@ -197,3 +197,214 @@ def test_service_navigation_shows_if_service_is_in_trial_mode(
 
     tag = page.select_one(".navigation-status-tag")
     assert (normalize_spaces(tag.text) if tag else None) == expected_tag
+
+
+def _get_usage_partials(client_request, **kwargs):
+    json_response = client_request.get_response("json_updates.usage_updates", service_id=SERVICE_ONE_ID, **kwargs)
+    json_content = json.loads(json_response.get_data(as_text=True))
+    assert json_content["stop"] == 1
+    return (
+        NotifyBeautifulSoup(json_content["usage"], "html.parser"),
+        NotifyBeautifulSoup(json_content["updated_at"], "html.parser"),
+    )
+
+
+@freeze_time("2012-03-31 12:12:12")
+def test_usage_page_shows_the_years_and_loads_the_usage_later(
+    client_request,
+    mock_get_annual_usage_for_service,
+    mock_get_monthly_usage_for_service,
+    mock_get_free_sms_fragment_limit,
+):
+    page = client_request.get("main.usage", service_id=SERVICE_ONE_ID)
+
+    assert not mock_get_monthly_usage_for_service.called
+    assert not mock_get_annual_usage_for_service.called
+    assert not mock_get_free_sms_fragment_limit.called
+
+    nav = page.select_one("ul.pill")
+    assert normalize_spaces(nav.find("a", {"aria-current": "page"}).text) == "2011 to 2012 financial year"
+    assert [normalize_spaces(link.text) for link in nav.select("a:not(.pill-item--selected)")] == [
+        "2010 to 2011 financial year",
+        "2009 to 2010 financial year",
+    ]
+
+    blocks = page.select("[data-notify-module=update-content]")
+    assert [block["data-key"] for block in blocks] == ["updated_at", "usage"]
+    assert {block["data-resource"] for block in blocks} == {
+        url_for("json_updates.usage_updates", service_id=SERVICE_ONE_ID, year=2011)
+    }
+
+    usage = page.select_one("[data-key=usage]")
+    assert [normalize_spaces(heading.text) for heading in usage.select("h2")] == [
+        "E-mails",
+        "Sms-berichten",
+        "Brieven",
+        "Berichtenbox",
+    ]
+    assert len(usage.select(".loading-indicator")) == 4
+    assert not usage.select("table")
+
+
+def test_usage_page_passes_the_year_to_usage_json(client_request):
+    page = client_request.get("main.usage", service_id=SERVICE_ONE_ID, year=2000)
+
+    assert page.select_one("[data-key=usage]")["data-resource"] == url_for(
+        "json_updates.usage_updates", service_id=SERVICE_ONE_ID, year=2000
+    )
+
+
+@pytest.mark.parametrize("endpoint", ["main.usage", "json_updates.usage_updates"])
+def test_usage_for_invalid_year(client_request, endpoint):
+    client_request.get_response(endpoint, service_id=SERVICE_ONE_ID, year="abcd", _expected_status=404)
+
+
+@freeze_time("2012-03-31 12:12:12")
+def test_usage_json(
+    client_request,
+    mock_get_annual_usage_for_service,
+    mock_get_monthly_usage_for_service,
+    mock_get_free_sms_fragment_limit,
+    mocker,
+):
+    mocker.patch("app.billing_api_client.get_usage_updated_at", return_value="2012-03-31T11:12:12+00:00")
+
+    usage, _ = _get_usage_partials(client_request)
+
+    mock_get_monthly_usage_for_service.assert_called_once_with(SERVICE_ONE_ID, 2011)
+    mock_get_annual_usage_for_service.assert_called_once_with(SERVICE_ONE_ID, 2011)
+    mock_get_free_sms_fragment_limit.assert_called_once_with(SERVICE_ONE_ID, 2011)
+
+    columns = [normalize_spaces(column.text) for column in usage.select(".govuk-grid-column-one-third")]
+    assert columns == [
+        # format_thousands keeps the comma: existing behaviour of the NL formatters, not this page
+        "E-mails 1,000 verzonden",
+        "Sms-berichten 251,800 verzonden",
+        "Brieven 100 verzonden",
+        "Berichtenbox 0 verzonden",
+    ]
+
+
+@pytest.mark.parametrize(
+    "now, expected_number_of_months",
+    [(freeze_time("2017-03-31 11:09:00.061258"), 12), (freeze_time("2017-01-01 11:09:00.061258"), 10)],
+)
+def test_usage_json_monthly_breakdown_shows_months_so_far(
+    client_request,
+    mock_get_annual_usage_for_service,
+    mock_get_monthly_usage_for_service,
+    mock_get_free_sms_fragment_limit,
+    mocker,
+    now,
+    expected_number_of_months,
+):
+    mocker.patch("app.billing_api_client.get_usage_updated_at", return_value=None)
+
+    with now:
+        usage, _ = _get_usage_partials(client_request)
+
+    assert len(usage.select_one("table").select("tr.table-row")) == expected_number_of_months
+
+
+@freeze_time("2012-03-31 12:12:12")
+def test_usage_json_monthly_breakdown(
+    client_request,
+    mock_get_annual_usage_for_service,
+    mock_get_monthly_usage_for_service,
+    mock_get_free_sms_fragment_limit,
+    mocker,
+):
+    mocker.patch("app.billing_api_client.get_usage_updated_at", return_value=None)
+
+    usage, _ = _get_usage_partials(client_request)
+
+    row_for_feb = usage.select_one("table").select("tr.table-row")[10]
+    assert [normalize_spaces(item.text) for item in row_for_feb.select(r"li.govuk-\!-font-tabular-numbers")] == [
+        "1,234 SMS-berichten",
+        "1,234 SMS-berichten",
+        "10 Nederland brieven",
+        "3 Europa brieven",
+        "6 Rest van de wereld brieven",
+        "5 Rest van de wereld brieven",
+        "7 Rest van de wereld brieven",
+    ]
+
+
+@pytest.mark.parametrize(
+    "annual_usage, expected_css_class",
+    (
+        (
+            [{"notification_type": "sms", "chargeable_units": 1, "charged_units": 1, "rate": 1, "cost": 99_999}],
+            ".big-number-smaller",
+        ),
+        (
+            [{"notification_type": "sms", "chargeable_units": 1, "charged_units": 1, "rate": 1, "cost": 100_000}],
+            ".big-number-smallest",
+        ),
+        ([{"notification_type": "email", "notifications_sent": 999_999_999}], ".big-number-smaller"),
+        ([{"notification_type": "email", "notifications_sent": 1_000_000_000}], ".big-number-smallest"),
+        ([{"notification_type": "letter", "notifications_sent": 1, "cost": 99_999}], ".big-number-smaller"),
+        ([{"notification_type": "letter", "notifications_sent": 1, "cost": 100_000}], ".big-number-smallest"),
+    ),
+)
+@freeze_time("2012-03-31 12:12:12")
+def test_usage_json_font_size(
+    client_request,
+    mock_get_monthly_usage_for_service,
+    mock_get_free_sms_fragment_limit,
+    mocker,
+    annual_usage,
+    expected_css_class,
+):
+    mocker.patch("app.billing_api_client.get_annual_usage_for_service", return_value=annual_usage)
+    mocker.patch("app.billing_api_client.get_usage_updated_at", return_value=None)
+
+    usage, _ = _get_usage_partials(client_request)
+
+    assert len(usage.select(f".govuk-grid-row {expected_css_class}")) == 4
+
+
+@freeze_time("2012-03-31 12:12:12")
+def test_usage_json_for_a_future_year(
+    client_request,
+    mock_get_annual_usage_for_service_in_future,
+    mock_get_monthly_usage_for_service_in_future,
+    mock_get_free_sms_fragment_limit,
+    mocker,
+):
+    mock_get_updated_at = mocker.patch("app.billing_api_client.get_usage_updated_at")
+
+    usage, updated_at = _get_usage_partials(client_request, year=2014)
+
+    mock_get_monthly_usage_for_service_in_future.assert_called_once_with(SERVICE_ONE_ID, 2014)
+    mock_get_annual_usage_for_service_in_future.assert_called_once_with(SERVICE_ONE_ID, 2014)
+    mock_get_free_sms_fragment_limit.assert_called_once_with(SERVICE_ONE_ID, 2014)
+    assert not mock_get_updated_at.called
+    assert normalize_spaces(updated_at.text) == ""
+    assert not usage.select("tr.table-row li.govuk-\\!-font-tabular-numbers")
+
+
+@pytest.mark.parametrize(
+    "year, updated_at, expected_text",
+    (
+        (None, "2012-03-31T11:12:12+00:00", "Laatst bijgewerkt vandaag om 12:12"),
+        (None, None, ""),
+        (2010, "2012-03-31T11:12:12+00:00", ""),
+    ),
+)
+@freeze_time("2012-03-31 12:12:12")
+def test_usage_json_shows_when_the_current_year_was_last_updated(
+    client_request,
+    mock_get_annual_usage_for_service,
+    mock_get_monthly_usage_for_service,
+    mock_get_free_sms_fragment_limit,
+    mocker,
+    year,
+    updated_at,
+    expected_text,
+):
+    mocker.patch("app.billing_api_client.get_usage_updated_at", return_value=updated_at)
+
+    _, updated_at_partial = _get_usage_partials(client_request, **({"year": year} if year else {}))
+
+    assert normalize_spaces(updated_at_partial.select_one("p.heading-aside").text) == expected_text

@@ -1375,6 +1375,11 @@ nodeid = "tests/app/main/views/test_dashboard.py::test_empty_inbox"
 reason = "Translation issue"
 
 [[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_future_usage_page"
+reason = "NL lazy-loads the usage from usage.json"
+counterpart = ["tests/app/main/views/test_dashboard_nl.py::test_usage_json_for_a_future_year"]
+
+[[test]]
 nodeid = "tests/app/main/views/test_dashboard.py::test_get_started"
 reason = "Translation issue"
 
@@ -1450,27 +1455,43 @@ reason = "Translation issue"
 
 [[test]]
 nodeid = "tests/app/main/views/test_dashboard.py::test_usage_page"
-reason = "Translation issue"
+reason = "NL lazy-loads the usage from usage.json"
+counterpart = ["tests/app/main/views/test_dashboard_nl.py::test_usage_page_shows_the_years_and_loads_the_usage_later", "tests/app/main/views/test_dashboard_nl.py::test_usage_json"]
 
 [[test]]
 nodeid = "tests/app/main/views/test_dashboard.py::test_usage_page_font_size"
-reason = "broken after removing free message limits on usage page"
+reason = "NL lazy-loads the usage from usage.json"
+counterpart = ["tests/app/main/views/test_dashboard_nl.py::test_usage_json_font_size"]
 
 [[test]]
 nodeid = "tests/app/main/views/test_dashboard.py::test_usage_page_letter_breakdown_ordered_by_postage_and_rate"
-reason = "Translation issue"
+reason = "NL lazy-loads the usage from usage.json"
+counterpart = ["tests/app/main/views/test_dashboard_nl.py::test_usage_json_monthly_breakdown"]
 
 [[test]]
 nodeid = "tests/app/main/views/test_dashboard.py::test_usage_page_monthly_breakdown"
-reason = "Translation issue"
+reason = "NL lazy-loads the usage from usage.json"
+counterpart = ["tests/app/main/views/test_dashboard_nl.py::test_usage_json_monthly_breakdown"]
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_usage_page_monthly_breakdown_shows_months_so_far"
+reason = "NL lazy-loads the usage from usage.json"
+counterpart = ["tests/app/main/views/test_dashboard_nl.py::test_usage_json_monthly_breakdown_shows_months_so_far"]
 
 [[test]]
 nodeid = "tests/app/main/views/test_dashboard.py::test_usage_page_no_sms_spend"
-reason = "Translation issue"
+reason = "NL shows no SMS free allowance or cost"
+not_applicable = "the usage page only counts the messages sent"
 
 [[test]]
 nodeid = "tests/app/main/views/test_dashboard.py::test_usage_page_with_0_free_allowance"
-reason = "Translation issue"
+reason = "NL shows no SMS free allowance or cost"
+not_applicable = "the usage page only counts the messages sent"
+
+[[test]]
+nodeid = "tests/app/main/views/test_dashboard.py::test_usage_page_with_year_argument"
+reason = "NL lazy-loads the usage from usage.json"
+counterpart = ["tests/app/main/views/test_dashboard_nl.py::test_usage_page_passes_the_year_to_usage_json", "tests/app/main/views/test_dashboard_nl.py::test_usage_json_for_a_future_year"]
 
 [[test]]
 nodeid = "tests/app/main/views/test_document_download.py::test_banner_on_all_pages"
@@ -3813,6 +3834,11 @@ reason = "Translation issue"
 [[test]]
 nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_uploading_a_letter_shows_error_when_no_file_uploaded"
 reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/notify_client/test_billing_client.py::test_get_free_sms_fragment_limit_for_year_correct_endpoint"
+reason = "NL caches the free SMS allowance, which can't encode the MagicMock the API call returns here"
+twin = ["tests/app/notify_client/test_billing_client_nl.py::test_get_free_sms_fragment_limit_for_year_correct_endpoint"]
 
 [[test]]
 nodeid = "tests/app/test_navigation.py::test_a_page_should_have_selected_header_navigation_item"
