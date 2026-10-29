@@ -4,8 +4,6 @@
 # hadolint ignore=DL3029
 FROM --platform=linux/amd64 python:3.13-slim-trixie AS base
 
-COPY --from=ghcr.io/astral-sh/uv:0.12 /uv /uvx /bin/
-
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV UV_CACHE_DIR='/tmp/uv-cache/'
@@ -13,6 +11,7 @@ ENV UV_COMPILE_BYTECODE=1
 ENV VIRTUAL_ENV="/opt/venv"
 
 RUN apt-get update \
+    && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
     libcurl4 \
     curl \
@@ -44,6 +43,9 @@ RUN npm ci --no-audit \
 
 ##### Python Build Image #####################################################
 FROM base AS python_build
+
+# uv is only needed to build the venv (and in the test image), not in the production image
+COPY --from=ghcr.io/astral-sh/uv:0.12 /uv /uvx /bin/
 
 RUN echo "Install OS dependencies for python app requirements" &&  \
     apt-get update \
@@ -92,9 +94,10 @@ FROM production AS test
 
 USER root
 
-# Node/npm are only needed here (make bootstrap-nl, web-local), not in production
+# Node/npm and uv are only needed here (make bootstrap-nl, web-local), not in production
 COPY --from=frontend_build --chown=notify:notify /usr/local/lib /usr/local/lib
 COPY --from=frontend_build --chown=notify:notify /usr/local/bin /usr/local/bin
+COPY --from=python_build /bin/uv /bin/uvx /bin/
 
 RUN echo "Install OS dependencies for test build" && \
     apt-get update && \
