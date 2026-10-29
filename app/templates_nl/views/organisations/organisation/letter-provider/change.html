@@ -13,13 +13,8 @@
 {% endblock %}
 
 {% block maincolumn_content %}
-  {% call form_wrapper() %}
-    {{ form.provider(param_extensions={
-      "fieldset": {
-        "legend": {"isPageHeading": True, "classes": "govuk-fieldset__legend--l"}
-      }
-    }) }}
-
+  {# the warnings go in the radios' hint: between the heading and the options, and read out with them #}
+  {% set warnings %}
     {{ govukWarningText({
       "text": "Brieven die nog niet naar een printleverancier zijn gestuurd, gaan naar de nieuwe printleverancier.",
       "iconFallbackText": "Waarschuwing"
@@ -31,6 +26,15 @@
         "iconFallbackText": "Waarschuwing"
       }) }}
     {% endif %}
+  {% endset %}
+
+  {% call form_wrapper() %}
+    {{ form.provider(param_extensions={
+      "fieldset": {
+        "legend": {"isPageHeading": True, "classes": "govuk-fieldset__legend--l"}
+      },
+      "hint": {"html": warnings}
+    }) }}
 
     {{ page_footer('Doorgaan') }}
   {% endcall %}

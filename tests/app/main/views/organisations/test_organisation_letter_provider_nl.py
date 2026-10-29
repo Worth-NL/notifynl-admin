@@ -263,6 +263,20 @@ def test_change_letter_provider_page_warns_about_letters_in_progress(logged_in_o
     assert "gaan naar de nieuwe printleverancier" in normalize_spaces(page.select_one(".govuk-warning-text").text)
 
 
+def test_change_letter_provider_page_shows_the_warnings_between_the_heading_and_the_options(
+    logged_in_org_member, letter_provider
+):
+    letter_provider.return_value = REST_ENDPOINT
+
+    page = logged_in_org_member.get("main.organisation_change_letter_provider", org_id=ORGANISATION_ID)
+
+    hint = page.select_one("fieldset .govuk-hint")
+    assert len(hint.select(".govuk-warning-text")) == 2
+    assert hint.find_previous("h1")
+    assert hint.find_next(class_="govuk-radios__item")
+    assert hint["id"] in page.select_one("fieldset")["aria-describedby"]
+
+
 def test_choosing_a_rest_endpoint_goes_to_its_settings(logged_in_org_member, mock_set_letter_provider):
     logged_in_org_member.post(
         "main.organisation_change_letter_provider",
