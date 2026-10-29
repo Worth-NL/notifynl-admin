@@ -253,7 +253,8 @@ def valid_phone_number(label="Mobiel telefoonnummer", international=False, sms_t
         return PhoneNumber(
             label,
             validators=[
-                DataRequired(message="Mag niet leeg zijn"),
+                # Allow empty phone number, because default auth_type is email_auth.
+                #DataRequired(message="Mag niet leeg zijn"),
                 ValidPhoneNumber(allow_international_sms=international),
             ],
         )
@@ -261,7 +262,8 @@ def valid_phone_number(label="Mobiel telefoonnummer", international=False, sms_t
         return PhoneNumber(
             label,
             validators=[
-                NotifyDataRequired(thing="een mobiel telefoonnummer"),
+                # Allow empty phone number, because default auth_type is email_auth.
+                #NotifyDataRequired(thing="een mobiel telefoonnummer"),
                 ValidPhoneNumber(
                     allow_sms_to_uk_landlines=sms_to_uk_landline,
                     allow_international_sms=international,
@@ -616,8 +618,8 @@ class RegisterUserForm(StripWhitespaceForm):
     email_address = make_email_address_field(gov_user=True, thing="uw e-mailadres")
     mobile_number = valid_phone_number(international=True)
     password = make_password_field(thing="uw wachtwoord")
-    # always register as sms type
-    auth_type = HiddenField("auth_type", default="sms_auth")
+    # always register as email type
+    auth_type = HiddenField("auth_type", default="email_auth")
 
 
 class RegisterUserFromInviteForm(RegisterUserForm):
@@ -1520,7 +1522,7 @@ class LetterAddressForm(StripWhitespaceForm):
         if not address.has_valid_last_line:
             if self.allow_international_letters:
                 raise ValidationError(
-                    "De laatste regel van een adres moet op de naam van een buitenlands land bevatten"
+                    "De laatste regel van een adres moet de naam van een buitenlands land bevatten"
                     "óf een geldige postcode met plaatsnaam."
                 )
             if address.international:

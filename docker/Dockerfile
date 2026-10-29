@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 python:3.13-slim-bookworm AS base
+FROM --platform=linux/amd64 ${DOCKER_REGISTRY_PROXY}python:3.13-slim-bookworm AS base
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.8 /uv /uvx /bin/
 
@@ -20,7 +20,7 @@ WORKDIR /home/vcap/app
 ##### Frontend Build Image ###################################################
 ARG NOTIFY_ENVIRONMENT=development
 
-FROM --platform=linux/amd64 node:24-bookworm-slim AS frontend_build
+FROM --platform=linux/amd64 ${DOCKER_REGISTRY_PROXY}node:24-bookworm-slim AS frontend_build
 
 SHELL ["/bin/bash", "-c"]
 
@@ -28,7 +28,7 @@ WORKDIR /usr/frontend
 COPY app app
 COPY package-lock.json package.json rollup.config.mjs .npmrc ./
 
-RUN npm ci --no-audit \
+RUN export NO_PROXY=",nexus.lpc.logius.nl" && npm config set registry https://nexus.lpc.logius.nl/repository/registry.npmjs.org/ && npm ci --no-audit \
     && npm run build
 
 ##### Python Build Image #####################################################
@@ -46,7 +46,7 @@ COPY requirements.txt .
 
 RUN echo "Installing python requirements" && \
     python3 -m venv /opt/venv && \
-    uv pip sync --python /opt/venv/bin/python requirements.txt
+    uv pip sync --trusted-host pypi.org --trusted-host github.com --trusted-host pypi.python.org --trusted-host=files.pythonhosted.org --python /opt/venv/bin/python requirements.txt
 
 COPY . .
 RUN make generate-version-file  # This file gets copied across

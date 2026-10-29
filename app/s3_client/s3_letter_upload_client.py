@@ -2,7 +2,7 @@ import json
 import urllib
 
 import botocore
-from boto3 import resource
+from notifications_utils.clients.minio import resource
 from flask import current_app
 from notifications_utils.eventlet import EventletTimeout
 from notifications_utils.exception_handling import extract_reraise_chained_exception

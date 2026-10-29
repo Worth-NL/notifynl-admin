@@ -3,9 +3,9 @@ import re
 import typing
 import uuid
 
-from boto3 import resource
 from notifications_utils.eventlet import EventletTimeout
 from notifications_utils.exception_handling import extract_reraise_chained_exception
+from notifications_utils.clients.minio import resource
 from notifications_utils.s3 import s3upload as utils_s3upload
 from werkzeug.datastructures import FileStorage
 

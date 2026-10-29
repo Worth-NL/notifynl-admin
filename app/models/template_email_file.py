@@ -4,7 +4,6 @@ from contextlib import suppress
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-import boto3
 from flask import abort, current_app, url_for
 from notifications_utils.base64_uuid import uuid_to_base64
 from notifications_utils.file_types import mime_type_from_extension
@@ -13,6 +12,7 @@ from notifications_utils.serialised_model import SerialisedModelCollection
 from notifications_utils.template import Template
 
 from app.models import JSONModel
+from app.s3_client import client as minio_client
 from app.s3_client.s3_template_email_file_upload_client import upload_template_email_file_to_s3
 
 
@@ -91,7 +91,7 @@ class TemplateEmailFile(JSONModel):
 
     @property
     def size(self):
-        metadata = boto3.client("s3").head_object(
+        metadata = minio_client("s3").head_object(
             Bucket=current_app.config["S3_BUCKET_TEMPLATE_EMAIL_FILES"],
             Key=f"{self.service_id}/{self.id}",
         )

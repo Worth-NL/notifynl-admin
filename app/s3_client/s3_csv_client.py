@@ -53,7 +53,7 @@ def s3download(service_id, upload_id, bucket=None):
 def set_metadata_on_csv_upload(service_id, upload_id, bucket=None, **kwargs):
     get_csv_upload(service_id, upload_id, bucket=bucket).copy_from(
         CopySource="{}/{}".format(*get_csv_location(service_id, upload_id, bucket=bucket)),
-        ServerSideEncryption="AES256",
+        #ServerSideEncryption="AES256",
         Metadata={key: str(value) for key, value in kwargs.items()},
         MetadataDirective="REPLACE",
     )
