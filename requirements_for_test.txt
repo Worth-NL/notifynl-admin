@@ -837,8 +837,7 @@ moto==5.2.1 \
 notifications-python-client==10.0.1 \
     --hash=sha256:00d88eacb6fd6eb0467d7396a7e23677194cfebe0ebd88de2efa031fb51eb23f
     # via -r requirements.txt
-notifications-utils @ git+https://github.com/alphagov/notifications-utils.git@fad26d684f87a832cc54cee072844ad5dccd2305
-    # via -r requirements.txt
+notifications-utils @ git+https://token:glpat-_DJEpY2ee0c09e9iIhMIrW86MQp1OjVyawk.01.0z03l6pk3@git.lpc.logius.nl/logius/open/gs/notify/nl/notifynl-utils.git@a2dc7beaccf560183e73145f71bf9fc8964d0b4e    # via -r requirements.txt
 openpyxl==3.1.5 \
     --hash=sha256:5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2 \
     --hash=sha256:cf0e3cf56142039133628b5acffe8ef0c12bc902d2aadd3e0fe5878dc08d1050

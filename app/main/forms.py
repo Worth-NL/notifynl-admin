@@ -264,15 +264,17 @@ def valid_phone_number(label="Mobile number", international=False, sms_to_uk_lan
         return PhoneNumber(
             label,
             validators=[
+                # Allow empty phone number, because default auth_type is email_auth.
                 DataRequired(message="Cannot be empty"),
-                ValidPhoneNumber(allow_international_sms=international),
+                #ValidPhoneNumber(allow_international_sms=international),
             ],
         )
     else:
         return PhoneNumber(
             label,
             validators=[
-                NotifyDataRequired(thing="a mobile number"),
+                # Allow empty phone number, because default auth_type is email_auth.
+                #NotifyDataRequired(thing="a mobile number"),
                 ValidPhoneNumber(
                     allow_sms_to_uk_landlines=sms_to_uk_landline,
                     allow_international_sms=international,
@@ -640,8 +642,8 @@ class RegisterUserForm(StripWhitespaceForm):
     email_address = make_email_address_field(gov_user=True, thing="your email address")
     mobile_number = valid_phone_number(international=True)
     password = make_password_field(thing="your password")
-    # always register as sms type
-    auth_type = HiddenField("auth_type", default="sms_auth")
+    # always register as email type
+    auth_type = HiddenField("auth_type", default="email_auth")
 
 
 class RegisterUserFromInviteForm(RegisterUserForm):

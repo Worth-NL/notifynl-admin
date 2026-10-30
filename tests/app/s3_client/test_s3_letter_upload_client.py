@@ -1,11 +1,11 @@
 import urllib
 import uuid
 
-import boto3
 import botocore
 import pytest
+from botocore.exceptions import ClientError
 from flask import current_app
-from moto import mock_aws
+from notifications_utils.clients.minio import client as minio_client
 
 from app.s3_client.s3_letter_upload_client import (
     LetterMetadata,
@@ -14,7 +14,6 @@ from app.s3_client.s3_letter_upload_client import (
     get_letter_metadata,
     upload_letter_to_s3,
 )
-
 
 def test_backup_original_letter_to_s3(mocker, notify_admin):
     s3_mock = mocker.patch("app.s3_client.s3_letter_upload_client.utils_s3upload")
@@ -102,18 +101,24 @@ def test_lettermetadata_unquotes_special_keys():
     assert metadata.get("recipient") == "£hi"
 
 
-@mock_aws
 @pytest.mark.parametrize(
     "will_raise_custom_error,expected_exception",
     [(True, LetterNotFoundError), (False, botocore.exceptions.ClientError)],
 )
-def test_get_letter_s3_object_raises_custom_error(will_raise_custom_error, expected_exception, notify_admin):
-    bucket_name = current_app.config["S3_BUCKET_TRANSIENT_UPLOADED_LETTERS"]
-    s3 = boto3.client("s3", region_name="eu-west-1")
+def test_get_letter_s3_object_raises_custom_error(will_raise_custom_error, expected_exception, notify_admin, mocker):
+    s3 = minio_client("s3")
 
-    # bucket not existing will trigger some other error
     if will_raise_custom_error:
-        s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "eu-west-1"})
+        bucket_name = current_app.config["S3_BUCKET_TRANSIENT_UPLOADED_LETTERS"]
+        try:
+            s3.create_bucket(Bucket=bucket_name)
+        except ClientError:
+            pass
+    else:
+        mocker.patch.dict(
+            current_app.config,
+            {"S3_BUCKET_TRANSIENT_UPLOADED_LETTERS": f"niet-bestaand-{uuid.uuid4()}"},
+        )
 
     with pytest.raises(expected_exception):
         get_letter_metadata("service", "file")

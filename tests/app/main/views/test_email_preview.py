@@ -14,7 +14,7 @@ def test_renders(client_request, mocker, query_args):
 def test_displays_govuk_branding_by_default(client_request):
     page = client_request.get("main.email_template", _test_page_title=False)
 
-    assert page.select_one("a")["href"] == "https://www.gov.uk"
+    assert page.select_one("a")["href"] == "https://www.logius.nl"
 
 
 @pytest.mark.parametrize(
@@ -30,7 +30,7 @@ def test_displays_govuk_branding_by_default(client_request):
 @pytest.mark.skip(reason="[NOTIFYNL] dutchification of email template, see test_email_preview_nl/")
 def test_displays_govuk_branding(client_request, params):
     page = client_request.get("main.email_template", **params, _test_page_title=False)
-    assert page.select_one("a")["href"] == "https://www.gov.uk"
+    assert page.select_one("a")["href"] == "https://www.logius.nl"
 
 
 @pytest.mark.skip(reason="[NOTIFYNL] dutchification of email template, see test_email_preview_nl/")
@@ -39,9 +39,9 @@ def test_displays_both_branding(client_request, mock_get_email_branding_with_bot
 
     mock_get_email_branding_with_both_brand_type.assert_called_once_with("1")
 
-    assert page.select_one("a")["href"] == "https://www.gov.uk"
+    assert page.select_one("a")["href"] == "https://www.logius.nl"
     assert page.select("img")[0]["src"] == (
-        "https://static.notifications.service.gov.uk/images/govuk-logotype-tudor-crown.png"
+        "https://www.logius.nl/themes/custom/logius/logo.svg"
     )
     assert page.select("img")[1]["src"] == "https://static-logos.test.com/example.png"
     assert (
@@ -56,7 +56,7 @@ def test_displays_org_branding(client_request, mock_get_email_branding):
 
     mock_get_email_branding.assert_called_once_with("1")
 
-    assert not any(a["href"] == "https://www.gov.uk" for a in page.select("a"))
+    assert not any(a["href"] == "https://www.logius.nl" for a in page.select("a"))
     assert page.select_one("img")["src"] == "https://static-logos.test.com/example.png"
     assert page.select_one("img")["alt"] == ""  # no alt text cos brand text is present
     assert not page.select("body > table > tr > td[bgcolor='#f00']")  # banner colour is not set
@@ -72,7 +72,7 @@ def test_displays_org_branding_with_banner(client_request, mock_get_email_brandi
 
     mock_get_email_branding_with_org_banner_brand_type.assert_called_once_with("1")
 
-    assert not any(a["href"] == "https://www.gov.uk" for a in page.select("a"))
+    assert not any(a["href"] == "https://www.logius.nl" for a in page.select("a"))
     assert page.select_one("img")["src"] == "https://static-logos.test.com/example.png"
     assert page.select("body > table > tr > td[bgcolor='#f00']")  # banner colour is set
     assert (
@@ -88,7 +88,7 @@ def test_displays_org_branding_with_banner_without_brand_text(
 
     mock_get_email_branding_without_brand_text.assert_called_once_with("1")
 
-    assert not any(a["href"] == "https://www.gov.uk" for a in page.select("a"))
+    assert not any(a["href"] == "https://www.logius.nl" for a in page.select("a"))
     assert page.select_one("img")["src"] == "https://static-logos.test.com/example.png"
     assert page.select_one("img")["alt"] == "Alt text"
     assert page.select("body > table > tr > td[bgcolor='#f00']")  # banner colour is set
@@ -109,7 +109,7 @@ def test_displays_custom_brand_through_query_params(client_request, mocker):
     )
 
     assert mock_get_email_branding.called is False
-    assert not any(a["href"] == "https://www.gov.uk" for a in page.select("a"))
+    assert not any(a["href"] == "https://www.logius.nl" for a in page.select("a"))
     assert page.select_one("img")["src"] == "https://static-logos.test.com/example.png"
     assert not page.select("body > table > tr > td[bgcolor='#abcdef']")
     assert (

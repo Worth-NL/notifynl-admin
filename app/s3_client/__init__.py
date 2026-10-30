@@ -1,4 +1,4 @@
-from boto3 import client, resource
+from notifications_utils.clients.minio import resource, client
 from botocore.exceptions import ClientError
 from flask import current_app
 from notifications_utils.eventlet import EventletTimeout

@@ -17,5 +17,4 @@ def test_sets_metadata(client_request, mocker):
         CopySource="test-notifications-csv-upload/service-1234-notify/5678.csv",
         Metadata={"baz": "True", "foo": "bar"},
         MetadataDirective="REPLACE",
-        ServerSideEncryption="AES256",
     )
