@@ -202,6 +202,7 @@ EXCLUDED_ENDPOINTS = set(
             "json_updates.service_dashboard_updates",
             "json_updates.service_dashboard_usage_updates",
             "json_updates.service_verify_reply_to_address_updates",
+            "json_updates.usage_updates",
             "json_updates.view_job_updates",
             "json_updates.view_notification_updates",
             "json_updates.view_remaining_limit",

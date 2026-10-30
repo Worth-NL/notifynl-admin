@@ -392,22 +392,45 @@ def get_status_filters(service, message_type, statistics, search_query):
 @main.route("/services/<uuid:service_id>/usage")
 @user_has_permissions("manage_service", allow_org_user=True)
 def usage(service_id):
+    # the usage itself loads from usage.json, so the page and its loading indicators show straight away
     year, current_financial_year = requested_and_current_financial_year(request)
-
-    free_sms_allowance = billing_api_client.get_free_sms_fragment_limit_for_year(service_id, year)
-    units = billing_api_client.get_monthly_usage_for_service(service_id, year)
-    yearly_usage = billing_api_client.get_annual_usage_for_service(service_id, year)
 
     return render_template(
         "views/usage.html",
-        months=list(get_monthly_usage_breakdown(year, units)),
         selected_year=year,
         years=get_tuples_of_financial_years(
             partial(url_for, ".usage", service_id=service_id),
             start=current_financial_year - 2,
             end=current_financial_year,
         ),
-        **get_annual_usage_breakdown(yearly_usage, free_sms_allowance),
+        updates_url=url_for("json_updates.usage_updates", service_id=service_id, year=year),
+        partials={
+            "usage": render_template("views/usage/_usage-lazy.html"),
+            "updated_at": render_template("views/usage/_updated-at.html"),
+        },
+    )
+
+
+@json_updates.route("/services/<uuid:service_id>/usage.json")
+@user_has_permissions("manage_service", allow_org_user=True)
+def usage_updates(service_id):
+    year, current_financial_year = requested_and_current_financial_year(request)
+
+    free_sms_allowance = billing_api_client.get_free_sms_fragment_limit_for_year(service_id, year)
+    units = billing_api_client.get_monthly_usage_for_service(service_id, year)
+    yearly_usage = billing_api_client.get_annual_usage_for_service(service_id, year)
+    # earlier years are complete, only the current one is as fresh as the last hourly refresh
+    updated_at = billing_api_client.get_usage_updated_at(service_id) if year == current_financial_year else None
+
+    return jsonify(
+        usage=render_template(
+            "views/usage/_usage.html",
+            months=list(get_monthly_usage_breakdown(year, units)),
+            **get_annual_usage_breakdown(yearly_usage, free_sms_allowance),
+        ),
+        updated_at=render_template("views/usage/_updated-at.html", updated_at=updated_at),
+        # the data changes hourly at most: one response is enough
+        stop=1,
     )
 
 

@@ -1,26 +1,52 @@
 from contextvars import ContextVar
+from datetime import timedelta
 
 from flask import current_app
 from notifications_utils.local_vars import LazyLocalGetter
 from werkzeug.local import LocalProxy
 
 from app import memo_resetters
-from app.notify_client import NotifyAdminAPIClient
+from app.notify_client import NotifyAdminAPIClient, cache
+from app.utils.time import get_current_financial_year
+
+# [NOTIFYNL] the API refreshes the current year's usage hourly; earlier years only change around the year boundary
+CURRENT_YEAR_TTL_IN_SECONDS = int(timedelta(minutes=15).total_seconds())
+PAST_YEAR_TTL_IN_SECONDS = int(timedelta(days=1).total_seconds())
+
+
+def _cached_for_year(value, year):
+    """[NOTIFYNL] `year=None` means the current financial year to the API."""
+    is_past_year = year is not None and int(year) < get_current_financial_year()
+    return cache.CacheResultWrapper(
+        value=value,
+        cache_decision=True,
+        ttl_in_seconds_override=PAST_YEAR_TTL_IN_SECONDS if is_past_year else CURRENT_YEAR_TTL_IN_SECONDS,
+    )
 
 
 class BillingAPIClient(NotifyAdminAPIClient):
+    @cache.set("service-{service_id}-billing-monthly-usage-{year}")  # [NOTIFYNL]
     def get_monthly_usage_for_service(self, service_id, year):
-        return self.get(f"/service/{service_id}/billing/monthly-usage", params={"year": year})
+        return _cached_for_year(self.get(f"/service/{service_id}/billing/monthly-usage", params={"year": year}), year)
 
+    @cache.set("service-{service_id}-billing-annual-usage-{year}")  # [NOTIFYNL]
     def get_annual_usage_for_service(self, service_id, year=None):
-        return self.get(f"/service/{service_id}/billing/yearly-usage-summary", params={"year": year})
+        return _cached_for_year(
+            self.get(f"/service/{service_id}/billing/yearly-usage-summary", params={"year": year}), year
+        )
 
+    @cache.set("service-{service_id}-billing-free-sms-fragment-limit-{year}")  # [NOTIFYNL]
     def get_free_sms_fragment_limit_for_year(self, service_id, year=None):
         result = self.get(
             f"/service/{service_id}/billing/free-sms-fragment-limit", params={"financial_year_start": year}
         )
-        return result["free_sms_fragment_limit"]
+        return _cached_for_year(result["free_sms_fragment_limit"], year)
 
+    def get_usage_updated_at(self, service_id):
+        """[NOTIFYNL] When the API last refreshed today's usage, or None before its first hourly run."""
+        return self.get(f"/service/{service_id}/billing/usage-updated-at")["updated_at"]
+
+    @cache.delete_by_pattern("service-{service_id}-billing-free-sms-fragment-limit-*")  # [NOTIFYNL]
     def create_or_update_free_sms_fragment_limit(self, service_id, free_sms_fragment_limit):
         """
         Updates the free sms fragment limit for the current financial year
