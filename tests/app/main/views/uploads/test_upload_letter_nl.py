@@ -2,8 +2,9 @@ from unittest.mock import Mock
 
 import pytest
 from flask import make_response, url_for
-from requests import RequestException
+from notifications_python_client.errors import HTTPError
 
+from app.notify_client.letter_upload_api_client_nl import SanitisedLetter
 from app.s3_client.s3_letter_upload_client import LetterMetadata
 from tests.conftest import SERVICE_ONE_ID, do_mock_get_page_counts_for_letter, normalize_spaces
 
@@ -26,10 +27,10 @@ def test_post_upload_letter_shows_letter_preview_for_invalid_file(
     mocker.patch("uuid.uuid4", return_value=fake_uuid)
     mocker.patch("app.extensions.antivirus_client.scan", return_value=True)
     mocker.patch("app.main.views_nl.uploads.upload_letter_to_s3")
-    mock_sanitise_response = Mock()
-    mock_sanitise_response.raise_for_status.side_effect = RequestException(response=Mock(status_code=400))
-    mock_sanitise_response.json = lambda: {"message": "template preview error", "recipient_address": "The Queen"}
-    mocker.patch("app.template_preview_client.sanitise_letter", return_value=mock_sanitise_response)
+    mocker.patch(
+        "app.main.views_nl.uploads.letter_upload_api_client.sanitise_letter",
+        return_value=SanitisedLetter(400, {"message": "template preview error", "recipient_address": "The Queen"}),
+    )
     mocker.patch("app.models.service.service_api_client.get_precompiled_template", return_value=letter_template)
     mocker.patch(
         "app.main.views_nl.uploads.get_letter_metadata",
@@ -84,12 +85,9 @@ def test_post_upload_letter_shows_letter_preview_for_valid_file(
 
     mocker.patch("uuid.uuid4", return_value=fake_uuid)
     mocker.patch("app.extensions.antivirus_client.scan", return_value=True)
-    mocker.patch(
-        "app.template_preview_client.sanitise_letter",
-        return_value=Mock(
-            content="The sanitised content",
-            json=lambda: {"file": "VGhlIHNhbml0aXNlZCBjb250ZW50", "recipient_address": "The Queen"},
-        ),
+    mock_sanitise = mocker.patch(
+        "app.main.views_nl.uploads.letter_upload_api_client.sanitise_letter",
+        return_value=SanitisedLetter(200, {"file": "VGhlIHNhbml0aXNlZCBjb250ZW50", "recipient_address": "The Queen"}),
     )
     mocker.patch("app.main.views_nl.uploads.upload_letter_to_s3")
     mocker.patch("app.main.views_nl.uploads.backup_original_letter_to_s3")
@@ -119,6 +117,10 @@ def test_post_upload_letter_shows_letter_preview_for_valid_file(
             _follow_redirects=True,
         )
 
+    # through notifynl-api, which decides the address window: admin sends no placement of its own
+    mock_sanitise.assert_called_once_with(
+        SERVICE_ONE_ID, mocker.ANY, upload_id=fake_uuid, allow_international_letters=False
+    )
     assert page.select_one("h1").text == "tests/test_pdf_files/one_page_pdf.pdf"
     assert len(page.select(".letter-postage")) == 0
     # Check postage radios exists and netherlands is checked by default
@@ -153,9 +155,8 @@ def test_uploaded_letter_preview_image_shows_overlay_when_content_outside_printa
     mocker,
 ):
     # Moved here from tests/app/main/views/uploads/test_upload_letter.py: this test exercises
-    # app.main.views_nl.uploads (the only registered "upload a letter" blueprint), and its
-    # letter_address_placement="60mm" assertion is NL-specific (the field doesn't exist
-    # upstream) - see .claude/rules/tests.md.
+    # app.main.views_nl.uploads (the only registered "upload a letter" blueprint), and NL asks
+    # notifynl-api for the overlay instead of template-preview - see .claude/rules/tests.md.
     mocker.patch(
         "app.main.views_nl.uploads.get_letter_pdf_and_metadata",
         return_value=(
@@ -171,7 +172,7 @@ def test_uploaded_letter_preview_image_shows_overlay_when_content_outside_printa
         return_value=make_response("page.html", 200),
     )
     template_preview_mock_invalid = mocker.patch(
-        "app.template_preview_client.get_png_for_invalid_pdf_page",
+        "app.main.views_nl.uploads.letter_upload_api_client.get_png_for_invalid_pdf_page",
         return_value=make_response("page.html", 200),
     )
 
@@ -183,9 +184,8 @@ def test_uploaded_letter_preview_image_shows_overlay_when_content_outside_printa
     )
 
     if overlay_expected:
-        template_preview_mock_invalid.assert_called_once_with(
-            "pdf_file", page_requested, letter_address_placement="60mm"
-        )
+        # through notifynl-api, which decides the address window the overlay shows
+        template_preview_mock_invalid.assert_called_once_with(SERVICE_ONE_ID, "pdf_file", page_requested)
         assert template_preview_mock_valid.called is False
     else:
         template_preview_mock_valid.assert_called_once_with("pdf_file", page_requested)
@@ -233,3 +233,70 @@ def test_uploaded_letter_preview_explains_an_address_placement_mismatch(
 
     assert normalize_spaces(page.select_one("h1").text) == expected_title
     assert ("brief-instellingen" in page.text) is not decided_by_provider
+
+
+def test_uploaded_letter_preview_explains_an_address_outside_the_providers_window(
+    client_request,
+    active_user_with_permissions,
+    service_one,
+    fake_uuid,
+    mocker,
+):
+    mocker.patch("app.models.service.service_api_client.get_precompiled_template")
+    mocker.patch(
+        "app.main.views_nl.uploads.get_letter_metadata",
+        return_value=LetterMetadata(
+            {
+                "filename": "letter.pdf",
+                "page_count": "1",
+                "status": "invalid",
+                "message": "address-placement-mismatch",
+            }
+        ),
+    )
+    service_one["letter_address_placement"] = "60mm"
+    service_one["letter_address_placement_decided_by_provider"] = True
+    service_one["letter_address_window"] = {
+        "id": "pingen",
+        "provider": "pingen",
+        "address_placement": "60mm",
+        "address_area": {"x": 22, "y": 60, "width": 85.5, "height": 25.5},
+        "postage_area": {"x": 20, "y": 40, "width": 89.5, "height": 47.5},
+    }
+    client_request.login(active_user_with_permissions, service=service_one)
+
+    page = client_request.get(
+        "main.uploaded_letter_preview",
+        service_id=SERVICE_ONE_ID,
+        file_id=fake_uuid,
+        _test_page_title=False,  # the page is titled after the file, its h1 is the error
+    )
+
+    assert normalize_spaces(page.select_one("h1").text) == (
+        "Het adres staat niet in het adresvenster van uw printleverancier"
+    )
+    assert "22 mm van links, 60 mm van boven, 85,5 mm breed en 25,5 mm hoog" in normalize_spaces(page.text)
+
+
+def test_post_upload_letter_does_not_upload_to_s3_if_the_api_fails(
+    client_request,
+    fake_uuid,
+    mocker,
+):
+    mocker.patch("uuid.uuid4", return_value=fake_uuid)
+    mocker.patch("app.extensions.antivirus_client.scan", return_value=True)
+    mock_s3 = mocker.patch("app.main.views_nl.uploads.upload_letter_to_s3")
+    mocker.patch(
+        "app.main.views_nl.uploads.letter_upload_api_client.sanitise_letter",
+        side_effect=HTTPError(response=Mock(status_code=500)),
+    )
+
+    with open("tests/test_pdf_files/one_page_pdf.pdf", "rb") as file:
+        client_request.post(
+            "main.upload_letter",
+            service_id=SERVICE_ONE_ID,
+            _data={"file": file},
+            _expected_status=500,
+        )
+
+    assert not mock_s3.called

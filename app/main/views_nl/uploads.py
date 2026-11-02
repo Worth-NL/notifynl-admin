@@ -20,7 +20,6 @@ from notifications_utils.pdf import pdf_page_count
 from notifications_utils.recipient_validation.notifynl.postal_address import PostalAddress
 from notifications_utils.recipients import RecipientCSV
 from pypdf.errors import PdfReadError
-from requests import RequestException
 
 from app import (
     current_service,
@@ -31,6 +30,7 @@ from app import (
 from app.main import main
 from app.main.overrides_nl.forms import CsvUploadForm, LetterUploadPostageForm, PDFUploadForm
 from app.models.contact_list import ContactList
+from app.notify_client.letter_upload_api_client_nl import letter_upload_api_client
 from app.s3_client.s3_letter_upload_client import (
     LetterNotFoundError,
     backup_original_letter_to_s3,
@@ -155,31 +155,27 @@ def upload_letter(service_id):
             upload_id = uuid.uuid4()
             file_location = get_transient_letter_file_location(service_id, upload_id)
 
-            try:
-                response = template_preview_client.sanitise_letter(
-                    BytesIO(pdf_file_bytes),
-                    upload_id=upload_id,
-                    allow_international_letters=current_service.has_permission("international_letters"),
-                    letter_address_placement=current_service.letter_address_placement,
-                )
-                response.raise_for_status()
-            except RequestException as ex:
-                if ex.response is not None and ex.response.status_code == 400:
-                    validation_failed_message = response.json().get("message")
-                    invalid_pages = response.json().get("invalid_pages")
+            # [NotifyNL] through notifynl-api, which decides the address window the letter is checked against
+            response = letter_upload_api_client.sanitise_letter(
+                service_id,
+                pdf_file_bytes,
+                upload_id=upload_id,
+                allow_international_letters=current_service.has_permission("international_letters"),
+            )
+            if response.status_code == 400:
+                validation_failed_message = response.json().get("message")
+                invalid_pages = response.json().get("invalid_pages")
 
-                    status = "invalid"
-                    upload_letter_to_s3(
-                        pdf_file_bytes,
-                        file_location=file_location,
-                        status=status,
-                        page_count=page_count,
-                        filename=original_filename,
-                        message=validation_failed_message,
-                        invalid_pages=invalid_pages,
-                    )
-                else:
-                    raise ex
+                status = "invalid"
+                upload_letter_to_s3(
+                    pdf_file_bytes,
+                    file_location=file_location,
+                    status=status,
+                    page_count=page_count,
+                    filename=original_filename,
+                    message=validation_failed_message,
+                    invalid_pages=invalid_pages,
+                )
             else:
                 response = response.json()
                 recipient = response["recipient_address"]
@@ -251,6 +247,7 @@ def uploaded_letter_preview(service_id, file_id):
         page_count,
         letter_address_placement=current_service.letter_address_placement,
         address_placement_decided_by_provider=current_service.letter_address_placement_decided_by_provider,
+        letter_address_window=current_service.letter_address_window,
     )
 
     form = LetterUploadPostageForm(postage_zone=postal_address.postage)
@@ -287,9 +284,7 @@ def view_letter_upload_as_preview(service_id, file_id):
     invalid_pages = json.loads(metadata.get("invalid_pages", "[]"))
 
     if metadata.get("message") == "content-outside-printable-area" and page in invalid_pages:
-        return template_preview_client.get_png_for_invalid_pdf_page(
-            pdf_file, page, letter_address_placement=current_service.letter_address_placement
-        )
+        return letter_upload_api_client.get_png_for_invalid_pdf_page(service_id, pdf_file, page)
     else:
         return template_preview_client.get_png_for_valid_pdf_page(pdf_file, page)
 

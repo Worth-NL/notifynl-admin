@@ -55,6 +55,7 @@ class Service(JSONModel):
     # [NotifyNL] defaults for service JSON cached before notifynl-api returned these fields
     letter_address_placement_decided_by_provider: bool = False
     send_client_reference_to_letter_provider: bool = False
+    letter_address_window: Any = None
     letter_message_limit: int
     messagebox_message_limit: int
     rate_limit: int

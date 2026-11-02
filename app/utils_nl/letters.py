@@ -203,12 +203,42 @@ ADDRESS_PLACEMENT_MISMATCH_DECIDED_BY_PROVIDER = {
 }
 
 
+# When the print provider has its own address window (Pingen), the address has to sit inside it
+ADDRESS_OUTSIDE_PROVIDER_WINDOW = {
+    "title": "Het adres staat niet in het adresvenster van uw printleverancier",
+    "detail": (
+        "Het adres moet binnen het adresvenster van de printleverancier van uw organisatie staan: {address_area}. "
+        "Pas de lay-out van uw brief aan."
+    ),
+    "summary": (
+        "De validatie is mislukt omdat het adres niet binnen het adresvenster van de printleverancier van uw "
+        "organisatie staat ({address_area})."
+    ),
+}
+
+
+def _format_mm(value):
+    return f"{value:g}".replace(".", ",") + " mm"
+
+
+def format_address_area(letter_address_window):
+    """Where a letter address window's address goes, e.g. "22 mm van links, 60 mm van boven, 85,5 mm breed en ..."."""
+    area = (letter_address_window or {}).get("address_area")
+    if not area:
+        return ""
+    return (
+        f"{_format_mm(area['x'])} van links, {_format_mm(area['y'])} van boven, "
+        f"{_format_mm(area['width'])} breed en {_format_mm(area['height'])} hoog"
+    )
+
+
 def get_letter_validation_error(
     validation_message,
     invalid_pages=None,
     page_count=None,
     letter_address_placement=None,
     address_placement_decided_by_provider=False,
+    letter_address_window=None,
 ):
     if not invalid_pages:
         invalid_pages = []
@@ -222,7 +252,13 @@ def get_letter_validation_error(
     )
 
     messages = LETTER_VALIDATION_MESSAGES[validation_message]
-    if validation_message == "address-placement-mismatch" and address_placement_decided_by_provider:
+    if (
+        validation_message == "address-placement-mismatch"
+        and address_placement_decided_by_provider
+        and (letter_address_window or {}).get("postage_area")
+    ):
+        messages = ADDRESS_OUTSIDE_PROVIDER_WINDOW
+    elif validation_message == "address-placement-mismatch" and address_placement_decided_by_provider:
         messages = ADDRESS_PLACEMENT_MISMATCH_DECIDED_BY_PROVIDER
     else:
         letter_address_placement = LETTER_ADDRESS_PLACEMENT_LABELS.get(
@@ -237,6 +273,7 @@ def get_letter_validation_error(
             page_count=page_count,
             letter_spec_guidance=url_for("main.guidance_upload_a_letter"),
             letter_address_placement=letter_address_placement,
+            address_area=format_address_area(letter_address_window),
         ),
         "summary": messages["summary"].format(
             invalid_pages=invalid_pages,
@@ -244,6 +281,7 @@ def get_letter_validation_error(
             page_count=page_count,
             letter_spec_guidance=url_for("main.guidance_upload_a_letter"),
             letter_address_placement=letter_address_placement,
+            address_area=format_address_area(letter_address_window),
         ),
     }
 

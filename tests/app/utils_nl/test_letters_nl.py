@@ -1,7 +1,7 @@
 import pytest
 from freezegun import freeze_time
 
-from app.utils_nl.letters import get_letter_printing_statement, get_letter_validation_error
+from app.utils_nl.letters import format_address_area, get_letter_printing_statement, get_letter_validation_error
 
 
 @pytest.mark.parametrize(
@@ -118,3 +118,53 @@ def test_get_letter_validation_error_for_address_placement_decided_by_the_print_
     # the service can't change a placement its print provider decides
     assert "standaard" not in error["detail"] + error["summary"]
     assert "wijzig" not in error["detail"]
+
+
+PINGEN_WINDOW = {
+    "id": "pingen",
+    "provider": "pingen",
+    "address_placement": "60mm",
+    "address_area": {"x": 22, "y": 60, "width": 85.5, "height": 25.5},
+    "postage_area": {"x": 20, "y": 40, "width": 89.5, "height": 47.5},
+}
+
+
+def test_get_letter_validation_error_for_an_address_outside_the_print_providers_window(notify_admin):
+    with notify_admin.test_request_context():
+        error = get_letter_validation_error(
+            "address-placement-mismatch",
+            letter_address_placement="60mm",
+            address_placement_decided_by_provider=True,
+            letter_address_window=PINGEN_WINDOW,
+        )
+
+    assert error["title"] == "Het adres staat niet in het adresvenster van uw printleverancier"
+    assert "22 mm van links, 60 mm van boven, 85,5 mm breed en 25,5 mm hoog" in error["detail"]
+    assert "(22 mm van links, 60 mm van boven, 85,5 mm breed en 25,5 mm hoog)" in error["summary"]
+
+
+def test_get_letter_validation_error_for_a_standard_window_decided_by_the_print_provider(notify_admin):
+    # a REST endpoint's window has no postage area: the placement message still applies
+    standard_window = {**PINGEN_WINDOW, "id": "standard-60mm", "provider": None, "postage_area": None}
+
+    with notify_admin.test_request_context():
+        error = get_letter_validation_error(
+            "address-placement-mismatch",
+            letter_address_placement="60mm",
+            address_placement_decided_by_provider=True,
+            letter_address_window=standard_window,
+        )
+
+    assert error["title"] == "De positie van het adres komt niet overeen met uw printleverancier"
+
+
+@pytest.mark.parametrize(
+    "letter_address_window, expected",
+    [
+        (PINGEN_WINDOW, "22 mm van links, 60 mm van boven, 85,5 mm breed en 25,5 mm hoog"),
+        (None, ""),
+        ({}, ""),
+    ],
+)
+def test_format_address_area(letter_address_window, expected):
+    assert format_address_area(letter_address_window) == expected

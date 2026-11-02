@@ -62,6 +62,7 @@ def view_notification(service_id, notification_id):
                     page_count,
                     letter_address_placement=current_service.letter_address_placement,
                     address_placement_decided_by_provider=current_service.letter_address_placement_decided_by_provider,
+                    letter_address_window=current_service.letter_address_window,
                 )
         except PdfReadError:
             return render_template(
