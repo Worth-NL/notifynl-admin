@@ -12,18 +12,14 @@ def test_sanitise_letter_asks_the_api(mocker):
     )
     upload_id = uuid.uuid4()
 
-    response = client.sanitise_letter("service-id", b"%PDF", upload_id=upload_id, allow_international_letters=True)
+    response = client.sanitise_letter("service-id", b"%PDF", upload_id=upload_id)
 
     assert response.status_code == 400
     assert response.json() == {"message": "address-placement-mismatch"}
-    # what admin used to send template-preview, without a placement: the API decides the address window
+    # the file only: the API decides the address window and whether international letters are allowed
     mock_post.assert_called_once_with(
         url="/service/service-id/letter-upload/sanitise",
-        data={
-            "file": base64.b64encode(b"%PDF").decode(),
-            "upload_id": str(upload_id),
-            "allow_international_letters": True,
-        },
+        data={"file": base64.b64encode(b"%PDF").decode(), "upload_id": str(upload_id)},
     )
 
 

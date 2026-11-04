@@ -155,13 +155,9 @@ def upload_letter(service_id):
             upload_id = uuid.uuid4()
             file_location = get_transient_letter_file_location(service_id, upload_id)
 
-            # [NotifyNL] through notifynl-api, which decides the address window the letter is checked against
-            response = letter_upload_api_client.sanitise_letter(
-                service_id,
-                pdf_file_bytes,
-                upload_id=upload_id,
-                allow_international_letters=current_service.has_permission("international_letters"),
-            )
+            # [NotifyNL] through notifynl-api, which decides the address window the letter is checked against and
+            # whether the service may send it abroad
+            response = letter_upload_api_client.sanitise_letter(service_id, pdf_file_bytes, upload_id=upload_id)
             if response.status_code == 400:
                 validation_failed_message = response.json().get("message")
                 invalid_pages = response.json().get("invalid_pages")

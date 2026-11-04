@@ -1,6 +1,6 @@
 """
 [NotifyNL] Checks a letter uploaded in admin ("Upload een brief") through notifynl-api, which decides the address
-window it's checked against and asks template-preview. Admin sends what it used to send template-preview itself.
+window it's checked against and whether the service may send international letters, and asks template-preview.
 """
 
 import base64
@@ -28,14 +28,10 @@ class SanitisedLetter:
 
 
 class LetterUploadApiClient(NotifyAdminAPIClient):
-    def sanitise_letter(self, service_id, pdf_file, *, upload_id, allow_international_letters):
+    def sanitise_letter(self, service_id, pdf_file, *, upload_id):
         response = self.post(
             url=f"/service/{service_id}/letter-upload/sanitise",
-            data={
-                "file": base64.b64encode(pdf_file).decode("utf-8"),
-                "upload_id": str(upload_id),
-                "allow_international_letters": allow_international_letters,
-            },
+            data={"file": base64.b64encode(pdf_file).decode("utf-8"), "upload_id": str(upload_id)},
         )
         return SanitisedLetter(response["status_code"], response["data"])
 

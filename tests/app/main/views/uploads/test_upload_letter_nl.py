@@ -117,10 +117,8 @@ def test_post_upload_letter_shows_letter_preview_for_valid_file(
             _follow_redirects=True,
         )
 
-    # through notifynl-api, which decides the address window: admin sends no placement of its own
-    mock_sanitise.assert_called_once_with(
-        SERVICE_ONE_ID, mocker.ANY, upload_id=fake_uuid, allow_international_letters=False
-    )
+    # through notifynl-api, which decides the address window and international letters: admin sends the file only
+    mock_sanitise.assert_called_once_with(SERVICE_ONE_ID, mocker.ANY, upload_id=fake_uuid)
     assert page.select_one("h1").text == "tests/test_pdf_files/one_page_pdf.pdf"
     assert len(page.select(".letter-postage")) == 0
     # Check postage radios exists and netherlands is checked by default
