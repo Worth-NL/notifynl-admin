@@ -3770,6 +3770,11 @@ nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_post_choose_u
 reason = "Translation issue"
 
 [[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_post_upload_letter_does_not_upload_to_s3_if_template_preview_raises_unknown_error"
+reason = "NL checks uploaded letters through notifynl-api, not template-preview"
+counterpart = ["tests/app/main/views/uploads/test_upload_letter_nl.py::test_post_upload_letter_does_not_upload_to_s3_if_the_api_fails"]
+
+[[test]]
 nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_post_upload_letter_redirects_for_valid_file"
 reason = "Translation issue"
 
@@ -3802,6 +3807,11 @@ reason = "Translation issue"
 [[test]]
 nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_uploaded_letter_preview_does_not_show_send_button_if_service_in_trial_mode"
 reason = "Translation issue"
+
+[[test]]
+nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_uploaded_letter_preview_image_shows_overlay_when_content_outside_printable_area_on_a_page"
+reason = "NL asks notifynl-api for the overlay of an uploaded letter, not template-preview"
+counterpart = ["tests/app/main/views/uploads/test_upload_letter_nl.py::test_uploaded_letter_preview_image_shows_overlay_when_content_outside_printable_area_on_a_page"]
 
 [[test]]
 nodeid = "tests/app/main/views/uploads/test_upload_letter.py::test_uploading_a_letter_attachment_errors_when_file_is_too_big"
