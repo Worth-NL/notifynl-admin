@@ -1,0 +1,31 @@
+{% extends "views/platform-admin/_base_template.html" %}
+{% from "components/form.html" import form_wrapper %}
+{% from "components/page-footer.html" import page_footer %}
+{% from "govuk_frontend_jinja/components/warning-text/macro.html" import govukWarningText %}
+
+{% block per_page_title %}
+  Live-CPA wijzigen
+{% endblock %}
+
+{% block platform_admin_content %}
+  <h1 class="heading-large">Live-CPA wijzigen</h1>
+  {{ govukWarningText({
+    "text": "Dit verandert waar de berichtenboxberichten van burgers naartoe gaan, voor alle diensten.",
+    "iconFallbackText": "Waarschuwing"
+  }) }}
+  <dl class="govuk-summary-list">
+    <div class="govuk-summary-list__row">
+      <dt class="govuk-summary-list__key">Nu</dt>
+      <dd class="govuk-summary-list__value">{{ current.cpa_id if current else 'Instellingen van de omgeving (EBMS_BERICHTENBOX_*)' }}</dd>
+    </div>
+    <div class="govuk-summary-list__row">
+      <dt class="govuk-summary-list__key">Nieuw</dt>
+      <dd class="govuk-summary-list__value">{{ form.cpa_id.data }}, BerichtType {{ form.message_type.data }}</dd>
+    </div>
+  </dl>
+  {% call form_wrapper(action=url_for('main.messagebox_cpa_select_confirm', purpose=purpose)) %}
+    {{ form.cpa_id }}
+    {{ form.message_type }}
+    {{ page_footer('Ja, live-CPA wijzigen', destructive=True) }}
+  {% endcall %}
+{% endblock %}

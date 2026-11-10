@@ -27,6 +27,7 @@ from app.main.views_nl import (  # noqa
     letter_branding,
     make_your_service_live,
     manage_users,
+    messagebox_cpas,
     new_password,
     notifications,
     org_member_make_service_live,

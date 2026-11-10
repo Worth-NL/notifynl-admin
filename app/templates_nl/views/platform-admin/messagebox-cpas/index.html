@@ -1,0 +1,76 @@
+{% extends "views/platform-admin/_base_template.html" %}
+{% from "views/platform-admin/messagebox-cpas/_summary.html" import cpa_summary %}
+
+{% block per_page_title %}
+  Berichtenbox-CPA’s
+{% endblock %}
+
+{% block platform_admin_content %}
+  <h1 class="heading-large">Berichtenbox-CPA’s</h1>
+  <p class="govuk-body">
+    De CPA bepaalt waar ebms-core berichten met BSN en inhoud naartoe stuurt. Live API-sleutels gebruiken de live-CPA,
+    team-API-sleutels de team-CPA naar de pre-productieomgeving van Logius. Zonder team-CPA kunnen team-sleutels geen
+    berichtenboxberichten sturen.
+  </p>
+
+  <table class="govuk-table">
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th scope="col" class="govuk-table__header">Doel</th>
+        <th scope="col" class="govuk-table__header">Geselecteerde CPA</th>
+        <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Wijzigen</span></th>
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+      {% for purpose, name in purpose_names.items() %}
+        {% set selection = selections[purpose] %}
+        <tr class="govuk-table__row">
+          <td class="govuk-table__cell">{{ name }}</td>
+          <td class="govuk-table__cell">
+            {% if selection %}
+              <code class="govuk-!-font-size-16">{{ selection.cpa_id }}</code><br>
+              <span class="govuk-body-s">BerichtType {{ selection.message_type }}, sinds {{ selection.updated_at[:16] | replace('T', ' ') }}</span>
+            {% elif purpose == 'live' %}
+              Instellingen van de omgeving (EBMS_BERICHTENBOX_*)
+            {% else %}
+              Geen: team-sleutels kunnen geen berichtenboxberichten sturen
+            {% endif %}
+          </td>
+          <td class="govuk-table__cell">
+            <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.messagebox_cpa_select', purpose=purpose) }}">Kiezen<span class="govuk-visually-hidden"> {{ name }}</span></a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="govuk-body">
+    <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.messagebox_cpa_upload') }}">Een CPA uploaden</a>
+  </p>
+
+  <h2 class="govuk-heading-m">CPA’s in ebms-core</h2>
+  {% for cpa in cpas %}
+    <h3 class="govuk-heading-s">
+      {{ cpa.cpa_id }}
+      {% for purpose in cpa.selected_for %}
+        <strong class="govuk-tag govuk-tag--green">{{ purpose }}</strong>
+      {% endfor %}
+    </h3>
+    {% if cpa.error %}
+      <p class="govuk-body">Kan deze CPA niet lezen: {{ cpa.error }}</p>
+    {% else %}
+      <p class="govuk-body-s">
+        {% for purpose, assessment in cpa.assessments.items() %}
+          {{ purpose }}: {{ 'bruikbaar' if assessment.eligible else 'niet bruikbaar' }}{% if not loop.last %}, {% endif %}
+        {% endfor %}
+      </p>
+      {# expiry warnings depend on the CPA only, so every purpose's assessment has the same ones #}
+      {% for warning in (cpa.assessments.values() | list | first).warnings %}
+        <p class="govuk-body-s">⚠ {{ warning }}</p>
+      {% endfor %}
+      {{ cpa_summary(cpa.summary) }}
+    {% endif %}
+  {% else %}
+    <p class="govuk-body">ebms-core heeft geen CPA’s.</p>
+  {% endfor %}
+{% endblock %}
