@@ -32,13 +32,21 @@
 {% macro cpa_checks(assessment) %}
   <ul class="govuk-list">
     {% for check in assessment.checks %}
-      <li>{{ '✓' if check.passed else '✗' }} {{ check.message }}</li>
+      <li>
+        <span aria-hidden="true">{{ '✓' if check.passed else '✗' }}</span>
+        <span class="govuk-visually-hidden">{{ 'Geslaagd:' if check.passed else 'Mislukt:' }}</span>
+        {{ check.message }}
+      </li>
     {% endfor %}
   </ul>
-  {% for warning in assessment.warnings %}
+  {{ cpa_warnings(assessment.warnings) }}
+{% endmacro %}
+
+{% macro cpa_warnings(warnings) %}
+  {% for warning in warnings %}
     <div class="govuk-warning-text">
       <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-      <strong class="govuk-warning-text__text"><span class="govuk-visually-hidden">Waarschuwing</span>{{ warning }}</strong>
+      <strong class="govuk-warning-text__text"><span class="govuk-visually-hidden">Waarschuwing</span> {{ warning }}</strong>
     </div>
   {% endfor %}
 {% endmacro %}

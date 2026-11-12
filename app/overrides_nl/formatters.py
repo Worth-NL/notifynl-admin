@@ -3,6 +3,7 @@ import re
 import urllib
 from datetime import UTC, datetime, timedelta
 from numbers import Number
+from zoneinfo import ZoneInfo
 
 import ago
 import dateutil
@@ -18,6 +19,8 @@ from notifications_utils.take import Take
 from notifications_utils.timezones import utc_string_to_aware_gmt_datetime
 
 from app.utils.time import is_less_than_days_ago
+
+AMSTERDAM = ZoneInfo("Europe/Amsterdam")
 
 DUTCH_WEEKDAYS = {
     "Monday": "maandag",
@@ -79,6 +82,14 @@ def format_datetime_relative(date):
 
 def format_datetime_numeric(date):
     return f"{format_date_numeric(date)} {format_time_24h(date)}"
+
+
+def format_datetime_amsterdam(date):
+    """
+    The API's UTC time as Dutch clock time. notifications_utils' utc_string_to_aware_gmt_datetime, behind the other
+    filters, still converts to Europe/London.
+    """
+    return utc_string_to_aware_gmt_datetime(date).astimezone(AMSTERDAM).strftime("%Y-%m-%d %H:%M")
 
 
 def format_date_numeric(date):

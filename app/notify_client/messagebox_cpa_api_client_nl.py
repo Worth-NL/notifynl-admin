@@ -29,9 +29,16 @@ class CpaRejected(Exception):
 
 
 def _raise_if_rejected(error: HTTPError):
-    if error.status_code == 400:
-        body = error.response.json() if error.response is not None else {}
-        message = body.get("message")
+    """
+    Only the guardrails' refusal ({"message": str, ...}) is a CpaRejected. Any other 400, e.g. a schema error
+    ({"errors": [...]}) or a body that isn't JSON, stays the HTTPError.
+    """
+    if error.status_code == 400 and error.response is not None:
+        try:
+            body = error.response.json()
+        except ValueError:
+            body = None
+        message = body.get("message") if isinstance(body, dict) else None
         if isinstance(message, str):
             raise CpaRejected(message, body.get("assessment"), body.get("summary")) from error
     raise error

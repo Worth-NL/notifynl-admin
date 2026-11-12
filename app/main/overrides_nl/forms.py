@@ -3794,7 +3794,11 @@ class MessageboxCpaSelectForm(StripWhitespaceForm):
     cpa_id = GovukRadiosField("Welke CPA?", thing="een CPA")
     message_type = GovukTextInputField(
         "BerichtType",
-        validators=[DataRequired(message="Vul het BerichtType in")],
+        # notifynl-api stores at most 255 characters
+        validators=[
+            DataRequired(message="Vul het BerichtType in"),
+            Length(max=255, message="Het BerichtType mag niet langer zijn dan 255 tekens"),
+        ],
         param_extensions={
             "hint": {
                 "text": (

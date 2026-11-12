@@ -2,6 +2,7 @@
 {% from "components/form.html" import form_wrapper %}
 {% from "components/page-footer.html" import page_footer %}
 {% from "govuk_frontend_jinja/components/warning-text/macro.html" import govukWarningText %}
+{% from "views/platform-admin/messagebox-cpas/_summary.html" import cpa_summary, cpa_warnings %}
 
 {% block per_page_title %}
   Live-CPA wijzigen
@@ -23,6 +24,9 @@
       <dd class="govuk-summary-list__value">{{ form.cpa_id.data }}, BerichtType {{ form.message_type.data }}</dd>
     </div>
   </dl>
+  <h2 class="govuk-heading-m">Nieuwe CPA</h2>
+  {{ cpa_warnings(chosen.assessments[purpose].warnings) }}
+  {{ cpa_summary(chosen.summary) }}
   {% call form_wrapper(action=url_for('main.messagebox_cpa_select_confirm', purpose=purpose)) %}
     {{ form.cpa_id }}
     {{ form.message_type }}
