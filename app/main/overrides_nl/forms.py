@@ -3759,3 +3759,57 @@ class OrganisationLetterEndpointForm(StripWhitespaceForm):
 
 
 ########################################################################################################################
+
+
+class MessageboxCpaUploadForm(StripWhitespaceForm):
+    purpose = GovukRadiosField(
+        "Waarvoor is deze CPA?",
+        choices=[
+            ("live", "Live: berichten van live API-sleutels naar de productieomgeving van Logius"),
+            ("team", "Team: berichten van team-API-sleutels naar de pre-productieomgeving van Logius"),
+        ],
+        thing="waarvoor de CPA is",
+    )
+    file = FileField_wtf(
+        "CPA (XML-bestand)",
+        validators=[
+            DataRequired(message="Kies een XML-bestand"),
+            FileAllowed(["xml"], "Kies een XML-bestand"),
+            FileSize(max_size=1_000_000, message="Het bestand mag niet groter zijn dan 1 MB"),
+        ],
+    )
+
+
+class MessageboxCpaUploadConfirmForm(StripWhitespaceForm):
+    # the CPA from the upload step, sent along again: notifynl-api checks it again before inserting it
+    cpa_xml = HiddenField(validators=[DataRequired()])
+    purpose = HiddenField(validators=[DataRequired()])
+
+
+class MessageboxCpaSelectForm(StripWhitespaceForm):
+    def __init__(self, cpa_ids, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cpa_id.choices = [(cpa_id, cpa_id) for cpa_id in cpa_ids]
+
+    cpa_id = GovukRadiosField("Welke CPA?", thing="een CPA")
+    message_type = GovukTextInputField(
+        "BerichtType",
+        # notifynl-api stores at most 255 characters
+        validators=[
+            DataRequired(message="Vul het BerichtType in"),
+            Length(max=255, message="Het BerichtType mag niet langer zijn dan 255 tekens"),
+        ],
+        param_extensions={
+            "hint": {
+                "text": (
+                    "Het BerichtType dat in het Berichtenbox Leveranciersportaal voor deze Logius-omgeving is "
+                    "aangemaakt. Een BerichtType in het API-verzoek gaat hier altijd voor."
+                )
+            }
+        },
+    )
+
+
+class MessageboxCpaSelectConfirmForm(StripWhitespaceForm):
+    cpa_id = HiddenField(validators=[DataRequired()])
+    message_type = HiddenField(validators=[DataRequired()])

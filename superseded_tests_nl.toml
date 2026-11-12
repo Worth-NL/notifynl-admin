@@ -1285,6 +1285,7 @@ reason = "Translation issue"
 [[test]]
 nodeid = "tests/app/main/views/test_api_integration.py::test_should_show_create_api_key_page"
 reason = "Translation issue"
+twin = ["tests/app/main/views/test_api_integration_nl.py::test_should_show_create_api_key_page"]
 
 [[test]]
 nodeid = "tests/app/main/views/test_api_integration.py::test_should_show_empty_api_keys_page"

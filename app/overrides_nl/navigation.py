@@ -114,6 +114,11 @@ class HeaderNavigation(Navigation):
             "email_branding",
             "letter_branding",
             "live_services_csv",
+            "messagebox_cpa_select",
+            "messagebox_cpa_select_confirm",
+            "messagebox_cpa_upload",
+            "messagebox_cpa_upload_confirm",
+            "messagebox_cpas",
             "notifications_sent_by_service",
             "get_billing_report",
             "platform_admin_users_list",
@@ -451,6 +456,13 @@ class PlatformAdminNavigation(Navigation):
         "providers": {
             "view_providers",
             "edit_sms_provider_ratio",
+        },
+        "messagebox-cpas": {
+            "messagebox_cpas",
+            "messagebox_cpa_upload",
+            "messagebox_cpa_upload_confirm",
+            "messagebox_cpa_select",
+            "messagebox_cpa_select_confirm",
         },
         "reports": {
             "platform_admin_reports",

@@ -70,9 +70,9 @@ def api_keys(service_id):
 def create_api_key(service_id):
     form = CreateKeyForm(current_service.api_keys)
     form.key_type.choices = [
-        (APIKey.TYPE_NORMAL, "Live - verstuurt naar iedereen"),
-        (APIKey.TYPE_TEAM, "Team en gasten lijst - beperkt naar wie je kunt sturen"),
-        (APIKey.TYPE_TEST, "Test - simuleert het versturen van berichten"),
+        (APIKey.TYPE_NORMAL, "Live – verstuurt naar iedereen"),
+        (APIKey.TYPE_TEAM, "Team en gastenlijst – beperkt naar wie je kunt sturen"),
+        (APIKey.TYPE_TEST, "Test – simuleert het versturen van berichten"),
     ]
     # preserve order of items extended by starting with empty dicts
     form.key_type.param_extensions = {"items": [{}, {}]}
@@ -86,8 +86,17 @@ def create_api_key(service_id):
                 )
             },
         }
+    team_key_hints = []
     if current_service.has_permission("letter"):
-        form.key_type.param_extensions["items"][1]["hint"] = {"text": "Kan niet worden gebruikt om brieven te sturen"}
+        # team keys simulate letters, like test keys (notifynl-api ADR 0018)
+        team_key_hints.append("Brieven worden niet verstuurd, alleen gesimuleerd.")
+    if current_service.has_permission("messagebox"):
+        team_key_hints.append(
+            "Berichtenboxberichten gaan naar de pre-productieomgeving van Logius en werken alleen met test-BSN’s van "
+            "Logius."
+        )
+    if team_key_hints:
+        form.key_type.param_extensions["items"][1]["hint"] = {"text": " ".join(team_key_hints)}
     if form.validate_on_submit():
         if current_service.trial_mode and form.key_type.data == APIKey.TYPE_NORMAL:
             abort(400)
