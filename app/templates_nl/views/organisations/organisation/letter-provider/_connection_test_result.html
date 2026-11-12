@@ -1,0 +1,80 @@
+{% from "components/banner.html" import banner_wrapper %}
+
+{% macro endpoint_reply(result) %}
+  <p class="govuk-body">HTTP {{ result.status_code }} {{ result.reason }}</p>
+  {% if result.location %}
+    <p class="govuk-body">Doorverwijzing naar: {{ result.location }}</p>
+  {% endif %}
+  {% if result.body_kind == "text" %}
+    <pre class="formatting-example">{{ result.body }}</pre>
+  {% elif result.body_kind == "binary" %}
+    <p class="govuk-body">
+      Het antwoord is een binair bestand{% if result.content_type %} ({{ result.content_type }}){% endif %} en wordt niet getoond.
+    </p>
+  {% elif result.body_kind == "unusable_token" %}
+    <p class="govuk-body">Het antwoord bevat geen bruikbaar toegangstoken en wordt daarom niet getoond.</p>
+  {% else %}
+    <p class="govuk-body">Het antwoord is leeg.</p>
+  {% endif %}
+  {% if result.body_truncated %}
+    <p class="govuk-body">Dit antwoord is ingekort.</p>
+  {% endif %}
+{% endmacro %}
+
+<div id="connection-test-result">
+  {% if connection_test.outcome == "authorized" %}
+    {% call banner_wrapper(type="default", with_tick=True) %}
+      <p class="govuk-body">Verbonden en correct geautoriseerd, met dit antwoord:</p>
+      {{ endpoint_reply(connection_test) }}
+    {% endcall %}
+  {% elif connection_test.outcome == "connected" %}
+    {% call banner_wrapper(type="default") %}
+      <p class="govuk-body">Verbonden, met dit antwoord:</p>
+      {{ endpoint_reply(connection_test) }}
+    {% endcall %}
+  {% elif connection_test.outcome == "unauthorized" %}
+    {% call banner_wrapper(type="dangerous") %}
+      {% set source = "de token-URL" if connection_test.step == "token" else "het endpoint" %}
+      {% if connection_test.body_kind == "unusable_token" %}
+        <p class="govuk-body">Niet geautoriseerd: {{ source }} {{ connection_test.host }} gaf geen bruikbaar toegangstoken.</p>
+      {% else %}
+        <p class="govuk-body">Niet geautoriseerd: {{ source }} {{ connection_test.host }} heeft de inloggegevens geweigerd.</p>
+      {% endif %}
+      {{ endpoint_reply(connection_test) }}
+    {% endcall %}
+  {% elif connection_test.outcome == "no_connection" %}
+    {% call banner_wrapper(type="dangerous") %}
+      <p class="govuk-body">Geen verbinding met {{ connection_test.host }}:</p>
+      <pre class="formatting-example">{{ connection_test.error }}</pre>
+    {% endcall %}
+  {% elif connection_test.outcome == "failed" %}
+    {% call banner_wrapper(type="default") %}
+      <p class="govuk-body">De test kon niet worden uitgevoerd. Probeer het later opnieuw.</p>
+      {% if connection_test.error %}
+        <pre class="formatting-example">{{ connection_test.error }}</pre>
+      {% endif %}
+    {% endcall %}
+  {% elif connection_test.state in ("queued", "running") %}
+    {% call banner_wrapper(type="default") %}
+      {% if connection_test.state == "queued" %}
+        <p class="govuk-body">De test staat nog in de wachtrij.</p>
+      {% else %}
+        <p class="govuk-body">NotifyNL wacht nog op antwoord van {{ connection_test.host }}.</p>
+      {% endif %}
+      <p class="govuk-body">Kies ‘Uitslag opnieuw ophalen’ om de uitslag te bekijken. Er wordt dan geen nieuwe testbrief verstuurd.</p>
+    {% endcall %}
+  {% elif connection_test.state == "rate_limited" %}
+    {% call banner_wrapper(type="default") %}
+      <p class="govuk-body">De verbinding is te vaak getest. Probeer het over een uur opnieuw.</p>
+    {% endcall %}
+  {% elif connection_test.state == "expired" %}
+    {% call banner_wrapper(type="default") %}
+      <p class="govuk-body">Deze uitslag is niet meer beschikbaar. Test de verbinding opnieuw.</p>
+    {% endcall %}
+  {% elif connection_test.state == "unavailable" %}
+    {% call banner_wrapper(type="default") %}
+      <p class="govuk-body">De verbinding kan op deze omgeving niet worden getest.</p>
+    {% endcall %}
+  {% endif %}
+  <p class="govuk-body govuk-!-font-weight-bold">Let op: deze gegevens zijn nog niet opgeslagen.</p>
+</div>

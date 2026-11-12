@@ -1,7 +1,7 @@
 {% extends "org_template.html" %}
 {% from "components/page-header.html" import page_header %}
-{% from "components/page-footer.html" import page_footer %}
 {% from "components/form.html" import form_wrapper %}
+{% from "govuk_frontend_jinja/components/button/macro.html" import govukButton %}
 {% from "govuk_frontend_jinja/components/warning-text/macro.html" import govukWarningText %}
 {% from "govuk_frontend_jinja/components/inset-text/macro.html" import govukInsetText %}
 {% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
@@ -18,6 +18,10 @@
 
 {% block maincolumn_content %}
   {{ page_header(page_title) }}
+
+  {% if connection_test %}
+    {% include "views/organisations/organisation/letter-provider/_connection_test_result.html" %}
+  {% endif %}
 
   <p class="govuk-body">
     NotifyNL stuurt elke brief als PDF naar het REST-endpoint van uw printleverancier.
@@ -74,6 +78,19 @@
       "iconFallbackText": "Waarschuwing"
     }) }}
 
-    {{ page_footer('Opslaan') }}
+    {# Opslaan comes first, as the Enter key presses a form's first button #}
+    <div class="page-footer govuk-button-group">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      {{ govukButton({"text": "Opslaan", "classes": "page-footer__button"}) }}
+      {{ govukButton({"text": "Verbinding testen", "name": "test_connection", "value": "1", "classes": "govuk-button--secondary"}) }}
+      {% if connection_test and connection_test.state in ("queued", "running") %}
+        {{ govukButton({
+          "text": "Uitslag opnieuw ophalen",
+          "name": "connection_test_id",
+          "value": connection_test.id,
+          "classes": "govuk-button--secondary"
+        }) }}
+      {% endif %}
+    </div>
   {% endcall %}
 {% endblock %}
