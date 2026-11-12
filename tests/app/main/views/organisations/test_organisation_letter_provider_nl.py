@@ -431,6 +431,28 @@ def test_rest_endpoint_page_never_shows_stored_secrets(logged_in_org_member, let
     assert "Als u een URL wijzigt, moet u dit opnieuw invullen" in normalize_spaces(page.text)
 
 
+@pytest.mark.parametrize("stored", [REST_ENDPOINT, PINGEN])
+def test_rest_endpoint_page_keeps_the_browser_from_filling_in_a_saved_login(
+    logged_in_org_member, letter_provider, stored
+):
+    letter_provider.return_value = stored
+
+    page = logged_in_org_member.get("main.organisation_letter_endpoint", org_id=ORGANISATION_ID)
+
+    inputs = page.select("main form input[type=text], main form input[type=password]")
+    assert {field["name"]: field.get("autocomplete") for field in inputs} == {
+        "endpoint_url": "off",
+        "username": "off",
+        "password": "new-password",
+        "api_key_header": "off",
+        "api_key": "new-password",
+        "token_endpoint": "off",
+        "client_id": "off",
+        "client_secret": "new-password",
+        "scope": "off",
+    }
+
+
 def test_rest_endpoint_page_for_an_organisation_on_pingen(logged_in_org_member):
     page = logged_in_org_member.get("main.organisation_letter_endpoint", org_id=ORGANISATION_ID)
 
