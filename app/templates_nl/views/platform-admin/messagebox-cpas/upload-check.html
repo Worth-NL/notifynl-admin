@@ -1,0 +1,43 @@
+{% extends "views/platform-admin/_base_template.html" %}
+{% from "components/form.html" import form_wrapper %}
+{% from "components/page-footer.html" import page_footer %}
+{% from "views/platform-admin/messagebox-cpas/_summary.html" import cpa_summary, cpa_checks %}
+
+{% block per_page_title %}
+  CPA controleren
+{% endblock %}
+
+{% block platform_admin_content %}
+  <h1 class="heading-large">CPA controleren voor {{ purpose_name }}</h1>
+
+  {% if error %}
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+      <div role="alert">
+        <h2 class="govuk-error-summary__title">Deze CPA kan niet worden geüpload</h2>
+        <div class="govuk-error-summary__body"><p class="govuk-body">{{ error }}</p></div>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if assessment %}
+    <h2 class="govuk-heading-m">Controles</h2>
+    {{ cpa_checks(assessment) }}
+  {% endif %}
+
+  {% if summary %}
+    <h2 class="govuk-heading-m">Inhoud</h2>
+    {{ cpa_summary(summary) }}
+  {% endif %}
+
+  {% if assessment and assessment.eligible and not error %}
+    {% call form_wrapper(action=url_for('main.messagebox_cpa_upload_confirm')) %}
+      {{ form.cpa_xml }}
+      {{ form.purpose }}
+      {{ page_footer('Uploaden naar ebms-core') }}
+    {% endcall %}
+  {% else %}
+    <p class="govuk-body">
+      <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.messagebox_cpa_upload') }}">Een andere CPA uploaden</a>
+    </p>
+  {% endif %}
+{% endblock %}

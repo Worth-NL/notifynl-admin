@@ -1,0 +1,52 @@
+{# A CPA as notifynl-api summarises it: `summary` is cpa_nl.serialize_summary's output #}
+{% macro cpa_summary(summary) %}
+  <dl class="govuk-summary-list govuk-!-margin-bottom-6">
+    <div class="govuk-summary-list__row">
+      <dt class="govuk-summary-list__key">CPA-id</dt>
+      <dd class="govuk-summary-list__value"><code class="govuk-!-font-size-16">{{ summary.cpa_id }}</code></dd>
+    </div>
+    <div class="govuk-summary-list__row">
+      <dt class="govuk-summary-list__key">Geldig</dt>
+      <dd class="govuk-summary-list__value">{{ summary.start[:10] }} tot {{ summary.end[:10] }} ({{ summary.status or 'geen status' }})</dd>
+    </div>
+    {% for party in summary.parties %}
+      <div class="govuk-summary-list__row">
+        <dt class="govuk-summary-list__key">{{ party.name or 'Partij' }}</dt>
+        <dd class="govuk-summary-list__value">
+          <p class="govuk-body govuk-!-margin-bottom-1">{{ party.party_ids | join(', ') }}</p>
+          <p class="govuk-body govuk-!-margin-bottom-1">Endpoint: {{ party.endpoints | join(', ') or 'geen' }}</p>
+          <p class="govuk-body govuk-!-margin-bottom-1">Proces: {{ party.processes | join(', ') or 'onbekend' }}</p>
+          <p class="govuk-body govuk-!-margin-bottom-1">Mag versturen: {{ party.can_send | join(', ') or 'niets' }}</p>
+          {% for certificate in party.certificates %}
+            <p class="govuk-body-s govuk-!-margin-bottom-1">
+              Certificaat {{ certificate.cert_id }}: {{ certificate.subject }}, verloopt
+              {{ certificate.not_after[:10] if certificate.not_after else 'onbekend' }}
+            </p>
+          {% endfor %}
+        </dd>
+      </div>
+    {% endfor %}
+  </dl>
+{% endmacro %}
+
+{% macro cpa_checks(assessment) %}
+  <ul class="govuk-list">
+    {% for check in assessment.checks %}
+      <li>
+        <span aria-hidden="true">{{ '✓' if check.passed else '✗' }}</span>
+        <span class="govuk-visually-hidden">{{ 'Geslaagd:' if check.passed else 'Mislukt:' }}</span>
+        {{ check.message }}
+      </li>
+    {% endfor %}
+  </ul>
+  {{ cpa_warnings(assessment.warnings) }}
+{% endmacro %}
+
+{% macro cpa_warnings(warnings) %}
+  {% for warning in warnings %}
+    <div class="govuk-warning-text">
+      <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+      <strong class="govuk-warning-text__text"><span class="govuk-visually-hidden">Waarschuwing</span> {{ warning }}</strong>
+    </div>
+  {% endfor %}
+{% endmacro %}
