@@ -82,12 +82,27 @@
       "iconFallbackText": "Waarschuwing"
     }) }}
 
+    <p class="govuk-body" id="connection-test-hint">
+      Met ‘Verbinding testen’ stuurt NotifyNL een testbrief van één pagina zonder adres naar uw printleverancier, met
+      de gegevens hierboven. Op de brief staat ‘niet afdrukken’, maar uw printleverancier kan hem toch afdrukken.
+    </p>
+
     {# Opslaan comes first, as the Enter key presses a form's first button #}
     <div class="page-footer govuk-button-group">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       {{ govukButton({"text": "Opslaan", "classes": "page-footer__button"}) }}
-      {{ govukButton({"text": "Verbinding testen", "name": "test_connection", "value": "1", "classes": "govuk-button--secondary"}) }}
+      {{ govukButton({
+        "text": "Verbinding testen",
+        "name": "test_connection",
+        "value": "1",
+        "classes": "govuk-button--secondary",
+        "attributes": {"aria-describedby": "connection-test-hint"}
+      }) }}
       {% if connection_test and connection_test.state in ("queued", "running") %}
+        {% if connection_test.tested_values %}
+          {# so the result can say when the form no longer holds the values it is about #}
+          <input type="hidden" name="tested_values" value="{{ connection_test.tested_values }}" />
+        {% endif %}
         {{ govukButton({
           "text": "Uitslag opnieuw ophalen",
           "name": "connection_test_id",

@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from flask import url_for
 from notifications_python_client.errors import HTTPError
@@ -813,6 +815,7 @@ CONNECTION_TEST_FORM = {
     "test_connection": "1",
 }
 NOT_SAVED = "Let op: deze gegevens zijn nog niet opgeslagen."
+VALUES_CHANGED = "U hebt de gegevens gewijzigd nadat deze test begon."
 
 
 def _finished(outcome, **overrides):
@@ -827,6 +830,7 @@ def _finished(outcome, **overrides):
         "content_type": "application/json",
         "location": None,
         "error": None,
+        "timed_out": False,
         "body": '{"id": "job-1"}',
         "body_kind": "text",
         "body_truncated": False,
@@ -871,6 +875,17 @@ def test_rest_endpoint_page_has_a_test_button_after_the_save_button(logged_in_or
     assert _buttons(page) == ["Opslaan", "Verbinding testen"]
     assert page.select_one("button[name=test_connection]")
     assert not page.select_one("#connection-test-result")
+
+
+def test_rest_endpoint_page_says_the_test_sends_a_letter_that_may_be_printed(logged_in_org_member):
+    page = logged_in_org_member.get("main.organisation_letter_endpoint", org_id=ORGANISATION_ID)
+
+    assert normalize_spaces(page.select_one("#connection-test-hint").text) == (
+        "Met ‘Verbinding testen’ stuurt NotifyNL een testbrief van één pagina zonder adres naar uw printleverancier, "
+        "met de gegevens hierboven. Op de brief staat ‘niet afdrukken’, maar uw printleverancier kan hem toch "
+        "afdrukken."
+    )
+    assert page.select_one("button[name=test_connection]")["aria-describedby"] == "connection-test-hint"
 
 
 def test_testing_the_connection_uses_the_typed_values_and_saves_nothing(
@@ -948,6 +963,23 @@ def test_testing_the_connection_uses_the_typed_values_and_saves_nothing(
             "Geen verbinding met print.example.com: [Errno 111] Connection refused",
         ),
         (
+            _finished("no_reply", status_code=None, reason="", body=None, error="Read timed out. (read timeout=15)"),
+            ".banner-default",
+            "Geen antwoord van het endpoint print.example.com. De testbrief kan wel zijn ontvangen. "
+            "Read timed out. (read timeout=15)",
+        ),
+        (
+            _finished("no_reply", step="token", host="idp.example.com", status_code=None, body=None, error="Timeout"),
+            ".banner-default",
+            "Geen antwoord van de token-URL idp.example.com. Er is geen testbrief verstuurd.",
+        ),
+        (
+            _finished("no_reply", status_code=None, reason="", body=None, timed_out=True, duration_ms=59400),
+            ".banner-default",
+            "Geen antwoord van het endpoint print.example.com. De testbrief kan wel zijn ontvangen. "
+            "NotifyNL is na 59 seconden gestopt met wachten op het antwoord.",
+        ),
+        (
             {"state": "finished", "outcome": "failed"},
             ".banner-default",
             "De test kon niet worden uitgevoerd.",
@@ -990,6 +1022,11 @@ def test_the_result_of_a_connection_test(
             "Het antwoord is een binair bestand (application/pdf) en wordt niet getoond.",
         ),
         ({"body_truncated": True}, "HTTP 200 OK", "Dit antwoord is ingekort."),
+        (
+            {"body_truncated": True, "timed_out": True, "duration_ms": 60000},
+            "HTTP 200 OK",
+            "Dit antwoord is ingekort. NotifyNL is na 60 seconden gestopt met wachten op het antwoord.",
+        ),
     ],
 )
 def test_the_reply_of_the_endpoint_is_shown(
@@ -1100,6 +1137,38 @@ def test_a_connection_test_still_going_can_be_looked_up_again(
     assert not page.select(".banner-dangerous")
     assert _buttons(page) == ["Opslaan", "Verbinding testen", "Uitslag opnieuw ophalen"]
     assert page.select_one("button[name=connection_test_id]")["value"] == CONNECTION_TEST_ID
+    # a signature of the tested values, not the values: the password is among them
+    assert re.fullmatch("[0-9a-f]{64}", page.select_one("input[name=tested_values]")["value"])
+
+
+@pytest.mark.parametrize(
+    "edits, expected_note",
+    [
+        ({}, False),
+        ({"endpoint_url": "https://other.example.com/letters"}, True),
+        ({"password": "another-password"}, True),
+    ],
+)
+def test_looking_up_a_connection_test_again_says_when_the_form_was_edited_since_it_started(
+    logged_in_org_member, start_connection_test, connection_test_result, mock_events, mocker, edits, expected_note
+):
+    mocker.patch("app.main.views_nl.organisations.letter_provider.CONNECTION_TEST_WAIT_SECONDS", 0)
+    connection_test_result.return_value = {"state": "queued"}
+    tested_values = _test_connection(logged_in_org_member).select_one("input[name=tested_values]")["value"]
+    connection_test_result.return_value = _finished("authorized")
+
+    page = logged_in_org_member.post(
+        "main.organisation_letter_endpoint",
+        org_id=ORGANISATION_ID,
+        _data={key: value for key, value in CONNECTION_TEST_FORM.items() if key != "test_connection"}
+        | edits
+        | {"connection_test_id": CONNECTION_TEST_ID, "tested_values": tested_values},
+        _expected_status=200,
+    )
+
+    result = normalize_spaces(page.select_one("#connection-test-result").text)
+    assert "Verbonden en correct geautoriseerd" in result
+    assert (VALUES_CHANGED in result) == expected_note
 
 
 def test_looking_up_a_connection_test_again_sends_no_new_letter(

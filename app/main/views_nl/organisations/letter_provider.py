@@ -1,3 +1,6 @@
+import hashlib
+import hmac
+import json
 import time
 from uuid import UUID
 
@@ -110,7 +113,7 @@ def _connection_test_from_request(form):
 
     try:
         if connection_test_id:
-            return _wait_for_connection_test(_uuid_or_404(connection_test_id))
+            return _look_up_connection_test_again(_uuid_or_404(connection_test_id), form)
         return _start_connection_test(form)
     except HTTPError as e:
         if e.status_code == 429:
@@ -121,20 +124,46 @@ def _connection_test_from_request(form):
 
 
 def _start_connection_test(form):
-    data = form.api_data()
+    tested_values = _tested_values(form)
     connection_test_id = organisations_client.start_letter_endpoint_connection_test(
-        current_organisation.id,
-        {"endpoint_url": data["endpoint_url"], "auth_method": data["auth_method"], "auth_config": data["auth_config"]},
+        current_organisation.id, tested_values
     )["id"]
     Events.start_letter_endpoint_connection_test(
         organisation_id=current_organisation.id,
         started_by_id=current_user.id,
         connection_test_id=connection_test_id,
-        endpoint_url=data["endpoint_url"],
-        token_endpoint=data["auth_config"].get("token_endpoint"),
-        auth_method=data["auth_method"],
+        endpoint_url=tested_values["endpoint_url"],
+        token_endpoint=tested_values["auth_config"].get("token_endpoint"),
+        auth_method=tested_values["auth_method"],
     )
-    return _wait_for_connection_test(connection_test_id)
+    return _wait_for_connection_test(connection_test_id) | {"tested_values": _signature(tested_values)}
+
+
+def _look_up_connection_test_again(connection_test_id, form):
+    result = _wait_for_connection_test(connection_test_id)
+    signature = request.form.get("tested_values")
+    if not signature:
+        return result
+    # the result is of the values the test started with, and the form may have been edited since
+    return result | {
+        "tested_values": signature,
+        "values_changed": not hmac.compare_digest(signature, _signature(_tested_values(form))),
+    }
+
+
+def _tested_values(form):
+    data = form.api_data()
+    return {
+        "endpoint_url": data["endpoint_url"],
+        "auth_method": data["auth_method"],
+        "auth_config": data["auth_config"],
+    }
+
+
+def _signature(tested_values):
+    """Tells whether the form still holds the tested values, without the secrets among them being readable from it."""
+    message = b"letter-endpoint-connection-test:" + json.dumps(tested_values, sort_keys=True).encode()
+    return hmac.new(current_app.config["SECRET_KEY"].encode(), message, hashlib.sha256).hexdigest()
 
 
 def _wait_for_connection_test(connection_test_id):

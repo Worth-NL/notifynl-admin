@@ -1,5 +1,13 @@
 {% from "components/banner.html" import banner_wrapper %}
 
+{% macro stopped_waiting(result) %}
+  {% if result.timed_out %}
+    <p class="govuk-body">
+      NotifyNL is na {{ ((result.duration_ms or 0) / 1000)|round|int }} seconden gestopt met wachten op het antwoord.
+    </p>
+  {% endif %}
+{% endmacro %}
+
 {% macro endpoint_reply(result) %}
   <p class="govuk-body">HTTP {{ result.status_code }} {{ result.reason }}</p>
   {% if result.location %}
@@ -19,6 +27,7 @@
   {% if result.body_truncated %}
     <p class="govuk-body">Dit antwoord is ingekort.</p>
   {% endif %}
+  {{ stopped_waiting(result) }}
 {% endmacro %}
 
 <div id="connection-test-result">
@@ -46,6 +55,19 @@
     {% call banner_wrapper(type="dangerous") %}
       <p class="govuk-body">Geen verbinding met {{ connection_test.host }}:</p>
       <pre class="formatting-example">{{ connection_test.error }}</pre>
+    {% endcall %}
+  {% elif connection_test.outcome == "no_reply" %}
+    {# the request went out (or may have), so this is no connection failure #}
+    {% call banner_wrapper(type="default") %}
+      {% if connection_test.step == "token" %}
+        <p class="govuk-body">Geen antwoord van de token-URL {{ connection_test.host }}. Er is geen testbrief verstuurd.</p>
+      {% else %}
+        <p class="govuk-body">Geen antwoord van het endpoint {{ connection_test.host }}. De testbrief kan wel zijn ontvangen.</p>
+      {% endif %}
+      {{ stopped_waiting(connection_test) }}
+      {% if connection_test.error %}
+        <pre class="formatting-example">{{ connection_test.error }}</pre>
+      {% endif %}
     {% endcall %}
   {% elif connection_test.outcome == "failed" %}
     {% call banner_wrapper(type="default") %}
@@ -75,6 +97,12 @@
     {% call banner_wrapper(type="default") %}
       <p class="govuk-body">De verbinding kan op deze omgeving niet worden getest.</p>
     {% endcall %}
+  {% endif %}
+  {% if connection_test.values_changed and connection_test.state in ("queued", "running", "finished") %}
+    <p class="govuk-body">
+      U hebt de gegevens gewijzigd nadat deze test begon. Deze uitslag hoort bij de gegevens van toen. Test de
+      verbinding opnieuw om de nieuwe gegevens te testen.
+    </p>
   {% endif %}
   <p class="govuk-body govuk-!-font-weight-bold">Let op: deze gegevens zijn nog niet opgeslagen.</p>
 </div>
