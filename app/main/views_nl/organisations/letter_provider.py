@@ -1,7 +1,7 @@
 import hashlib
 import hmac
 import json
-import time
+from time import monotonic, sleep
 from uuid import UUID
 
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
@@ -84,15 +84,26 @@ def organisation_letter_endpoint(org_id):
     )
 
     connection_test = None
-    if form.validate_on_submit():
+    if _connection_test_requested() and not current_user.platform_admin:
+        # a test presents NotifyNL's client certificate to the host that was typed in, and shows its reply
+        abort(403)
+
+    if request.form.get("connection_test_id"):
+        # looking a result up needs nothing from the form, which may have been edited into an invalid state since
+        connection_test = _look_up_connection_test_again(form)
+    elif form.validate_on_submit():
         try:
-            connection_test = _connection_test_from_request(form)
-            if connection_test is None:
+            if "test_connection" in request.form:
+                connection_test = _start_connection_test(form)
+            else:
                 _save_letter_provider(form.api_data(), stored)
         except HTTPError as e:
-            if e.status_code != 400:
+            if "test_connection" in request.form and (refused := _refusal(e)):
+                connection_test = refused
+            elif e.status_code != 400:
                 raise
-            form.add_api_error(e.message)
+            else:
+                form.add_api_error(e.message)
         else:
             if connection_test is None:
                 return redirect(url_for(".organisation_settings", org_id=org_id))
@@ -105,27 +116,27 @@ def organisation_letter_endpoint(org_id):
     )
 
 
-def _connection_test_from_request(form):
-    """The result to show if one of the connection test buttons was pressed, otherwise None. Never saves anything."""
-    connection_test_id = request.form.get("connection_test_id")
-    if not connection_test_id and "test_connection" not in request.form:
-        return None
-    if not current_user.platform_admin:
-        # a test presents NotifyNL's client certificate to the host that was typed in, and shows its reply
-        abort(403)
+def _connection_test_requested():
+    return bool(request.form.get("connection_test_id")) or "test_connection" in request.form
 
+
+def _refusal(error):
+    """What to show when the API won't start or look up a test now, None for any other error."""
+    if error.status_code == 409:
+        return {"state": "busy", "id": _running_test_id(error)}
+    if error.status_code == 429:
+        return {"state": "rate_limited"}
+    if error.status_code == 503:
+        return {"state": "unavailable"}
+    return None
+
+
+def _running_test_id(error):
+    """The organisation's own running test, whose result can still be looked up: the API gives its id."""
     try:
-        if connection_test_id:
-            return _look_up_connection_test_again(_uuid_or_404(connection_test_id), form)
-        return _start_connection_test(form)
-    except HTTPError as e:
-        if e.status_code == 409:
-            return {"state": "busy"}
-        if e.status_code == 429:
-            return {"state": "rate_limited"}
-        if e.status_code == 503:
-            return {"state": "unavailable"}
-        raise
+        return str(UUID(error.response.json()["running_test_id"]))
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return None
 
 
 def _start_connection_test(form):
@@ -144,16 +155,22 @@ def _start_connection_test(form):
     return _wait_for_connection_test(connection_test_id) | {"tested_values": _signature(tested_values)}
 
 
-def _look_up_connection_test_again(connection_test_id, form):
-    result = _wait_for_connection_test(connection_test_id)
+def _look_up_connection_test_again(form):
+    connection_test_id = _uuid_or_404(request.form["connection_test_id"])
+    try:
+        result = _wait_for_connection_test(connection_test_id)
+    except HTTPError as e:
+        if refused := _refusal(e):
+            return refused
+        raise
     signature = request.form.get("tested_values")
     if not signature:
         return result
     # the result is of the values the test started with, and the form may have been edited since
-    return result | {
-        "tested_values": signature,
-        "values_changed": not hmac.compare_digest(signature, _signature(_tested_values(form))),
-    }
+    values_changed = not form.validate_on_submit() or not hmac.compare_digest(
+        signature, _signature(_tested_values(form))
+    )
+    return result | {"tested_values": signature, "values_changed": values_changed}
 
 
 def _tested_values(form):
@@ -172,7 +189,7 @@ def _signature(tested_values):
 
 
 def _wait_for_connection_test(connection_test_id):
-    deadline = time.monotonic() + CONNECTION_TEST_WAIT_SECONDS
+    deadline = monotonic() + CONNECTION_TEST_WAIT_SECONDS
     while True:
         try:
             result = organisations_client.get_letter_endpoint_connection_test(
@@ -182,9 +199,9 @@ def _wait_for_connection_test(connection_test_id):
             if e.status_code == 404:
                 return {"state": "expired"}
             raise
-        if result["state"] == "finished" or time.monotonic() >= deadline:
+        if result["state"] == "finished" or monotonic() >= deadline:
             return result | {"id": connection_test_id}
-        time.sleep(CONNECTION_TEST_POLL_SECONDS)
+        sleep(CONNECTION_TEST_POLL_SECONDS)
 
 
 def _uuid_or_404(value):

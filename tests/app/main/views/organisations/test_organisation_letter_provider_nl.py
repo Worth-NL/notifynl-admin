@@ -846,7 +846,7 @@ def logged_in_platform_admin(client_request, platform_admin_user, mock_get_organ
 
 @pytest.fixture
 def no_waiting(mocker):
-    return mocker.patch("app.main.views_nl.organisations.letter_provider.time.sleep")
+    return mocker.patch("app.main.views_nl.organisations.letter_provider.sleep")
 
 
 @pytest.fixture
@@ -1020,6 +1020,18 @@ def test_testing_the_connection_uses_the_typed_values_and_saves_nothing(
             {"state": "finished", "outcome": "failed"},
             ".banner-default",
             "De test kon niet worden uitgevoerd.",
+        ),
+        (
+            {"state": "finished", "outcome": "failed", "host": "print.example.com", "failed_reason": "stopped"},
+            ".banner-default",
+            "De test kon niet worden uitgevoerd. Probeer het later opnieuw. "
+            "De test duurde langer dan een verbindingstest mag duren en is gestopt.",
+        ),
+        (
+            {"state": "finished", "outcome": "failed", "failed_reason": "address_refused"},
+            ".banner-default",
+            "De test kon niet worden uitgevoerd. Probeer het later opnieuw. "
+            "NotifyNL kan het adres niet gebruiken: het is onbekend of intern. Er is niets verstuurd.",
         ),
     ],
 )
@@ -1290,7 +1302,127 @@ def test_testing_the_connection_while_another_test_runs(
         page.select_one("#connection-test-result").text
     )
     assert not page.select(".banner-dangerous")
+    assert _buttons(page) == ["Opslaan", "Verbinding testen"]
     assert not mock_events.called
+
+
+def test_testing_the_connection_while_another_test_runs_offers_that_test_s_result(
+    logged_in_platform_admin, start_connection_test, connection_test_result, mock_events, mocker
+):
+    # e.g. a second click, or F5, while the first test is still waiting for the endpoint
+    response = mocker.Mock(
+        status_code=409,
+        json=lambda: {"result": "error", "message": "already running", "running_test_id": CONNECTION_TEST_ID},
+    )
+    start_connection_test.side_effect = HTTPError(response=response, message="already running")
+
+    page = _test_connection(logged_in_platform_admin)
+
+    result = normalize_spaces(page.select_one("#connection-test-result").text)
+    assert "Er loopt al een verbindingstest." in result
+    assert "Er wordt dan geen nieuwe testbrief verstuurd." in result
+    assert _buttons(page) == ["Opslaan", "Verbinding testen", "Uitslag opnieuw ophalen"]
+    assert page.select_one("button[name=connection_test_id]")["value"] == CONNECTION_TEST_ID
+    # no tested values were kept: the running test may be of other values
+    assert not page.select_one("input[name=tested_values]")
+    assert not connection_test_result.called
+    assert not mock_events.called
+
+
+def test_looking_up_a_connection_test_again_does_not_need_a_valid_form(
+    logged_in_platform_admin,
+    start_connection_test,
+    connection_test_result,
+    mock_set_letter_provider,
+    mock_events,
+    mocker,
+):
+    mocker.patch("app.main.views_nl.organisations.letter_provider.CONNECTION_TEST_WAIT_SECONDS", 0)
+    connection_test_result.return_value = {"state": "queued"}
+    tested_values = _test_connection(logged_in_platform_admin).select_one("input[name=tested_values]")["value"]
+    connection_test_result.return_value = _finished("authorized")
+
+    # e.g. the password was cleared to type it again later
+    page = logged_in_platform_admin.post(
+        "main.organisation_letter_endpoint",
+        org_id=ORGANISATION_ID,
+        _data={key: value for key, value in CONNECTION_TEST_FORM.items() if key != "test_connection"}
+        | {"password": "", "connection_test_id": CONNECTION_TEST_ID, "tested_values": tested_values},
+        _expected_status=200,
+    )
+
+    result = normalize_spaces(page.select_one("#connection-test-result").text)
+    assert "Verbonden en correct geautoriseerd" in result
+    assert VALUES_CHANGED in result
+    assert not mock_set_letter_provider.called
+
+
+@pytest.mark.parametrize("data", [{"test_connection": "1"}, {"connection_test_id": CONNECTION_TEST_ID}])
+def test_only_platform_admins_can_test_even_when_the_form_is_invalid(
+    logged_in_org_member, start_connection_test, connection_test_result, mock_events, data
+):
+    logged_in_org_member.post(
+        "main.organisation_letter_endpoint",
+        org_id=ORGANISATION_ID,
+        _data=CONNECTION_TEST_FORM | {"username": ""} | data,
+        _expected_status=403,
+    )
+
+    assert not start_connection_test.called
+    assert not connection_test_result.called
+    assert not mock_events.called
+
+
+@pytest.mark.parametrize("field", ["endpoint_url", "token_endpoint"])
+def test_a_url_with_a_username_or_password_is_refused_in_dutch_before_anything_is_sent(
+    logged_in_platform_admin, start_connection_test, mock_events, field
+):
+    url = "https://notifynl:Welkom01@print.voorbeeld.nl/upload"
+    data = (
+        {"endpoint_url": url}
+        if field == "endpoint_url"
+        else {
+            "auth_method": "oauth",
+            "token_endpoint": url,
+            "client_id": "notify",
+            "client_secret": "secret",
+        }
+    )
+
+    page = _test_connection(logged_in_platform_admin, data)
+
+    assert normalize_spaces(page.select_one(f"#{field}-error").text) == (
+        "Error: Zet geen gebruikersnaam of wachtwoord in het adres: vul die in bij de inloggegevens"
+    )
+    assert "Welkom01" not in str(page.select_one(f"#{field}-error"))
+    assert not start_connection_test.called
+
+
+def test_an_api_error_about_credentials_in_the_url_is_shown_in_dutch(
+    logged_in_platform_admin, start_connection_test, mock_events, mocker
+):
+    message = f"{ENDPOINT_URL} must not contain credentials"
+    response = mocker.Mock(status_code=400, json=lambda: {"result": "error", "message": message})
+    start_connection_test.side_effect = HTTPError(response=response, message=message)
+
+    page = _test_connection(logged_in_platform_admin)
+
+    assert normalize_spaces(page.select_one("#endpoint_url-error").text) == (
+        "Error: Zet geen gebruikersnaam of wachtwoord in het adres: vul die in bij de inloggegevens"
+    )
+
+
+def test_an_unknown_api_error_does_not_say_something_was_being_saved(
+    logged_in_platform_admin, start_connection_test, mock_events, mocker
+):
+    response = mocker.Mock(status_code=400, json=lambda: {"result": "error", "message": "Something odd"})
+    start_connection_test.side_effect = HTTPError(response=response, message="Something odd")
+
+    page = _test_connection(logged_in_platform_admin)
+
+    assert normalize_spaces(page.select_one("#endpoint_url-error").text) == (
+        "Error: Deze instellingen kunnen niet worden gebruikt: Something odd"
+    )
 
 
 def test_testing_the_connection_too_often(logged_in_platform_admin, start_connection_test, mock_events, mocker):

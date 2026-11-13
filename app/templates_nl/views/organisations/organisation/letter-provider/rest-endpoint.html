@@ -104,7 +104,7 @@
           "attributes": {"aria-describedby": "connection-test-hint"}
         }) }}
       {% endif %}
-      {% if can_test and connection_test and connection_test.state in ("queued", "running") %}
+      {% if can_test and connection_test and (connection_test.state in ("queued", "running") or (connection_test.state == "busy" and connection_test.id)) %}
         {% if connection_test.tested_values %}
           {# so the result can say when the form no longer holds the values it is about #}
           <input type="hidden" name="tested_values" value="{{ connection_test.tested_values }}" />

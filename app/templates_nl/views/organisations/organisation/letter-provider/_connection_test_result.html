@@ -11,6 +11,12 @@
   "other": "Er ging iets mis met de verbinding.",
 } %}
 
+{# the API only gives the reason a test could not run: its own text is English #}
+{% set failed_reasons = {
+  "stopped": "De test duurde langer dan een verbindingstest mag duren en is gestopt.",
+  "address_refused": "NotifyNL kan het adres niet gebruiken: het is onbekend of intern. Er is niets verstuurd.",
+} %}
+
 {% macro network_error(result) %}
   {% if result.error_kind %}
     <p class="govuk-body">{{ network_errors.get(result.error_kind, network_errors.other) }}</p>
@@ -87,8 +93,8 @@
   {% elif connection_test.outcome == "failed" %}
     {% call banner_wrapper(type="default") %}
       <p class="govuk-body">De test kon niet worden uitgevoerd. Probeer het later opnieuw.</p>
-      {% if connection_test.error %}
-        <pre class="formatting-example">{{ connection_test.error }}</pre>
+      {% if connection_test.get("failed_reason") in failed_reasons %}
+        <p class="govuk-body">{{ failed_reasons[connection_test.get("failed_reason")] }}</p>
       {% endif %}
     {% endcall %}
   {% elif connection_test.state in ("queued", "running") %}
@@ -102,7 +108,12 @@
     {% endcall %}
   {% elif connection_test.state == "busy" %}
     {% call banner_wrapper(type="default") %}
-      <p class="govuk-body">Er loopt al een verbindingstest. Probeer het over een paar minuten opnieuw.</p>
+      {% if connection_test.id %}
+        <p class="govuk-body">Er loopt al een verbindingstest.</p>
+        <p class="govuk-body">Kies ‘Uitslag opnieuw ophalen’ om de uitslag te bekijken. Er wordt dan geen nieuwe testbrief verstuurd.</p>
+      {% else %}
+        <p class="govuk-body">Er loopt al een verbindingstest. Probeer het over een paar minuten opnieuw.</p>
+      {% endif %}
     {% endcall %}
   {% elif connection_test.state == "rate_limited" %}
     {% call banner_wrapper(type="default") %}

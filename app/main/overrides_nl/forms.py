@@ -3578,6 +3578,9 @@ LETTER_ENDPOINT_FIELD_NAMES = {
     "client_id": "de client-ID",
     "client_secret": "het client secret",
 }
+LETTER_ENDPOINT_URL_CREDENTIALS_MESSAGE = (
+    "Zet geen gebruikersnaam of wachtwoord in het adres: vul die in bij de inloggegevens"
+)
 # an HTTP header name (RFC 9110 token), and not one the request itself depends on (as checked by the API)
 LETTER_ENDPOINT_HEADER_PATTERN = re.compile(r"[!#$%&'*+\-.^_`|~0-9A-Za-z]{1,100}")
 LETTER_ENDPOINT_RESERVED_HEADERS = {
@@ -3712,6 +3715,8 @@ class OrganisationLetterEndpointForm(StripWhitespaceForm):
             self._add_error(url_field, "NotifyNL kan dit adres niet gebruiken: het is onbekend of intern")
         elif "must use https" in message:
             self._add_error(url_field, "Het adres moet met https:// beginnen")
+        elif "must not contain credentials" in message:
+            self._add_error(url_field, LETTER_ENDPOINT_URL_CREDENTIALS_MESSAGE)
         elif "API key header" in message:
             self._add_error(self.api_key_header, "Deze naam kan niet als header worden gebruikt")
         elif "entered again" in message:
@@ -3719,7 +3724,8 @@ class OrganisationLetterEndpointForm(StripWhitespaceForm):
                 if name in LETTER_ENDPOINT_SECRET_FIELDS:
                     self._add_error(getattr(self, name), self._reenter_message(name))
         else:
-            self._add_error(self.endpoint_url, f"De instellingen konden niet worden opgeslagen: {message}")
+            # also shown when testing, so it doesn't say anything was being saved
+            self._add_error(self.endpoint_url, f"Deze instellingen kunnen niet worden gebruikt: {message}")
 
     def _url_error(self, url, missing_message):
         if not url:
@@ -3732,6 +3738,8 @@ class OrganisationLetterEndpointForm(StripWhitespaceForm):
         else:
             if parts.scheme not in (("https", "http") if self.allow_insecure else ("https",)):
                 return "Het adres moet met https:// beginnen"
+            if parts.username or parts.password:
+                return LETTER_ENDPOINT_URL_CREDENTIALS_MESSAGE
         if not hostname:
             return "Vul een volledig adres in, zoals https://print.voorbeeld.nl/brieven"
         return None
