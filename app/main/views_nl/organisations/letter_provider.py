@@ -1,4 +1,10 @@
-from flask import current_app, flash, redirect, render_template, request, url_for
+import hashlib
+import hmac
+import json
+import time
+from uuid import UUID
+
+from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 from notifications_python_client.errors import HTTPError
 
@@ -17,6 +23,10 @@ from app.utils.user import user_has_permissions
 
 # Any member of the organisation can choose its letter provider, not just platform admins. Its summary is a section
 # of the organisation's settings page, which org members see with nothing else on it.
+
+# requests are cut off after HTTP_SERVE_TIMEOUT_SECONDS (30 by default): a test not done by then can be looked up again
+CONNECTION_TEST_WAIT_SECONDS = 20
+CONNECTION_TEST_POLL_SECONDS = 1
 
 
 @main.route("/organisations/<uuid:org_id>/letter-provider/change", methods=["GET", "POST"])
@@ -73,21 +83,115 @@ def organisation_letter_endpoint(org_id):
         **_form_data(stored_endpoint),
     )
 
+    connection_test = None
     if form.validate_on_submit():
         try:
-            _save_letter_provider(form.api_data(), stored)
+            connection_test = _connection_test_from_request(form)
+            if connection_test is None:
+                _save_letter_provider(form.api_data(), stored)
         except HTTPError as e:
             if e.status_code != 400:
                 raise
             form.add_api_error(e.message)
         else:
-            return redirect(url_for(".organisation_settings", org_id=org_id))
+            if connection_test is None:
+                return redirect(url_for(".organisation_settings", org_id=org_id))
 
     return render_template(
         "views/organisations/organisation/letter-provider/rest-endpoint.html",
         form=form,
         has_stored_endpoint=bool(stored_endpoint),
+        connection_test=connection_test,
     )
+
+
+def _connection_test_from_request(form):
+    """The result to show if one of the connection test buttons was pressed, otherwise None. Never saves anything."""
+    connection_test_id = request.form.get("connection_test_id")
+    if not connection_test_id and "test_connection" not in request.form:
+        return None
+    if not current_user.platform_admin:
+        # a test presents NotifyNL's client certificate to the host that was typed in, and shows its reply
+        abort(403)
+
+    try:
+        if connection_test_id:
+            return _look_up_connection_test_again(_uuid_or_404(connection_test_id), form)
+        return _start_connection_test(form)
+    except HTTPError as e:
+        if e.status_code == 409:
+            return {"state": "busy"}
+        if e.status_code == 429:
+            return {"state": "rate_limited"}
+        if e.status_code == 503:
+            return {"state": "unavailable"}
+        raise
+
+
+def _start_connection_test(form):
+    tested_values = _tested_values(form)
+    connection_test_id = organisations_client.start_letter_endpoint_connection_test(
+        current_organisation.id, tested_values | {"started_by_id": current_user.id}
+    )["id"]
+    Events.start_letter_endpoint_connection_test(
+        organisation_id=current_organisation.id,
+        started_by_id=current_user.id,
+        connection_test_id=connection_test_id,
+        endpoint_url=tested_values["endpoint_url"],
+        token_endpoint=tested_values["auth_config"].get("token_endpoint"),
+        auth_method=tested_values["auth_method"],
+    )
+    return _wait_for_connection_test(connection_test_id) | {"tested_values": _signature(tested_values)}
+
+
+def _look_up_connection_test_again(connection_test_id, form):
+    result = _wait_for_connection_test(connection_test_id)
+    signature = request.form.get("tested_values")
+    if not signature:
+        return result
+    # the result is of the values the test started with, and the form may have been edited since
+    return result | {
+        "tested_values": signature,
+        "values_changed": not hmac.compare_digest(signature, _signature(_tested_values(form))),
+    }
+
+
+def _tested_values(form):
+    data = form.api_data()
+    return {
+        "endpoint_url": data["endpoint_url"],
+        "auth_method": data["auth_method"],
+        "auth_config": data["auth_config"],
+    }
+
+
+def _signature(tested_values):
+    """Tells whether the form still holds the tested values, without the secrets among them being readable from it."""
+    message = b"letter-endpoint-connection-test:" + json.dumps(tested_values, sort_keys=True).encode()
+    return hmac.new(current_app.config["SECRET_KEY"].encode(), message, hashlib.sha256).hexdigest()
+
+
+def _wait_for_connection_test(connection_test_id):
+    deadline = time.monotonic() + CONNECTION_TEST_WAIT_SECONDS
+    while True:
+        try:
+            result = organisations_client.get_letter_endpoint_connection_test(
+                current_organisation.id, connection_test_id
+            )
+        except HTTPError as e:
+            if e.status_code == 404:
+                return {"state": "expired"}
+            raise
+        if result["state"] == "finished" or time.monotonic() >= deadline:
+            return result | {"id": connection_test_id}
+        time.sleep(CONNECTION_TEST_POLL_SECONDS)
+
+
+def _uuid_or_404(value):
+    try:
+        return str(UUID(value))
+    except ValueError:
+        abort(404)
 
 
 def _is_rest_endpoint(stored):
