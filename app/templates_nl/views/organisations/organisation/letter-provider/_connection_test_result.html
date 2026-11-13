@@ -1,5 +1,22 @@
 {% from "components/banner.html" import banner_wrapper %}
 
+{# the API only gives the kind of network error: its text can name internal hosts and certificates #}
+{% set network_errors = {
+  "dns": "De hostnaam is niet gevonden.",
+  "connect": "De verbinding werd geweigerd of kon niet worden opgezet.",
+  "connect_timeout": "Er kwam niet op tijd een verbinding tot stand.",
+  "tls": "De beveiligde verbinding (TLS) kon niet worden opgezet, bijvoorbeeld door een certificaat dat niet klopt.",
+  "read_timeout": "Er kwam niet op tijd een antwoord.",
+  "closed": "De verbinding werd verbroken.",
+  "other": "Er ging iets mis met de verbinding.",
+} %}
+
+{% macro network_error(result) %}
+  {% if result.error_kind %}
+    <p class="govuk-body">{{ network_errors.get(result.error_kind, network_errors.other) }}</p>
+  {% endif %}
+{% endmacro %}
+
 {% macro stopped_waiting(result) %}
   {% if result.timed_out %}
     <p class="govuk-body">
@@ -53,8 +70,8 @@
     {% endcall %}
   {% elif connection_test.outcome == "no_connection" %}
     {% call banner_wrapper(type="dangerous") %}
-      <p class="govuk-body">Geen verbinding met {{ connection_test.host }}:</p>
-      <pre class="formatting-example">{{ connection_test.error }}</pre>
+      <p class="govuk-body">Geen verbinding met {{ connection_test.host }}.</p>
+      {{ network_error(connection_test) }}
     {% endcall %}
   {% elif connection_test.outcome == "no_reply" %}
     {# the request went out (or may have), so this is no connection failure #}
@@ -64,10 +81,8 @@
       {% else %}
         <p class="govuk-body">Geen antwoord van het endpoint {{ connection_test.host }}. De testbrief kan wel zijn ontvangen.</p>
       {% endif %}
+      {{ network_error(connection_test) }}
       {{ stopped_waiting(connection_test) }}
-      {% if connection_test.error %}
-        <pre class="formatting-example">{{ connection_test.error }}</pre>
-      {% endif %}
     {% endcall %}
   {% elif connection_test.outcome == "failed" %}
     {% call banner_wrapper(type="default") %}
@@ -84,6 +99,10 @@
         <p class="govuk-body">NotifyNL wacht nog op antwoord van {{ connection_test.host }}.</p>
       {% endif %}
       <p class="govuk-body">Kies ‘Uitslag opnieuw ophalen’ om de uitslag te bekijken. Er wordt dan geen nieuwe testbrief verstuurd.</p>
+    {% endcall %}
+  {% elif connection_test.state == "busy" %}
+    {% call banner_wrapper(type="default") %}
+      <p class="govuk-body">Er loopt al een verbindingstest. Probeer het over een paar minuten opnieuw.</p>
     {% endcall %}
   {% elif connection_test.state == "rate_limited" %}
     {% call banner_wrapper(type="default") %}

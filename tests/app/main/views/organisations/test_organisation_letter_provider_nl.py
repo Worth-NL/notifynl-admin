@@ -829,12 +829,19 @@ def _finished(outcome, **overrides):
         "reason": "OK",
         "content_type": "application/json",
         "location": None,
-        "error": None,
+        "error_kind": None,
         "timed_out": False,
         "body": '{"id": "job-1"}',
         "body_kind": "text",
         "body_truncated": False,
     } | overrides
+
+
+@pytest.fixture
+def logged_in_platform_admin(client_request, platform_admin_user, mock_get_organisation, letter_provider):
+    # only platform admins can test: a test presents NotifyNL's client certificate to the host that was typed in
+    client_request.login(platform_admin_user)
+    return client_request
 
 
 @pytest.fixture
@@ -869,16 +876,39 @@ def _buttons(page):
     return [normalize_spaces(button.text) for button in page.select("main form button")]
 
 
-def test_rest_endpoint_page_has_a_test_button_after_the_save_button(logged_in_org_member):
-    page = logged_in_org_member.get("main.organisation_letter_endpoint", org_id=ORGANISATION_ID)
+def test_rest_endpoint_page_has_a_test_button_after_the_save_button(logged_in_platform_admin):
+    page = logged_in_platform_admin.get("main.organisation_letter_endpoint", org_id=ORGANISATION_ID)
 
     assert _buttons(page) == ["Opslaan", "Verbinding testen"]
     assert page.select_one("button[name=test_connection]")
     assert not page.select_one("#connection-test-result")
 
 
-def test_rest_endpoint_page_says_the_test_sends_a_letter_that_may_be_printed(logged_in_org_member):
+def test_organisation_members_get_no_test_button(logged_in_org_member):
     page = logged_in_org_member.get("main.organisation_letter_endpoint", org_id=ORGANISATION_ID)
+
+    assert _buttons(page) == ["Opslaan"]
+    assert not page.select_one("#connection-test-hint")
+
+
+@pytest.mark.parametrize("data", [{}, {"test_connection": None, "connection_test_id": CONNECTION_TEST_ID}])
+def test_organisation_members_cannot_test_the_connection(
+    logged_in_org_member, start_connection_test, connection_test_result, mock_set_letter_provider, mock_events, data
+):
+    logged_in_org_member.post(
+        "main.organisation_letter_endpoint",
+        org_id=ORGANISATION_ID,
+        _data={key: value for key, value in (CONNECTION_TEST_FORM | data).items() if value is not None},
+        _expected_status=403,
+    )
+
+    assert not start_connection_test.called
+    assert not connection_test_result.called
+    assert not mock_set_letter_provider.called
+
+
+def test_rest_endpoint_page_says_the_test_sends_a_letter_that_may_be_printed(logged_in_platform_admin):
+    page = logged_in_platform_admin.get("main.organisation_letter_endpoint", org_id=ORGANISATION_ID)
 
     assert normalize_spaces(page.select_one("#connection-test-hint").text) == (
         "Met ‘Verbinding testen’ stuurt NotifyNL een testbrief van één pagina zonder adres naar uw printleverancier, "
@@ -889,14 +919,14 @@ def test_rest_endpoint_page_says_the_test_sends_a_letter_that_may_be_printed(log
 
 
 def test_testing_the_connection_uses_the_typed_values_and_saves_nothing(
-    logged_in_org_member,
-    org_member,
+    logged_in_platform_admin,
+    platform_admin_user,
     start_connection_test,
     connection_test_result,
     mock_set_letter_provider,
     mock_events,
 ):
-    page = _test_connection(logged_in_org_member)
+    page = _test_connection(logged_in_platform_admin)
 
     start_connection_test.assert_called_once_with(
         ORGANISATION_ID,
@@ -904,6 +934,7 @@ def test_testing_the_connection_uses_the_typed_values_and_saves_nothing(
             "endpoint_url": ENDPOINT_URL,
             "auth_method": "basic",
             "auth_config": {"username": "denhaag", "password": "typed-password"},
+            "started_by_id": platform_admin_user["id"],
         },
     )
     assert not mock_set_letter_provider.called
@@ -916,7 +947,7 @@ def test_testing_the_connection_uses_the_typed_values_and_saves_nothing(
     assert event_type == "start_letter_endpoint_connection_test"
     assert {key: value for key, value in event_data.items() if key not in {"ip_address", "browser_fingerprint"}} == {
         "organisation_id": ORGANISATION_ID,
-        "started_by_id": org_member["id"],
+        "started_by_id": platform_admin_user["id"],
         "connection_test_id": CONNECTION_TEST_ID,
         "endpoint_url": ENDPOINT_URL,
         "token_endpoint": None,
@@ -958,18 +989,24 @@ def test_testing_the_connection_uses_the_typed_values_and_saves_nothing(
             "Niet geautoriseerd: de token-URL idp.example.com gaf geen bruikbaar toegangstoken.",
         ),
         (
-            _finished("no_connection", status_code=None, reason="", body=None, error="[Errno 111] Connection refused"),
+            _finished("no_connection", status_code=None, reason="", body=None, error_kind="connect"),
             ".banner-dangerous",
-            "Geen verbinding met print.example.com: [Errno 111] Connection refused",
+            "Geen verbinding met print.example.com. De verbinding werd geweigerd of kon niet worden opgezet.",
         ),
         (
-            _finished("no_reply", status_code=None, reason="", body=None, error="Read timed out. (read timeout=15)"),
+            _finished("no_connection", status_code=None, reason="", body=None, error_kind="tls"),
+            ".banner-dangerous",
+            "Geen verbinding met print.example.com. De beveiligde verbinding (TLS) kon niet worden opgezet, "
+            "bijvoorbeeld door een certificaat dat niet klopt.",
+        ),
+        (
+            _finished("no_reply", status_code=None, reason="", body=None, error_kind="read_timeout"),
             ".banner-default",
             "Geen antwoord van het endpoint print.example.com. De testbrief kan wel zijn ontvangen. "
-            "Read timed out. (read timeout=15)",
+            "Er kwam niet op tijd een antwoord.",
         ),
         (
-            _finished("no_reply", step="token", host="idp.example.com", status_code=None, body=None, error="Timeout"),
+            _finished("no_reply", step="token", host="idp.example.com", status_code=None, error_kind="closed"),
             ".banner-default",
             "Geen antwoord van de token-URL idp.example.com. Er is geen testbrief verstuurd.",
         ),
@@ -987,7 +1024,7 @@ def test_testing_the_connection_uses_the_typed_values_and_saves_nothing(
     ],
 )
 def test_the_result_of_a_connection_test(
-    logged_in_org_member,
+    logged_in_platform_admin,
     start_connection_test,
     connection_test_result,
     mock_events,
@@ -997,7 +1034,7 @@ def test_the_result_of_a_connection_test(
 ):
     connection_test_result.return_value = result
 
-    page = _test_connection(logged_in_org_member)
+    page = _test_connection(logged_in_platform_admin)
 
     banner = page.select_one(f"#connection-test-result {expected_banner}")
     assert expected_text in normalize_spaces(banner.text)
@@ -1030,7 +1067,7 @@ def test_the_result_of_a_connection_test(
     ],
 )
 def test_the_reply_of_the_endpoint_is_shown(
-    logged_in_org_member,
+    logged_in_platform_admin,
     start_connection_test,
     connection_test_result,
     mock_events,
@@ -1040,7 +1077,7 @@ def test_the_reply_of_the_endpoint_is_shown(
 ):
     connection_test_result.return_value = _finished("connected", **overrides)
 
-    page = _test_connection(logged_in_org_member)
+    page = _test_connection(logged_in_platform_admin)
 
     result = normalize_spaces(page.select_one("#connection-test-result").text)
     assert expected_status_line in result
@@ -1056,33 +1093,33 @@ def test_the_reply_of_the_endpoint_is_shown(
     ],
 )
 def test_the_reply_of_the_endpoint_is_shown_as_it_was_sent_and_only_as_text(
-    logged_in_org_member, start_connection_test, connection_test_result, mock_events, body
+    logged_in_platform_admin, start_connection_test, connection_test_result, mock_events, body
 ):
     connection_test_result.return_value = _finished("connected", status_code=400, reason="Bad Request", body=body)
 
-    page = _test_connection(logged_in_org_member)
+    page = _test_connection(logged_in_platform_admin)
 
     assert page.select_one("#connection-test-result pre").text == body
     assert not page.select("#connection-test-result script")
 
 
 def test_testing_the_connection_keeps_a_stored_secret_that_is_left_as_is(
-    logged_in_org_member, letter_provider, start_connection_test, connection_test_result, mock_events
+    logged_in_platform_admin, letter_provider, start_connection_test, connection_test_result, mock_events
 ):
     letter_provider.return_value = REST_ENDPOINT
 
-    _test_connection(logged_in_org_member, {"password": "secret_set"})
+    _test_connection(logged_in_platform_admin, {"password": "secret_set"})
 
     assert start_connection_test.call_args.args[1]["auth_config"] == {"username": "denhaag", "password": ""}
 
 
 def test_testing_the_connection_requires_the_secret_again_when_its_destination_changes(
-    logged_in_org_member, letter_provider, start_connection_test, mock_events
+    logged_in_platform_admin, letter_provider, start_connection_test, mock_events
 ):
     letter_provider.return_value = REST_ENDPOINT
 
     page = _test_connection(
-        logged_in_org_member, {"endpoint_url": "https://other.example.com/letters", "password": "secret_set"}
+        logged_in_platform_admin, {"endpoint_url": "https://other.example.com/letters", "password": "secret_set"}
     )
 
     assert _form_errors(page) == [
@@ -1092,8 +1129,8 @@ def test_testing_the_connection_requires_the_secret_again_when_its_destination_c
     assert not page.select_one("#connection-test-result")
 
 
-def test_testing_the_connection_validates_the_form_first(logged_in_org_member, start_connection_test, mock_events):
-    page = _test_connection(logged_in_org_member, {"username": ""})
+def test_testing_the_connection_validates_the_form_first(logged_in_platform_admin, start_connection_test, mock_events):
+    page = _test_connection(logged_in_platform_admin, {"username": ""})
 
     assert _form_errors(page) == ["Error: Vul de gebruikersnaam in"]
     assert not start_connection_test.called
@@ -1101,7 +1138,7 @@ def test_testing_the_connection_validates_the_form_first(logged_in_org_member, s
 
 
 def test_testing_the_connection_waits_for_the_result(
-    logged_in_org_member, start_connection_test, connection_test_result, no_waiting, mock_events
+    logged_in_platform_admin, start_connection_test, connection_test_result, no_waiting, mock_events
 ):
     connection_test_result.side_effect = [
         {"state": "queued"},
@@ -1109,7 +1146,7 @@ def test_testing_the_connection_waits_for_the_result(
         _finished("authorized"),
     ]
 
-    page = _test_connection(logged_in_org_member)
+    page = _test_connection(logged_in_platform_admin)
 
     assert connection_test_result.call_count == 3
     assert no_waiting.call_count == 2
@@ -1124,12 +1161,12 @@ def test_testing_the_connection_waits_for_the_result(
     ],
 )
 def test_a_connection_test_still_going_can_be_looked_up_again(
-    logged_in_org_member, start_connection_test, connection_test_result, mock_events, mocker, state, expected_text
+    logged_in_platform_admin, start_connection_test, connection_test_result, mock_events, mocker, state, expected_text
 ):
     mocker.patch("app.main.views_nl.organisations.letter_provider.CONNECTION_TEST_WAIT_SECONDS", 0)
     connection_test_result.return_value = state
 
-    page = _test_connection(logged_in_org_member)
+    page = _test_connection(logged_in_platform_admin)
 
     result = normalize_spaces(page.select_one("#connection-test-result").text)
     assert expected_text in result
@@ -1150,14 +1187,14 @@ def test_a_connection_test_still_going_can_be_looked_up_again(
     ],
 )
 def test_looking_up_a_connection_test_again_says_when_the_form_was_edited_since_it_started(
-    logged_in_org_member, start_connection_test, connection_test_result, mock_events, mocker, edits, expected_note
+    logged_in_platform_admin, start_connection_test, connection_test_result, mock_events, mocker, edits, expected_note
 ):
     mocker.patch("app.main.views_nl.organisations.letter_provider.CONNECTION_TEST_WAIT_SECONDS", 0)
     connection_test_result.return_value = {"state": "queued"}
-    tested_values = _test_connection(logged_in_org_member).select_one("input[name=tested_values]")["value"]
+    tested_values = _test_connection(logged_in_platform_admin).select_one("input[name=tested_values]")["value"]
     connection_test_result.return_value = _finished("authorized")
 
-    page = logged_in_org_member.post(
+    page = logged_in_platform_admin.post(
         "main.organisation_letter_endpoint",
         org_id=ORGANISATION_ID,
         _data={key: value for key, value in CONNECTION_TEST_FORM.items() if key != "test_connection"}
@@ -1172,10 +1209,10 @@ def test_looking_up_a_connection_test_again_says_when_the_form_was_edited_since_
 
 
 def test_looking_up_a_connection_test_again_sends_no_new_letter(
-    logged_in_org_member, start_connection_test, connection_test_result, mock_set_letter_provider, mock_events
+    logged_in_platform_admin, start_connection_test, connection_test_result, mock_set_letter_provider, mock_events
 ):
     data = {"connection_test_id": CONNECTION_TEST_ID}
-    page = logged_in_org_member.post(
+    page = logged_in_platform_admin.post(
         "main.organisation_letter_endpoint",
         org_id=ORGANISATION_ID,
         _data={key: value for key, value in CONNECTION_TEST_FORM.items() if key != "test_connection"} | data,
@@ -1189,8 +1226,8 @@ def test_looking_up_a_connection_test_again_sends_no_new_letter(
     assert "Verbonden en correct geautoriseerd" in normalize_spaces(page.select_one("#connection-test-result").text)
 
 
-def test_looking_up_a_connection_test_needs_a_real_id(logged_in_org_member, connection_test_result):
-    logged_in_org_member.post(
+def test_looking_up_a_connection_test_needs_a_real_id(logged_in_platform_admin, connection_test_result):
+    logged_in_platform_admin.post(
         "main.organisation_letter_endpoint",
         org_id=ORGANISATION_ID,
         _data={key: value for key, value in CONNECTION_TEST_FORM.items() if key != "test_connection"}
@@ -1201,11 +1238,11 @@ def test_looking_up_a_connection_test_needs_a_real_id(logged_in_org_member, conn
     assert not connection_test_result.called
 
 
-def test_looking_up_a_connection_test_that_expired(logged_in_org_member, connection_test_result, mocker):
+def test_looking_up_a_connection_test_that_expired(logged_in_platform_admin, connection_test_result, mocker):
     response = mocker.Mock(status_code=404, json=lambda: {"result": "error", "message": "not found"})
     connection_test_result.side_effect = HTTPError(response=response, message="not found")
 
-    page = logged_in_org_member.post(
+    page = logged_in_platform_admin.post(
         "main.organisation_letter_endpoint",
         org_id=ORGANISATION_ID,
         _data={key: value for key, value in CONNECTION_TEST_FORM.items() if key != "test_connection"}
@@ -1217,23 +1254,23 @@ def test_looking_up_a_connection_test_that_expired(logged_in_org_member, connect
 
 
 def test_a_result_that_is_gone_right_after_starting_the_test(
-    logged_in_org_member, start_connection_test, connection_test_result, mock_events, mocker
+    logged_in_platform_admin, start_connection_test, connection_test_result, mock_events, mocker
 ):
     response = mocker.Mock(status_code=404, json=lambda: {"result": "error", "message": "not found"})
     connection_test_result.side_effect = HTTPError(response=response, message="not found")
 
-    page = _test_connection(logged_in_org_member)
+    page = _test_connection(logged_in_platform_admin)
 
     assert "Deze uitslag is niet meer beschikbaar." in normalize_spaces(page.select_one("#connection-test-result").text)
 
 
 def test_testing_the_connection_where_the_api_cannot_keep_a_result(
-    logged_in_org_member, start_connection_test, mock_events, mocker
+    logged_in_platform_admin, start_connection_test, mock_events, mocker
 ):
     response = mocker.Mock(status_code=503, json=lambda: {"result": "error", "message": "needs Redis"})
     start_connection_test.side_effect = HTTPError(response=response, message="needs Redis")
 
-    page = _test_connection(logged_in_org_member)
+    page = _test_connection(logged_in_platform_admin)
 
     assert "De verbinding kan op deze omgeving niet worden getest." in normalize_spaces(
         page.select_one("#connection-test-result").text
@@ -1241,11 +1278,26 @@ def test_testing_the_connection_where_the_api_cannot_keep_a_result(
     assert not mock_events.called
 
 
-def test_testing_the_connection_too_often(logged_in_org_member, start_connection_test, mock_events, mocker):
+def test_testing_the_connection_while_another_test_runs(
+    logged_in_platform_admin, start_connection_test, mock_events, mocker
+):
+    response = mocker.Mock(status_code=409, json=lambda: {"result": "error", "message": "already running"})
+    start_connection_test.side_effect = HTTPError(response=response, message="already running")
+
+    page = _test_connection(logged_in_platform_admin)
+
+    assert "Er loopt al een verbindingstest. Probeer het over een paar minuten opnieuw." in normalize_spaces(
+        page.select_one("#connection-test-result").text
+    )
+    assert not page.select(".banner-dangerous")
+    assert not mock_events.called
+
+
+def test_testing_the_connection_too_often(logged_in_platform_admin, start_connection_test, mock_events, mocker):
     response = mocker.Mock(status_code=429, json=lambda: {"result": "error", "message": "Too many"})
     start_connection_test.side_effect = HTTPError(response=response, message="Too many")
 
-    page = _test_connection(logged_in_org_member)
+    page = _test_connection(logged_in_platform_admin)
 
     assert "De verbinding is te vaak getest." in normalize_spaces(page.select_one("#connection-test-result").text)
     assert not page.select(".banner-dangerous")
@@ -1253,13 +1305,13 @@ def test_testing_the_connection_too_often(logged_in_org_member, start_connection
 
 
 def test_testing_the_connection_shows_errors_from_the_api_on_the_form(
-    logged_in_org_member, start_connection_test, mock_events, mocker
+    logged_in_platform_admin, start_connection_test, mock_events, mocker
 ):
     message = f"{ENDPOINT_URL} must not point to a private or internal address"
     response = mocker.Mock(status_code=400, json=lambda: {"result": "error", "message": message})
     start_connection_test.side_effect = HTTPError(response=response, message=message)
 
-    page = _test_connection(logged_in_org_member)
+    page = _test_connection(logged_in_platform_admin)
 
     assert normalize_spaces(page.select_one("#endpoint_url-error").text) == (
         "Error: NotifyNL kan dit adres niet gebruiken: het is onbekend of intern"
@@ -1269,9 +1321,9 @@ def test_testing_the_connection_shows_errors_from_the_api_on_the_form(
 
 
 def test_testing_the_connection_for_an_organisation_the_api_does_not_know(
-    logged_in_org_member, start_connection_test, mock_events, mocker
+    logged_in_platform_admin, start_connection_test, mock_events, mocker
 ):
     response = mocker.Mock(status_code=404, json=lambda: {"result": "error", "message": "not found"})
     start_connection_test.side_effect = HTTPError(response=response, message="not found")
 
-    _test_connection(logged_in_org_member, _expected_status=404)
+    _test_connection(logged_in_platform_admin, _expected_status=404)

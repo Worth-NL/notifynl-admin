@@ -110,12 +110,17 @@ def _connection_test_from_request(form):
     connection_test_id = request.form.get("connection_test_id")
     if not connection_test_id and "test_connection" not in request.form:
         return None
+    if not current_user.platform_admin:
+        # a test presents NotifyNL's client certificate to the host that was typed in, and shows its reply
+        abort(403)
 
     try:
         if connection_test_id:
             return _look_up_connection_test_again(_uuid_or_404(connection_test_id), form)
         return _start_connection_test(form)
     except HTTPError as e:
+        if e.status_code == 409:
+            return {"state": "busy"}
         if e.status_code == 429:
             return {"state": "rate_limited"}
         if e.status_code == 503:
@@ -126,7 +131,7 @@ def _connection_test_from_request(form):
 def _start_connection_test(form):
     tested_values = _tested_values(form)
     connection_test_id = organisations_client.start_letter_endpoint_connection_test(
-        current_organisation.id, tested_values
+        current_organisation.id, tested_values | {"started_by_id": current_user.id}
     )["id"]
     Events.start_letter_endpoint_connection_test(
         organisation_id=current_organisation.id,
