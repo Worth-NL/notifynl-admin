@@ -110,6 +110,19 @@ class Events:
 
     @staticmethod
     @event_creator
+    def start_letter_endpoint_connection_test(  # [NotifyNL] never any credentials
+        *,
+        organisation_id,
+        started_by_id,
+        connection_test_id,
+        endpoint_url,
+        token_endpoint,
+        auth_method,
+    ) -> None:
+        pass
+
+    @staticmethod
+    @event_creator
     def set_inbound_sms_on(*, user_id, service_id, inbound_number_id) -> None:
         pass
 

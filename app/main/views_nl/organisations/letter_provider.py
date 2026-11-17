@@ -1,4 +1,10 @@
-from flask import current_app, flash, redirect, render_template, request, url_for
+import hashlib
+import hmac
+import json
+from time import monotonic, sleep
+from uuid import UUID
+
+from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 from notifications_python_client.errors import HTTPError
 
@@ -17,6 +23,10 @@ from app.utils.user import user_has_permissions
 
 # Any member of the organisation can choose its letter provider, not just platform admins. Its summary is a section
 # of the organisation's settings page, which org members see with nothing else on it.
+
+# requests are cut off after HTTP_SERVE_TIMEOUT_SECONDS (30 by default): a test not done by then can be looked up again
+CONNECTION_TEST_WAIT_SECONDS = 20
+CONNECTION_TEST_POLL_SECONDS = 1
 
 
 @main.route("/organisations/<uuid:org_id>/letter-provider/change", methods=["GET", "POST"])
@@ -73,21 +83,132 @@ def organisation_letter_endpoint(org_id):
         **_form_data(stored_endpoint),
     )
 
-    if form.validate_on_submit():
+    connection_test = None
+    if _connection_test_requested() and not current_user.platform_admin:
+        # a test presents NotifyNL's client certificate to the host that was typed in, and shows its reply
+        abort(403)
+
+    if request.form.get("connection_test_id"):
+        # looking a result up needs nothing from the form, which may have been edited into an invalid state since
+        connection_test = _look_up_connection_test_again(form)
+    elif form.validate_on_submit():
         try:
-            _save_letter_provider(form.api_data(), stored)
+            if "test_connection" in request.form:
+                connection_test = _start_connection_test(form)
+            else:
+                _save_letter_provider(form.api_data(), stored)
         except HTTPError as e:
-            if e.status_code != 400:
+            if "test_connection" in request.form and (refused := _refusal(e)):
+                connection_test = refused
+            elif e.status_code != 400:
                 raise
-            form.add_api_error(e.message)
+            else:
+                form.add_api_error(e.message)
         else:
-            return redirect(url_for(".organisation_settings", org_id=org_id))
+            if connection_test is None:
+                return redirect(url_for(".organisation_settings", org_id=org_id))
 
     return render_template(
         "views/organisations/organisation/letter-provider/rest-endpoint.html",
         form=form,
         has_stored_endpoint=bool(stored_endpoint),
+        connection_test=connection_test,
     )
+
+
+def _connection_test_requested():
+    return bool(request.form.get("connection_test_id")) or "test_connection" in request.form
+
+
+def _refusal(error):
+    """What to show when the API won't start or look up a test now, None for any other error."""
+    if error.status_code == 409:
+        return {"state": "busy", "id": _running_test_id(error)}
+    if error.status_code == 429:
+        return {"state": "rate_limited"}
+    if error.status_code == 503:
+        return {"state": "unavailable"}
+    return None
+
+
+def _running_test_id(error):
+    """The organisation's own running test, whose result can still be looked up: the API gives its id."""
+    try:
+        return str(UUID(error.response.json()["running_test_id"]))
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return None
+
+
+def _start_connection_test(form):
+    tested_values = _tested_values(form)
+    connection_test_id = organisations_client.start_letter_endpoint_connection_test(
+        current_organisation.id, tested_values | {"started_by_id": current_user.id}
+    )["id"]
+    Events.start_letter_endpoint_connection_test(
+        organisation_id=current_organisation.id,
+        started_by_id=current_user.id,
+        connection_test_id=connection_test_id,
+        endpoint_url=tested_values["endpoint_url"],
+        token_endpoint=tested_values["auth_config"].get("token_endpoint"),
+        auth_method=tested_values["auth_method"],
+    )
+    return _wait_for_connection_test(connection_test_id) | {"tested_values": _signature(tested_values)}
+
+
+def _look_up_connection_test_again(form):
+    connection_test_id = _uuid_or_404(request.form["connection_test_id"])
+    try:
+        result = _wait_for_connection_test(connection_test_id)
+    except HTTPError as e:
+        if refused := _refusal(e):
+            return refused
+        raise
+    signature = request.form.get("tested_values")
+    if not signature:
+        return result
+    # the result is of the values the test started with, and the form may have been edited since
+    values_changed = not form.validate_on_submit() or not hmac.compare_digest(
+        signature, _signature(_tested_values(form))
+    )
+    return result | {"tested_values": signature, "values_changed": values_changed}
+
+
+def _tested_values(form):
+    data = form.api_data()
+    return {
+        "endpoint_url": data["endpoint_url"],
+        "auth_method": data["auth_method"],
+        "auth_config": data["auth_config"],
+    }
+
+
+def _signature(tested_values):
+    """Tells whether the form still holds the tested values, without the secrets among them being readable from it."""
+    message = b"letter-endpoint-connection-test:" + json.dumps(tested_values, sort_keys=True).encode()
+    return hmac.new(current_app.config["SECRET_KEY"].encode(), message, hashlib.sha256).hexdigest()
+
+
+def _wait_for_connection_test(connection_test_id):
+    deadline = monotonic() + CONNECTION_TEST_WAIT_SECONDS
+    while True:
+        try:
+            result = organisations_client.get_letter_endpoint_connection_test(
+                current_organisation.id, connection_test_id
+            )
+        except HTTPError as e:
+            if e.status_code == 404:
+                return {"state": "expired"}
+            raise
+        if result["state"] == "finished" or monotonic() >= deadline:
+            return result | {"id": connection_test_id}
+        sleep(CONNECTION_TEST_POLL_SECONDS)
+
+
+def _uuid_or_404(value):
+    try:
+        return str(UUID(value))
+    except ValueError:
+        abort(404)
 
 
 def _is_rest_endpoint(stored):

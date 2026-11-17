@@ -38,3 +38,22 @@ def test_set_organisation_letter_provider_without_services(notify_admin, mocker,
     organisations_client.set_organisation_letter_provider(fake_uuid, {"provider": "pingen"}, cached_service_ids=[])
 
     mock_redis_delete.assert_not_called()
+
+
+def test_start_letter_endpoint_connection_test(notify_admin, mocker, fake_uuid):
+    mock_post = mocker.patch(
+        "app.notify_client.organisations_api_client.OrganisationsClient.post", return_value={"data": {"id": "test-id"}}
+    )
+    data = {"endpoint_url": "https://print.example.com", "auth_method": "basic", "auth_config": {}}
+
+    assert organisations_client.start_letter_endpoint_connection_test(fake_uuid, data) == {"id": "test-id"}
+    mock_post.assert_called_once_with(url=f"/organisations/{fake_uuid}/letter-provider/connection-test", data=data)
+
+
+def test_get_letter_endpoint_connection_test(notify_admin, mocker, fake_uuid):
+    mock_get = mocker.patch(
+        "app.notify_client.organisations_api_client.OrganisationsClient.get", return_value={"data": {"state": "queued"}}
+    )
+
+    assert organisations_client.get_letter_endpoint_connection_test(fake_uuid, "test-id") == {"state": "queued"}
+    mock_get.assert_called_once_with(url=f"/organisations/{fake_uuid}/letter-provider/connection-test/test-id")

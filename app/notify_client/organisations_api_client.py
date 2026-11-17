@@ -78,6 +78,12 @@ class OrganisationsClient(NotifyAdminAPIClient):
 
         return api_response["data"]
 
+    def start_letter_endpoint_connection_test(self, org_id, data):
+        return self.post(url=f"/organisations/{org_id}/letter-provider/connection-test", data=data)["data"]
+
+    def get_letter_endpoint_connection_test(self, org_id, connection_test_id):
+        return self.get(url=f"/organisations/{org_id}/letter-provider/connection-test/{connection_test_id}")["data"]
+
     @cache.delete("organisation-{org_id}-email-branding-pool")
     def add_brandings_to_email_branding_pool(self, org_id, branding_ids):
         return self.post(url=f"/organisations/{org_id}/email-branding-pool", data={"branding_ids": branding_ids})

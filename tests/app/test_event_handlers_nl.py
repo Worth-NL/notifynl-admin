@@ -38,3 +38,30 @@ def test_update_organisation_letter_provider_event_never_takes_credentials(clien
         Events.update_organisation_letter_provider(**_letter_provider_event_kwargs(), **{credential: "secret"})
 
     mock_events.assert_not_called()
+
+
+def _connection_test_event_kwargs():
+    return {
+        "organisation_id": str(uuid.uuid4()),
+        "started_by_id": str(uuid.uuid4()),
+        "connection_test_id": str(uuid.uuid4()),
+        "endpoint_url": "https://print.example.com/letters",
+        "token_endpoint": "https://login.example.com/token",
+        "auth_method": "oauth",
+    }
+
+
+def test_start_letter_endpoint_connection_test_event_calls_events_api(client_request, mock_events):
+    kwargs = _connection_test_event_kwargs()
+
+    Events.start_letter_endpoint_connection_test(**kwargs)
+
+    mock_events.assert_called_with("start_letter_endpoint_connection_test", event_dict(**kwargs))
+
+
+@pytest.mark.parametrize("credential", ["api_key", "password", "client_secret"])
+def test_start_letter_endpoint_connection_test_event_never_takes_credentials(client_request, mock_events, credential):
+    with pytest.raises(TypeError):
+        Events.start_letter_endpoint_connection_test(**_connection_test_event_kwargs(), **{credential: "secret"})
+
+    mock_events.assert_not_called()
