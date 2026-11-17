@@ -136,7 +136,6 @@ def test_redirect_caseworkers_to_templates(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_get_started(
     client_request,
     mocker,
@@ -212,7 +211,6 @@ def test_inbound_messages_not_visible_to_service_without_permissions(
     assert mock_get_inbound_sms_summary.called is False
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_inbound_messages_shows_count_of_messages_when_there_are_messages(
     client_request,
     service_one,
@@ -237,7 +235,6 @@ def test_inbound_messages_shows_count_of_messages_when_there_are_messages(
     assert banner["href"] == url_for("main.inbox", service_id=SERVICE_ONE_ID)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_inbound_messages_shows_count_of_messages_when_there_are_no_messages(
     client_request,
     service_one,
@@ -277,7 +274,6 @@ def test_inbound_messages_shows_count_of_messages_when_there_are_no_messages(
         ]
     ),
 )
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_inbox_showing_inbound_messages(
     client_request,
     service_one,
@@ -297,15 +293,13 @@ def test_inbox_showing_inbound_messages(
         service_id=SERVICE_ONE_ID,
     )
 
-    rows = page.select("tbody tr")
+    rows = page.select(".govuk-summary-list__row")
     assert len(rows) == 8
     assert normalize_spaces(rows[index].text) == expected_row
     assert page.select_one("[data-key=messages] a.govuk-\\!-font-weight-bold")["href"] == url_for(
         "main.inbox_download",
         service_id=SERVICE_ONE_ID,
     )
-    assert len(page.select("thead th:first-child.govuk-\\!-width-two-thirds--static")) == 1
-    assert len(page.select("thead th:last-child.govuk-\\!-width-one-third--static")) == 1
 
 
 def test_get_inbound_sms_shows_page_links(
@@ -331,7 +325,6 @@ def test_get_inbound_sms_shows_page_links(
     assert "Previous page" in page.select_one("li.previous-page").text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_empty_inbox(
     client_request,
     service_one,
@@ -350,7 +343,7 @@ def test_empty_inbox(
         service_id=SERVICE_ONE_ID,
     )
 
-    assert normalize_spaces(page.select("tbody tr")) == (
+    assert normalize_spaces(page.select("p.no-data")) == (
         "When users text your service’s phone number (07812398712) you’ll see the messages here"
     )
     assert not page.select("a[download]")
@@ -424,7 +417,6 @@ def test_view_inbox_updates(
 
 
 @freeze_time("2016-07-01 13:00")
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_download_inbox(
     client_request,
     mock_get_inbound_sms,
@@ -509,7 +501,6 @@ def test_returned_letters_not_visible_if_service_has_no_returned_letters(
     assert not page.select("#total-returned-letters")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "reporting_date, expected_message",
     (
@@ -552,7 +543,6 @@ def test_returned_letters_shows_count_of_recently_returned_letters(
     assert banner["href"] == url_for("main.returned_letter_summary", service_id=SERVICE_ONE_ID)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "reporting_date, count, expected_message",
     (
@@ -600,7 +590,6 @@ def test_returned_letters_only_counts_recently_returned_letters(
     assert banner["href"] == url_for("main.returned_letter_summary", service_id=SERVICE_ONE_ID)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "last_request_date, count, expected_message",
     (
@@ -675,7 +664,6 @@ def test_dashboard_shows_no_unsubscribe_requests_statistics_when_there_are_no_un
     assert not page.select("#total-unsubscribe-requests")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_recent_templates_on_dashboard(
     client_request,
     mocker,
@@ -699,28 +687,27 @@ def test_should_show_recent_templates_on_dashboard(
 
     mock_template_stats.assert_called_once_with(SERVICE_ONE_ID, limit_days=7)
 
-    table_rows = partial_page.select_one("tbody").select("tr")
+    list_rows = partial_page.select_one(".notify-summary-list").select(".govuk-summary-list__row")
 
-    assert len(table_rows) == 4
+    assert len(list_rows) == 4
 
-    assert "Provided as PDF" in table_rows[0].select("th")[0].text
-    assert "Letter" in table_rows[0].select("th")[0].text
-    assert "400" in table_rows[0].select("td")[0].text
+    assert "Provided as PDF" in list_rows[0].select("dt")[0].text
+    assert "Letter" in list_rows[0].select("dt")[0].text
+    assert "400" in list_rows[0].select("dd")[0].text
 
-    assert "three" in table_rows[1].select("th")[0].text
-    assert "Letter template" in table_rows[1].select("th")[0].text
-    assert "300" in table_rows[1].select("td")[0].text
+    assert "three" in list_rows[1].select("dt")[0].text
+    assert "Letter template" in list_rows[1].select("dt")[0].text
+    assert "300" in list_rows[1].select("dd")[0].text
 
-    assert "two" in table_rows[2].select("th")[0].text
-    assert "Email template" in table_rows[2].select("th")[0].text
-    assert "200" in table_rows[2].select("td")[0].text
+    assert "two" in list_rows[2].select("dt")[0].text
+    assert "Email template" in list_rows[2].select("dt")[0].text
+    assert "200" in list_rows[2].select("dd")[0].text
 
-    assert "one" in table_rows[3].select("th")[0].text
-    assert "Text message template" in table_rows[3].select("th")[0].text
-    assert "100" in table_rows[3].select("td")[0].text
+    assert "one" in list_rows[3].select("dt")[0].text
+    assert "Text message template" in list_rows[3].select("dt")[0].text
+    assert "100" in list_rows[3].select("dd")[0].text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "stats",
     (
@@ -793,7 +780,6 @@ def test_should_show_redirect_from_template_history(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2016-07-01 12:00")  # 4 months into 2016 financial year
 @pytest.mark.parametrize(
     "extra_args",
@@ -811,12 +797,12 @@ def test_should_show_monthly_breakdown_of_template_usage(
 
     mock_get_monthly_template_usage.assert_called_once_with(SERVICE_ONE_ID, 2016)
 
-    table_rows = page.select("tbody tr")
+    list_rows = page.select(".govuk-summary-list__row")
 
-    assert " ".join(table_rows[0].text.split()) == "My first template Text message template 2"
+    assert " ".join(list_rows[0].text.split()) == "My first template Text message template 2"
 
-    assert len(table_rows) == len(["April"])
-    assert len(page.select(".table-no-data")) == len(["May", "June", "July"])
+    assert len(list_rows) == len(["April"])
+    assert len(page.select(".no-data")) == len(["May", "June", "July"])
 
 
 def test_anyone_can_see_monthly_breakdown(
@@ -838,7 +824,6 @@ def test_anyone_can_see_monthly_breakdown(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_monthly_shows_letters_in_breakdown(
     client_request,
     service_one,
@@ -887,7 +872,6 @@ def test_monthly_has_equal_length_tables(
     assert page.select_one(".table-field-headings th").get("width") == "25%"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2016-01-01 11:09:00.061258")
 def test_should_show_upcoming_jobs_on_dashboard(
     client_request,
@@ -1055,7 +1039,6 @@ def test_should_not_show_jobs_on_dashboard_for_users_with_uploads_page(
         assert filename not in page.select_one("main").text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2012-03-31 12:12:12")
 def test_usage_page(
     client_request,
@@ -1100,7 +1083,6 @@ def test_usage_page(
     assert "£30.00 spent" in letter_column
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2012-03-31 12:12:12")
 def test_usage_page_no_sms_spend(
     client_request,
@@ -1129,7 +1111,6 @@ def test_usage_page_no_sms_spend(
     assert "pence per message" not in sms_column
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] broken after removing free message limits on usage page")
 @pytest.mark.parametrize(
     "annual_usage, expected_css_class, expected_item_count",
     (
@@ -1189,7 +1170,6 @@ def test_usage_page_font_size(
     assert len(totals) == expected_item_count
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2012-03-31 12:12:12")
 def test_usage_page_monthly_breakdown(
     client_request,
@@ -1239,7 +1219,6 @@ def test_usage_page_monthly_breakdown_shows_months_so_far(
         assert len(rows) == expected_number_of_months
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2012-03-31 12:12:12")
 def test_usage_page_letter_breakdown_ordered_by_postage_and_rate(
     client_request,
@@ -1259,7 +1238,6 @@ def test_usage_page_letter_breakdown_ordered_by_postage_and_rate(
     assert normalize_spaces(postage_details[7].text) == "7 international letters at 84p"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_usage_page_with_0_free_allowance(
     client_request,
     mock_get_annual_usage_for_service,
@@ -1575,7 +1553,6 @@ def test_service_dashboard_updates_gets_dashboard_totals(
     assert "789" in numbers
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_service_dashboard_totals_link_to_view_notifications(
     client_request,
     mock_get_service_templates,
@@ -1746,7 +1723,6 @@ def test_org_breadcrumbs_do_not_show_if_service_has_no_org(
     assert not page.select(".navigation-organisation-link")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_org_breadcrumbs_do_not_show_if_user_is_not_an_org_member(
     mock_get_service_templates_when_no_templates_exist,
     mock_has_no_jobs,
@@ -1861,8 +1837,7 @@ def test_org_breadcrumbs_show_if_user_is_platform_admin(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
-def test_breadcrumb_shows_if_service_is_suspended(
+def test_breadcrumb_shows_if_service_is_archived(
     mock_get_template_statistics,
     mock_get_service_templates_when_no_templates_exist,
     mock_has_no_jobs,
@@ -1874,15 +1849,40 @@ def test_breadcrumb_shows_if_service_is_suspended(
     client_request,
     mocker,
 ):
-    service_one_json = service_json(SERVICE_ONE_ID, active=False)
+    service_one_json = service_json(SERVICE_ONE_ID, active=False, restricted=False)
     client_request.login(platform_admin_user, service=service_one_json)
 
     page = client_request.get("main.service_dashboard", service_id=SERVICE_ONE_ID)
 
-    assert "Suspended" in page.select_one(".navigation-service-name").text
+    assert normalize_spaces(page.select_one(".navigation-status-tag").text) == "Archived"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
+@pytest.mark.parametrize("service_restricted", [True, False])
+def test_service_navigation_shows_if_service_is_in_trial_mode(
+    mock_get_service_templates_when_no_templates_exist,
+    mock_has_no_jobs,
+    mock_get_unsubscribe_requests_statistics,
+    mock_get_returned_letter_statistics_with_no_returned_letters,
+    api_user_active,
+    client_request,
+    service_restricted,
+    mocker,
+):
+    service_one = service_json(
+        SERVICE_ONE_ID,
+        users=[api_user_active["id"]],
+        restricted=service_restricted,
+    )
+    mocker.patch("app.service_api_client.get_service", return_value={"data": service_one})
+
+    page = client_request.get("main.service_dashboard", service_id=SERVICE_ONE_ID)
+
+    if service_restricted:
+        assert normalize_spaces(page.select_one(".navigation-status-tag").text) == "Trial mode"
+    else:
+        assert not page.select_one(".navigation-status-tag")
+
+
 @pytest.mark.parametrize(
     "permissions",
     (
@@ -1915,7 +1915,6 @@ def test_service_dashboard_shows_usage(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_service_dashboard_shows_free_allowance(
     client_request,
     service_one,
@@ -1945,7 +1944,6 @@ def test_service_dashboard_shows_free_allowance(
     assert "249,000 free text messages left" in usage_text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dashboard text removal")
 @pytest.mark.parametrize(
     "annual_usage, expected_css_class",
     (
@@ -2003,7 +2001,6 @@ def test_service_dashboard_shows_usage_in_correct_font_size(
     assert len(usage_columns) == 3
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_service_dashboard_skeleton(
     client_request,
     mock_get_service_templates,
@@ -2017,6 +2014,7 @@ def test_service_dashboard_skeleton(
     assert [(heading.name, normalize_spaces(heading.text)) for heading in page.select("main h1, main h2, main h3")] == [
         ("h1", "Dashboard"),
         ("h2", "In the last 7 days"),
+        ("h2", "By template"),
         ("h2", "This year"),
     ]
 
@@ -2043,7 +2041,7 @@ def test_service_dashboard_skeleton(
         "letters sent failed – Unknown %",
     ]
 
-    assert normalize_spaces(template_statistics.select_one("table caption").text) == "By template"
+    assert normalize_spaces(template_statistics.select_one("h2").text) == "By template"
     assert template_statistics.select(".spark-bar")
 
     assert [

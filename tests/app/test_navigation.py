@@ -1,5 +1,8 @@
+from unittest.mock import Mock
+
 import pytest
 from flask import Flask, url_for
+from notifications_python_client.errors import HTTPError
 
 from app import create_app
 from app.overrides_nl.navigation import (
@@ -23,8 +26,6 @@ EXCLUDED_ENDPOINTS = set(
             "action_blocked",
             "add_data_retention",
             "add_organisation_email_branding_options",
-            "add_organisation_from_gp_service",
-            "add_organisation_from_nhs_local_service",
             "add_organisation_letter_branding_options",
             "add_organisation",
             "add_service_template",
@@ -39,7 +40,6 @@ EXCLUDED_ENDPOINTS = set(
             "bat_phone",
             "begin_tour",
             "branding_option_preview",
-            "branding_nhs",
             "cancel_invited_org_user",
             "cancel_invited_user",
             "cancel_job",
@@ -90,6 +90,10 @@ EXCLUDED_ENDPOINTS = set(
             "download_unsubscribe_request_report",
             "edit_data_retention",
             "edit_organisation_agreement",
+            "edit_organisation_area_boundary",
+            "organisation_change_letter_provider",
+            "organisation_confirm_pingen_letter_provider",
+            "organisation_letter_endpoint",
             "edit_organisation_billing_details",
             "edit_organisation_can_approve_own_go_live_requests",
             "edit_organisation_can_ask_to_join_a_service",
@@ -154,6 +158,7 @@ EXCLUDED_ENDPOINTS = set(
             "guidance_delivery_times",
             "guidance_email_branding",
             "guidance_features",
+            "guidance_fonts_typefaces",
             "guidance_formatting",
             "guidance_how_to_pay",
             "guidance_letter_branding",
@@ -197,6 +202,7 @@ EXCLUDED_ENDPOINTS = set(
             "json_updates.service_dashboard_updates",
             "json_updates.service_dashboard_usage_updates",
             "json_updates.service_verify_reply_to_address_updates",
+            "json_updates.usage_updates",
             "json_updates.view_job_updates",
             "json_updates.view_notification_updates",
             "json_updates.view_remaining_limit",
@@ -207,7 +213,6 @@ EXCLUDED_ENDPOINTS = set(
             "letter_branding_set_name",
             "letter_branding_upload_branding",
             "letter_branding",
-            "letter_spec",
             "letter_template_attach_pages",
             "letter_template_change_language",
             "letter_template_confirm_remove_welsh",
@@ -218,6 +223,11 @@ EXCLUDED_ENDPOINTS = set(
             "manage_org_users",
             "manage_template_folder",
             "manage_users",
+            "messagebox_cpa_select",
+            "messagebox_cpa_select_confirm",
+            "messagebox_cpa_upload",
+            "messagebox_cpa_upload_confirm",
+            "messagebox_cpas",
             "manage_users_download",
             "monthly",
             "name_service",
@@ -289,6 +299,7 @@ EXCLUDED_ENDPOINTS = set(
             "revoke_api_key",
             "save_contact_list",
             "security_policy",
+            "security_policy_legacy",
             "send_files_by_email_contact_details",
             "send_from_contact_list",
             "send_messages",
@@ -337,6 +348,7 @@ EXCLUDED_ENDPOINTS = set(
             "service_set_international_letters",
             "service_set_international_sms",
             "service_set_letter_address_placement",
+            "service_set_send_client_reference_to_letter_provider",
             "service_set_letters",
             "service_set_messagebox_channel",
             "service_set_permission",
@@ -505,7 +517,6 @@ def test_raises_on_invalid_navigation_item(client_request, navigation_instance):
     navigation_instance.is_selected("foo")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "endpoint, selected_nav_item",
     [
@@ -529,7 +540,6 @@ def test_a_page_should_nave_selected_navigation_item(
     assert selected_nav_items[0].text.strip() == selected_nav_item
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "endpoint, selected_nav_item",
     [
@@ -548,7 +558,6 @@ def test_a_page_should_have_selected_header_navigation_item(
     assert selected_nav_items[0].text.strip() == selected_nav_item
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "endpoint, selected_nav_item",
     [
@@ -572,7 +581,6 @@ def test_a_page_should_nave_selected_org_navigation_item(
     assert selected_nav_items[0].text.strip() == selected_nav_item
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "endpoint, selected_nav_item",
     [
@@ -622,7 +630,6 @@ def test_navigation_urls(
     ]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_caseworkers_get_caseworking_navigation(
     client_request,
     mock_get_template_folders,
@@ -638,7 +645,6 @@ def test_caseworkers_get_caseworking_navigation(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_caseworkers_see_jobs_nav_if_jobs_exist(
     client_request,
     mock_get_service_templates,
@@ -654,7 +660,6 @@ def test_caseworkers_see_jobs_nav_if_jobs_exist(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_make_this_service_live_link_is_shown_in_limited_circumstances(
     client_request,
     service_one,
@@ -682,7 +687,6 @@ def test_make_this_service_live_link_is_shown_in_limited_circumstances(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_make_your_service_live_link_shows_if_service_is_in_trial_mode_and_user_has_manage_settings_permission(
     client_request,
     service_one,
@@ -709,7 +713,6 @@ def test_make_your_service_live_link_shows_if_service_is_in_trial_mode_and_user_
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_navigation_displayed_on_service_page_404(
     client_request,
     mock_get_job_doesnt_exist,
@@ -724,3 +727,28 @@ def test_navigation_displayed_on_service_page_404(
     assert normalize_spaces(page.select_one("h1").text) == "Page not found"
     assert normalize_spaces(page.select_one(".navigation-service-name").text) == "service one"
     assert len(page.select("nav.navigation .navigation__item")) == 8
+
+
+def test_navigation_and_custom_error_displayed_on_notification_page_404(
+    client_request,
+    mocker,
+    fake_uuid,
+):
+    mock_get_notification = mocker.patch(
+        "app.notification_api_client.get_notification",
+        side_effect=HTTPError(response=Mock(status_code=404)),
+    )
+
+    page = client_request.get(
+        "main.view_notification",
+        service_id=SERVICE_ONE_ID,
+        notification_id=fake_uuid,
+        _expected_status=404,
+    )
+    assert normalize_spaces(page.select_one("h1").text) == "Page not found"
+    assert normalize_spaces(page.select_one(".navigation-service-name").text) == "service one"
+    assert len(page.select("nav.navigation .navigation__item")) == 8
+    assert page.select_one('a:contains("Data retention period")')["href"] == url_for(
+        "main.guidance_data_retention_period"
+    )
+    mock_get_notification.assert_called_once()

@@ -1,9 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
-from dateutil import parser
 from flask import url_for
 from notifications_utils.formatters import unescaped_formatted_list
-from notifications_utils.letter_timings import letter_can_be_cancelled
 from notifications_utils.recipient_validation.notifynl.postal_address import PostalAddress
 from notifications_utils.template import BaseLetterTemplate
 from notifications_utils.timezones import (
@@ -14,34 +12,26 @@ from notifications_utils.timezones import (
 from app.overrides_nl.formatters import _format_datetime_short
 
 
-def printing_today_or_tomorrow(created_at):
-    print_cutoff = datetime.now(local_timezone).replace(hour=17, minute=30)
-    created_at = utc_string_to_aware_gmt_datetime(created_at)
-
-    if created_at < print_cutoff:
-        return "vandaag"
-    else:
-        return "morgen"
-
-
 def get_letter_printing_statement(status, created_at, long_form=True):
+    """
+    Letters go to their print provider within minutes of being sent, not in a daily print run at 17:30 as in GOV.UK
+    Notify. The pages that show this cover many letters (a job, a day of uploads) and always pass "created", so it
+    doesn't depend on `status`: it says how the letters are sent, and the list below it shows each letter's status.
+    """
+    if long_form:
+        return "NotifyNL stuurt brieven binnen enkele minuten naar de printleverancier."
+
     if isinstance(created_at, datetime):
         created_at = created_at.astimezone(UTC).isoformat()
-    created_at_dt = parser.parse(created_at).replace(tzinfo=None)
-    if letter_can_be_cancelled(status, created_at_dt):
-        description = "Het printen start" if long_form else "Printen"
-        return f"{description} {printing_today_or_tomorrow(created_at)} om 17:30 uur"
-    else:
-        printed_datetime = utc_string_to_aware_gmt_datetime(created_at) + timedelta(hours=6, minutes=30)
-        if printed_datetime.date() == datetime.now().date():
-            return "Geprint vandaag om 17:30 uur"
-        elif printed_datetime.date() == datetime.now().date() - timedelta(days=1):
-            return "Geprint gisteren om 17:30 uur"
-
-        printed_date = _format_datetime_short(printed_datetime)
-        description = "Geprint op" if long_form else "Geprint"
-
-        return f"{description} {printed_date} om 17:30 uur"
+    sent_at = utc_string_to_aware_gmt_datetime(created_at)
+    today = datetime.now(local_timezone).date()
+    # notifynl-api still groups uploaded letters into days that end at 17:30 (upstream's print run), so letters
+    # uploaded this evening are in tomorrow's group: they were sent today
+    if sent_at.date() >= today:
+        return "Verstuurd vandaag"
+    if sent_at.date() == today - timedelta(days=1):
+        return "Verstuurd gisteren"
+    return f"Verstuurd op {_format_datetime_short(sent_at)}"
 
 
 LETTER_VALIDATION_MESSAGES = {
@@ -122,8 +112,10 @@ LETTER_VALIDATION_MESSAGES = {
     },
     "not-a-real-uk-postcode": {
         "title": "Er is een probleem met het adres voor deze brief",
-        "detail": "De laatste regel van het adres moet een geldige postcode uit het VK zijn.",
-        "summary": "De validatie is mislukt omdat de laatste regel van het adres geen geldige postcode uit het VK is.",
+        "detail": "De laatste regel van het adres moet een geldige postcode en plaatsnaam zijn.",
+        "summary": (
+            "De validatie is mislukt omdat de laatste regel van het adres geen geldige postcode en plaatsnaam is."
+        ),
     },
     "cant-send-international-letters": {
         "title": "Er is een probleem met het adres voor deze brief",
@@ -132,9 +124,9 @@ LETTER_VALIDATION_MESSAGES = {
     },
     "not-a-real-uk-postcode-or-country": {
         "title": "Er is een probleem met het adres voor deze brief",
-        "detail": "De laatste regel van het adres moet een postcode uit het VK of een ander land zijn.",
+        "detail": "De laatste regel van het adres moet een geldige postcode en plaatsnaam of een ander land zijn.",
         "summary": (
-            "De validatie is mislukt omdat de laatste regel van het adres geen postcode uit het VK "
+            "De validatie is mislukt omdat de laatste regel van het adres geen geldige postcode en plaatsnaam "
             "of een ander land is."
         ),
     },
@@ -197,8 +189,57 @@ LETTER_VALIDATION_MESSAGES = {
 
 LETTER_ADDRESS_PLACEMENT_LABELS = {"50mm": "50mm", "60mm": "60mm (standaard)"}
 
+# When the organisation's print provider decides the address placement, the service can't change it
+ADDRESS_PLACEMENT_MISMATCH_DECIDED_BY_PROVIDER = {
+    "title": "De positie van het adres komt niet overeen met uw printleverancier",
+    "detail": (
+        "Het adres op deze brief staat niet op de positie die de printleverancier van uw organisatie gebruikt "
+        "({letter_address_placement}). Pas de lay-out van uw brief aan."
+    ),
+    "summary": (
+        "De validatie is mislukt omdat de positie van het adres niet overeenkomt met de adrespositie van de "
+        "printleverancier van uw organisatie ({letter_address_placement})."
+    ),
+}
 
-def get_letter_validation_error(validation_message, invalid_pages=None, page_count=None, letter_address_placement=None):
+
+# When the print provider has its own address window (Pingen), the address has to sit inside it
+ADDRESS_OUTSIDE_PROVIDER_WINDOW = {
+    "title": "Het adres staat niet in het adresvenster van uw printleverancier",
+    "detail": (
+        "Het adres moet binnen het adresvenster van de printleverancier van uw organisatie staan: {address_area}. "
+        "Pas de lay-out van uw brief aan."
+    ),
+    "summary": (
+        "De validatie is mislukt omdat het adres niet binnen het adresvenster van de printleverancier van uw "
+        "organisatie staat ({address_area})."
+    ),
+}
+
+
+def _format_mm(value):
+    return f"{value:g}".replace(".", ",") + " mm"
+
+
+def format_address_area(letter_address_window):
+    """Where a letter address window's address goes, e.g. "22 mm van links, 60 mm van boven, 85,5 mm breed en ..."."""
+    area = (letter_address_window or {}).get("address_area")
+    if not area:
+        return ""
+    return (
+        f"{_format_mm(area['x'])} van links, {_format_mm(area['y'])} van boven, "
+        f"{_format_mm(area['width'])} breed en {_format_mm(area['height'])} hoog"
+    )
+
+
+def get_letter_validation_error(
+    validation_message,
+    invalid_pages=None,
+    page_count=None,
+    letter_address_placement=None,
+    address_placement_decided_by_provider=False,
+    letter_address_window=None,
+):
     if not invalid_pages:
         invalid_pages = []
     if validation_message not in LETTER_VALIDATION_MESSAGES:
@@ -210,23 +251,37 @@ def get_letter_validation_error(validation_message, invalid_pages=None, page_cou
         invalid_pages, before_each="", after_each="", prefix="pagina", prefix_plural="pagina’s", conjunction="en"
     )
 
-    letter_address_placement = LETTER_ADDRESS_PLACEMENT_LABELS.get(letter_address_placement, letter_address_placement)
+    messages = LETTER_VALIDATION_MESSAGES[validation_message]
+    if (
+        validation_message == "address-placement-mismatch"
+        and address_placement_decided_by_provider
+        and (letter_address_window or {}).get("postage_area")
+    ):
+        messages = ADDRESS_OUTSIDE_PROVIDER_WINDOW
+    elif validation_message == "address-placement-mismatch" and address_placement_decided_by_provider:
+        messages = ADDRESS_PLACEMENT_MISMATCH_DECIDED_BY_PROVIDER
+    else:
+        letter_address_placement = LETTER_ADDRESS_PLACEMENT_LABELS.get(
+            letter_address_placement, letter_address_placement
+        )
 
     return {
-        "title": LETTER_VALIDATION_MESSAGES[validation_message]["title"],
-        "detail": LETTER_VALIDATION_MESSAGES[validation_message]["detail"].format(
+        "title": messages["title"],
+        "detail": messages["detail"].format(
             invalid_pages=invalid_pages,
             invalid_pages_are_or_is=invalid_pages_are_or_is,
             page_count=page_count,
             letter_spec_guidance=url_for("main.guidance_upload_a_letter"),
             letter_address_placement=letter_address_placement,
+            address_area=format_address_area(letter_address_window),
         ),
-        "summary": LETTER_VALIDATION_MESSAGES[validation_message]["summary"].format(
+        "summary": messages["summary"].format(
             invalid_pages=invalid_pages,
             invalid_pages_are_or_is=invalid_pages_are_or_is,
             page_count=page_count,
             letter_spec_guidance=url_for("main.guidance_upload_a_letter"),
             letter_address_placement=letter_address_placement,
+            address_area=format_address_area(letter_address_window),
         ),
     }
 

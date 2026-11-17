@@ -1,11 +1,10 @@
 from contextvars import ContextVar
 
 from flask import current_app
-from flask_login import current_user
 from notifications_utils.local_vars import LazyLocalGetter
 from werkzeug.local import LocalProxy
 
-from app import memo_resetters
+from app import current_user, memo_resetters
 from app.notify_client import NotifyAdminAPIClient, cache
 
 
@@ -34,10 +33,12 @@ class LetterAttachmentClient(NotifyAdminAPIClient):
         return self.post(url=f"/letter-attachment/{letter_attachment_id}/archive", data=data)
 
 
-_letter_attachment_client_context_var: ContextVar[LetterAttachmentClient] = ContextVar("letter_attachment_client")
+_letter_attachment_client_context_var: ContextVar[LetterAttachmentClient | None] = ContextVar(
+    "letter_attachment_client"
+)
 get_letter_attachment_client: LazyLocalGetter[LetterAttachmentClient] = LazyLocalGetter(
     _letter_attachment_client_context_var,
     lambda: LetterAttachmentClient(current_app),
 )
 memo_resetters.append(lambda: get_letter_attachment_client.clear())
-letter_attachment_client = LocalProxy(get_letter_attachment_client)
+letter_attachment_client: LetterAttachmentClient = LocalProxy(get_letter_attachment_client)  # type: ignore[assignment]

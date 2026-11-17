@@ -179,7 +179,6 @@ def test_download_service_agreement(
         assert mock_get_s3_object.called is False
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_show_accept_agreement_page(
     client_request,
     mock_get_service_organisation,
@@ -319,7 +318,6 @@ def test_accept_agreement_page_populates(
         ),
     ),
 )
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_accept_agreement_page_validates(
     client_request,
     mock_get_service_organisation,
@@ -387,7 +385,6 @@ def test_accept_agreement_page_validates(
         ),
     ),
 )
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_accept_agreement_page_persists(
     client_request,
     mock_get_service_organisation,
@@ -409,7 +406,6 @@ def test_accept_agreement_page_persists(
     assert mock_update_organisation.call_args_list == [expected_persisted]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "name, email, expected_paragraph",
     (

@@ -73,7 +73,6 @@ def mock_get_orgs_and_services(notify_admin, mocker):
     return mocker.patch("app.user_api_client.get_organisations_and_services_for_user", return_value=SAMPLE_DATA)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_your_services_should_show_your_services_page(
     client_request,
     mock_get_non_empty_organisations_and_services_for_user,
@@ -135,7 +134,6 @@ def test_your_services_should_show_your_services_page(
     assert mock_get_organisation.call_args_list == []
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_your_services_should_show_your_services_page_if_no_services(
     client_request,
     mock_get_orgs_and_services,
@@ -156,7 +154,6 @@ def test_your_services_should_show_your_services_page_if_no_services(
     assert page.select_one("main h2")["class"][0] == "govuk-visually-hidden"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_your_services_should_show_join_service_button(
     client_request,
     mocker,
@@ -182,7 +179,6 @@ def test_your_services_should_show_join_service_button(
     ]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "orgs_and_services, expected_headings",
     (
@@ -264,7 +260,6 @@ def test_your_services_should_show_organisations_link_for_platform_admin(
     assert [normalize_spaces(h2.text) for h2 in page.select("main h2")] == expected_headings
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "orgs_and_services, expected_headings, expected_h1",
     (
@@ -354,7 +349,6 @@ def test_your_services_should_show_organisations_link_for_org_user(
     assert [normalize_spaces(h2.text) for h2 in page.select("main h2")] == expected_headings
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_your_services_should_show_back_to_service_link(
     client_request,
     mock_get_orgs_and_services,
@@ -370,7 +364,6 @@ def test_your_services_should_show_back_to_service_link(
     assert back_to_service_link.text == "Back to service one"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_your_services_should_not_show_back_to_service_link_if_no_service_in_session(
     client_request,
     mock_get_orgs_and_services,
@@ -385,7 +378,6 @@ def test_your_services_should_not_show_back_to_service_link_if_no_service_in_ses
     assert len(page.select(".navigation-service a")) == 0
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_your_services_should_not_show_your_services_navigation_link_if_not_signed_in(
     client_request,
     mock_get_service,
@@ -407,7 +399,6 @@ def test_your_services_should_not_show_your_services_navigation_link_if_not_sign
         pytest.param(True, marks=pytest.mark.xfail(raises=AssertionError)),
     ),
 )
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_your_services_should_not_show_back_to_service_link_if_service_archived(
     client_request,
     service_one,
@@ -426,7 +417,6 @@ def test_your_services_should_not_show_back_to_service_link_if_service_archived(
     assert page.select_one(".navigation-service a") is None
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_not_show_back_to_service_if_user_doesnt_belong_to_service(
     client_request,
     fake_uuid,
@@ -452,7 +442,6 @@ def test_should_not_show_back_to_service_if_user_doesnt_belong_to_service(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_your_services_navigation_link_if_user_belongs_to_service(
     client_request,
     fake_uuid,
@@ -472,7 +461,6 @@ def test_should_show_your_services_navigation_link_if_user_belongs_to_service(
     assert normalize_spaces(page.select_one(".govuk-service-navigation__list a:first-child").text) == "Your services"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_should_show_notification_banner_when_newly_activated_user(
     client_request,
     mocker,

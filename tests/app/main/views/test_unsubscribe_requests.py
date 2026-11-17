@@ -10,7 +10,6 @@ from app.models.unsubscribe_requests_report import UnsubscribeRequestsReports
 from tests.conftest import SERVICE_ONE_ID, create_unsubscribe_request_report, normalize_spaces
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "test_data, expected_rows, expected_grey_text_statuses",
     (
@@ -47,7 +46,6 @@ from tests.conftest import SERVICE_ONE_ID, create_unsubscribe_request_report, no
                 ),
             ],
             [
-                "Report Status",
                 "Today at 4:00pm 1 unsubscribe request Not downloaded",
                 "Today from midday to 2:17pm 1 unsubscribe request Downloaded",
                 "Today until midday 34 unsubscribe requests Downloaded",
@@ -69,7 +67,6 @@ from tests.conftest import SERVICE_ONE_ID, create_unsubscribe_request_report, no
                 ),
             ],
             [
-                "Report Status",
                 "1 January 2020 to 1 June 1 unsubscribe request Downloaded",
             ],
             [],
@@ -89,7 +86,6 @@ from tests.conftest import SERVICE_ONE_ID, create_unsubscribe_request_report, no
                 ),
             ],
             [
-                "Report Status",
                 "1 January at 1:18pm 1 unsubscribe request Downloaded",
                 "1 January at 12:17pm 1 unsubscribe request Downloaded",
             ],
@@ -113,7 +109,6 @@ from tests.conftest import SERVICE_ONE_ID, create_unsubscribe_request_report, no
                 ),
             ],
             [
-                "Report Status",
                 "1 May from midday to 2:17pm 1 unsubscribe request Completed",
                 "30 April to 1 May at 10:00am 12,345,678 unsubscribe requests Completed",
             ],
@@ -142,7 +137,6 @@ from tests.conftest import SERVICE_ONE_ID, create_unsubscribe_request_report, no
                 ),
             ],
             [
-                "Report Status",
                 "Today 1,234 unsubscribe requests Downloaded",
                 "Yesterday 4,567 unsubscribe requests Downloaded",
                 "20 June 7,890 unsubscribe requests Downloaded",
@@ -172,7 +166,6 @@ from tests.conftest import SERVICE_ONE_ID, create_unsubscribe_request_report, no
                 ),
             ],
             [
-                "Report Status",
                 "1 June from 11:22pm to midnight 1,234 unsubscribe requests Downloaded",
                 "1 June from 2:17pm to 2:18pm 4,567 unsubscribe requests Downloaded",
                 "1 June until midday 7,890 unsubscribe requests Downloaded",
@@ -193,25 +186,23 @@ def test_unsubscribe_request_reports_summary(
 
     page = client_request.get("main.unsubscribe_request_reports_summary", service_id=SERVICE_ONE_ID)
 
-    assert [normalize_spaces(row.text) for row in page.select("tr")] == expected_rows
+    assert [normalize_spaces(list_item.text) for list_item in page.select(".govuk-summary-list__row")] == expected_rows
     assert [
-        normalize_spaces(field.text)
-        for field in page.select("td.table-field-right-aligned .table-field-status-default .align-with-message-body")
+        normalize_spaces(list_value.text) for list_value in page.select(".govuk-summary-list__value--default")
     ] == expected_grey_text_statuses
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_no_unsubscribe_request_reports_summary_to_display(client_request, mocker):
     mocker.patch.object(UnsubscribeRequestsReports, "_get_items", return_value=[])
 
     page = client_request.get("main.unsubscribe_request_reports_summary", service_id=SERVICE_ONE_ID)
 
-    assert ["Report Status", "If you have any email unsubscribe requests they will be listed here"] == [
-        normalize_spaces(row.text) for row in page.select("tr")
-    ]
+    assert (
+        normalize_spaces(page.select("p.no-data"))
+        == "If you have any email unsubscribe requests they will be listed here"
+    )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2024-06-22 12:00")
 @pytest.mark.parametrize(
     "will_be_archived_at, expected_deletion_message",
@@ -264,7 +255,6 @@ def test_unsubscribe_request_report_for_unprocessed_batched_reports(
     assert normalize_spaces(availability_date) == expected_deletion_message
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2024-07-02")
 def test_unsubscribe_request_report_for_unbatched_reports(client_request, mocker):
     test_data = [
@@ -304,7 +294,6 @@ def test_unsubscribe_request_report_for_unbatched_reports(client_request, mocker
     assert len(update_button) == 0
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2024-01-01")
 def test_unsubscribe_request_report_for_processed_batched_reports(client_request, mocker):
     test_data = [
@@ -399,7 +388,6 @@ def test_cannot_force_download_for_unbatched_unsubscribe_request_report(
     assert not page.select("head meta[http-equiv=refresh]")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize("batch_id", ["32b4e359-d4df-49b6-a92b-2eaa9343cfdd", None])
 def test_non_existing_unsubscribe_request_report_batch_id_returns_404(client_request, mocker, batch_id):
     mocker.patch.object(UnsubscribeRequestsReports, "_get_items", return_value=[])
@@ -558,7 +546,6 @@ def test_download_unsubscribe_request_report(client_request, mocker):
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_unsubscribe_example_page(client_request):
     page = client_request.get(
         "main.unsubscribe_example",
@@ -575,7 +562,6 @@ def test_unsubscribe_example_page(client_request):
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_unsubscribe_example_confirmation_page(client_request, fake_uuid):
     page = client_request.get(
         "main.unsubscribe_example_confirmed",
@@ -591,7 +577,6 @@ def test_unsubscribe_example_confirmation_page(client_request, fake_uuid):
     assert not page.select_one("form")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_unsubscribe_landing_page(client_request, fake_uuid):
     page = client_request.get(
         "main.unsubscribe",
@@ -620,7 +605,6 @@ def test_unsubscribe_valid_request(
     mock_unsubscribe.assert_called_once_with(fake_uuid, "abc123")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_unsubscribe_confirmation_page(client_request):
     page = client_request.get(
         "main.unsubscribe_confirmed",
@@ -631,7 +615,6 @@ def test_unsubscribe_confirmation_page(client_request):
     assert not page.select_one("form")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_unsubscribe_request_not_found(
     client_request,
     fake_uuid,

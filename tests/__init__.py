@@ -168,6 +168,9 @@ def service_json(
     email_message_limit=1000,
     letter_message_limit=1000,
     letter_address_placement="60mm",
+    letter_address_placement_decided_by_provider=False,
+    letter_address_window=None,
+    send_client_reference_to_letter_provider=False,
     international_sms_message_limit=500,
     sms_message_limit=1000,
     messagebox_message_limit=1000,
@@ -197,6 +200,7 @@ def service_json(
     has_active_go_live_request=False,
     go_live_user=None,
     confirmed_unique=False,
+    confirmed_service_name=False,
     confirmed_email_sender_name=None,
 ):
     if users is None:
@@ -215,6 +219,9 @@ def service_json(
         "letter_message_limit": letter_message_limit,
         "messagebox_message_limit": messagebox_message_limit,
         "letter_address_placement": letter_address_placement,
+        "letter_address_placement_decided_by_provider": letter_address_placement_decided_by_provider,
+        "letter_address_window": letter_address_window,
+        "send_client_reference_to_letter_provider": send_client_reference_to_letter_provider,
         "rate_limit": rate_limit,
         "active": active,
         "restricted": restricted,
@@ -247,6 +254,7 @@ def service_json(
         "has_active_go_live_request": has_active_go_live_request,
         "go_live_user": go_live_user,
         "confirmed_unique": confirmed_unique,
+        "confirmed_service_name": confirmed_service_name,
         "confirmed_email_sender_name": confirmed_email_sender_name,
     }
 
@@ -274,6 +282,8 @@ def organisation_json(
     billing_contact_names=None,
     billing_reference=None,
     purchase_order_number=None,
+    area_boundary=None,
+    letter_provider=None,
     can_approve_own_go_live_requests=False,
     can_ask_to_join_a_service=False,
     permissions=None,
@@ -310,6 +320,8 @@ def organisation_json(
         "billing_contact_names": billing_contact_names,
         "billing_reference": billing_reference,
         "purchase_order_number": purchase_order_number,
+        "area_boundary": area_boundary,
+        "letter_provider": letter_provider,
         "can_approve_own_go_live_requests": can_approve_own_go_live_requests,
         "can_ask_to_join_a_service": can_ask_to_join_a_service,
         "permissions": permissions or [],
@@ -394,8 +406,15 @@ def template_version_json(service_id, id_, created_by, version=1, created_at=Non
     return template
 
 
-def api_key_json(id_, name, expiry_date=None, key_type="normal"):
-    return {"id": id_, "name": name, "expiry_date": expiry_date, "key_type": key_type}
+def api_key_json(id_, name, expiry_date=None, key_type="normal", created_by=None, created_at=None):
+    return {
+        "id": id_,
+        "name": name,
+        "expiry_date": expiry_date,
+        "key_type": key_type,
+        "created_by": created_by or sample_uuid(),
+        "created_at": created_at,
+    }
 
 
 def invite_json(

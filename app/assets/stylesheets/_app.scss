@@ -1,10 +1,12 @@
+@use 'govuk/helpers' as *;
+
 .column-main {
 
   .heading-large,
   >.heading-medium,
   >.heading-with-aside--heading-medium {
     margin: govuk-spacing(3) 0 govuk-spacing(4) 0;
-    word-wrap: break-word;
+    overflow-wrap: break-word;
 
     &.top-gutter-0 {
       margin-top: 0;
@@ -82,6 +84,9 @@ td {
   color: govuk-functional-colour(secondary-text);
 }
 
+// this can be removed once the fullscreen table on
+// /services/<uuid:service_id>/send/<uuid:template_id>/csv 
+// is converted to a govuk-frontend table
 .spreadsheet {
 
   margin-bottom: -1 * govuk-spacing(6);
@@ -143,7 +148,7 @@ td {
     th,
     td {
       @include govuk-font(19);
-      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
 
     thead {

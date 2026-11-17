@@ -1,3 +1,11 @@
-<span {% if error %}class="govuk-error-message"{% endif %}>
-  {{ message }}
+<span {% if template.is_message_too_long() %}class="govuk-error-message"{% endif %}>
+  {% if template.is_message_too_long() %}
+    U heeft {{ template.count_of_characters_above_limit | character_count }} te veel
+  {% else %}
+    Wordt in rekening gebracht als {{ template.fragment_count | message_count(template.template_type) }}
+    {% if template.placeholders %}
+      (exclusief personalisatie)
+    {% endif %}
+    {# [NOTIFYNL] Upstream's tips for reducing the cost of a message are not shown in NL (SMS cost prompts are skipped). #}
+  {% endif %}
 </span>

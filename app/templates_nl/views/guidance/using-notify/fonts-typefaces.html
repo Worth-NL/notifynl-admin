@@ -1,0 +1,55 @@
+{% extends "content_template.html" %}
+{% from "components/pill.html" import pill %}
+
+{# Used by the content_template.html layout, prefixes the "navigation" accessible name #}
+{% set navigation_label_prefix = 'Notify gebruiken' %}
+
+{% set page_title = 'Lettertypen' %}
+
+{% block per_page_title %}
+  {{ page_title }}
+{% endblock %}
+
+{% block content_column_content %}
+
+  <h1 class="heading-large">{{ page_title }}</h1>
+
+  <p class="govuk-body">Op deze pagina leest u welke lettertypen en lettergroottes Notify gebruikt.</p>
+
+  <div class="govuk-!-margin-bottom-3">
+    {{ pill(
+      (
+        ("E-mails", "email", url_for(".guidance_fonts_typefaces"), 0),
+        ("Sms-berichten", "sms", url_for(".guidance_fonts_typefaces", notification_type="sms"), 0),
+        ("Brieven", "letter", url_for(".guidance_fonts_typefaces", notification_type="letter"), 0),
+      ),
+      current_value=notification_type,
+      show_count=False,
+    ) }}
+  </div>
+
+  {% if notification_type == "email" %}
+    <p class="govuk-body">E-mails gebruiken het standaard schreefloze lettertype dat op het apparaat van de ontvanger is geïnstalleerd.</p>
+    <p class="govuk-body">Onze eerste keuze is Helvetica, daarna Arial.</p>
+    <p class="govuk-body">De standaardlettergrootte voor e-mails is 19 pixels.</p>
+    <p class="govuk-body">Ontvangers kunnen de lettergrootte aanpassen in de instellingen van hun apparaat.</p>
+    <p class="govuk-body">E-mails ondersteunen alle Unicode-tekens.</p>
+    <p class="govuk-body">U kunt het lettertype of de lettergrootte niet wijzigen.</p>
+    <p class="govuk-body">Zie: <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_formatting') }}">E-mails en brieven opmaken</a></p>
+  {% endif %}
+
+  {% if notification_type == "sms" %}
+    <p class="govuk-body">Het lettertype van sms-berichten wordt bepaald door de mobiele telefoon of het apparaat van de ontvanger.</p>
+    <p class="govuk-body">Sommige tekens kunnen de kosten van een sms-bericht verhogen.</p>
+    <p class="govuk-body">Zie: <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_pricing_text_messages') }}">Kosten van sms-berichten</a></p>
+  {% endif %}
+
+  {% if notification_type == "letter" %}
+    {# [NOTIFYNL] Matches notifications_utils' letter_pdf_nl CSS (.bodytekst), not upstream's Nimbus Sans L 12.5pt. #}
+    <p class="govuk-body">De tekst van brieven gebruikt het lettertype Georgia in 9pt. Koppen gebruiken Arial.</p>
+    <p class="govuk-body">U kunt het lettertype of de lettergrootte niet wijzigen.</p>
+    <p class="govuk-body">Zie: <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_formatting') }}">E-mails en brieven opmaken</a></p>
+    <p class="govuk-body">Als u brieven in grootletter moet versturen, kunt u in plaats daarvan <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_upload_a_letter') }}">een pdf-brief uploaden</a>.</p>
+  {% endif %}
+
+{% endblock %}

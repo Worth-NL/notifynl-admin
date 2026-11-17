@@ -69,3 +69,32 @@ def test_format_notification_status_text_ignores_reason_for_non_messagebox():
         detailed_status_code="should-be-ignored",
     )
     assert format_notification_status_text(notification) == "Niet afgeleverd"
+
+
+@pytest.mark.parametrize(
+    "print_provider, expected",
+    [
+        ("pingen", "Geaccepteerd door Pingen"),
+        ("rest-endpoint", "Geaccepteerd door de printleverancier van uw organisatie"),
+        # e.g. a notification from before print_provider existed
+        (None, "Geaccepteerd door de printleverancier"),
+    ],
+)
+def test_format_notification_status_text_for_a_letter_accepted_by_its_print_provider(print_provider, expected):
+    notification = {"status": "sent", "template": {"template_type": "letter"}, "print_provider": print_provider}
+
+    assert format_notification_status_text(notification) == expected
+    assert format_notification_status_text(SimpleNamespace(**notification)) == expected
+
+
+def test_format_notification_status_text_for_a_letter_without_print_provider_key():
+    assert format_notification_status_text({"status": "sent", "template": {"template_type": "letter"}}) == (
+        "Geaccepteerd door de printleverancier"
+    )
+
+
+@pytest.mark.parametrize("status", ["created", "sending", "delivered"])
+def test_format_notification_status_text_for_other_letter_statuses_is_unchanged(status):
+    notification = {"status": status, "template": {"template_type": "letter"}, "print_provider": "pingen"}
+
+    assert format_notification_status_text(notification) == ""

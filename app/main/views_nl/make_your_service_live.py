@@ -1,10 +1,9 @@
 from flask import flash, redirect, render_template, url_for
-from flask_login import current_user
 from markupsafe import Markup
 from notifications_python_client.errors import HTTPError
 from notifications_utils.clients.zendesk.zendesk_client import NotifySupportTicket, NotifyTicketType
 
-from app import current_service, service_api_client
+from app import current_service, current_user, service_api_client
 from app.extensions import zendesk_client
 from app.main import main
 from app.main.overrides_nl.forms import RenameServiceForm
@@ -30,9 +29,9 @@ def submit_request_to_go_live(service_id):
         flash(
             Markup(
                 """
-                        <h2 class='govuk-heading-m'>There is a problem</h2>
+                        <h2 class='govuk-heading-m'>Er is een probleem</h2>
                         <p class='govuk-body error-text-colour govuk-!-font-weight-bold'>
-                            Some of the tasks on this page are incomplete
+                            Sommige taken op deze pagina zijn nog niet afgerond
                         </p>
                     """
             )
@@ -91,7 +90,7 @@ def confirm_service_is_unique(service_id):
 
     if form.validate_on_submit():
         try:
-            current_service.update(name=form.name.data, confirmed_unique=True)
+            current_service.update(name=form.name.data, confirmed_unique=True, confirmed_service_name=True)
         except HTTPError as http_error:
             if http_error.status_code == 400 and (
                 error_message := service_api_client.parse_edit_service_http_error(http_error)

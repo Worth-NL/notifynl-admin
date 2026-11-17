@@ -10,7 +10,6 @@ from notifications_python_client.errors import HTTPError
 from tests.conftest import set_config_values
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_bad_url_returns_page_not_found(client_request):
     page = client_request.get_url(
         "/bad_url",
@@ -66,7 +65,6 @@ def test_load_organisation_before_request_ignores_static_appropriately(
         assert g.current_organisation is not None
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "url",
     ["/new-password/MALFORMED_TOKEN", "/your-account/email/confirm/MALFORMED_TOKEN", "/verify-email/MALFORMED_TOKEN"],
@@ -80,7 +78,6 @@ def test_malformed_token_returns_page_not_found(client_request, url):
     assert page.select_one("title").string.strip() == "Page not found – GOV.UK Notify"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_csrf_returns_400(client_request, mocker):
     # we turn off CSRF handling for tests, so fake a CSRF response here.
     csrf_err = CSRFError("400 Bad Request: The CSRF tokens do not match.")
@@ -122,7 +119,6 @@ def test_no_session_for_json_endpoint_returns_401(
         )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_405_returns_something_went_wrong_page(client_request, mocker):
     page = client_request.post_url("/", _expected_status=405)
 
@@ -130,7 +126,6 @@ def test_405_returns_something_went_wrong_page(client_request, mocker):
     assert page.select_one("title").string.strip() == "Sorry, there’s a problem with the service – GOV.UK Notify"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_api_error_response_logging(
     client_request,
     requests_mock,

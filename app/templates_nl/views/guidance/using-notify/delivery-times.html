@@ -1,5 +1,5 @@
 {% from "components/service-link.html" import service_link %}
-{% from "components/table.html" import mapping_table, row, text_field %}
+{% from "govuk_frontend_jinja/components/table/macro.html" import govukTable %}
 
 {% extends "content_template.html" %}
 
@@ -35,23 +35,36 @@
   <p class="govuk-body">De geschatte levertijden zijn gebaseerd op de datum waarop een brief wordt verzonden.</p>
 
 <div class="bottom-gutter-3-2">
-    {% call mapping_table(
-      caption='Geschatte levertijden voor letters',
-      field_headings=['Porto', 'Geschatte levertijd'],
-      field_headings_visible=True,
-      caption_visible=False
-    ) %}
-      {% for column_heading, description in [
-        ('Netherlands', '1 tot 2 dagen'),
+    {% set delivery_times_table_body = [] %}
+    {% for column_heading, description in [
+        ('Nederland', '1 tot 2 dagen'),
         ('Internationaal (Europa)', '3 tot 5 dagen'),
-        ('Internationaal (rest van de werld)', '6 tot 7 dagen'),
-        ] %}
-        {% call row() %}
-          {{ text_field(column_heading) }}
-          {{ text_field(description) }}
-        {% endcall %}
-      {% endfor %}
-    {% endcall %}
+        ('Internationaal (rest van de wereld)', '6 tot 7 dagen'),
+      ] %}
+      {% do delivery_times_table_body.append([
+        {
+          "text": column_heading
+        },
+        {
+          "text": description
+        }
+      ])%}
+    {% endfor %}
+
+    {{ govukTable({
+      "caption": "Geschatte levertijden voor brieven",
+      "captionClasses": "govuk-visually-hidden",
+      "classes": "notify-table notify-table--body-small",
+      "head": [
+        {
+          "text": "Porto"
+        },
+        {
+          "text": "Geschatte levertijd",
+        },
+      ],
+      "rows": delivery_times_table_body
+    }) }}
   </div>
 
   <p class="govuk-body">Zie een lijst met <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_pricing_letters') }}">verzendprijzen</a>.</p>

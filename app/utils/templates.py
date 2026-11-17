@@ -7,6 +7,7 @@ from notifications_utils.countries_nl import Postage
 from notifications_utils.field import Field
 from notifications_utils.formatters import escape_html, formatted_list, normalise_whitespace
 from notifications_utils.insensitive_dict import InsensitiveSet
+from notifications_utils.json import RelaxedContainerJSONEncoder as RCJSONEncoder
 from notifications_utils.take import Take
 from notifications_utils.template import (
     BaseEmailTemplate,
@@ -50,6 +51,10 @@ class BaseLetterImageTemplate(BaseLetterTemplate):
     @property
     def page_count(self):
         return self._page_count
+
+    @property
+    def too_many_pages(self):
+        return self.page_count > self.max_page_count
 
     @property
     def postage(self):
@@ -172,7 +177,7 @@ class TemplatedLetterImageTemplate(BaseLetterImageTemplate):
             service=current_service,
             values=self.values,
         )
-        redis_client.set(cache_key, json.dumps(self._all_page_counts), ex=cache.DEFAULT_TTL)
+        redis_client.set(cache_key, RCJSONEncoder().encode(self._all_page_counts), ex=cache.DEFAULT_TTL)
 
         return self._all_page_counts
 
@@ -240,6 +245,7 @@ class EmailPreviewTemplate(BaseEmailTemplate):
         self.from_name = from_name
         self.reply_to = reply_to
         self.show_recipient = show_recipient
+        self.version = template.get("version")
         if template.get("has_unsubscribe_link"):
             self.unsubscribe_link = url_for("main.unsubscribe_example", _external=True)
 
@@ -307,11 +313,10 @@ class EmailPreviewTemplate(BaseEmailTemplate):
 
     @property
     def placeholders(self):
-        return OrderedSet([placeholder for placeholder in self.all_placeholders if placeholder not in self.filenames])
+        return self.all_placeholders - self.filenames
 
 
 class LetterAttachment(JSONModel):
-    id: Any
     original_filename: Any
     page_count: Any
 

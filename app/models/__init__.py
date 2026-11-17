@@ -10,6 +10,8 @@ from notifications_utils.serialised_model import (
 
 @total_ordering
 class JSONModel(SerialisedModel, ABC):
+    id: str
+
     @property
     @abstractmethod
     def __sort_attribute__(self):

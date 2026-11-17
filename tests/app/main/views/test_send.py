@@ -31,6 +31,8 @@ from tests.conftest import (
     create_active_user_with_permissions,
     create_multiple_email_reply_to_addresses,
     create_multiple_sms_senders,
+    create_service_one_admin,
+    create_service_one_user,
     create_template,
     do_mock_get_page_counts_for_letter,
     mock_get_service_email_template,
@@ -50,7 +52,6 @@ test_spreadsheet_files_surplus_header = glob(path.join("tests", "spreadsheet_fil
 test_non_spreadsheet_files = glob(path.join("tests", "non_spreadsheet_files", "*"))
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_show_correct_title_and_description_for_email_sender_type(
     client_request,
     fake_uuid,
@@ -62,7 +63,6 @@ def test_show_correct_title_and_description_for_email_sender_type(
     assert page.select_one(".govuk-fieldset__legend h1").text.strip() == "Where should replies come back to?"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_show_correct_title_and_description_for_sms_sender_type(
     client_request,
     fake_uuid,
@@ -300,7 +300,6 @@ def test_that_test_files_exist():
     assert len(test_non_spreadsheet_files) == 6
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_not_allow_files_to_be_uploaded_without_the_correct_permission(
     client_request,
     mock_get_service_template,
@@ -327,7 +326,6 @@ def test_should_not_allow_files_to_be_uploaded_without_the_correct_permission(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue and columns validation")
 def test_example_spreadsheet(
     client_request,
     mock_get_service_template_with_placeholders_same_as_recipient,
@@ -340,7 +338,6 @@ def test_example_spreadsheet(
     assert page.select_one("input[type=file]")["accept"] == ".csv,.xlsx,.xls,.ods,.xlsm,.tsv"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue and NLpostal address can only have 6 lines")
 def test_example_spreadsheet_for_letters(
     client_request,
     service_one,
@@ -374,7 +371,6 @@ def test_example_spreadsheet_for_letters(
     ]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "filename, reduce_min_col_limit, reduce_abs_col_limit, acceptable_file, expect_equal, expected_status",
     list(
@@ -482,7 +478,6 @@ def test_upload_files_in_different_formats(
         assert f"Could not read {filename}" in [r.message for r in caplog.records]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize("filename", test_spreadsheet_files_surplus_header)
 def test_upload_files_with_excessive_header_columns(
     filename,
@@ -520,7 +515,6 @@ def test_upload_files_with_excessive_header_columns(
     assert f"Abandoned parsing {filename}" in [r.message for r in caplog.records]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_upload_file_with_excessive_rows(
     client_request,
     service_one,
@@ -556,7 +550,6 @@ def test_upload_file_with_excessive_rows(
     assert f"Abandoned parsing {filename}" in [r.message for r in caplog.records]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_send_messages_sanitises_and_truncates_file_name_for_metadata(
     client_request,
     service_one,
@@ -583,7 +576,6 @@ def test_send_messages_sanitises_and_truncates_file_name_for_metadata(
     assert mock_s3_set_metadata.call_args_list[0][1]["original_file_name"].startswith("?")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "exception, expected_error_message",
     [
@@ -636,7 +628,6 @@ def test_shows_error_if_parsing_exception(
     assert normalize_spaces(page.select_one(".govuk-error-summary__body").text) == (expected_error_message)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_upload_csv_file_with_errors_shows_check_page_with_errors(
     client_request,
     service_one,
@@ -681,7 +672,6 @@ def test_upload_csv_file_with_errors_shows_check_page_with_errors(
     assert normalize_spaces(page.select_one("input[type=file]")["data-button-text"]) == "Upload your file again"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_upload_csv_file_with_empty_message_shows_check_page_with_errors(
     client_request,
     service_one,
@@ -731,7 +721,6 @@ def test_upload_csv_file_with_empty_message_shows_check_page_with_errors(
     assert page.select("tbody tr td")[1]["colspan"] == "2"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_upload_csv_file_with_very_long_placeholder_shows_check_page_with_errors(
     client_request,
     service_one,
@@ -784,7 +773,6 @@ def test_upload_csv_file_with_very_long_placeholder_shows_check_page_with_errors
     assert page.select("tbody tr td")[1]["colspan"] == "2"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] broken because NL Postal address validation - see test_send_nl")
 def test_upload_csv_file_with_bad_postal_address_shows_check_page_with_errors(
     client_request,
     service_one,
@@ -849,7 +837,6 @@ def test_upload_csv_file_with_bad_postal_address_shows_check_page_with_errors(
     ]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] broken because NL Postal address validation - see test_send_nl")
 def test_upload_csv_file_with_bad_bfpo_postal_address_shows_check_page_with_errors(
     client_request,
     service_one,
@@ -892,7 +879,6 @@ def test_upload_csv_file_with_bad_bfpo_postal_address_shows_check_page_with_erro
     ]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] broken because NL Postal address validation - see test_send_nl")
 def test_upload_csv_file_with_international_letters_permission_shows_appropriate_errors(
     client_request,
     service_one,
@@ -940,7 +926,6 @@ def test_upload_csv_file_with_international_letters_permission_shows_appropriate
     ]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] broken because NL Postal address validation - see test_send_nl")
 @pytest.mark.parametrize(
     "row_index, expected_postage",
     (
@@ -1061,7 +1046,6 @@ def test_upload_csv_file_with_international_letters_permission_shows_correct_pos
         ),
     ],
 )
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_upload_csv_file_with_missing_columns_shows_error(
     client_request,
     mocker,
@@ -1096,7 +1080,6 @@ def test_upload_csv_file_with_missing_columns_shows_error(
     assert normalize_spaces(page.select(".banner-dangerous")[0].text) == expected_error
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_upload_csv_file_limits_number_of_columns_displayed_when_error(
     client_request,
     mocker,
@@ -1135,7 +1118,6 @@ def test_upload_csv_file_limits_number_of_columns_displayed_when_error(
     assert len(page.select("table td")) == 1_024  # 512 × 2 rows of data
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_upload_csv_invalid_extension(
     client_request,
     service_one,
@@ -1154,7 +1136,6 @@ def test_upload_csv_invalid_extension(
     assert "The file must be a spreadsheet that Notify can read" in page.text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_upload_csv_size_too_big(
     client_request,
     service_one,
@@ -1195,7 +1176,6 @@ def test_upload_valid_csv_redirects_to_check_page(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "extra_args, expected_link_in_first_row, expected_recipient, expected_message",
     [
@@ -1368,7 +1348,6 @@ def test_upload_valid_csv_only_sets_meta_if_filename_known(
     assert len(mock_s3_set_metadata.call_args_list) == 0
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_show_all_columns_if_there_are_duplicate_recipient_columns(
     client_request,
     mocker,
@@ -1404,7 +1383,6 @@ def test_show_all_columns_if_there_are_duplicate_recipient_columns(
     assert normalize_spaces(page.select_one("tbody").text) == "2 07700900003 07700900003 07700900003"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue column names dont match, see test_send_nl")
 @pytest.mark.parametrize(
     "row_index, expected_status",
     [
@@ -1521,7 +1499,6 @@ def test_send_one_off_step_removes_from_inbound_sms_details_key_from_session_on_
         assert "from_inbound_sms_details" not in session
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue - see test_send_nl")
 def test_send_one_off_does_not_send_without_the_correct_permissions(
     client_request,
     mock_get_service_template,
@@ -1548,7 +1525,6 @@ def test_send_one_off_does_not_send_without_the_correct_permissions(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "user",
     (
@@ -1586,7 +1562,6 @@ def test_send_one_off_has_correct_page_title(
     assert len(page.select(".banner-tour")) == 0
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue column names dont match, see test_send_nl")
 @pytest.mark.parametrize(
     "notification_type, step_index, prefilled, expected_field_label, template_email_files, content",
     [
@@ -1718,7 +1693,6 @@ def test_send_one_off_shows_placeholders_in_correct_order(
     assert normalize_spaces(page.select_one("label").text) == expected_field_label
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue column names dont match, see test_send_nl")
 @pytest.mark.parametrize(
     "template_type, content, recipient, placeholder_values, step_index, css_selector_for_content, expected_content",
     (
@@ -1801,7 +1775,6 @@ def test_send_one_off_only_asks_for_recipient_once(
     assert normalize_spaces(page.select_one(css_selector_for_content).text) == expected_content
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue - see test_send_nl")
 @pytest.mark.parametrize(
     "user, template_type, expected_link_text, expected_link_url",
     [
@@ -1865,7 +1838,6 @@ def test_send_one_off_has_skip_link(
             skip_links[1]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Postal issue - see test_send_nl")
 @pytest.mark.parametrize(
     "template_type, expected_sticky",
     [
@@ -1903,7 +1875,6 @@ def test_send_one_off_has_sticky_header_for_email(
     assert bool(page.select(".js-stick-at-top-when-scrolling")) == expected_sticky
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] broken because NL Postal address validation - see test_send_nl")
 def test_send_one_off_has_sticky_header_for_letter_on_non_address_placeholders(
     client_request,
     fake_uuid,
@@ -1972,7 +1943,6 @@ def test_skip_link_will_not_show_on_sms_one_off_if_service_has_no_mobile_number(
     assert not any(normalize_spaces(link.text) == "Use my phone number" for link in page.select_one("a"))
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] broken by Translation issue - column name change  - see test_send_nl")
 @pytest.mark.parametrize(
     "user",
     (
@@ -2010,7 +1980,6 @@ def test_send_one_off_offers_link_to_upload(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] broken by Translation issue - column name change  - see test_send_nl")
 def test_send_one_off_has_link_to_use_existing_list(
     client_request,
     mock_get_service_template,
@@ -2054,7 +2023,6 @@ def test_send_one_off_has_link_to_use_existing_list(
     ]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] broken by Translation issue - column name change  - see test_send_nl")
 def test_no_link_to_use_existing_list_for_service_without_lists(
     client_request,
     mock_get_service_template,
@@ -2116,7 +2084,6 @@ def test_link_to_upload_not_offered_when_entering_personalisation(
     assert "Upload" not in page.select_one("main").text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] broken by Translation issue - column name change  - see test_send_nl")
 @pytest.mark.parametrize(
     "user",
     (
@@ -2259,7 +2226,6 @@ def test_send_one_off_sms_message_redirects(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] broken by Translation issue - column name change  - see test_send_nl")
 @pytest.mark.parametrize(
     "user",
     (
@@ -2466,7 +2432,6 @@ def test_send_one_off_letter_redirects_to_right_url(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] broken by postal address change - see test_send_nl")
 def test_send_one_off_letter_qr_code_placeholder_too_big(
     client_request,
     platform_admin_user,
@@ -2529,7 +2494,6 @@ def test_send_one_off_populates_field_from_session(
     assert page.select("input")[0]["value"] == "Jo"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_send_one_off_back_link_populates_address_textarea(
     client_request,
     mock_get_service_letter_template,
@@ -2563,7 +2527,6 @@ def test_send_one_off_back_link_populates_address_textarea(
     assert textarea.text in "\r\nfoo\nbar"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "placeholder",
     (
@@ -2646,7 +2609,6 @@ def test_send_one_off_letter_copes_with_placeholder_from_address_block(
     assert normalize_spaces(previous_page.select_one("form label").text) == "Address"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "last_line, expected_postage",
     (
@@ -2688,7 +2650,6 @@ def test_send_one_off_letter_shows_international_postage(
     assert normalize_spaces(page.select_one(".letter-postage").text) == expected_postage
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue and columns validation")
 def test_send_one_off_sms_message_puts_submitted_data_in_session(
     client_request,
     service_one,
@@ -2814,7 +2775,6 @@ def test_send_one_off_redirects_to_letter_address(client_request, fake_uuid, moc
         assert session["placeholders"] == {}
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_send_one_off_letter_address_shows_form(
     client_request,
     fake_uuid,
@@ -2856,7 +2816,6 @@ def test_send_one_off_letter_address_shows_form(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] NL postalAddress can only have 6 lines")
 @pytest.mark.parametrize(
     ["form_data", "expected_placeholders"],
     [
@@ -2933,7 +2892,6 @@ def test_send_one_off_letter_address_populates_address_fields_in_session(
         assert session["placeholders"] == expected_placeholders
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "form_data, extra_permissions, expected_error_message",
     [
@@ -3018,7 +2976,6 @@ def test_send_one_off_letter_address_rejects_bad_addresses(
     assert normalize_spaces(error[0].text) == expected_error_message
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] broke because PostalAddress changes")
 def test_send_one_off_letter_address_goes_to_next_placeholder(client_request, mock_template_preview, mocker):
     with client_request.session_transaction() as session:
         session["recipient"] = None
@@ -3046,7 +3003,6 @@ def test_send_one_off_letter_address_goes_to_next_placeholder(client_request, mo
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue and columns validation")
 def test_download_example_csv(
     client_request,
     mock_get_service_template_with_placeholders_same_as_recipient,
@@ -3063,7 +3019,6 @@ def test_download_example_csv(
     assert "text/csv" in response.headers["Content-Type"]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue and NLpostal address can only have 6 lines")
 def test_download_example_csv_for_letter_template(
     client_request,
     mocker,
@@ -3098,7 +3053,6 @@ def test_download_example_csv_for_letter_template(
     assert "text/csv" in response.headers["Content-Type"]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_upload_csvfile_with_valid_phone_shows_all_numbers(
     client_request,
     mock_get_service_template,
@@ -3241,7 +3195,6 @@ def test_upload_csvfile_with_sms_to_landline_validates(
     assert mock_recipients.call_args[1]["allow_sms_to_uk_landline"] == should_allow_sms_to_uk_landline
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_job_from_contact_list_knows_where_its_come_from(
     client_request,
     service_one,
@@ -3265,7 +3218,6 @@ def test_job_from_contact_list_knows_where_its_come_from(
     assert page.select_one("form input[type=hidden][name=contact_list_id]")["value"] == str(unchanging_fake_uuid)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_test_message_can_only_be_sent_now(
     client_request,
     service_one,
@@ -3290,7 +3242,6 @@ def test_test_message_can_only_be_sent_now(
     assert 'name="scheduled_for"' not in content
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_letter_can_only_be_sent_now(
     client_request,
     mocker,
@@ -3322,7 +3273,6 @@ def test_letter_can_only_be_sent_now(
     assert normalize_spaces(page.select_one("form button").text) == "Send 1 letter"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_send_button_is_correctly_labelled(
     client_request,
     mocker,
@@ -3731,7 +3681,6 @@ def test_check_messages_back_link(
     ],
     ids=["none_sent", "none_sent", "some_sent"],
 )
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_check_messages_shows_too_many_messages_errors(
     client_request,
     mock_get_service,  # set sms_message_limit to 50
@@ -3790,7 +3739,6 @@ def test_check_messages_shows_too_many_messages_errors(
     ],
     ids=["none_sent", "none_sent", "some_sent"],
 )
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_check_messages_shows_too_many_international_sms_messages_errors(
     client_request,
     service_one,
@@ -3839,7 +3787,34 @@ def test_check_messages_shows_too_many_international_sms_messages_errors(
     assert normalize_spaces(page.select("div.banner-dangerous p")[1]) == expected_msg
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
+@pytest.mark.parametrize(
+    "template_type, file_contents, expected_error",
+    (
+        (
+            "sms",
+            "phone number,\n07900900321",
+            (
+                "You cannot send to this phone number "
+                "In trial mode you can only send to yourself and members of your team"
+            ),
+        ),
+        (
+            "email",
+            "email address,\nnot-in-team@example.gov.uk",
+            (
+                "You cannot send to this email address "
+                "In trial mode you can only send to yourself and members of your team"
+            ),
+        ),
+    ),
+)
+@pytest.mark.parametrize(
+    "user_name",
+    (
+        "07900900321",
+        "not-in-team@example.gov.uk",
+    ),
+)
 def test_check_messages_shows_trial_mode_error(
     client_request,
     mock_s3_get_metadata,
@@ -3849,10 +3824,25 @@ def test_check_messages_shows_trial_mode_error(
     mock_get_service_statistics,
     mock_get_job_doesnt_exist,
     mock_get_jobs,
+    template_type,
+    file_contents,
+    expected_error,
+    user_name,
     fake_uuid,
     mocker,
 ):
-    mocker.patch("app.main.views_nl.send.s3download", return_value=("phone number,\n07900900321"))  # Not in team
+    template = create_template(template_type=template_type)
+    mocker.patch(
+        "app.service_api_client.get_service_template",
+        return_value={"data": template},
+    )
+    mocker.patch("app.main.views_nl.send.s3download", return_value=file_contents)
+    mocker.patch(
+        "app.models.user.Users._get_items",
+        return_value=[
+            create_service_one_admin(name=user_name),
+        ],
+    )
 
     with client_request.session_transaction() as session:
         session["file_uploads"] = {
@@ -3869,12 +3859,9 @@ def test_check_messages_shows_trial_mode_error(
         _test_page_title=False,
     )
 
-    assert " ".join(page.select_one("div.banner-dangerous").text.split()) == (
-        "You cannot send to this phone number In trial mode you can only send to yourself and members of your team"
-    )
+    assert normalize_spaces(page.select_one("div.banner-dangerous")) == expected_error
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "restricted, error_should_be_shown",
     [
@@ -3949,7 +3936,6 @@ def test_check_messages_shows_trial_mode_error_for_letters(
         assert page.select_one("th.table-field a").text == "3"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] postalAddress issue")
 @pytest.mark.parametrize("number_of_rows", [1, 11])
 def test_check_messages_does_not_allow_to_send_letter_longer_than_10_pages(
     client_request,
@@ -3991,7 +3977,6 @@ def test_check_messages_does_not_allow_to_send_letter_longer_than_10_pages(
     assert not page.select("form button")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_check_messages_shows_data_errors_before_trial_mode_errors_for_letters(
     client_request,
     mock_get_service_letter_template,
@@ -4037,7 +4022,6 @@ def test_check_messages_shows_data_errors_before_trial_mode_errors_for_letters(
     assert not page.select(".table-field-index a")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "uploaded_file_name",
     (
@@ -4081,7 +4065,6 @@ def test_warns_if_file_sent_already(
     mock_get_jobs.assert_called_once_with(SERVICE_ONE_ID, limit_days=0)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_check_messages_column_error_doesnt_show_optional_columns(
     client_request,
     mock_get_service_letter_template,
@@ -4125,7 +4108,6 @@ def test_check_messages_column_error_doesnt_show_optional_columns(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_check_messages_adds_sender_id_in_session_to_metadata(
     client_request,
     mocker,
@@ -4165,7 +4147,6 @@ def test_check_messages_adds_sender_id_in_session_to_metadata(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_check_messages_does_not_add_sender_id_in_session_to_metadata_for_letter_template(
     client_request,
     mocker,
@@ -4211,7 +4192,6 @@ def test_check_messages_does_not_add_sender_id_in_session_to_metadata_for_letter
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "extra_args",
     (
@@ -4268,7 +4248,6 @@ def test_letters_from_csv_files_dont_have_download_link(
     assert not page.select("a[download]")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "restricted, expected_link_selector",
     [
@@ -4361,7 +4340,6 @@ def test_one_off_letters_pdf_download(
     assert response.headers["Content-Length"] == "3"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_send_one_off_letter_errors_in_trial_mode(
     client_request,
     mocker,
@@ -4434,7 +4412,6 @@ def test_send_one_off_letter_errors_if_letter_longer_than_10_pages(
     assert not page.select("form button")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_check_messages_shows_over_max_row_error(
     client_request,
     mock_get_users_by_service,
@@ -4497,7 +4474,6 @@ def test_check_notification_redirects_if_session_not_populated(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_check_notification_shows_preview(client_request, service_one, fake_uuid, mock_get_service_template):
     with client_request.session_transaction() as session:
         session["recipient"] = "07700900001"
@@ -4525,7 +4501,6 @@ def test_check_notification_shows_preview(client_request, service_one, fake_uuid
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_check_notification_shows_back_link(client_request, service_one, fake_uuid, mock_template_preview, mocker):
     service_one["restricted"] = False
     mocker.patch(
@@ -4572,6 +4547,86 @@ def test_check_notification_shows_back_link(client_request, service_one, fake_uu
 
     previous_page = client_request.get_url(back_link)
     assert normalize_spaces(previous_page.select_one("label").text) == "thing"
+
+
+@pytest.mark.parametrize(
+    "template_content, personalisation, recipient, expected_cost_message",
+    (
+        (
+            "hello",
+            {},
+            "07900900123",
+            "Will be charged as 1 text message",
+        ),
+        (
+            "hello ((name))",
+            {"name": "a" * 161},
+            "07900900123",
+            "Will be charged as 2 text messages",
+        ),
+        (
+            "ŵ" * 80,
+            {},
+            "07900900123",
+            "Will be charged as 2 text messages",
+        ),
+        (
+            "Sending abroad",
+            {},
+            "+225 01 01 01 01 01",  # Côte d'Ivoire
+            "Will be charged as 10 text messages",
+        ),
+    ),
+)
+@pytest.mark.parametrize(
+    "permissions",
+    [
+        ["send_texts", "send_emails", "send_letters", "manage_templates"],
+        ["send_texts", "send_emails", "send_letters", "manage_users", "manage_settings"],
+        pytest.param(
+            # All the permissions except manage templates/service
+            ["send_texts", "send_emails", "send_letters", "manage_api_keys", "view_activity"],
+            marks=pytest.mark.xfail(raises=AttributeError),  # Paragraph not found on page
+        ),
+    ],
+)
+def test_check_notification_shows_cost_of_text_message(
+    client_request,
+    template_content,
+    personalisation,
+    recipient,
+    expected_cost_message,
+    permissions,
+    fake_uuid,
+    mocker,
+):
+    user = create_service_one_user(
+        id=fake_uuid,
+        permissions={SERVICE_ONE_ID: permissions},
+    )
+    client_request.login(user)
+    mocker.patch(
+        "app.service_api_client.get_service_template",
+        return_value={
+            "data": template_json(
+                service_id=SERVICE_ONE_ID,
+                id_=fake_uuid,
+                type_="sms",
+                content=template_content,
+            )
+        },
+    )
+    with client_request.session_transaction() as session:
+        session["recipient"] = recipient
+        session["placeholders"] = personalisation
+
+    page = client_request.get(
+        "main.check_notification",
+        service_id=SERVICE_ONE_ID,
+        template_id=fake_uuid,
+    )
+
+    assert normalize_spaces(page.select_one("p.govuk-hint").text) == expected_cost_message
 
 
 @pytest.mark.parametrize(
@@ -4741,7 +4796,6 @@ SERVICE_DAILY_LIMIT_MSG = "Exceeded send limits (sms: 1000) for today"
 SERVICE_DAILY_INTERNTIONAL_SMS_LIMIT_MSG = "Exceeded send limits (international_sms: 1234) for today"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "exception_msg, expected_h1, expected_err_details",
     [
@@ -4800,7 +4854,6 @@ def test_send_notification_shows_error_if_400(
     assert not page.select_one("input[type=submit]")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_send_notification_shows_email_error_in_trial_mode(
     client_request,
     fake_uuid,
@@ -4832,7 +4885,6 @@ def test_send_notification_shows_email_error_in_trial_mode(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "endpoint, extra_args",
     [
@@ -4904,7 +4956,6 @@ def test_reply_to_is_previewed_if_chosen(
         uuid4(),
     ],
 )
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_sms_sender_is_previewed(
     client_request,
     mocker,
@@ -4975,7 +5026,6 @@ def test_redirects_to_template_if_job_exists_already(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "template_type, expected_list_id, expected_filenames, expected_time, expected_count",
     (
@@ -5018,20 +5068,19 @@ def test_choose_from_contact_list(
         template_id=fake_uuid,
     )
     assert [
-        normalize_spaces(filename.text) for filename in page.select(".file-list-filename-large")
+        normalize_spaces(filename.text) for filename in page.select(".notify-summary-list__filename")
     ] == expected_filenames
 
-    assert page.select_one("a.file-list-filename-large")["href"] == url_for(
+    assert page.select_one("a.notify-summary-list__filename")["href"] == url_for(
         "main.send_from_contact_list",
         service_id=SERVICE_ONE_ID,
         template_id=template["id"],
         contact_list_id=expected_list_id,
     )
-    assert normalize_spaces(page.select_one(".file-list-hint-large").text) == (expected_time)
+    assert normalize_spaces(page.select_one(".notify-summary-list__metadata").text) == (expected_time)
     assert normalize_spaces(page.select_one(".big-number-smallest").text) == (expected_count)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_choose_from_contact_list_with_personalised_template(
     client_request,
     mock_get_contact_lists,
@@ -5049,14 +5098,15 @@ def test_choose_from_contact_list_with_personalised_template(
         template_id=fake_uuid,
     )
     assert [normalize_spaces(p.text) for p in page.select("main p")] == [
-        "You cannot use an emergency contact list with this template because "
-        "it is personalised with ((name)) and ((thing)).",
+        (
+            "You cannot use an emergency contact list with this template because "
+            "it is personalised with ((name)) and ((thing))."
+        ),
         "Emergency contact lists can only include email addresses or phone numbers.",
     ]
-    assert not page.select("table")
+    assert not page.select(".govuk-summary-list")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_choose_from_contact_list_with_no_lists(
     client_request,
     mock_get_service_template,
@@ -5120,7 +5170,6 @@ def test_send_from_contact_list(
     mock_set_metadata.assert_called_once_with(SERVICE_ONE_ID, new_uuid, example_key="example value")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 # Previously skipped as "[NOTIFYNL] Translation issue": the real cause was two app bugs, not a
 # genuine translation divergence - send_one_off_to_myself redirected to step_index=1 (reserved for
 # the inbound-SMS-reply entry point) instead of 0, and fields_to_fill_in wrote the prefilled
@@ -5200,7 +5249,6 @@ def test_send_to_myself_404s_for_letter(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_can_send_from_emergency_contact_list_with_error_rows(
     client_request,
     mock_get_service_template,
@@ -5237,7 +5285,6 @@ def test_can_send_from_emergency_contact_list_with_error_rows(
     assert page.select_one(".govuk-button").text.strip() == "Send 1 text message"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_job_not_from_emergency_contact_list_with_error_rows(
     client_request,
     mock_get_service_template,

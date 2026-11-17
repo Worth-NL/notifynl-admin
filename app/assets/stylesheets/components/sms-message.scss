@@ -1,3 +1,7 @@
+@use 'govuk/helpers' as *;
+@use 'govuk/core/typography' as *;
+@use '../config';
+
 $tail-angle: 20deg;
 
 .sms-message-wrapper {
@@ -13,7 +17,12 @@ $tail-angle: 20deg;
   white-space: normal;
   margin: 0 0 govuk-spacing(6) 0;
   clear: both;
-  word-wrap: break-word;
+  overflow-wrap: break-word;
+  // align text to logical start
+  text-align: start;
+  // This forces the HTML layout engine to calculate bidirectional text runs 
+  // character-by-character exactly like a native <textarea> does.
+  unicode-bidi: plaintext;
 
   &:after {
     content: "";
@@ -45,7 +54,7 @@ $tail-angle: 20deg;
     }
 
     .govuk-link {
-      color: $link-colour-on-grey-background;
+      color: config.$link-colour-on-grey-background;
     }
 
   }
@@ -69,6 +78,11 @@ $tail-angle: 20deg;
   color: govuk-functional-colour(secondary-text);
   margin: -20px govuk-spacing(3) 20px govuk-spacing(3);
   display: block;
+}
+
+.sms-message-status--error {
+  color: govuk-functional-colour(error);
+  @include govuk-typography-weight-bold;
 }
 
 .sms-message-status-outbound {

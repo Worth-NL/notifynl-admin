@@ -1,41 +1,49 @@
 {% from "components/previous-next-navigation.html" import previous_next_navigation %}
-{% from "components/table.html" import list_table, row_heading, notification_status_field %}
+{% from "govuk_frontend_jinja/components/summary-list/macro.html" import govukSummaryList %}
+{% from "components/notification-state.html" import notification_state %}
 
 <div class="ajax-block-container" id='pill-selected-item'>
 
-  {% if notifications %}
-    <div class='dashboard-table'>
-  {% endif %}
-    {% call(item, row_number) list_table(
-      notifications,
-      caption="Recente activiteit",
-      caption_visible=False,
-      empty_message='Geen berichten gevonden &thinsp;(berichten worden {} dagen bewaard)'.format(limit_days)|safe,
-      field_headings=['Ontvanger', 'Status'],
-      field_headings_visible=False
-    ) %}
-      {% call row_heading() %}
+  {% if not notifications %}
+    <p class="govuk-body no-data">
+      Geen berichten gevonden &thinsp;(berichten worden {{ limit_days | format }} dagen bewaard)
+    </p>
+  {% else %}
+    {% set notifications_list = [] %}
+    {% for item in notifications %}
+      {% set truncate_class = "notify-summary-list__metadata--truncate" if item.notification_type == 'sms' else "" %}
+      {% set summary_key_html %}
         {% if item.status in ('pending-virus-check', 'virus-scan-failed') %}
-          <span class="file-list-filename loading-indicator">Controleren</span>
+          <span class="notify-summary-list__filename loading-indicator">Controleren</span>
         {% else %}
-          <a class="govuk-link govuk-link--no-visited-state file-list-filename" href="{{ single_notification_url(notification_id=item.id) }}">{{ item.to.splitlines()|join(', ') if item.to else '' }}</a>
+          <a class="govuk-link govuk-link--no-visited-state notify-summary-list__filename" href="{{ single_notification_url(notification_id=item.id) }}">{{ item.to.splitlines()|join(', ') if item.to else '' }}</a>
         {% endif %}
-        <p class="file-list-hint">
+        <p class="govuk-body notify-summary-list__metadata notify-summary-list__metadata--small {{ truncate_class }}">
           {{ item.preview_of_content }}
         </p>
-      {% endcall %}
+      {% endset %}
 
-      {{ notification_status_field(item) }}
-
-    {% endcall %}
-  {% if notifications %}
-    </div>
+      {% do notifications_list.append({
+        "key": {
+          "classes": "notify-summary-list__key notify-summary-list__key--50-100",
+          "html": summary_key_html,
+        },
+        "value": {
+          "classes": "govuk-summary-list__value--align-right govuk-summary-list__value--small",
+          "text":  notification_state(item),
+        }
+      }) %}
+    {% endfor %}
+    {{ govukSummaryList({
+      "classes": "notify-summary-list",
+      "rows": notifications_list
+    }) }}
   {% endif %}
 
   {% if show_pagination %}
     {{ previous_next_navigation(prev_page, next_page) }}
   {% elif next_page %}
-    <p class="table-show-more-link">
+    <p class="govuk-body more-items-available-text">
       Alleen de eerste 50 berichten worden getoond
     </p>
   {% endif %}

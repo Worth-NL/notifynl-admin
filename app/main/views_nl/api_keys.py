@@ -1,10 +1,10 @@
 from flask import abort, flash, redirect, render_template, request, url_for
-from flask_login import current_user
 from markupsafe import Markup
 from notifications_utils.safe_string import make_string_safe
 
 from app import (
     current_service,
+    current_user,
     service_api_client,
 )
 from app.constants import ServiceCallbackTypes
@@ -62,7 +62,7 @@ def guest_list(service_id):
 @main.route("/services/<uuid:service_id>/api/keys")
 @user_has_permissions("manage_api_keys")
 def api_keys(service_id):
-    return render_template("views/api/keys.html")
+    return render_template("views/api/keys.html", user_getter=current_service.active_users.get_name_from_id)
 
 
 @main.route("/services/<uuid:service_id>/api/keys/create", methods=["GET", "POST"])
@@ -70,9 +70,9 @@ def api_keys(service_id):
 def create_api_key(service_id):
     form = CreateKeyForm(current_service.api_keys)
     form.key_type.choices = [
-        (APIKey.TYPE_NORMAL, "Live - verstuurt naar iedereen"),
-        (APIKey.TYPE_TEAM, "Team en gasten lijst - beperkt naar wie je kunt sturen"),
-        (APIKey.TYPE_TEST, "Test - simuleert het versturen van berichten"),
+        (APIKey.TYPE_NORMAL, "Live – verstuurt naar iedereen"),
+        (APIKey.TYPE_TEAM, "Team en gastenlijst – beperkt naar wie je kunt sturen"),
+        (APIKey.TYPE_TEST, "Test – simuleert het versturen van berichten"),
     ]
     # preserve order of items extended by starting with empty dicts
     form.key_type.param_extensions = {"items": [{}, {}]}
@@ -86,8 +86,17 @@ def create_api_key(service_id):
                 )
             },
         }
+    team_key_hints = []
     if current_service.has_permission("letter"):
-        form.key_type.param_extensions["items"][1]["hint"] = {"text": "Kan niet worden gebruikt om brieven te sturen"}
+        # team keys simulate letters, like test keys (notifynl-api ADR 0018)
+        team_key_hints.append("Brieven worden niet verstuurd, alleen gesimuleerd.")
+    if current_service.has_permission("messagebox"):
+        team_key_hints.append(
+            "Berichtenboxberichten gaan naar de pre-productieomgeving van Logius en werken alleen met test-BSN’s van "
+            "Logius."
+        )
+    if team_key_hints:
+        form.key_type.param_extensions["items"][1]["hint"] = {"text": " ".join(team_key_hints)}
     if form.validate_on_submit():
         if current_service.trial_mode and form.key_type.data == APIKey.TYPE_NORMAL:
             abort(400)
@@ -117,9 +126,7 @@ def revoke_api_key(service_id, key_id):
             ],
             "revoke this API key",
         )
-        return render_template(
-            "views/api/keys.html",
-        )
+        return render_template("views/api/keys.html", user_getter=current_service.active_users.get_name_from_id)
     elif request.method == "POST":
         key.revoke(service_id=service_id)
         flash(f"‘{key.name}’ is ingetrokken", "default_with_tick")

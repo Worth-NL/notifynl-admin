@@ -7,7 +7,6 @@ from app.models.user import User
 from tests.conftest import normalize_spaces
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_render_register_returns_template_with_form(
     client_request,
 ):
@@ -49,7 +48,6 @@ def test_logged_in_user_redirects_to_account(
         "   the   quick   brown   fox   ",
     ],
 )
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 @pytest.mark.parametrize(
     "name",
     (
@@ -107,7 +105,6 @@ def test_register_continue_handles_missing_session_sensibly(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Missing mock in overriden views")
 @pytest.mark.parametrize(
     "name",
     (
@@ -139,7 +136,6 @@ def test_register_form_returns_error_when_name_contains_url(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_process_register_returns_200_when_mobile_number_is_invalid(
     client_request,
 ):
@@ -158,7 +154,6 @@ def test_process_register_returns_200_when_mobile_number_is_invalid(
     assert "Mobile numbers can only include: 0 1 2 3 4 5 6 7 8 9 ( ) + -" in page.text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_return_200_when_email_is_not_gov_uk(
     client_request,
     mock_get_organisations,
@@ -189,7 +184,6 @@ def test_should_return_200_when_email_is_not_gov_uk(
         pytest.param("example@ellipsis.com", marks=pytest.mark.xfail(raises=AssertionError)),
     ),
 )
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_should_add_user_details_to_session(
     client_request,
     mock_send_verify_code,
@@ -214,7 +208,6 @@ def test_should_add_user_details_to_session(
         assert session["user_details"]["email"] == email_address
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_should_return_200_if_password_is_on_list_of_commonly_used_passwords(
     client_request,
     mock_get_user_by_email,
@@ -234,7 +227,6 @@ def test_should_return_200_if_password_is_on_list_of_commonly_used_passwords(
     assert "Choose a password that’s harder to guess" in page.text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_register_with_existing_email_sends_emails(
     client_request,
     api_user_active,
@@ -297,7 +289,6 @@ def test_shows_name_on_registration_page_from_invite(
     assert page.select_one("input[name=name]").get("value") == expected_value
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_shows_hidden_email_address_on_registration_page_from_invite(
     client_request,
     sample_invite,
@@ -508,7 +499,6 @@ def test_can_register_email_auth_without_phone_number(
     mock_register_user.assert_called_once_with(ANY, ANY, None, ANY, ANY)  # mobile_number
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] email_domains.txt change breaks this.")
 def test_cannot_register_with_sms_auth_and_missing_mobile_number(
     client_request,
     mock_send_verify_code,
@@ -545,7 +535,6 @@ def test_register_from_invite_form_doesnt_show_mobile_number_field_if_email_auth
     assert page.select_one("input[name=mobile_number]") is None
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_registration_continue_page(client_request, fake_uuid):
     with client_request.session_transaction() as session:
         session["user_details"] = {"email": "user@gov.uk", "id": fake_uuid}

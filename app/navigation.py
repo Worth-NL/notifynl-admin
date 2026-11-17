@@ -1,10 +1,11 @@
+from collections.abc import Mapping, Set
 from itertools import chain
 
 from flask import request, url_for
 
 
 class Navigation:
-    mapping = {}
+    mapping: Mapping[str, Set[str]] = {}
     selected_class = "selected"
 
     def __init__(self):
@@ -51,6 +52,7 @@ class HeaderNavigation(Navigation):
         "pricing": {
             "guidance_pricing",
             "guidance_pricing_text_messages",
+            "guidance_pricing_free_text_message_allowance",
             "guidance_pricing_letters",
             "guidance_trial_mode",
             "guidance_how_to_pay",
@@ -65,6 +67,7 @@ class HeaderNavigation(Navigation):
             "guidance_data_retention_period",
             "guidance_delivery_times",
             "guidance_email_branding",
+            "guidance_fonts_typefaces",
             "guidance_formatting",
             "guidance_letter_branding",
             "guidance_links_and_URLs",
@@ -304,6 +307,7 @@ class MainNavigation(Navigation):
             "service_confirm_delete_email_reply_to",
             "service_confirm_delete_letter_contact",
             "service_confirm_delete_sms_sender",
+            "service_confirm_free_allowance_terms",
             "service_edit_email_reply_to",
             "service_edit_letter_contact",
             "service_edit_sms_sender",

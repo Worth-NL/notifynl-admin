@@ -214,9 +214,9 @@ def test_switch_email_on_from_tasklist_form(
     page = client_request.post("main.enable_email_channel", service_id=service_one["id"], _follow_redirects=True)
 
     if not confirmed_email_sender_name or not has_email_reply_to_address:
-        assert normalize_spaces(page.select_one(".banner-dangerous h2").text) == ("There is a problem")
+        assert normalize_spaces(page.select_one(".banner-dangerous h2").text) == ("Er is een probleem")
         assert normalize_spaces(page.select_one(".banner-dangerous p").text) == (
-            "Some of the tasks on this page are incomplete"
+            "Sommige taken op deze pagina zijn nog niet afgerond"
         )
     if has_email_reply_to_address and confirmed_email_sender_name:
         assert set(mock_update_service.call_args[1]["permissions"]) == set(expected_updated_permissions)
@@ -406,3 +406,152 @@ def test_service_set_letter_address_placement_rejects_invalid_value(
 
     assert not mock_update_service.called
     assert page.select_one(".govuk-error-summary")
+
+
+def test_service_receive_text_messages_stop_fails_when_inbound_number_is_default_sender_nl(
+    client_request,
+    platform_admin_user,
+    service_one,
+    mock_get_inbound_number_for_service,
+    mock_get_most_recent_inbound_usage_date,
+    multiple_sms_senders,
+):
+    service_one["permissions"] = ["inbound_sms"]
+    client_request.login(platform_admin_user)
+
+    page = client_request.post(
+        ".service_receive_text_messages_stop",
+        service_id=SERVICE_ONE_ID,
+        _data={"removal_options": "true"},
+        _expected_status=200,
+    )
+
+    error_summary = page.select_one(".govuk-error-summary")
+    assert "U moet eerst de standaard afzender-ID voor sms-berichten wijzigen" in error_summary.text
+
+
+def _letter_settings_row(page, key):
+    for row in page.select(".service-letter-settings .govuk-summary-list__row"):
+        if normalize_spaces(row.select_one(".govuk-summary-list__key").text) == key:
+            return row
+    raise AssertionError(f"No letter settings row {key}")
+
+
+@pytest.mark.parametrize(
+    "decided_by_provider, expected_value, expected_action",
+    [
+        (False, "50mm", "Wijzigen adresplaatsing op de brief"),
+        (True, "50mm (bepaald door printleverancier)", ""),
+    ],
+)
+def test_letter_address_placement_is_read_only_once_the_print_provider_decides_it(
+    client_request,
+    service_one,
+    single_reply_to_email_address,
+    single_sms_sender,
+    injected_letter_contact_block,
+    mock_get_service_settings_page_common,
+    decided_by_provider,
+    expected_value,
+    expected_action,
+):
+    service_one["permissions"] = ["letter"]
+    service_one["letter_address_placement"] = "50mm"
+    service_one["letter_address_placement_decided_by_provider"] = decided_by_provider
+
+    page = client_request.get("main.service_settings", service_id=SERVICE_ONE_ID)
+
+    row = _letter_settings_row(page, "Adresplaatsing op de brief")
+    assert normalize_spaces(row.select_one(".govuk-summary-list__value").text) == expected_value
+    actions = row.select_one(".govuk-summary-list__actions")
+    assert normalize_spaces(actions.text if actions else "") == expected_action
+
+
+def test_letter_address_placement_page_is_gone_once_the_print_provider_decides_it(
+    client_request, service_one, mock_update_service
+):
+    service_one["letter_address_placement_decided_by_provider"] = True
+
+    client_request.get("main.service_set_letter_address_placement", service_id=SERVICE_ONE_ID, _expected_status=404)
+    client_request.post(
+        "main.service_set_letter_address_placement",
+        service_id=SERVICE_ONE_ID,
+        _data={"letter_address_placement": "50mm"},
+        _expected_status=404,
+    )
+    assert not mock_update_service.called
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    ["main.service_set_letter_address_placement", "main.service_set_send_client_reference_to_letter_provider"],
+)
+def test_letter_settings_pages_work_with_service_json_cached_before_the_letter_provider_fields(
+    client_request, service_one, endpoint
+):
+    del service_one["letter_address_placement_decided_by_provider"]
+    del service_one["send_client_reference_to_letter_provider"]
+
+    client_request.get(endpoint, service_id=SERVICE_ONE_ID)
+
+
+@pytest.mark.parametrize("enabled, expected_value", [(True, "Aan"), (False, "Uit")])
+def test_send_client_reference_to_letter_provider_setting_row(
+    client_request,
+    service_one,
+    single_reply_to_email_address,
+    single_sms_sender,
+    injected_letter_contact_block,
+    mock_get_service_settings_page_common,
+    enabled,
+    expected_value,
+):
+    service_one["permissions"] = ["letter"]
+    service_one["send_client_reference_to_letter_provider"] = enabled
+
+    page = client_request.get("main.service_settings", service_id=SERVICE_ONE_ID)
+
+    row = _letter_settings_row(page, "Klantreferentie naar printleverancier")
+    assert normalize_spaces(row.select_one(".govuk-summary-list__value").text) == expected_value
+    assert row.select_one(".govuk-summary-list__actions a")["href"] == (
+        f"/services/{SERVICE_ONE_ID}/service-settings/send-client-reference-to-letter-provider"
+    )
+
+
+@pytest.mark.parametrize("current_value, checked", [(True, "True"), (False, "False")])
+def test_send_client_reference_to_letter_provider_page_shows_the_current_value(
+    client_request, service_one, current_value, checked
+):
+    service_one["send_client_reference_to_letter_provider"] = current_value
+
+    page = client_request.get("main.service_set_send_client_reference_to_letter_provider", service_id=SERVICE_ONE_ID)
+
+    assert page.select_one("input[name=enabled][checked]")["value"] == checked
+
+
+@pytest.mark.parametrize("posted, expected", [("True", True), ("False", False)])
+def test_send_client_reference_to_letter_provider_saves(
+    client_request, service_one, mock_update_service, posted, expected
+):
+    client_request.post(
+        "main.service_set_send_client_reference_to_letter_provider",
+        service_id=SERVICE_ONE_ID,
+        _data={"enabled": posted},
+        _expected_redirect=f"/services/{SERVICE_ONE_ID}/service-settings",
+    )
+
+    mock_update_service.assert_called_once_with(SERVICE_ONE_ID, send_client_reference_to_letter_provider=expected)
+
+
+def test_send_client_reference_to_letter_provider_needs_manage_service(
+    client_request, service_one, mock_update_service
+):
+    client_request.login(create_active_user_no_settings_permission())
+
+    client_request.post(
+        "main.service_set_send_client_reference_to_letter_provider",
+        service_id=SERVICE_ONE_ID,
+        _data={"enabled": "True"},
+        _expected_status=403,
+    )
+    assert not mock_update_service.called

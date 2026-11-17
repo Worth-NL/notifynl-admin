@@ -65,6 +65,25 @@ class OrganisationsClient(NotifyAdminAPIClient):
 
         return api_response
 
+    # [NotifyNL] organisation letter provider
+    def get_organisation_letter_provider(self, org_id):
+        return self.get(url=f"/organisations/{org_id}/letter-provider")["data"]
+
+    def set_organisation_letter_provider(self, org_id, data, cached_service_ids=None):
+        api_response = self.post(url=f"/organisations/{org_id}/letter-provider", data=data)
+
+        # the letter provider decides the address placement shown in the organisation's services' cached JSON
+        if cached_service_ids:
+            redis_client.delete(*map("service-{}".format, cached_service_ids))
+
+        return api_response["data"]
+
+    def start_letter_endpoint_connection_test(self, org_id, data):
+        return self.post(url=f"/organisations/{org_id}/letter-provider/connection-test", data=data)["data"]
+
+    def get_letter_endpoint_connection_test(self, org_id, connection_test_id):
+        return self.get(url=f"/organisations/{org_id}/letter-provider/connection-test/{connection_test_id}")["data"]
+
     @cache.delete("organisation-{org_id}-email-branding-pool")
     def add_brandings_to_email_branding_pool(self, org_id, branding_ids):
         return self.post(url=f"/organisations/{org_id}/email-branding-pool", data={"branding_ids": branding_ids})
@@ -163,10 +182,10 @@ class OrganisationsClient(NotifyAdminAPIClient):
         )
 
 
-_organisations_client_context_var: ContextVar[OrganisationsClient] = ContextVar("organisations_client")
+_organisations_client_context_var: ContextVar[OrganisationsClient | None] = ContextVar("organisations_client")
 get_organisations_client: LazyLocalGetter[OrganisationsClient] = LazyLocalGetter(
     _organisations_client_context_var,
     lambda: OrganisationsClient(current_app),
 )
 memo_resetters.append(lambda: get_organisations_client.clear())
-organisations_client = LocalProxy(get_organisations_client)
+organisations_client: OrganisationsClient = LocalProxy(get_organisations_client)  # type: ignore[assignment]

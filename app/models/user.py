@@ -24,16 +24,15 @@ from app.utils.user_permissions import (
 )
 
 
-def _get_service_id_from_view_args():
-    return str(request.view_args.get("service_id", "")) or None
+def _get_service_id_from_view_args() -> str | None:
+    return str((request.view_args or {}).get("service_id", "")) or None
 
 
-def _get_org_id_from_view_args():
-    return str(request.view_args.get("org_id", "")) or None
+def _get_org_id_from_view_args() -> str | None:
+    return str((request.view_args or {}).get("org_id", "")) or None
 
 
 class BaseUser(JSONModel):
-    id: Any
     email_address: str
     created_at: datetime
     permissions: Any
@@ -377,7 +376,13 @@ class User(BaseUser, UserMixin):
         return Organisation.from_domain(self.email_domain)
 
     @property
+    def is_nhs_notify_org_member(self):
+        return self.belongs_to_organisation(Organisation.NHS_NOTIFY_ID)
+
+    @property
     def default_organisation_type(self):
+        if self.is_nhs_notify_org_member:
+            return "nhs_notify"
         if self.default_organisation:
             return self.default_organisation.organisation_type
         if self.has_nhs_email_address:
@@ -583,11 +588,6 @@ class InvitedUser(BaseUser):
             return False
         return self.service == service_id and permission in self.permissions
 
-    def has_permission_for_organisation(self, organisation_id, permission):
-        if self.status == "cancelled":
-            return False
-        return self.organisation == organisation_id and permission in self.organisation_permissions
-
     def __eq__(self, other):
         if not isinstance(other, InvitedUser):
             return False
@@ -704,23 +704,30 @@ class AnonymousUser(AnonymousUserMixin):
 
 
 class Users(ModelList):
-    model = User
+    model: type[BaseUser] = User
 
     @staticmethod
     def _get_items(*args, **kwargs):
         return user_api_client.get_users_for_service(*args, **kwargs)
 
-    def get_name_from_id(self, id):
+    def get_name_from_id(self, id, capitalise_unknown: bool = True):
+
         for user in self:
             if user.id == id:
                 return user.name
+
         # The user may not exist in the list of users for this service if they are
         # a platform admin or if they have since left the team. In this case, we fall
         # back to getting the user from the API (or Redis if it is in the cache)
         user = User.from_id(id)
-        if user and user.name:
-            return user.name
-        return "Unknown"
+
+        if not user:
+            return "Unknown" if capitalise_unknown else "an unknown user"
+
+        if user.name == "Archived user" and user.state == "inactive":
+            return "Archived user" if capitalise_unknown else "an archived user"
+
+        return user.name
 
 
 class OrganisationUsers(Users):
@@ -730,7 +737,7 @@ class OrganisationUsers(Users):
 
 
 class InvitedUsers(Users):
-    model = InvitedUser
+    model: type[BaseUser] = InvitedUser
 
     @staticmethod
     def _get_items(*args, **kwargs):
@@ -741,7 +748,7 @@ class InvitedUsers(Users):
 
 
 class OrganisationInvitedUsers(InvitedUsers):
-    model = InvitedOrgUser
+    model: type[BaseUser] = InvitedOrgUser
 
     @staticmethod
     def _get_items(*args, **kwargs):

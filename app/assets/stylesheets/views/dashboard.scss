@@ -1,3 +1,6 @@
+@use 'govuk/helpers' as *;
+@use 'govuk/settings' as *;
+
 .dashboard {
 
   th {
@@ -13,33 +16,6 @@
 .keyline-block {
   border-top: 1px solid govuk-functional-colour(border);
   padding-top: govuk-spacing(3);
-}
-
-.spark-bar {
-
-  @include govuk-font(16);
-  box-sizing: border-box;
-  display: block;
-  width: 100%;
-  margin-bottom: govuk-spacing(3);
-  height: govuk-spacing(3);
-  color: govuk-functional-colour(text);
-  text-align: left;
-
-  &-bar {
-    @include govuk-font(27, $weight: bold, $tabular: true);
-    box-sizing: border-box;
-    display: inline-block;
-    overflow: visible;
-    background: mix(black, govuk-colour('black', $variant: "tint-95"), 7%);
-    color: govuk-functional-colour(text);
-    padding: 10px 6px 8px 0;
-    text-indent: 12px;
-    text-align: right;
-    margin: 2px 0 1px 0;
-    transition: width 0.6s ease-in-out;
-  }
-
 }
 
 .file-list {

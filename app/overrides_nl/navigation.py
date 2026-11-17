@@ -1,10 +1,11 @@
+from collections.abc import Mapping, Set
 from itertools import chain
 
 from flask import request, url_for
 
 
 class Navigation:
-    mapping = {}
+    mapping: Mapping[str, Set[str]] = {}
     selected_class = "selected"
 
     def __init__(self):
@@ -65,6 +66,7 @@ class HeaderNavigation(Navigation):
             "guidance_data_retention_period",
             "guidance_delivery_times",
             "guidance_email_branding",
+            "guidance_fonts_typefaces",
             "guidance_formatting",
             "guidance_letter_branding",
             "guidance_links_and_URLs",
@@ -112,6 +114,11 @@ class HeaderNavigation(Navigation):
             "email_branding",
             "letter_branding",
             "live_services_csv",
+            "messagebox_cpa_select",
+            "messagebox_cpa_select_confirm",
+            "messagebox_cpa_upload",
+            "messagebox_cpa_upload_confirm",
+            "messagebox_cpas",
             "notifications_sent_by_service",
             "get_billing_report",
             "platform_admin_users_list",
@@ -156,7 +163,7 @@ class HeaderNavigation(Navigation):
 
         nav_items = [
             {"href": url_for("main.guidance_features"), "text": "Functies", "active": self.is_selected("features")},
-            # {"href": url_for("main.guidance_pricing"), "text": "Prijzen", "active": self.is_selected("pricing")},
+            # [NOTIFYNL] No "Prijzen" (pricing) link in the NL header.
             {
                 "href": url_for("main.guidance_using_notify"),
                 "text": "Gebruik van Notify",
@@ -283,7 +290,6 @@ class MainNavigation(Navigation):
             "usage",
         },
         "settings": {
-            "branding_nhs",
             "branding_option_preview",
             "email_branding_choose_banner_colour",
             "email_branding_choose_banner_type",
@@ -325,6 +331,7 @@ class MainNavigation(Navigation):
             "service_set_international_letters",
             "service_set_international_sms",
             "service_set_letter_address_placement",
+            "service_set_send_client_reference_to_letter_provider",
             "service_set_letters",
             "service_set_reply_to_email",
             "service_set_sms_prefix",
@@ -358,8 +365,6 @@ class MainNavigation(Navigation):
             "org_member_make_service_live_start",
         },
         "make-your-service-live": {
-            "add_organisation_from_gp_service",
-            "add_organisation_from_nhs_local_service",
             "confirm_service_is_unique",
             "estimate_usage",
             "request_to_go_live",
@@ -421,6 +426,9 @@ class OrgNavigation(Navigation):
             "organisation_email_branding",
             "organisation_letter_branding",
             "organisation_settings",
+            "organisation_change_letter_provider",
+            "organisation_confirm_pingen_letter_provider",
+            "organisation_letter_endpoint",
         },
         "team-members": {
             "edit_organisation_user",
@@ -448,6 +456,13 @@ class PlatformAdminNavigation(Navigation):
         "providers": {
             "view_providers",
             "edit_sms_provider_ratio",
+        },
+        "messagebox-cpas": {
+            "messagebox_cpas",
+            "messagebox_cpa_upload",
+            "messagebox_cpa_upload_confirm",
+            "messagebox_cpa_select",
+            "messagebox_cpa_select_confirm",
         },
         "reports": {
             "platform_admin_reports",

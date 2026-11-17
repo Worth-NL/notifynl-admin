@@ -109,6 +109,7 @@ def test_get_precompiled_template(mocker):
         f"service-{SERVICE_ONE_ID}-template-precompiled",
         '{"data": "foo"}',
         ex=2_419_200,
+        skippable=True,
     )
 
 
@@ -126,7 +127,12 @@ def test_get_precompiled_template(mocker):
         (
             "get_service",
             [SERVICE_ONE_ID],
-            [call(f"service-{SERVICE_ONE_ID}")],
+            [
+                call(
+                    f"service-{SERVICE_ONE_ID}",
+                    skippable=True,
+                )
+            ],
             b'{"data_from": "cache"}',
             [],
             [],
@@ -135,7 +141,12 @@ def test_get_precompiled_template(mocker):
         (
             "get_service",
             [SERVICE_ONE_ID],
-            [call(f"service-{SERVICE_ONE_ID}")],
+            [
+                call(
+                    f"service-{SERVICE_ONE_ID}",
+                    skippable=True,
+                )
+            ],
             None,
             [call(f"/service/{SERVICE_ONE_ID}")],
             [
@@ -143,6 +154,7 @@ def test_get_precompiled_template(mocker):
                     f"service-{SERVICE_ONE_ID}",
                     '{"data_from": "api"}',
                     ex=2_419_200,
+                    skippable=True,
                 )
             ],
             {"data_from": "api"},
@@ -150,7 +162,12 @@ def test_get_precompiled_template(mocker):
         (
             "get_service_template",
             [SERVICE_ONE_ID, FAKE_TEMPLATE_ID],
-            [call(f"service-{SERVICE_ONE_ID}-template-{FAKE_TEMPLATE_ID}-version-None")],
+            [
+                call(
+                    f"service-{SERVICE_ONE_ID}-template-{FAKE_TEMPLATE_ID}-version-None",
+                    skippable=True,
+                )
+            ],
             b'{"data_from": "cache"}',
             [],
             [],
@@ -160,7 +177,10 @@ def test_get_precompiled_template(mocker):
             "get_service_template",
             [SERVICE_ONE_ID, FAKE_TEMPLATE_ID],
             [
-                call(f"service-{SERVICE_ONE_ID}-template-{FAKE_TEMPLATE_ID}-version-None"),
+                call(
+                    f"service-{SERVICE_ONE_ID}-template-{FAKE_TEMPLATE_ID}-version-None",
+                    skippable=True,
+                ),
             ],
             None,
             [call(f"/service/{SERVICE_ONE_ID}/template/{FAKE_TEMPLATE_ID}")],
@@ -169,6 +189,7 @@ def test_get_precompiled_template(mocker):
                     f"service-{SERVICE_ONE_ID}-template-{FAKE_TEMPLATE_ID}-version-None",
                     '{"data_from": "api"}',
                     ex=2_419_200,
+                    skippable=True,
                 ),
             ],
             {"data_from": "api"},
@@ -176,7 +197,12 @@ def test_get_precompiled_template(mocker):
         (
             "get_service_template",
             [SERVICE_ONE_ID, FAKE_TEMPLATE_ID, 1],
-            [call(f"service-{SERVICE_ONE_ID}-template-{FAKE_TEMPLATE_ID}-version-1")],
+            [
+                call(
+                    f"service-{SERVICE_ONE_ID}-template-{FAKE_TEMPLATE_ID}-version-1",
+                    skippable=True,
+                )
+            ],
             b'{"data_from": "cache"}',
             [],
             [],
@@ -186,7 +212,10 @@ def test_get_precompiled_template(mocker):
             "get_service_template",
             [SERVICE_ONE_ID, FAKE_TEMPLATE_ID, 1],
             [
-                call(f"service-{SERVICE_ONE_ID}-template-{FAKE_TEMPLATE_ID}-version-1"),
+                call(
+                    f"service-{SERVICE_ONE_ID}-template-{FAKE_TEMPLATE_ID}-version-1",
+                    skippable=True,
+                ),
             ],
             None,
             [call(f"/service/{SERVICE_ONE_ID}/template/{FAKE_TEMPLATE_ID}/version/1")],
@@ -195,6 +224,7 @@ def test_get_precompiled_template(mocker):
                     f"service-{SERVICE_ONE_ID}-template-{FAKE_TEMPLATE_ID}-version-1",
                     '{"data_from": "api"}',
                     ex=2_419_200,
+                    skippable=True,
                 ),
             ],
             {"data_from": "api"},
@@ -202,7 +232,12 @@ def test_get_precompiled_template(mocker):
         (
             "get_service_templates",
             [SERVICE_ONE_ID],
-            [call(f"service-{SERVICE_ONE_ID}-templates")],
+            [
+                call(
+                    f"service-{SERVICE_ONE_ID}-templates",
+                    skippable=True,
+                )
+            ],
             b'{"data_from": "cache"}',
             [],
             [],
@@ -211,7 +246,12 @@ def test_get_precompiled_template(mocker):
         (
             "get_service_templates",
             [SERVICE_ONE_ID],
-            [call(f"service-{SERVICE_ONE_ID}-templates")],
+            [
+                call(
+                    f"service-{SERVICE_ONE_ID}-templates",
+                    skippable=True,
+                )
+            ],
             None,
             [call(f"/service/{SERVICE_ONE_ID}/template")],
             [
@@ -219,6 +259,7 @@ def test_get_precompiled_template(mocker):
                     f"service-{SERVICE_ONE_ID}-templates",
                     '{"data_from": "api"}',
                     ex=2_419_200,
+                    skippable=True,
                 )
             ],
             {"data_from": "api"},
@@ -226,7 +267,12 @@ def test_get_precompiled_template(mocker):
         (
             "get_service_template_versions",
             [SERVICE_ONE_ID, FAKE_TEMPLATE_ID],
-            [call(f"service-{SERVICE_ONE_ID}-template-{FAKE_TEMPLATE_ID}-versions")],
+            [
+                call(
+                    f"service-{SERVICE_ONE_ID}-template-{FAKE_TEMPLATE_ID}-versions",
+                    skippable=True,
+                )
+            ],
             b'{"data_from": "cache"}',
             [],
             [],
@@ -236,7 +282,10 @@ def test_get_precompiled_template(mocker):
             "get_service_template_versions",
             [SERVICE_ONE_ID, FAKE_TEMPLATE_ID],
             [
-                call(f"service-{SERVICE_ONE_ID}-template-{FAKE_TEMPLATE_ID}-versions"),
+                call(
+                    f"service-{SERVICE_ONE_ID}-template-{FAKE_TEMPLATE_ID}-versions",
+                    skippable=True,
+                ),
             ],
             None,
             [call(f"/service/{SERVICE_ONE_ID}/template/{FAKE_TEMPLATE_ID}/versions")],
@@ -245,6 +294,7 @@ def test_get_precompiled_template(mocker):
                     f"service-{SERVICE_ONE_ID}-template-{FAKE_TEMPLATE_ID}-versions",
                     '{"data_from": "api"}',
                     ex=2_419_200,
+                    skippable=True,
                 ),
             ],
             {"data_from": "api"},
@@ -252,7 +302,12 @@ def test_get_precompiled_template(mocker):
         (
             "get_returned_letter_summary",
             [SERVICE_ONE_ID],
-            [call(f"service-{SERVICE_ONE_ID}-returned-letters-summary")],
+            [
+                call(
+                    f"service-{SERVICE_ONE_ID}-returned-letters-summary",
+                    skippable=True,
+                )
+            ],
             None,
             [call(f"service/{SERVICE_ONE_ID}/returned-letter-summary")],
             [
@@ -260,6 +315,7 @@ def test_get_precompiled_template(mocker):
                     f"service-{SERVICE_ONE_ID}-returned-letters-summary",
                     '{"data_from": "api"}',
                     ex=2_419_200,
+                    skippable=True,
                 )
             ],
             {"data_from": "api"},
@@ -267,7 +323,12 @@ def test_get_precompiled_template(mocker):
         (
             "get_returned_letter_statistics",
             [SERVICE_ONE_ID],
-            [call(f"service-{SERVICE_ONE_ID}-returned-letters-statistics")],
+            [
+                call(
+                    f"service-{SERVICE_ONE_ID}-returned-letters-statistics",
+                    skippable=True,
+                )
+            ],
             None,
             [call(f"service/{SERVICE_ONE_ID}/returned-letter-statistics")],
             [
@@ -275,6 +336,7 @@ def test_get_precompiled_template(mocker):
                     f"service-{SERVICE_ONE_ID}-returned-letters-statistics",
                     '{"data_from": "api"}',
                     ex=2_419_200,
+                    skippable=True,
                 )
             ],
             {"data_from": "api"},
@@ -620,3 +682,46 @@ def test_remove_service_inbound_sms_clears_cache(notify_admin, mocker):
     mock_redis_delete.assert_called_with_args(f"service-{service_id}")
     mock_redis_delete_by_pattern.assert_called_with_args(f"service-{service_id}-template-*")
     mock_post.assert_called_once_with(f"/service/{service_id}/inbound-sms/remove", data={"archive": True})
+
+
+def test_client_update_status_when_no_permissions_are_given(notify_admin, mocker):
+    client = ServiceAPIClient(mocker.MagicMock())
+    mock_post = mocker.patch.object(client, "post", return_value={"data": {"id": None}})
+    mocker.patch("app.notify_client.current_user", id="123")
+
+    client.update_status(SERVICE_ONE_ID, "on")
+
+    mock_post.assert_called_once_with(
+        f"/service/{SERVICE_ONE_ID}",
+        {
+            "created_by": "123",
+            "email_message_limit": 250000,
+            "sms_message_limit": 250000,
+            "letter_message_limit": 20000,
+            "restricted": False,
+            "go_live_at": mocker.ANY,
+            "has_active_go_live_request": False,
+        },
+    )
+
+
+def test_client_update_status_when_permissions_are_given(notify_admin, mocker):
+    client = ServiceAPIClient(mocker.MagicMock())
+    mock_post = mocker.patch.object(client, "post", return_value={"data": {"id": None}})
+    mocker.patch("app.notify_client.current_user", id="123")
+
+    client.update_status(SERVICE_ONE_ID, "off", permissions=["email"])
+
+    mock_post.assert_called_once_with(
+        f"/service/{SERVICE_ONE_ID}",
+        {
+            "created_by": "123",
+            "email_message_limit": 250000,
+            "sms_message_limit": 250000,
+            "letter_message_limit": 20000,
+            "restricted": False,
+            "go_live_at": mocker.ANY,
+            "has_active_go_live_request": False,
+            "permissions": ["email"],
+        },
+    )

@@ -1,11 +1,9 @@
 import json
 from importlib import metadata
 
-import pytest
 from packaging.version import Version
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] [TODO] REMOVE/RETEST AFTER SYNCING UPSTREAM")
 def test_govuk_frontend_jinja_overrides_on_design_system_v6():
     with open("package.json") as package_file:
         package_json = json.load(package_file)
@@ -14,8 +12,8 @@ def test_govuk_frontend_jinja_overrides_on_design_system_v6():
     govuk_frontend_jinja_version = Version(metadata.version("govuk-frontend-jinja"))
 
     # Compatibility between these two libs is defined at https://github.com/LandRegistry/govuk-frontend-jinja/
-    correct_govuk_frontend_version = Version("6.1.0") == govuk_frontend_version
-    correct_govuk_frontend_jinja_version = Version("4.0.0") == govuk_frontend_jinja_version
+    correct_govuk_frontend_version = Version("6.5.0") == govuk_frontend_version
+    correct_govuk_frontend_jinja_version = Version("4.1.0") == govuk_frontend_jinja_version
 
     assert correct_govuk_frontend_version and correct_govuk_frontend_jinja_version, (
         "After upgrading either of the Design System packages, you must validate that "

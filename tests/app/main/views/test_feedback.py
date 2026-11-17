@@ -22,7 +22,6 @@ def no_redirect():
     return lambda: None
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_get_support_index_page(
     client_request,
 ):
@@ -37,7 +36,6 @@ def test_get_support_index_page(
     assert normalize_spaces(page.select_one("form button").text) == "Continue"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_get_support_index_page_when_signed_out(
     client_request,
 ):
@@ -56,7 +54,6 @@ def test_get_support_index_page_when_signed_out(
     assert normalize_spaces(page.select_one("form button").text) == "Continue"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_choose_question_support_type_shows_feedback_form(
     client_request, mock_get_non_empty_organisations_and_services_for_user, mocker
 ):
@@ -72,7 +69,6 @@ def test_choose_question_support_type_shows_feedback_form(
     assert page.select_one("form").find("p").text.strip() == "We’ll reply to test@user.gov.uk"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_choose_problem_support_type_shows_problem_type_form(
     client_request, mock_get_non_empty_organisations_and_services_for_user, mocker
 ):
@@ -88,7 +84,6 @@ def test_choose_problem_support_type_shows_problem_type_form(
     assert page.select("form input[type=radio]")[1]["value"] == "something-else"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_get_support_as_someone_in_the_public_sector(
     client_request,
     mocker,
@@ -108,7 +103,6 @@ def test_get_support_as_someone_in_the_public_sector(
     assert normalize_spaces(page.select_one("form button").text) == "Continue"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_get_support_as_member_of_public(
     client_request,
 ):
@@ -125,7 +119,6 @@ def test_get_support_as_member_of_public(
     assert not page.select("form button")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_get_support_what_do_you_want_to_do_page(client_request):
     client_request.logout()
     page = client_request.get("main.support_what_do_you_want_to_do")
@@ -153,7 +146,6 @@ def test_support_what_do_you_want_to_do_page_redirects(client_request, form_opti
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_problem_when_user_is_logged_in(client_request):
     page = client_request.get("main.support_problem")
     assert page.select_one("h1").string.strip() == "Report a problem"
@@ -165,7 +157,6 @@ def test_support_problem_when_user_is_logged_in(client_request):
     assert radios[1]["value"] == "something-else"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_problem_when_user_is_logged_out(client_request):
     client_request.logout()
     page = client_request.get("main.support_problem")
@@ -210,7 +201,6 @@ def test_post_support_problem_redirects(client_request, form_option, logged_in, 
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_cannot_sign_in(client_request):
     client_request.logout()
     page = client_request.get("main.support_cannot_sign_in")
@@ -250,7 +240,6 @@ def test_support_cannot_sign_in_redirects(client_request, form_option, redirect_
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_no_security_code(client_request):
     client_request.logout()
     page = client_request.get("main.support_no_security_code")
@@ -259,7 +248,6 @@ def test_support_no_security_code(client_request):
     assert page.select_one(f'a[href="{url_for("main.support_no_security_code_account_details")}"]')
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_mobile_number_changed(client_request):
     client_request.logout()
     page = client_request.get("main.support_mobile_number_changed")
@@ -268,7 +256,6 @@ def test_support_mobile_number_changed(client_request):
     assert page.select_one(f'a[href="{url_for("main.support_mobile_number_changed_account_details")}"]')
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_no_email_link(client_request):
     client_request.logout()
     page = client_request.get("main.support_no_email_link")
@@ -277,7 +264,6 @@ def test_support_no_email_link(client_request):
     assert page.select_one(f'a[href="{url_for("main.support_no_email_link_account_details")}"]')
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_email_address_changed(client_request):
     client_request.logout()
     page = client_request.get("main.support_email_address_changed")
@@ -286,7 +272,6 @@ def test_support_email_address_changed(client_request):
     assert page.select_one(f'a[href="{url_for("main.support_email_address_changed_account_details")}"]')
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_no_security_code_account_details_shows_form(client_request):
     client_request.logout()
     page = client_request.get("main.support_no_security_code_account_details")
@@ -300,7 +285,6 @@ def test_support_no_security_code_account_details_shows_form(client_request):
     assert normalize_spaces(page.select_one("form button").text) == "Send"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_no_security_code_account_details_form_requires_all_fields(client_request):
     client_request.logout()
     page = client_request.post(
@@ -313,7 +297,6 @@ def test_support_no_security_code_account_details_form_requires_all_fields(clien
     assert normalize_spaces(page.select_one("#mobile_number-error").text) == "Error: Enter your mobile number"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_support_no_security_code_account_details_submits_zendesk_ticket(client_request, mocker):
     mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
     mocker.patch(
@@ -347,7 +330,6 @@ def test_support_no_security_code_account_details_submits_zendesk_ticket(client_
     assert "Mobile number: 07000000000" in ticket_message
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_mobile_number_changed_account_details_shows_form(client_request):
     client_request.logout()
     page = client_request.get("main.support_mobile_number_changed_account_details")
@@ -362,7 +344,6 @@ def test_support_mobile_number_changed_account_details_shows_form(client_request
     assert normalize_spaces(page.select_one("form button").text) == "Send"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_mobile_number_changed_account_details_form_requires_all_fields(client_request):
     client_request.logout()
     page = client_request.post(
@@ -376,7 +357,6 @@ def test_support_mobile_number_changed_account_details_form_requires_all_fields(
     assert normalize_spaces(page.select_one("#new_mobile_number-error").text) == "Error: Enter your new mobile number"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_support_mobile_number_changed_account_details_submits_zendesk_ticket(client_request, mocker):
     mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
     mocker.patch(
@@ -417,7 +397,6 @@ def test_support_mobile_number_changed_account_details_submits_zendesk_ticket(cl
     assert "Old mobile number: 07000000000\n\nNew mobile number: 07000000001" in ticket_message
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_no_email_link_account_details_shows_form(client_request):
     client_request.logout()
     page = client_request.get("main.support_no_email_link_account_details")
@@ -430,7 +409,6 @@ def test_support_no_email_link_account_details_shows_form(client_request):
     assert normalize_spaces(page.select_one("form button").text) == "Send"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_no_email_link_account_details_form_requires_all_fields(client_request):
     client_request.logout()
     page = client_request.post(
@@ -442,7 +420,6 @@ def test_support_no_email_link_account_details_form_requires_all_fields(client_r
     assert normalize_spaces(page.select_one("#email_address-error").text) == "Error: Enter your email address"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_no_email_link_account_details_submits_zendesk_ticket(client_request, mocker):
     mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
     mocker.patch(
@@ -476,7 +453,6 @@ def test_support_no_email_link_account_details_submits_zendesk_ticket(client_req
     assert "Email address: test@gov.uk" in ticket_message
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_email_address_changed_account_details_shows_form(client_request):
     client_request.logout()
     page = client_request.get("main.support_email_address_changed_account_details")
@@ -490,7 +466,6 @@ def test_support_email_address_changed_account_details_shows_form(client_request
     assert normalize_spaces(page.select_one("form button").text) == "Send"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_email_address_changed_account_details_form_requires_all_fields(client_request):
     client_request.logout()
     page = client_request.post(
@@ -503,7 +478,6 @@ def test_support_email_address_changed_account_details_form_requires_all_fields(
     assert normalize_spaces(page.select_one("#new_email_address-error").text) == "Error: Enter your new email address"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_support_email_address_account_details_submits_zendesk_ticket(client_request, mocker):
     mock_create_ticket = mocker.spy(NotifySupportTicket, "__init__")
     mocker.patch(
@@ -560,7 +534,6 @@ def test_support_sign_in_problem_pages_redirect_if_user_is_logged_in(client_requ
     client_request.get(f"main.{endpoint}", _expected_redirect=url_for("main.support_problem"))
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize("user_logged_in", [True, False])
 def test_get_support_what_happened_page(client_request, user_logged_in):
     if not user_logged_in:
@@ -644,7 +617,6 @@ def test_get_feedback_page(client_request, mocker, ticket_type, expected_status_
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_passed_non_logged_in_user_details_through_flow(client_request, mocker):
     client_request.logout()
     mocker.patch("app.main.views_nl.feedback.in_business_hours", return_value=True)
@@ -736,7 +708,6 @@ def test_does_not_add_internal_note_to_ticket_if_error_creating_ticket(client_re
     assert not mock_update_ticket_with_internal_note.called
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "data", [{"feedback": "blah"}, {"feedback": "blah", "name": "Ignored", "email_address": "ignored@email.com"}]
 )
@@ -808,7 +779,6 @@ def test_passes_user_details_through_flow(
     assert not mock_update_ticket_with_internal_note.called
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_zendesk_subject_doesnt_show_env_flag_on_prod(
     notify_admin,
     client_request,
@@ -857,7 +827,6 @@ def test_zendesk_subject_doesnt_show_env_flag_on_prod(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "ticket_type, category, expected_subject, notify_ticket_type, topics",
     [
@@ -950,7 +919,6 @@ def test_zendesk_subject_and_ticket_type_reflect_journey_taken_to_support_form(
         QUESTION_TICKET_TYPE,
     ],
 )
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_email_address_required_for_problems_and_questions(
     client_request,
     ticket_type,
@@ -976,7 +944,6 @@ def test_email_address_required_for_problems_and_questions(
         QUESTION_TICKET_TYPE,
     ],
 )
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_name_required_for_problems_and_questions(
     client_request,
     ticket_type,
@@ -995,7 +962,6 @@ def test_name_required_for_problems_and_questions(
     assert normalize_spaces(page.select_one("#name-error").text) == "Error: Enter your name"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize("ticket_type", (PROBLEM_TICKET_TYPE, QUESTION_TICKET_TYPE))
 def test_email_address_must_be_valid_if_provided_to_support_form(
     client_request,
@@ -1021,7 +987,6 @@ def test_email_address_must_be_valid_if_provided_to_support_form(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "ticket_type, severe, is_in_business_hours, logged_in, is_emergency_ticket",
     [
@@ -1214,7 +1179,6 @@ def test_in_business_hours(when, is_in_business_hours):
         assert in_business_hours() == is_in_business_hours
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "extra_args, ticket_type, expected_back_link",
     [
@@ -1346,7 +1310,6 @@ def test_should_be_shown_the_bat_email(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_bat_email_page(
     client_request,
     active_user_with_permissions,
@@ -1379,7 +1342,6 @@ def test_bat_email_page(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "emergency_ticket, out_of_hours, message",
     (

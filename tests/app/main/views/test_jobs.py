@@ -32,7 +32,6 @@ def test_old_jobs_hub_redirects(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "user",
     [
@@ -96,7 +95,7 @@ def test_should_show_page_for_one_job(
         "main.uploads",
         service_id=SERVICE_ONE_ID,
     )
-    assert " ".join(page.select_one("tbody").find("tr").text.split()) == (
+    assert " ".join(page.select_one(".govuk-summary-list__row").text.split()) == (
         "07123456789 template content Delivered 1 January at 11:10am"
     )
     assert page.select_one("div[data-key=notifications]")["data-resource"] == url_for(
@@ -112,10 +111,10 @@ def test_should_show_page_for_one_job(
     assert csv_link.text == "Download this report (CSV)"
     assert page.select_one("span#time-left").text == "Data available for 7 days"
     assert page.select_one("#job-notifications")
-    assert normalize_spaces(page.select_one("tbody tr").text) == normalize_spaces(
+    assert normalize_spaces(page.select_one(".govuk-summary-list__row").text) == normalize_spaces(
         "07123456789 template content Delivered 1 January at 11:10am"
     )
-    assert page.select_one("tbody tr a")["href"] == url_for(
+    assert page.select_one(".notify-summary-list__filename")["href"] == url_for(
         "main.view_notification",
         service_id=SERVICE_ONE_ID,
         notification_id="00000000-0000-0000-0000-000000000000",
@@ -141,7 +140,6 @@ def test_should_show_page_for_one_job_with_flexible_data_retention(
     assert "Cancel sending these letters" not in page
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_get_jobs_should_tell_user_if_more_than_one_page(
     client_request,
     fake_uuid,
@@ -157,10 +155,9 @@ def test_get_jobs_should_tell_user_if_more_than_one_page(
         job_id=fake_uuid,
         status="",
     )
-    assert page.select_one("p.table-show-more-link").text.strip() == "Only showing the first 50 rows"
+    assert page.select_one("p.more-items-available-text").text.strip() == "Only showing the first 50 rows"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_job_in_progress(
     client_request,
     service_one,
@@ -183,7 +180,6 @@ def test_should_show_job_in_progress(
     assert page.select_one("p.hint").text.strip() == "Report is 50% complete…"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_job_without_notifications(
     client_request,
     service_one,
@@ -204,10 +200,9 @@ def test_should_show_job_without_notifications(
         "0 failed text messages",
     ]
     assert page.select_one("p.hint").text.strip() == "Report is 50% complete…"
-    assert page.select_one("tbody").text.strip() == "No messages to show yet…"
+    assert page.select_one(".no-data").text.strip() == "No messages to show yet…"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_show_job_with_sending_limit_exceeded_status(
     client_request,
     service_one,
@@ -231,7 +226,6 @@ def test_should_show_job_with_sending_limit_exceeded_status(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2020-01-10 1:0:0")
 @pytest.mark.parametrize(
     "created_at, processing_started, expected_message",
@@ -290,7 +284,7 @@ def test_should_show_old_job(
     assert not page.select(".pill")
     assert not page.select("p.hint")
     assert not page.select("a[download]")
-    assert page.select_one("tbody").text.strip() == expected_message
+    assert page.select_one(".no-data").text.strip() == expected_message
     assert [normalize_spaces(column.text) for column in page.select("main .govuk-grid-column-one-quarter")] == [
         "1 total text messages",
         "1 delivering text message",
@@ -299,7 +293,6 @@ def test_should_show_old_job(
     ]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2016-01-01 11:09:00.061258")
 def test_should_show_letter_job(
     client_request,
@@ -324,7 +317,7 @@ def test_should_show_letter_job(
     assert normalize_spaces(page.select("p.bottom-gutter")[0].text) == ("Sent by Test User on 1 January at 11:09am")
     assert normalize_spaces(page.select("p#printing-info")[0].text) == ("Printing starts today at 5:30pm")
     assert page.select(".banner-default-with-tick") == []
-    assert normalize_spaces(page.select("tbody tr")[0].text) == (
+    assert normalize_spaces(page.select(".govuk-summary-list__row")[0].text) == (
         "1 Example Street template subject 1 January at 11:09am"
     )
     assert normalize_spaces(page.select(".keyline-block")[0].text) == "1 Letter"
@@ -357,7 +350,6 @@ def test_should_show_letter_job(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2016-01-01 11:09:00")
 def test_should_show_letter_job_with_banner_after_sending_before_1730(
     client_request,
@@ -386,7 +378,6 @@ def test_should_show_letter_job_with_banner_after_sending_before_1730(
     assert not page.select_one(".govuk-back-link")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2016-01-01 11:09:00")
 def test_should_show_letter_job_with_banner_when_there_are_multiple_CSV_rows(
     client_request,
@@ -414,7 +405,6 @@ def test_should_show_letter_job_with_banner_when_there_are_multiple_CSV_rows(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2016-01-01 18:09:00")
 def test_should_show_letter_job_with_banner_after_sending_after_1730(
     client_request,
@@ -442,7 +432,6 @@ def test_should_show_letter_job_with_banner_after_sending_after_1730(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2016-01-01T00:00:00.061258")
 def test_should_show_scheduled_job(
     client_request,
@@ -607,7 +596,6 @@ def test_should_cancel_letter_job(
     mock_cancel.assert_called_once_with(SERVICE_ONE_ID, job_id)
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2019-06-20 17:30:00.000001")
 @pytest.mark.parametrize(
     "job_created_at, expected_fragment",
@@ -638,7 +626,6 @@ def test_should_not_show_cancel_link_for_letter_job_if_too_late(
     assert page.select_one("p#printing-info").text.strip() == f"Printed {expected_fragment} at 5:30pm"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2019-06-20 15:32:00.000001")
 @pytest.mark.parametrize("job_status", ["finished", "finished all notifications created", "in progress"])
 def test_should_show_cancel_link_for_letter_job(
@@ -672,7 +659,6 @@ def test_should_show_cancel_link_for_letter_job(
     assert page.select_one("p#printing-info").text.strip() == "Printing starts today at 5:30pm"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2019-06-20 15:31:00.000001")
 @pytest.mark.parametrize("job_status,number_of_processed_notifications", [["in progress", 2], ["finished", 1]])
 def test_dont_cancel_letter_job_when_too_early_to_cancel(
@@ -716,7 +702,6 @@ def test_dont_cancel_letter_job_when_too_early_to_cancel(
     assert "We are still processing these letters, please try again in 5 minutes." in flash_message
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2016-01-01 00:00:00.000001")
 def test_should_show_updates_for_one_job_as_json(
     client_request,
@@ -737,15 +722,12 @@ def test_should_show_updates_for_one_job_as_json(
     assert "sending" in content["counts"]
     assert "delivered" in content["counts"]
     assert "failed" in content["counts"]
-    assert "Recipient" in content["notifications"]
     assert "07123456789" in content["notifications"]
-    assert "Status" in content["notifications"]
     assert "Delivered" in content["notifications"]
     assert "12:01am" in content["notifications"]
     assert "Sent by Test User on 1 January at midnight" in content["status"]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2016-01-01 00:00:00.000001")
 def test_should_show_updates_for_scheduled_job_as_json(
     client_request,
@@ -779,9 +761,7 @@ def test_should_show_updates_for_scheduled_job_as_json(
     assert "sending" in content["counts"]
     assert "delivered" in content["counts"]
     assert "failed" in content["counts"]
-    assert "Recipient" in content["notifications"]
     assert "07123456789" in content["notifications"]
-    assert "Status" in content["notifications"]
     assert "Delivered" in content["notifications"]
     assert "12:01am" in content["notifications"]
     assert "Sent by Test User on 1 June at 4:00pm" in content["status"]
@@ -842,7 +822,6 @@ def test_time_left(job_created_at, expected_message):
     assert get_time_left(job_created_at) == expected_message
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2016-01-01 11:09:00.061258")
 def test_should_show_letter_job_with_first_class_if_notifications_are_first_class(
     client_request,
@@ -864,7 +843,6 @@ def test_should_show_letter_job_with_first_class_if_notifications_are_first_clas
     assert normalize_spaces(page.select(".keyline-block")[1].text) == "5 January Estimated delivery date"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @freeze_time("2016-01-01 11:09:00.061258")
 def test_should_show_letter_job_with_first_class_if_no_notifications(
     client_request,

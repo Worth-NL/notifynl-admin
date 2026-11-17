@@ -20,7 +20,6 @@ INV_PARENT_FOLDER_ID = "7e979e79-d970-43a5-ac69-b625a8d147b0"
 VIS_PARENT_FOLDER_ID = "bbbb222b-2b22-2b22-222b-b222b22b2222"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_get_user_phone_number_when_only_inbound_exists(notify_admin, mocker):
     mock_get_inbound_sms = mocker.patch(
         "app.main.views_nl.conversation.service_api_client.get_inbound_sms_by_id",
@@ -35,7 +34,6 @@ def test_get_user_phone_number_when_only_inbound_exists(notify_admin, mocker):
     assert mock_get_notification.called is False
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_get_user_phone_number_when_only_outbound_exists(notify_admin, mocker):
     mock_get_inbound_sms = mocker.patch(
         "app.main.views_nl.conversation.service_api_client.get_inbound_sms_by_id",
@@ -72,7 +70,6 @@ def test_get_user_phone_number_raises_if_both_api_requests_fail(notify_admin, mo
     ],
 )
 @freeze_time("2012-01-01 00:00:00")
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_view_conversation(
     client_request,
     mocker,
@@ -174,7 +171,6 @@ def test_view_conversation(
     mock.assert_called_once_with(SERVICE_ONE_ID, to="07123 456789", template_type="sms")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_view_conversation_updates(
     client_request,
     mocker,
@@ -261,7 +257,6 @@ def test_conversation_links_to_reply(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_conversation_reply_shows_link_to_add_templates_if_service_has_no_templates(
     client_request,
     fake_uuid,
@@ -282,7 +277,6 @@ def test_conversation_reply_shows_link_to_add_templates_if_service_has_no_templa
     assert link["href"] == url_for("main.choose_template", service_id=SERVICE_ONE_ID, initial_state="add-new-template")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_conversation_reply_shows_templates(
     client_request, fake_uuid, mocker, mock_get_template_folders, active_user_with_permissions, service_one
 ):
@@ -346,7 +340,6 @@ def test_conversation_reply_shows_live_search(
     assert page.select(".live-search")
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_conversation_reply_redirects_with_phone_number_from_notification(
     client_request,
     fake_uuid,
@@ -370,7 +363,6 @@ def test_conversation_reply_redirects_with_phone_number_from_notification(
         assert normalize_spaces(page.select_one(element).text) == expected_text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Dutch phone number implementation breaks this test")
 def test_conversation_reply_with_template_adds_values_to_session(
     client_request,
     fake_uuid,

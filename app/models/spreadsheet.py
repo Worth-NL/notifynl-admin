@@ -1,22 +1,25 @@
 import csv
 import logging
-from io import RawIOBase, StringIO
-from itertools import chain, compress, count, repeat
+from contextlib import suppress
+from functools import lru_cache
+from io import BytesIO, StringIO
+from itertools import chain, compress, count, islice, repeat, zip_longest
 from os import path
 from time import sleep
-from typing import Self, final
+from typing import IO, Self, final
 
 import openpyxl
 import openpyxl.reader.excel
 import pyexcel
 from notifications_utils.eventlet import greenlet_thread_time_ns, greenlet_thread_time_ns_max_continuous
+from notifications_utils.interruptible_io import InterruptibleIOZipFile
+from notifications_utils.recipient_validation.email_address import validate_email_address
+from notifications_utils.recipient_validation.errors import InvalidEmailError
 from openpyxl.utils import get_column_letter as openpyxl_get_column_letter
 from openpyxl.worksheet.dimensions import DimensionHolder as openpyxl_DimensionHolder
 
-from app.utils.interruptible_io import InterruptibleIOZipFile
-
 # monkeypatch the reference openpyxl will use for ZipFile
-openpyxl.reader.excel.ZipFile = InterruptibleIOZipFile
+openpyxl.reader.excel.ZipFile = InterruptibleIOZipFile  # type: ignore[attr-defined]
 
 
 logger = logging.getLogger(__name__)
@@ -91,14 +94,14 @@ class Spreadsheet:
         return cls(rows=rows, filename=filename, row_limit=row_limit)
 
     @staticmethod
-    def _openpyxl_dimension_visible(dimensions: openpyxl_DimensionHolder, index: [int, str]) -> bool:
+    def _openpyxl_dimension_visible(dimensions: openpyxl_DimensionHolder, index: int | str) -> bool:
         # test for containment before attempting access to avoid unnecessary defaultdict allocation
         return index not in dimensions or dimensions[index].hidden is False
 
     @classmethod
     def _from_xlsx(  # noqa C901 is bunk
         cls,
-        file_content: RawIOBase,
+        file_content: IO[bytes],
         filename: str,
         row_limit: int | None,
         column_limit_from_header: bool,
@@ -224,7 +227,7 @@ class Spreadsheet:
                 and cls._openpyxl_dimension_visible(sheet.row_dimensions, row_index)
                 and str("" if cell.value is None else cell.value).strip()
             ):
-                if row_index > row_limit:
+                if row_limit is not None and row_index > row_limit:
                     # fail earlier than we otherwise would to save pointless work, this calculation
                     # counting hidden rows also saves us from having to "skip" millions of them
                     raise cls.TooManyRowsError(f"Exceeded row limit of {row_limit}")
@@ -246,7 +249,7 @@ class Spreadsheet:
         # information into a big dict keyed by coordinates (akin to sheet._cells) with values being the value
         # each cell should instead have (taken from the top left cell of the range). note 1-based coordinates
         # to match sheet._cells keys.
-        max_range = openpyxl.worksheet.cell_range.CellRange(
+        max_range = openpyxl.worksheet.cell_range.CellRange(  # type: ignore[attr-defined]
             min_row=1, min_col=1, max_row=max_row_within_limit, max_col=max_col_within_limit
         )
         merged_cell_map = dict(
@@ -299,7 +302,7 @@ class Spreadsheet:
     @classmethod
     def from_file(  # noqa C901 is bunk
         cls,
-        file_content: RawIOBase,
+        file_content: IO[bytes],
         filename: str = "",
         row_limit: int | None | type[DEFAULT_ARG] = DEFAULT_ARG,
         column_limit_from_header: bool | type[DEFAULT_ARG] = DEFAULT_ARG,
@@ -323,7 +326,7 @@ class Spreadsheet:
             return cls(csv_data=Spreadsheet.normalise_newlines(file_content), filename=filename, row_limit=row_limit)
 
         if extension == "tsv":
-            file_content = StringIO(Spreadsheet.normalise_newlines(file_content))
+            file_content = BytesIO(Spreadsheet.normalise_newlines(file_content).encode("utf-8"))
 
         if extension in ("xlsx", "xlsm"):
             return cls._from_xlsx(
@@ -356,3 +359,25 @@ class Spreadsheet:
             filename,
             row_limit=row_limit,
         )
+
+    def contains_many_email_addresses(self) -> bool:
+        max_rows_to_check = 100
+        max_email_addresses_allowed_per_column = 5
+
+        csv_reader = csv.reader(self._csv_data.splitlines())
+
+        for column in zip_longest(*islice(csv_reader, 0, max_rows_to_check), fillvalue=""):
+            if sum(self.cell_contains_email_address(cell) for cell in column) > max_email_addresses_allowed_per_column:
+                return True
+
+        return False
+
+    @staticmethod
+    @lru_cache(
+        maxsize=(ABSOLUTE_COLUMN_LIMIT_DEFAULT_ARG * 100),
+        typed=False,
+    )
+    def cell_contains_email_address(cell_contents: str) -> bool:
+        with suppress(InvalidEmailError):
+            return bool(validate_email_address(cell_contents))
+        return False

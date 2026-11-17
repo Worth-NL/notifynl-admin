@@ -3,7 +3,6 @@ import pytest
 from tests.conftest import normalize_spaces
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_guidance_pricing_letters(client_request, mock_get_letter_rates):
     page = client_request.get(".guidance_pricing_letters")
 
@@ -14,7 +13,7 @@ def test_guidance_pricing_letters(client_request, mock_get_letter_rates):
     first_row = pricing_rows[0]
     assert "1 sheet" in first_row.text
 
-    assert "59p" in first_row.text
+    assert "59.2p" in first_row.text
     assert "68p" in first_row.text
     assert "£1.49" in first_row.text
     assert "£1.56" in first_row.text
@@ -28,7 +27,6 @@ def test_guidance_pricing_letters(client_request, mock_get_letter_rates):
     assert "£1.76" in last_row.text
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "valid_from, expected_last_updated",
     (
@@ -42,7 +40,7 @@ def test_guidance_pricing_letters(client_request, mock_get_letter_rates):
         (
             0.024,
             "A single, 160-character text message costs 2.4 pence (plus VAT).",
-            "Find out how text message pricing works.",
+            "You only have to pay for text messages if you exceed your free text message allowance.",
         ),
     ),
 )

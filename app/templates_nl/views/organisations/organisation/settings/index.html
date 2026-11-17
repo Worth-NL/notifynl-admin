@@ -7,6 +7,8 @@
 
 {% block maincolumn_content %}
   <h1 class="heading-medium">Instellingen</h1>
+  {# org members see only the letter provider: every other setting, and its edit page, is platform-admin-only #}
+  {% if current_user.platform_admin %}
   <div class="bottom-gutter-3-2">
 
     {% set billing_details_html %}
@@ -307,17 +309,41 @@
               }
             ]
           }
+        },
+        {
+          "key": {
+            "classes": "notify-summary-list__key notify-summary-list__key--35-100",
+            "text": "Gebiedsgrens"
+          },
+          "value": {
+            "text": "Ingesteld" if current_org.area_boundary else "Niet ingesteld",
+            "classes": "govuk-summary-list__value--default" if not current_org.area_boundary
+          },
+          "actions": {
+            "items": [
+              {
+                "href": url_for('main.edit_organisation_area_boundary', org_id=current_org.id),
+                "text": "Wijzigen",
+                "visuallyHiddenText": "gebiedsgrens van de organisatie",
+                "classes": "govuk-link--no-visited-state"
+              }
+            ]
+          }
         }
       ]
     }) }}
-    {% if current_org.active %}
-      <p class="top-gutter-1-2">
-        <span class="page-footer-link page-footer-delete-link-without-button">
-          <a class="govuk-link govuk-link--destructive" href="{{ url_for('main.archive_organisation', org_id=current_org.id) }}">
-            Deze organisatie verwijderen
-          </a>
-        </span>
-      </p>
-    {% endif %}
   </div>
+  {% endif %}
+
+  {% include "views/organisations/organisation/letter-provider/_summary.html" %}
+
+  {% if current_user.platform_admin and current_org.active %}
+    <p class="top-gutter-1-2">
+      <span class="page-footer-link page-footer-delete-link-without-button">
+        <a class="govuk-link govuk-link--destructive" href="{{ url_for('main.archive_organisation', org_id=current_org.id) }}">
+          Deze organisatie verwijderen
+        </a>
+      </span>
+    </p>
+  {% endif %}
 {% endblock %}

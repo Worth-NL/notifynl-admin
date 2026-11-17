@@ -13,7 +13,6 @@ from tests import organisation_json
 from tests.conftest import create_user, normalize_spaces
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_should_return_verify_template(
     client_request,
     api_user_active,
@@ -178,7 +177,6 @@ def test_verify_email_redirects_to_email_sent_if_token_expired(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_verify_email_shows_flash_message_if_token_expired(
     client_request,
     mocker,
@@ -197,7 +195,6 @@ def test_verify_email_shows_flash_message_if_token_expired(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_verify_email_redirects_to_sign_in_if_user_active(
     client_request,
     mocker,

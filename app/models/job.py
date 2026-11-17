@@ -4,7 +4,7 @@ from typing import Any
 
 from notifications_utils.letter_timings import (
     CANCELLABLE_JOB_LETTER_STATUSES,
-    get_letter_timings,
+    LetterTimings,
     letter_can_be_cancelled,
 )
 from werkzeug.utils import cached_property
@@ -15,12 +15,11 @@ from app.notify_client.job_api_client import JobApiClient, job_api_client
 from app.notify_client.notification_api_client import notification_api_client
 from app.notify_client.service_api_client import service_api_client
 from app.utils import set_status_filters
-from app.utils.letters import get_letter_printing_statement
 from app.utils.time import is_less_than_days_ago
+from app.utils_nl.letters import get_letter_printing_statement  # [NotifyNL] the uploads list uses this Job
 
 
 class Job(JSONModel):
-    id: Any
     service: Any
     template_name: str
     template_version: int
@@ -175,7 +174,7 @@ class Job(JSONModel):
 
     @property
     def letter_timings(self):
-        return get_letter_timings(self.created_at, postage=self.postage)
+        return LetterTimings(self.created_at.replace(tzinfo=None), postage=self.postage)
 
     @property
     def failure_rate(self):

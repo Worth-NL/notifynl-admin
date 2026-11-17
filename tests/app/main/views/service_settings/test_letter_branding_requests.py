@@ -19,7 +19,6 @@ from tests.conftest import (
 )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "organisation_type, is_org_set, letter_branding_pool, expected_options",
     (
@@ -95,7 +94,6 @@ def test_letter_branding_options_page_when_no_branding_is_set(
     ] == expected_options
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_letter_branding_options_page_when_branding_is_set_already(
     client_request,
     service_one,
@@ -186,7 +184,6 @@ def test_letter_branding_options_redirects_to_branding_preview_for_a_branding_po
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_letter_branding_options_errors_when_no_option_selected(
     client_request,
     mocker,
@@ -277,7 +274,6 @@ def test_letter_branding_options_redirects_to_nhs_page(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_GET_letter_branding_request_renders_form(
     client_request,
     mock_get_letter_branding_by_id,
@@ -293,7 +289,6 @@ def test_GET_letter_branding_request_renders_form(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "org_id, expected_org_name",
     [
@@ -354,7 +349,6 @@ def test_POST_letter_branding_request_creates_zendesk_ticket(
     assert zendesk_ticket.notify_task_type == "notify_task_letter_branding"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_GET_letter_branding_upload_branding_renders_form(
     client_request,
     service_one,
@@ -386,7 +380,6 @@ def test_GET_letter_branding_upload_branding_renders_form(
     assert abandon_flow_link.text == "I do not have a file to upload"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_GET_letter_branding_upload_branding_renders_form_with_prompt_if_user_clicked_organisation_choice(
     client_request, service_one, organisation_one, mocker
 ):
@@ -434,7 +427,6 @@ def test_GET_letter_branding_upload_branding_passes_from_template_through_to_bac
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "svg_contents, expected_error",
     (
@@ -469,7 +461,6 @@ def test_POST_letter_branding_upload_branding_validates_svg_file(
     assert normalize_spaces(page.select_one(".govuk-error-message").text) == expected_error
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_POST_letter_branding_upload_branding_rejects_non_svg_files(client_request, mock_antivirus_virus_free):
     svg_contents = "<svg> this can actually be an svg we just validate the extension </svg>"
     page = client_request.post(
@@ -483,7 +474,6 @@ def test_POST_letter_branding_upload_branding_rejects_non_svg_files(client_reque
     assert normalize_spaces(page.select_one(".govuk-error-message").text) == "Branding must be an SVG file"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_POST_letter_branding_upload_branding_scans_for_viruses(client_request, mock_antivirus_virus_found):
     svg_contents = "<svg></svg>"
     page = client_request.post(
@@ -522,7 +512,6 @@ def test_POST_letter_branding_upload_branding_redirects_on_success(client_reques
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_GET_letter_branding_set_name_renders(client_request, service_one):
     page = client_request.get(
         "main.letter_branding_set_name",
@@ -541,7 +530,6 @@ def test_GET_letter_branding_set_name_renders(client_request, service_one):
     assert normalize_spaces(page.select_one("div#name-hint").text) == "For example, Department for Education"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_GET_letter_branding_set_name_shows_current_org_in_hint_text(
     client_request,
     service_one,
@@ -571,7 +559,6 @@ def test_GET_letter_branding_set_name_redirects_if_temp_filename_not_provided(cl
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_POST_letter_branding_set_name_shows_error(client_request, service_one):
     page = client_request.post(
         "main.letter_branding_set_name",
@@ -583,7 +570,6 @@ def test_POST_letter_branding_set_name_shows_error(client_request, service_one):
     assert normalize_spaces(page.select_one("#name-error").text) == "Error: Cannot be empty"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_POST_letter_branding_set_name_creates_branding_adds_to_pool_and_redirects(
     client_request,
     service_one,
@@ -735,7 +721,6 @@ def test_POST_letter_branding_set_name_creates_branding_sets_org_default_if_appr
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_letter_branding_option_preview_page_displays_preview_of_chosen_branding(
     service_one, organisation_one, client_request, mocker, mock_get_letter_branding_pool
 ):
@@ -779,7 +764,6 @@ def test_letter_branding_option_preview_page_redirects_to_branding_options_page_
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_letter_branding_option_preview_changes_letter_branding_when_user_confirms(
     service_one,
     organisation_one,
@@ -815,7 +799,6 @@ def test_letter_branding_option_preview_changes_letter_branding_when_user_confir
     assert normalize_spaces(page.select_one(".banner-default").text) == "You’ve updated your letter branding"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_letter_branding_nhs_page_displays_preview(
     service_one, organisation_one, client_request, mocker, mock_get_letter_branding_pool
 ):
@@ -854,7 +837,6 @@ def test_letter_branding_nhs_page_returns_404_if_service_not_nhs(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_letter_branding_nhs_changes_letter_branding_when_user_confirms(
     service_one,
     organisation_one,

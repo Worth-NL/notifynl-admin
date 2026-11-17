@@ -1,9 +1,9 @@
 from flask import abort, flash, redirect, render_template, request, url_for
-from flask_login import current_user
 from notifications_utils.clients.zendesk.zendesk_client import NotifySupportTicket, NotifyTicketType
 
 from app import (
     current_service,
+    current_user,
     letter_branding_client,
     logo_client,
     organisations_client,
@@ -67,16 +67,7 @@ def email_branding_options(service_id):
     if form.validate_on_submit():
         branding_choice = form.options.data
 
-        if branding_choice == EmailBranding.NHS_ID:
-            return redirect(
-                url_for(
-                    ".branding_nhs",
-                    service_id=current_service.id,
-                    branding_type="email",
-                    branding_choice=branding_choice,
-                )
-            )
-        elif branding_choice == "govuk":
+        if branding_choice == "govuk":
             return redirect(
                 url_for(".email_branding_govuk", service_id=current_service.id, branding_choice=branding_choice)
             )
@@ -566,41 +557,6 @@ def branding_option_preview(service_id, branding_type):
     )
 
 
-@main.route(
-    "/services/<uuid:service_id>/service-settings/<branding_type:branding_type>-branding/nhs", methods=["GET", "POST"]
-)
-@user_has_permissions("manage_service")
-def branding_nhs(service_id, branding_type):
-    if branding_type == "email":
-        branding = EmailBranding.NHS_ID
-        back_link_query_params = _email_branding_flow_query_params(request)
-    else:
-        branding = LetterBranding.NHS_ID
-        back_link_query_params = _letter_branding_flow_query_params(request)
-
-    check_branding_allowed_for_service(branding, branding_type=branding_type)
-
-    if request.method == "POST":
-        current_service.update(**{f"{branding_type}_branding": branding})
-
-        flash(f"Uw {'e-mail' if branding_type == 'email' else 'brief'}huisstijl is bijgewerkt", "default")
-        return redirect(url_for(".service_settings", service_id=current_service.id))
-
-    return render_template(
-        "views/service-settings/branding/branding-nhs.html",
-        back_link_url=url_for(
-            f".{branding_type}_branding_options",
-            service_id=current_service.id,
-            **back_link_query_params,
-        ),
-        branding_type=branding_type,
-        nhs_branding_id=branding,
-    )
-
-
-# ================= LETTER BRANDING ===================
-
-
 def _letter_branding_flow_query_params(request, **kwargs):
     """Return a dictionary containing values for the letter branding flow.
 
@@ -627,17 +583,7 @@ def letter_branding_options(service_id):
     if form.validate_on_submit():
         branding_choice = form.options.data
 
-        if branding_choice == LetterBranding.NHS_ID:
-            return redirect(
-                url_for(
-                    ".branding_nhs",
-                    service_id=current_service.id,
-                    branding_type="letter",
-                    branding_choice=branding_choice,
-                )
-            )
-
-        elif branding_choice in current_service.letter_branding_pool.ids:
+        if branding_choice in current_service.letter_branding_pool.ids:
             return redirect(
                 url_for(
                     ".branding_option_preview",

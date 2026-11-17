@@ -10,7 +10,6 @@ from notifications_utils.markdown import notify_email_markdown
 from notifications_utils.recipient_validation.email_address import validate_email_address
 from notifications_utils.recipient_validation.errors import InvalidEmailError, InvalidPhoneError
 from notifications_utils.recipient_validation.notifynl.phone_number import PhoneNumber
-from notifications_utils.sanitise_text import SanitiseSMS
 from ordered_set import OrderedSet
 from wtforms import ValidationError
 from wtforms.validators import URL, DataRequired, InputRequired, StopValidation
@@ -22,6 +21,50 @@ from app.main._commonly_used_passwords import commonly_used_passwords
 from app.models.spreadsheet import Spreadsheet
 from app.notify_client.protected_sender_id_api_client import protected_sender_id_api_client
 from app.utils.user import is_gov_user
+
+
+class CanEncode:
+    """
+    Validates that the field data can be encoded into a specific character set.
+    """
+
+    def __init__(self, encoding="latin-1", field_type=None, message=None):
+        self.encoding = encoding
+        self.field_type = field_type
+        self.message = message
+
+    def __call__(self, form, field):
+        if field.data:
+            unsupported = OrderedSet()
+            for char in field.data:
+                try:
+                    char.encode(self.encoding)
+                except UnicodeEncodeError:
+                    unsupported.add(char)
+
+            field_type = "this field"
+            if self.field_type is not None:
+                field_type = self.field_type
+
+            if unsupported:
+                message = self.message
+                if message is None:
+                    message = (
+                        "You cannot use {} in {}. You must use percent encoding if you want to include {}.".format(
+                            formatted_list(
+                                unsupported,
+                                conjunction="or",
+                                before_each="",
+                                after_each="",
+                                max_items_shown=3,
+                                word_for_items_not_shown="similar characters",
+                            ),
+                            field_type,
+                            "these characters" if len(unsupported) > 1 else "this character",
+                        )
+                    )
+
+                raise ValidationError(message)
 
 
 class CommonlyUsedPassword:
@@ -153,22 +196,6 @@ class NoEmbeddedImagesInSVG(NoElementInSVG):
 class NoTextInSVG(NoElementInSVG):
     element = "text"
     message = "This SVG has text which has not been converted to paths and may not render well"
-
-
-class OnlySMSCharacters:
-    def __init__(self, *args, template_type, **kwargs):
-        self._template_type = template_type
-        super().__init__(*args, **kwargs)
-
-    def __call__(self, form, field):
-        non_sms_characters = sorted(SanitiseSMS.get_non_compatible_characters(field.data))
-        if non_sms_characters:
-            raise ValidationError(
-                "You cannot use {} in text messages. {} will not display properly on some phones.".format(
-                    formatted_list(non_sms_characters, conjunction="or", before_each="", after_each=""),
-                    ("It" if len(non_sms_characters) == 1 else "These characters"),
-                )
-            )
 
 
 class DoesNotStartWithDoubleZero:

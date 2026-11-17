@@ -1,3 +1,5 @@
+import json
+import re
 import weakref
 from contextlib import suppress
 from copy import deepcopy
@@ -7,26 +9,29 @@ from html import escape
 from itertools import chain, repeat
 from math import ceil
 from numbers import Number
+from urllib.parse import urlsplit
 from zipfile import BadZipFile
 
 import pytz
 from flask import request
-from flask_login import current_user
 from flask_wtf import FlaskForm as Form
 from flask_wtf.file import FileAllowed, FileSize
 from flask_wtf.file import FileField as FileField_wtf
 from markupsafe import Markup
+from notifications_utils import SMS_CHAR_COUNT_LIMIT
 from notifications_utils.countries_nl import Postage
 from notifications_utils.eventlet import SoftEventletTimeout
 from notifications_utils.field import Field as UtilsField
 from notifications_utils.formatters import strip_all_whitespace
 from notifications_utils.insensitive_dict import InsensitiveDict, InsensitiveSet
+from notifications_utils.interruptible_io import InterruptibleIterableList, interruptible_iter
 from notifications_utils.recipient_validation.email_address import format_email_address, validate_email_address
 from notifications_utils.recipient_validation.errors import InvalidEmailError, InvalidPhoneError
 from notifications_utils.recipient_validation.notifynl.phone_number import PhoneNumber as PhoneNumberUtils
 from notifications_utils.recipient_validation.notifynl.postal_address import PostalAddress
 from notifications_utils.safe_string import make_string_safe_for_email_local_part
 from notifications_utils.sanitise_text import SanitiseASCII
+from notifications_utils.template import LetterPreviewTemplate, SMSMessageTemplate
 from notifications_utils.timezones import local_timezone, utc_string_to_aware_gmt_datetime
 from ordered_set import OrderedSet
 from werkzeug.utils import cached_property
@@ -59,7 +64,7 @@ from wtforms.validators import (
 from xlrd.biffh import XLRDError
 from xlrd.xldate import XLDateError
 
-from app import asset_fingerprinter, current_organisation
+from app import asset_fingerprinter, current_organisation, current_user, document_download_api_client
 from app.constants import (
     SERVICE_JOIN_REQUEST_APPROVED,
     SERVICE_JOIN_REQUEST_REJECTED,
@@ -68,6 +73,7 @@ from app.constants import (
     LetterLanguageOptions,
 )
 from app.main.overrides_nl.validators import (
+    CanEncode,
     CannotContainURLsOrLinks,
     CharactersNotAllowed,
     CommonlyUsedPassword,
@@ -88,7 +94,6 @@ from app.main.overrides_nl.validators import (
     NotifyDataRequired,
     NotifyInputRequired,
     NotifyUrlValidator,
-    OnlySMSCharacters,
     ValidEmail,
     ValidGovEmail,
     ValidPhoneNumber,
@@ -100,6 +105,7 @@ from app.models.branding import (
 from app.models.feedback import PROBLEM_TICKET_TYPE, QUESTION_TICKET_TYPE
 from app.models.organisation import Organisation
 from app.models.spreadsheet import Spreadsheet
+from app.notify_client.document_download_api_client import DocumentDownloadError
 from app.overrides_nl.formatters import (
     format_auth_type,
     format_date_human,
@@ -115,7 +121,6 @@ from app.utils.govuk_frontend_field import (
     render_govuk_frontend_macro,
 )
 from app.utils.image_processing import CorruptImage, ImageProcessor, WrongImageFormat
-from app.utils.interruptible_io import InterruptibleIterableList, interruptible_iter
 from app.utils_nl.user_permissions import (
     all_ui_permissions,
     organisation_user_permission_names,
@@ -878,7 +883,7 @@ class OnOffField(GovukRadiosField):
     def iter_choices(self):
         for value, label in self.choices:
             # This overrides WTForms default behaviour which is to check
-            # self.coerce(value) == self.data
+            # > self.coerce(value) == self.data
             # where self.coerce returns a string for a boolean input
             yield (value, label, (self.data in {value, self.coerce(value)}), {})
 
@@ -896,6 +901,19 @@ class OrganisationTypeField(GovukRadiosField):
             validators=validators or [],
             **kwargs,
         )
+
+
+class GeoJSONBoundaryField(GovukTextareaField):
+    def process_formdata(self, valuelist):
+        if valuelist and valuelist[0].strip():
+            try:
+                self.data = json.loads(valuelist[0])
+            except ValueError:
+                # kept as the raw string so validate_area_boundary can report
+                # a friendly error instead of a 500 from a failed json.loads
+                self.data = valuelist[0]
+        else:
+            self.data = None
 
 
 class GovukRadiosFieldWithNoneOption(FieldWithNoneOption, GovukRadiosField):
@@ -1173,17 +1191,14 @@ class TwoFactorForm(StripWhitespaceForm):
 
     sms_code = SMSCode("SMS bericht code")
 
-    def validate(self, *args, **kwargs):
-        if not self.sms_code.validate(self):
-            return False
+    def validate_sms_code(self, field):
+        if field.errors:
+            return
 
-        is_valid, reason = self.validate_code_func(self.sms_code.data)
+        is_valid, reason = self.validate_code_func(field.data)
 
         if not is_valid:
-            self.sms_code.errors.append(reason)
-            return False
-
-        return super().validate(*args, **kwargs)
+            raise ValidationError(reason)
 
 
 class TextNotReceivedForm(StripWhitespaceForm):
@@ -1229,58 +1244,29 @@ class RenameOrganisationForm(StripWhitespaceForm):
     )
 
 
-class AddGPOrganisationForm(StripWhitespaceForm):
-    def __init__(self, *args, service_name="onbekend", **kwargs):
-        super().__init__(*args, **kwargs)
-        self.same_as_service_name.label.text = f"Is uw huisartspraktijd ‘{service_name}’?"
-        self.service_name = service_name
-        self.same_as_service_name.param_extensions = {
-            "items": [
-                {},
-                {"conditional": {"html": self.name}},
-            ]
-        }
-
-    def get_organisation_name(self):
-        if self.same_as_service_name.data:
-            return self.service_name
-        return self.name.data
-
-    same_as_service_name = OnOffField(
-        "Is de naam van uw huisartsenpraktijk hetzelfde als die van uw dienst?",
-        choices=[
-            (True, "Ja"),
-            (False, "Nee"),
-        ],
-        choices_for_error_message="‘Ja‘ om de naam van uw huisartsenpraktijk te bevestigen",
-    )
-
-    name = GovukTextInputField(
-        "Wat is de naam van uw huisartsenpraktijk?",
-    )
-
-    def validate_name(self, field):
-        if self.same_as_service_name.data is False:
-            if not field.data:
-                raise ValidationError("Vul de naam van uw huisartsenpraktijk in")
-        else:
-            field.data = ""
-
-
-class AddNHSLocalOrganisationForm(StripWhitespaceForm):
-    def __init__(self, *args, organisation_choices=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.organisations.choices = organisation_choices
-
-    organisations = GovukRadiosField(
-        "Voor welke zorginstelling werkt u?",
-        param_extensions={"fieldset": {"legend": {"classes": "govuk-visually-hidden"}}},
-        thing="een goedgekeurde zorginstelling",
-    )
-
-
 class OrganisationOrganisationTypeForm(StripWhitespaceForm):
-    organisation_type = OrganisationTypeField("Wat voor een type organisatie is dit?")
+    # [NOTIFYNL] Only the NL organisation types; upstream's NHS, GP, emergency service and school types are UK-only.
+    organisation_type = OrganisationTypeField(
+        "Wat voor een type organisatie is dit?",
+        include_only={Organisation.TYPE_CENTRAL, Organisation.TYPE_LOCAL, Organisation.TYPE_OTHER},
+    )
+
+
+class OrganisationAreaBoundaryForm(StripWhitespaceForm):
+    area_boundary = GeoJSONBoundaryField("Gebiedsgrens (GeoJSON)")
+
+    def validate_area_boundary(self, field):
+        if field.data is None:
+            return
+
+        if not isinstance(field.data, dict):
+            raise ValidationError("Vul geldige GeoJSON in")
+
+        if field.data.get("type") not in ("Polygon", "MultiPolygon"):
+            raise ValidationError("De geometrie moet van het type Polygon of MultiPolygon zijn")
+
+        if not isinstance(field.data.get("coordinates"), list):
+            raise ValidationError("De geometrie moet coördinaten bevatten")
 
 
 class OrganisationCrownStatusForm(StripWhitespaceForm):
@@ -1342,8 +1328,8 @@ class AdminOrganisationDomainsForm(StripWhitespaceForm):
             "",
             validators=[
                 CharactersNotAllowed("@"),
-                # Todo NL: This should probably be used dynamically with some sort of blacklist?
-                # StringsNotAllowed("nhs.uk", "nhs.net"),
+                # [NOTIFYNL] Upstream blocks the nhs.uk and nhs.net domains here with StringsNotAllowed.
+                # TODO: decide whether NL needs a configurable domain blocklist instead.
                 Optional(),
             ],
             default="",
@@ -1367,14 +1353,6 @@ class CreateServiceForm(StripWhitespaceForm):
     organisation_type = OrganisationTypeField(
         "Wie is er verantwoordelijk voor deze dienst?",
         include_only={Organisation.TYPE_CENTRAL, Organisation.TYPE_LOCAL, Organisation.TYPE_OTHER},
-    )
-
-
-class CreateNhsServiceForm(CreateServiceForm):
-    organisation_type = OrganisationTypeField(
-        "Wie is er verantwoordelijk voor deze dienst?",
-        # Todo nl: dit lijkt overbodig zonder NHS
-        include_only={"nhs_central", "nhs_local", "nhs_gp"},
     )
 
 
@@ -1492,7 +1470,8 @@ class BaseTemplateForm(StripWhitespaceForm):
 
 class SMSTemplateForm(BaseTemplateForm, TemplateNameMixin):
     def validate_template_content(self, field):
-        OnlySMSCharacters(template_type="sms")(None, field)
+        if SMSMessageTemplate({"content": field.data, "template_type": "sms"}).is_message_too_long():
+            raise ValidationError(f"De inhoud heeft meer tekens dan de limiet van {SMS_CHAR_COUNT_LIMIT}")
 
 
 class LetterAddressForm(StripWhitespaceForm):
@@ -1560,7 +1539,7 @@ class EmailTemplateForm(BaseTemplateForm, TemplateNameMixin):
             return
 
         if self.email_file_filenames & UtilsField(field.data).placeholders:
-            raise ValidationError("You cannot put a file in the subject")
+            raise ValidationError("U kunt geen bestand in het onderwerp plaatsen")
 
 
 class LetterTemplateForm(BaseTemplateForm, TemplateNameMixin):
@@ -1574,6 +1553,13 @@ class LetterTemplateForm(BaseTemplateForm, TemplateNameMixin):
         if kwargs.get("letter_languages") == LetterLanguageOptions.welsh_then_english:
             self.subject.label.text = f"{self.subject.label.text} (Nederlands)"
             self.template_content.label.text = f"{self.template_content.label.text} (Nederlands)"
+
+    def validate_template_content(self, field):
+        template = LetterPreviewTemplate({"subject": "", "content": field.data, "template_type": "letter"})
+        if template.has_qr_code_with_too_much_data():
+            raise ValidationError(
+                "Er kan geen bruikbare QR-code worden gemaakt – de link die u heeft ingevoerd is te lang"
+            )
 
 
 class WelshLetterTemplateForm(BaseTemplateForm, TemplateNameMixin):
@@ -1975,11 +1961,11 @@ class EstimateUsageForm(StripWhitespaceForm):
 
 
 class AdminProviderRatioForm(OrderableFieldsForm):
-    def __init__(self, providers):
+    def __init__(self, providers, *args, **kwargs):
         self._providers = providers
 
         # hack: https://github.com/wtforms/wtforms/issues/736
-        self._unbound_fields = [
+        fields = [
             (
                 provider["identifier"],
                 GovukIntegerField(
@@ -1993,8 +1979,15 @@ class AdminProviderRatioForm(OrderableFieldsForm):
             )
             for provider in providers
         ]
+        fields += [
+            (
+                "reason",
+                GovukTextInputField("Reden"),
+            )
+        ]
 
-        super().__init__(data={provider["identifier"]: provider["priority"] for provider in providers})
+        self._unbound_fields = fields
+        super().__init__(*args, data={provider["identifier"]: provider["priority"] for provider in providers}, **kwargs)
 
     def validate(self, *args, **kwargs):
         if not super().validate(*args, **kwargs):
@@ -2315,9 +2308,7 @@ class AdminEditEmailBrandingForm(StripWhitespaceForm):
         if op == "email-branding-details" and not self.name.data:
             raise ValidationError("Vul een naam in voor deze huisstijl")
 
-    def validate(self, *args, **kwargs):
-        rv = super().validate(*args, **kwargs)
-
+    def validate_alt_text(self, field):
         op = request.form.get("operation")
         if op == "email-branding-details":
             # we only want to validate alt_text/text if we're editing the fields, not the file
@@ -2325,14 +2316,10 @@ class AdminEditEmailBrandingForm(StripWhitespaceForm):
                 self.alt_text.data = escape(self.alt_text.data)
 
             if self.alt_text.data and self.text.data:
-                self.alt_text.errors.append("Alt tekst moet leeg zijn als u al een logo tekst hebt ingevuld")
-                return False
+                raise ValidationError("Alt tekst moet leeg zijn als u al een logo tekst hebt ingevuld")
 
             if not (self.alt_text.data or self.text.data):
-                self.alt_text.errors.append("Vul een alt tekst in voor uw logo")
-                return False
-
-        return rv
+                raise ValidationError("Vul een alt tekst in voor uw logo")
 
 
 class DuplicatableHiddenField(HiddenField):
@@ -2581,6 +2568,10 @@ class AdminServiceInboundNumberForm(StripWhitespaceForm):
 
 
 class AdminServiceInboundNumberArchive(StripWhitespaceForm):
+    def __init__(self, *args, service, **kwargs):
+        self.service = service
+        super().__init__(*args, **kwargs)
+
     removal_options = GovukRadiosField(
         "Wat wilt u doen met dit nummer?",
         choices=[("true", "Archiveren"), ("false", "Ontsluiten")],
@@ -2590,6 +2581,26 @@ class AdminServiceInboundNumberArchive(StripWhitespaceForm):
                 {"hint": {"text": "Andere diensten kunnen dit telefoonnummer niet gebruiken"}},
                 {"hint": {"text": "Andere diensten kunnen dit telefoonnummer gebruiken"}},
             ]
+        },
+    )
+
+    def validate_removal_options(self, field):
+        if self.service.default_sms_sender == self.service.inbound_number:
+            raise ValidationError("U moet eerst de standaard afzender-ID voor sms-berichten wijzigen")
+
+
+class ServiceSendClientReferenceToLetterProviderForm(StripWhitespaceForm):
+    enabled = OnOffField(
+        "Wilt u de klantreferentie van elke brief naar de printleverancier sturen?",
+        choices=[(True, "Ja"), (False, "Nee")],
+        choices_for_error_message="ja of nee",
+        param_extensions={
+            "hint": {
+                "text": (
+                    "De printleverancier gebruikt de referentie om brieven terug te vinden. Heeft een brief geen "
+                    "klantreferentie, dan stuurt NotifyNL de referentie die het zelf voor de brief heeft gemaakt."
+                )
+            }
         },
     )
 
@@ -2621,11 +2632,16 @@ class CallbackForm(StripWhitespaceForm):
         validators=[
             DataRequired(message="Kan niet leeg zijn"),
             Regexp(regex="^https.*", message="Moet een valide https URL zijn"),
+            CanEncode(field_type="een webadres"),
         ],
     )
     bearer_token = GovukPasswordField(
         "Bearer token",
-        validators=[DataRequired(message="Kan niet leeg zijn"), Length(min=10, thing="het bearer token")],
+        validators=[
+            DataRequired(message="Kan niet leeg zijn"),
+            Length(min=10, thing="het bearer token"),
+            CanEncode(field_type="een bearer token"),
+        ],
     )
 
     def validate(self, *args, **kwargs):
@@ -2855,7 +2871,7 @@ class AdminServiceAddDataRetentionForm(StripWhitespaceForm):
             ("letter", "Brief"),
             ("messagebox", "Berichtenbox"),
         ],
-        thing="a type of notification",
+        thing="een notificatietype",
     )
     days_of_retention = GovukIntegerField(
         label="Bewaartermijn in dagen",
@@ -3370,9 +3386,11 @@ class ProcessUnsubscribeRequestForm(StripWhitespaceForm):
 
 
 class TemplateEmailFilesUploadForm(StripWhitespaceForm):
-    def __init__(self, *args, template, **kwargs):
+    def __init__(self, *args, service_id, template, **kwargs):
         self.existing_file_names = template.filenames
         self.placeholders_in_subject = UtilsField(template._subject).placeholders
+        self.service_id = service_id
+        self.template_id = template.id
         super().__init__(*args, **kwargs)
 
     allowed_file_formats = {
@@ -3392,7 +3410,7 @@ class TemplateEmailFilesUploadForm(StripWhitespaceForm):
     }
     allowed_file_extensions = tuple(chain(*allowed_file_formats.values()))
 
-    file = VirusScannedFileField(
+    file = FileField(
         "Voeg een bestand toe",
         validators=[
             DataRequired(message="U moet een bestand uploaden om te versturen"),
@@ -3405,10 +3423,13 @@ class TemplateEmailFilesUploadForm(StripWhitespaceForm):
         ],
     )
 
-    def validate_file(self, field):
+    def validate_file(self, field):  # noqa: C901
+        from flask import current_app
+
         if field.errors:
             return
 
+        # Carry out a preliminary file name length checks
         if (length := len(field.data.filename)) > 100:
             raise ValidationError(
                 f"Bestandsnaam mag niet langer zijn dan 100 tekens (‘{field.data.filename}’ is {length} tekens)"
@@ -3422,6 +3443,74 @@ class TemplateEmailFilesUploadForm(StripWhitespaceForm):
                 f"U kunt geen bestand in het onderwerp van een sjabloon plaatsen "
                 f"– verwijder (({field.data.filename})) of hernoem uw bestand"
             )
+
+        if len(field.data.read()) == 0:
+            raise ValidationError("Uw bestand is leeg – controleer uw bestand en probeer het opnieuw")
+        field.data.seek(0)
+
+        # hand off file to document download api to perform further validation checks,
+        # antivirus scan and determination of the file mimetype
+        try:
+            document_download_api_client.file_check_and_antivirus_scan(
+                service_id=self.service_id, file_name=field.data.filename, file_bytes=field.data.read()
+            )
+            field.data.seek(0)  # reset for subsequent file scans ie during S3 upload
+        except DocumentDownloadError as e:
+            raise ValidationError(_document_download_error_message_nl(e.message)) from e
+
+        if Spreadsheet.can_handle(field.data.filename):
+            try:
+                too_many_email_addresses = Spreadsheet.from_file(
+                    field.data, filename=field.data.filename
+                ).contains_many_email_addresses()
+            except (UnicodeDecodeError, BadZipFile, XLRDError) as e:
+                raise ValidationError("Notify kan dit bestand niet lezen – probeer een ander bestandstype") from e
+            except SoftEventletTimeout as e:
+                raise ValidationError(
+                    "Het verwerken van uw bestand duurde te lang – probeer het opnieuw, of verwijder werkbladen, "
+                    "kolommen of rijen die u niet nodig heeft"
+                ) from e
+            except XLDateError as e:
+                raise ValidationError("Notify kan dit bestand niet lezen – sla het op als CSV-bestand") from e
+            except Spreadsheet.TooManyColumnsError as e:
+                raise ValidationError(
+                    "Uw bestand heeft te veel kolommen (Notify kan maximaal 1.000 kolommen controleren)"
+                ) from e
+            except Spreadsheet.TooManyRowsError as e:
+                raise ValidationError(
+                    "Uw bestand heeft te veel rijen (Notify kan maximaal 100.000 rijen tegelijk controleren)"
+                ) from e
+
+            if too_many_email_addresses:
+                current_app.logger.warning(
+                    "Too many email addresses in %s uploaded to template %s",
+                    field.data.filename,
+                    self.template_id,
+                    exc_info=True,
+                    extra={
+                        "file_name": field.data.filename,
+                        "template_id": self.template_id,
+                    },
+                )
+                raise ValidationError(
+                    "Uw bestand bevat te veel e-mailadressen. Als u een lijst met ontvangers wilt uploaden, "
+                    "ga dan terug naar uw sjabloon en kies ‘Klaar om te versturen’"
+                )
+
+
+# [NOTIFYNL] document-download-api (and its admin client, for a 413) return English errors;
+# show the ones we know in Dutch and fall back to the original message otherwise.
+_DOCUMENT_DOWNLOAD_ERRORS_NL = {
+    "The file must be smaller than 2MB": "Het bestand moet kleiner zijn dan 2MB",
+    "File did not pass the virus scan": "Het bestand heeft de virusscan niet doorstaan",
+    "Document must not be empty": "Uw bestand is leeg – controleer uw bestand en probeer het opnieuw",
+}
+
+
+def _document_download_error_message_nl(message):
+    if message and message.startswith("Unsupported file type"):
+        return "Dit bestandstype is niet toegestaan"
+    return _DOCUMENT_DOWNLOAD_ERRORS_NL.get(message, message)
 
 
 class TemplateEmailFileLinkTextForm(StripWhitespaceForm):
@@ -3467,3 +3556,268 @@ class DocumentDownloadConfirmEmailAddressForm(StripWhitespaceForm):
                     "om te bevestigen dat het bestand voor u bedoeld was."
                 )
             )
+
+
+### [NotifyNL] organisation letter provider ###########################################################################
+# Shown in the secret fields of a letter endpoint instead of the stored secret, which the API never returns: leaving it
+# keeps the stored secret, as long as the endpoint's URLs don't change
+LETTER_ENDPOINT_DUMMY_SECRET = "secret_set"
+LETTER_ENDPOINT_AUTH_FIELDS = {
+    "basic": ("username", "password"),
+    "api_key": ("api_key_header", "api_key"),
+    "oauth": ("token_endpoint", "client_id", "client_secret", "scope"),
+}
+LETTER_ENDPOINT_SECRET_FIELDS = {"password", "api_key", "client_secret"}
+# how the error messages refer to each required field
+LETTER_ENDPOINT_FIELD_NAMES = {
+    "username": "de gebruikersnaam",
+    "password": "het wachtwoord",
+    "api_key_header": "de naam van de header",
+    "api_key": "de API-sleutel",
+    "token_endpoint": "de token-URL",
+    "client_id": "de client-ID",
+    "client_secret": "het client secret",
+}
+LETTER_ENDPOINT_URL_CREDENTIALS_MESSAGE = (
+    "Zet geen gebruikersnaam of wachtwoord in het adres: vul die in bij de inloggegevens"
+)
+# an HTTP header name (RFC 9110 token), and not one the request itself depends on (as checked by the API)
+LETTER_ENDPOINT_HEADER_PATTERN = re.compile(r"[!#$%&'*+\-.^_`|~0-9A-Za-z]{1,100}")
+LETTER_ENDPOINT_RESERVED_HEADERS = {
+    "connection",
+    "content-length",
+    "content-type",
+    "host",
+    "idempotency-key",
+    "transfer-encoding",
+    "user-agent",
+}
+
+
+class OrganisationLetterProviderForm(StripWhitespaceForm):
+    provider = GovukRadiosField(
+        "Via welke printleverancier verstuurt NotifyNL de brieven van uw organisatie?",
+        choices=[
+            ("pingen", "Pingen"),
+            ("rest-endpoint", "Een eigen printleverancier"),
+        ],
+        thing="een printleverancier",
+        param_extensions={
+            "items": [
+                {"hint": {"text": "De standaard printleverancier van NotifyNL."}},
+                {"hint": {"text": "Uw organisatie heeft een contract met een printleverancier met een REST-endpoint."}},
+            ]
+        },
+    )
+
+
+class OrganisationLetterEndpointForm(StripWhitespaceForm):
+    def __init__(self, *args, stored=None, allow_insecure=False, **kwargs):
+        # stored: the organisation's current REST endpoint (from the API, without secrets), if it has one
+        self.stored = stored or {}
+        self.allow_insecure = allow_insecure
+        super().__init__(*args, **kwargs)
+
+    endpoint_url = GovukTextInputField("Endpoint-URL")
+    address_placement = GovukRadiosField(
+        "Waar staat het adres op de brieven?",
+        choices=[
+            ("50mm", "50 mm vanaf de bovenkant"),
+            ("60mm", "60 mm vanaf de bovenkant"),
+        ],
+        thing="waar het adres staat",
+    )
+    auth_method = GovukRadiosField(
+        "Hoe logt NotifyNL in bij uw printleverancier?",
+        choices=[
+            ("basic", "Met een gebruikersnaam en wachtwoord (Basic)"),
+            ("api_key", "Met een API-sleutel in een header"),
+            ("oauth", "Met OAuth 2.0 (client credentials)"),
+        ],
+        thing="hoe NotifyNL inlogt",
+    )
+    username = GovukTextInputField("Gebruikersnaam")
+    password = GovukPasswordField("Wachtwoord")
+    api_key_header = GovukTextInputField("Naam van de header", default="X-Api-Key")
+    api_key = GovukPasswordField("API-sleutel")
+    token_endpoint = GovukTextInputField("Token-URL")
+    client_id = GovukTextInputField("Client-ID")
+    client_secret = GovukPasswordField("Client secret")
+    scope = GovukTextInputField("Scope (optioneel)")
+
+    def validate_endpoint_url(self, field):
+        if error := self._url_error(field.data, "Vul de endpoint-URL in"):
+            raise ValidationError(error)
+
+    def validate(self, *args, **kwargs):
+        valid = super().validate(*args, **kwargs)
+        auth_method = self.auth_method.data
+        if auth_method not in LETTER_ENDPOINT_AUTH_FIELDS:
+            return False
+
+        for name in LETTER_ENDPOINT_AUTH_FIELDS[auth_method]:
+            field = getattr(self, name)
+            if name == "token_endpoint":
+                if error := self._url_error(field.data, "Vul de token-URL in"):
+                    valid = self._add_error(field, error)
+            elif name in LETTER_ENDPOINT_SECRET_FIELDS:
+                if error := self._secret_error(name):
+                    valid = self._add_error(field, error)
+            elif name in LETTER_ENDPOINT_FIELD_NAMES and not field.data:
+                valid = self._add_error(field, f"Vul {LETTER_ENDPOINT_FIELD_NAMES[name]} in")
+
+        header = self.api_key_header.data
+        if (
+            auth_method == "api_key"
+            and header
+            and (
+                not LETTER_ENDPOINT_HEADER_PATTERN.fullmatch(header)
+                or header.lower() in LETTER_ENDPOINT_RESERVED_HEADERS
+            )
+        ):
+            valid = self._add_error(self.api_key_header, "Deze naam kan niet als header worden gebruikt")
+        return valid
+
+    @property
+    def stored_secrets_can_be_kept(self):
+        """Stored secrets are only kept while they keep going to the same place (the API enforces this too)."""
+        stored_auth_config = self.stored.get("auth_config") or {}
+        return bool(
+            self.stored.get("has_credentials")
+            and self.stored.get("auth_method") == self.auth_method.data
+            and self.stored.get("endpoint_url") == self.endpoint_url.data
+            and (
+                self.auth_method.data != "oauth" or stored_auth_config.get("token_endpoint") == self.token_endpoint.data
+            )
+        )
+
+    def api_data(self):
+        auth_method = self.auth_method.data
+        auth_config = {}
+        for name in LETTER_ENDPOINT_AUTH_FIELDS[auth_method]:
+            value = getattr(self, name).data
+            # the API keeps the stored secret when it gets an empty one
+            auth_config[name] = "" if value == LETTER_ENDPOINT_DUMMY_SECRET else value
+        return {
+            "provider": "rest-endpoint",
+            "endpoint_url": self.endpoint_url.data,
+            "auth_method": auth_method,
+            "auth_config": auth_config,
+            "address_placement": self.address_placement.data,
+        }
+
+    def add_api_error(self, message):
+        """Show an error the API gave when saving, for checks the admin can't do itself (like resolving hosts)."""
+        message = str(message)
+        token_endpoint = self.token_endpoint.data if self.auth_method.data == "oauth" else None
+        url_field = self.token_endpoint if token_endpoint and token_endpoint in message else self.endpoint_url
+        if "private or internal address" in message or "cannot be resolved" in message:
+            self._add_error(url_field, "NotifyNL kan dit adres niet gebruiken: het is onbekend of intern")
+        elif "must use https" in message:
+            self._add_error(url_field, "Het adres moet met https:// beginnen")
+        elif "must not contain credentials" in message:
+            self._add_error(url_field, LETTER_ENDPOINT_URL_CREDENTIALS_MESSAGE)
+        elif "API key header" in message:
+            self._add_error(self.api_key_header, "Deze naam kan niet als header worden gebruikt")
+        elif "entered again" in message:
+            for name in LETTER_ENDPOINT_AUTH_FIELDS[self.auth_method.data]:
+                if name in LETTER_ENDPOINT_SECRET_FIELDS:
+                    self._add_error(getattr(self, name), self._reenter_message(name))
+        else:
+            # also shown when testing, so it doesn't say anything was being saved
+            self._add_error(self.endpoint_url, f"Deze instellingen kunnen niet worden gebruikt: {message}")
+
+    def _url_error(self, url, missing_message):
+        if not url:
+            return missing_message
+        try:
+            parts = urlsplit(url)
+            hostname = parts.hostname
+        except ValueError:
+            hostname = None
+        else:
+            if parts.scheme not in (("https", "http") if self.allow_insecure else ("https",)):
+                return "Het adres moet met https:// beginnen"
+            if parts.username or parts.password:
+                return LETTER_ENDPOINT_URL_CREDENTIALS_MESSAGE
+        if not hostname:
+            return "Vul een volledig adres in, zoals https://print.voorbeeld.nl/brieven"
+        return None
+
+    def _secret_error(self, name):
+        value = getattr(self, name).data
+        if value == LETTER_ENDPOINT_DUMMY_SECRET:
+            if self.stored_secrets_can_be_kept:
+                return None
+            if self.stored.get("has_credentials"):
+                return self._reenter_message(name)
+        if not value or value == LETTER_ENDPOINT_DUMMY_SECRET:
+            return f"Vul {LETTER_ENDPOINT_FIELD_NAMES[name]} in"
+        return None
+
+    @staticmethod
+    def _reenter_message(name):
+        thing = LETTER_ENDPOINT_FIELD_NAMES[name]
+        return f"Vul {thing} opnieuw in: inloggegevens worden niet bewaard als een URL verandert"
+
+    @staticmethod
+    def _add_error(field, message):
+        field.errors = [*field.errors, message]
+        return False
+
+
+########################################################################################################################
+
+
+class MessageboxCpaUploadForm(StripWhitespaceForm):
+    purpose = GovukRadiosField(
+        "Waarvoor is deze CPA?",
+        choices=[
+            ("live", "Live: berichten van live API-sleutels naar de productieomgeving van Logius"),
+            ("team", "Team: berichten van team-API-sleutels naar de pre-productieomgeving van Logius"),
+        ],
+        thing="waarvoor de CPA is",
+    )
+    file = FileField_wtf(
+        "CPA (XML-bestand)",
+        validators=[
+            DataRequired(message="Kies een XML-bestand"),
+            FileAllowed(["xml"], "Kies een XML-bestand"),
+            FileSize(max_size=1_000_000, message="Het bestand mag niet groter zijn dan 1 MB"),
+        ],
+    )
+
+
+class MessageboxCpaUploadConfirmForm(StripWhitespaceForm):
+    # the CPA from the upload step, sent along again: notifynl-api checks it again before inserting it
+    cpa_xml = HiddenField(validators=[DataRequired()])
+    purpose = HiddenField(validators=[DataRequired()])
+
+
+class MessageboxCpaSelectForm(StripWhitespaceForm):
+    def __init__(self, cpa_ids, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cpa_id.choices = [(cpa_id, cpa_id) for cpa_id in cpa_ids]
+
+    cpa_id = GovukRadiosField("Welke CPA?", thing="een CPA")
+    message_type = GovukTextInputField(
+        "BerichtType",
+        # notifynl-api stores at most 255 characters
+        validators=[
+            DataRequired(message="Vul het BerichtType in"),
+            Length(max=255, message="Het BerichtType mag niet langer zijn dan 255 tekens"),
+        ],
+        param_extensions={
+            "hint": {
+                "text": (
+                    "Het BerichtType dat in het Berichtenbox Leveranciersportaal voor deze Logius-omgeving is "
+                    "aangemaakt. Een BerichtType in het API-verzoek gaat hier altijd voor."
+                )
+            }
+        },
+    )
+
+
+class MessageboxCpaSelectConfirmForm(StripWhitespaceForm):
+    cpa_id = HiddenField(validators=[DataRequired()])
+    message_type = HiddenField(validators=[DataRequired()])

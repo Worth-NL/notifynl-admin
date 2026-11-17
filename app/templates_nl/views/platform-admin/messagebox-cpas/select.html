@@ -1,0 +1,51 @@
+{% extends "views/platform-admin/_base_template.html" %}
+{% from "components/form.html" import form_wrapper %}
+{% from "components/page-footer.html" import page_footer %}
+
+{% block per_page_title %}
+  CPA kiezen voor {{ purpose_name }}
+{% endblock %}
+
+{% block platform_admin_content %}
+  <h1 class="heading-large">CPA kiezen voor {{ purpose_name }}</h1>
+
+  {% if eligible %}
+    {% call form_wrapper() %}
+      {{ form.cpa_id(param_extensions={"fieldset": {"legend": {"classes": "govuk-fieldset__legend--s"}}, "items": cpa_hints}) }}
+      {{ form.message_type(param_extensions={"classes": "govuk-!-width-one-half"}) }}
+      {{ page_footer('Kiezen') }}
+    {% endcall %}
+  {% elif ebms_core_unavailable %}
+    <div class="govuk-inset-text">ebms-core is nu niet bereikbaar, dus er kan nu geen CPA worden gekozen.</div>
+  {% else %}
+    <p class="govuk-body">ebms-core heeft geen CPA die hiervoor gebruikt mag worden.</p>
+  {% endif %}
+
+  <h2 class="govuk-heading-m">Eerder gekozen</h2>
+  {% if history %}
+    <table class="govuk-table">
+      <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+          <th scope="col" class="govuk-table__header">Wanneer</th>
+          <th scope="col" class="govuk-table__header">CPA</th>
+          <th scope="col" class="govuk-table__header">BerichtType</th>
+          <th scope="col" class="govuk-table__header">Door</th>
+        </tr>
+      </thead>
+      <tbody class="govuk-table__body">
+        {% for entry in history %}
+          <tr class="govuk-table__row">
+            <td class="govuk-table__cell">{{ entry.updated_at | format_datetime_amsterdam }}</td>
+            <td class="govuk-table__cell"><code class="govuk-!-font-size-16">{{ entry.cpa_id }}</code></td>
+            <td class="govuk-table__cell">{{ entry.message_type }}</td>
+            <td class="govuk-table__cell">
+              <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.user_information', user_id=entry.updated_by_id) }}">{{ user_names.get(entry.updated_by_id) or 'Onbekende gebruiker' }}</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="govuk-body">Nog nooit een CPA gekozen.</p>
+  {% endif %}
+{% endblock %}

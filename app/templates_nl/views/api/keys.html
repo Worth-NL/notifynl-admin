@@ -1,8 +1,8 @@
 {% extends "withnav_template.html" %}
-{% from "components/table.html" import list_table, field %}
 {% from "components/page-header.html" import page_header %}
 {% from "govuk_frontend_jinja/components/button/macro.html" import govukButton %}
 {% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
+{% from "govuk_frontend_jinja/components/tag/macro.html" import govukTag %}
 
 {% block service_page_title %}
   API-sleutels
@@ -16,45 +16,49 @@
 
   {{ page_header('API-sleutels') }}
 
-  <div class="body-copy-table">
-    {% call(item, row_number) list_table(
-      current_service.api_keys|sort,
-      empty_message="U heeft nog geen API-sleutels aangemaakt",
-      caption="API-sleutels",
-      caption_visible=false,
-      field_headings=[
-        'API-sleutels',
-        'Actie'
-      ],
-      field_headings_visible=False
-    ) %}
-      {% call field() %}
-        <div class="file-list">
-          {{ item.name }}
-          <div class="hint">
-            {% if item.key_type == 'normal' %}
-              Live – verzendt naar iedereen
-            {% elif item.key_type == 'team' %}
-              Team en gastenlijst – beperkt wie u kunt benaderen
-            {% elif item.key_type == 'test' %}
-              Test – simuleert het verzenden van berichten
+  {% if current_service.api_keys %}
+    <ul class="govuk-list api-key-list" aria-label="API-sleutels">
+      {% for item in current_service.api_keys|sort %}
+        <li class="api-key-list__item api-key">
+
+          <div class="api-key__header">
+            <h3 class="govuk-heading-s api-key__name">{{ item.name }}</h3>
+            {% if item.expiry_date %}
+              <span class="api-key__revoked">Ingetrokken op {{ item.expiry_date|format_datetime_human }}</span>
+            {% else %}
+              <a class="govuk-link govuk-link--destructive api-key__action-link" href="{{ url_for('main.revoke_api_key', service_id=current_service.id, key_id=item.id) }}">
+                Intrekken<span class="govuk-visually-hidden"> {{ item.name }}</span>
+              </a>
             {% endif %}
           </div>
-        </div>
-      {% endcall %}
-      {% if item.expiry_date %}
-        {% call field(align='right') %}
-          <span class='hint'>Ingetrokken op {{ item.expiry_date|format_datetime_short }}</span>
-        {% endcall %}
-      {% else %}
-        {% call field(align='right', status='error') %}
-          <a class="govuk-link govuk-link--destructive" href='{{ url_for('main.revoke_api_key', service_id=current_service.id, key_id=item.id) }}'>
-            Intrekken<span class="govuk-visually-hidden"> {{ item.name }}</span>
-          </a>
-        {% endcall %}
-      {% endif %}
-    {% endcall %}
-  </div>
+
+          {% if item.key_type == 'normal' %}
+            {{ govukTag({
+              "text": "Live – verzendt naar iedereen",
+              "classes": "govuk-tag--turquoise api-key__type",
+            }) }}
+          {% elif item.key_type == 'team' %}
+            {{ govukTag({
+              "text": "Team en gastenlijst – beperkt wie u kunt benaderen",
+              "classes": "govuk-tag--grey  api-key__type",
+            }) }}
+          {% elif item.key_type == 'test' %}
+            {{ govukTag({
+              "text": "Test – simuleert het verzenden van berichten",
+              "classes": "govuk-tag--purple api-key__type",
+            }) }}
+          {% endif %}
+
+          <p class="api-key__metadata">
+            Aangemaakt door {{ user_getter(item.created_by, capitalise_unknown=False) }}
+            <time datetime="{{ item.created_at }}">{{ item.created_at|format_delta }}</time>
+          </p>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="govuk-body">U heeft nog geen API-sleutels aangemaakt</p>
+  {% endif %}
 
   <div class="js-stick-at-bottom-when-scrolling">
     {{ govukButton({

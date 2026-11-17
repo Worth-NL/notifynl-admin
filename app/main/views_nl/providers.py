@@ -15,7 +15,7 @@ PROVIDER_PRIORITY_MEANING_SWITCHOVER = datetime(2019, 11, 29, 11, 0).isoformat()
 @user_is_platform_admin
 def view_providers():
     providers = provider_client.get_all_providers()["provider_details"]
-    domestic_email_providers, domestic_sms_providers, intl_sms_providers = [], [], []
+    domestic_email_providers, domestic_sms_providers, intl_sms_providers, letter_providers = [], [], [], []
     for provider in providers:
         if provider["notification_type"] == "sms":
             domestic_sms_providers.append(provider)
@@ -23,6 +23,8 @@ def view_providers():
                 intl_sms_providers.append(provider)
         elif provider["notification_type"] == "email":
             domestic_email_providers.append(provider)
+        elif provider["notification_type"] == "letter":
+            letter_providers.append(provider)
 
     add_monthly_traffic(domestic_sms_providers)
 
@@ -31,6 +33,7 @@ def view_providers():
         email_providers=domestic_email_providers,
         domestic_sms_providers=domestic_sms_providers,
         intl_sms_providers=intl_sms_providers,
+        letter_providers=letter_providers,
     )
 
 
@@ -54,9 +57,10 @@ def edit_sms_provider_ratio():
     form = AdminProviderRatioForm(providers)
 
     if form.validate_on_submit():
+        reason = form.reason
         for provider in providers:
             field = getattr(form, provider["identifier"])
-            provider_client.update_provider(provider["id"], field.data)
+            provider_client.update_provider(provider["id"], field.data, reason=reason.data)
         return redirect(url_for(".view_providers"))
 
     return render_template(

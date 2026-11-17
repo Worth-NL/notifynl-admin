@@ -45,7 +45,7 @@
           Het moet precies 1 kolom bevatten, genaamd ‘e-mailadres’ of ‘telefoonnummer’.
         </p>
         <p class="govuk-body">
-          Op dit moment heeft het {{ recipients._raw_column_headers|length }} kolommen met de namen {{ recipients._raw_column_headers[:512] | formatted_list }}.
+          Op dit moment heeft het {{ recipients._raw_column_headers|length }} kolommen met de namen {{ recipients._raw_column_headers | formatted_list(conjunction="en", max_items_shown=512, word_for_items_not_shown="meer") }}.
         </p>
 
       {% endif %}

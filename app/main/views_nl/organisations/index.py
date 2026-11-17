@@ -1,22 +1,20 @@
+import json
 from datetime import datetime
 from functools import partial
 
 from flask import flash, redirect, render_template, request, send_file, url_for
-from flask_login import current_user
 from notifications_python_client.errors import HTTPError
 from werkzeug.exceptions import abort
 
 from app import (
     current_organisation,
-    current_service,
+    current_user,
     org_invite_api_client,
     organisations_client,
 )
 from app.constants import PERMISSION_CAN_MAKE_SERVICES_LIVE
 from app.main import main
 from app.main.overrides_nl.forms import (
-    AddGPOrganisationForm,
-    AddNHSLocalOrganisationForm,
     AdminBillingDetailsForm,
     AdminNewOrganisationForm,
     AdminNotesForm,
@@ -24,6 +22,7 @@ from app.main.overrides_nl.forms import (
     AdminOrganisationGoLiveNotesForm,
     InviteOrgUserForm,
     OrganisationAgreementSignedForm,
+    OrganisationAreaBoundaryForm,
     OrganisationCrownStatusForm,
     OrganisationOrganisationTypeForm,
     OrganisationUserPermissionsForm,
@@ -70,72 +69,11 @@ def add_organisation():
         except HTTPError as e:
             org_name_exists_message = "Organisation name already exists"
             if e.status_code == 400 and org_name_exists_message in e.message:
-                form.name.errors.append("Deze organisatienaam bestaat al.")
+                form.name.errors.append("Deze organisatienaam bestaat al.")  # type: ignore[attr-defined]  # is there a better way?
             else:
                 raise e
 
     return render_template("views/organisations/add-organisation.html", form=form, error_summary_enabled=True)
-
-
-@main.route("/services/<uuid:service_id>/add-gp-organisation", methods=["GET", "POST"])
-@user_has_permissions("manage_service")
-def add_organisation_from_gp_service(service_id):
-    if (not current_service.organisation_type == Organisation.TYPE_NHS_GP) or current_service.organisation:
-        abort(403)
-
-    form = AddGPOrganisationForm(service_name=current_service.name)
-
-    if form.validate_on_submit():
-        try:
-            Organisation.create(
-                form.get_organisation_name(),
-                crown=False,
-                organisation_type="nhs_gp",
-                agreement_signed=False,
-            ).associate_service(service_id)
-        except HTTPError as e:
-            org_name_exists_message = "Organisation name already exists"
-            if e.status_code == 400 and org_name_exists_message in e.message:
-                flash("Deze organisatienaam bestaat al.")
-            else:
-                raise e
-
-        else:
-            return redirect(url_for(".service_agreement", service_id=service_id))
-
-    return render_template("views/organisations/add-gp-organisation.html", form=form, error_summary_enabled=True)
-
-
-@main.route("/services/<uuid:service_id>/add-nhs-local-organisation", methods=["GET", "POST"])
-@user_has_permissions("manage_service")
-def add_organisation_from_nhs_local_service(service_id):
-    if (not current_service.organisation_type == Organisation.TYPE_NHS_LOCAL) or current_service.organisation:
-        abort(403)
-
-    form = AddNHSLocalOrganisationForm(
-        organisation_choices=[
-            (organisation.id, organisation.name)
-            for organisation in sorted(AllOrganisations())
-            if organisation.organisation_type == Organisation.TYPE_NHS_LOCAL and organisation.active
-        ]
-    )
-
-    search_form = SearchByNameForm()
-
-    if form.validate_on_submit():
-        Organisation.from_id(form.organisations.data).associate_service(service_id)
-        return redirect(
-            url_for(
-                ".service_agreement",
-                service_id=service_id,
-            )
-        )
-
-    return render_template(
-        "views/organisations/add-nhs-local-organisation.html",
-        form=form,
-        _search_form=search_form,
-    )
 
 
 @main.route("/organisations/<uuid:org_id>", methods=["GET"])
@@ -290,9 +228,13 @@ def cancel_invited_org_user(org_id, invited_user_id):
 
 
 @main.route("/organisations/<uuid:org_id>/settings/", methods=["GET"])
-@user_is_platform_admin
+@user_has_permissions()  # [NotifyNL] org members see only the letter provider, every other setting stays admin-only
 def organisation_settings(org_id):
-    return render_template("views/organisations/organisation/settings/index.html")
+    # the organisation JSON only summarises its letter provider, without its login details or completeness
+    letter_provider = None
+    if current_organisation.letter_provider:
+        letter_provider = organisations_client.get_organisation_letter_provider(org_id)
+    return render_template("views/organisations/organisation/settings/index.html", letter_provider=letter_provider)
 
 
 @main.route("/organisations/<uuid:org_id>/settings/edit-name", methods=["GET", "POST"])
@@ -306,7 +248,7 @@ def edit_organisation_name(org_id):
         except HTTPError as http_error:
             error_msg = "Organisation name already exists"
             if http_error.status_code == 400 and error_msg in http_error.message:
-                form.name.errors.append("Deze organisatienaam is al in gebruik")
+                form.name.errors.append("Deze organisatienaam is al in gebruik")  # type: ignore[attr-defined]  # is there a better way?
             else:
                 raise http_error
         else:
@@ -331,6 +273,25 @@ def edit_organisation_type(org_id):
 
     return render_template(
         "views/organisations/organisation/settings/edit-type.html",
+        form=form,
+    )
+
+
+@main.route("/organisations/<uuid:org_id>/settings/edit-area-boundary", methods=["GET", "POST"])
+@user_is_platform_admin
+def edit_organisation_area_boundary(org_id):
+    form = OrganisationAreaBoundaryForm(
+        area_boundary=json.dumps(current_organisation.area_boundary, indent=2)
+        if current_organisation.area_boundary
+        else ""
+    )
+
+    if form.validate_on_submit():
+        current_organisation.update(area_boundary=form.area_boundary.data)
+        return redirect(url_for(".organisation_settings", org_id=org_id))
+
+    return render_template(
+        "views/organisations/organisation/settings/edit-area-boundary.html",
         form=form,
     )
 
@@ -541,7 +502,11 @@ def archive_organisation(org_id):
         try:
             organisations_client.archive_organisation(org_id)
         except HTTPError as e:
-            if e.status_code == 400 and ("team members" in e.message or "services" in e.message):
+            if (
+                e.status_code == 400
+                and isinstance(e.message, str)
+                and ("team members" in e.message or "services" in e.message)
+            ):
                 flash(e.message)
                 return organisation_settings(org_id)
             else:

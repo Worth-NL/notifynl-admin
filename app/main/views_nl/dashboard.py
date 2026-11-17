@@ -2,14 +2,15 @@ import calendar
 from datetime import UTC, datetime
 from functools import partial
 from itertools import groupby
+from typing import Literal
 
 from flask import Response, abort, jsonify, render_template, request, session, url_for
-from flask_login import current_user
 from werkzeug.utils import redirect
 
 from app import (
     billing_api_client,
     current_service,
+    current_user,
     notification_api_client,
     report_request_api_client,
     service_api_client,
@@ -91,7 +92,7 @@ def make_cache_key(query_hash, service_id):
 
 
 def cache_search_query(search_term, service_id, search_query_hash):
-    cached_search_term = ""
+    cached_search_term: str | Literal[False] = ""
 
     if search_query_hash:
         cached_query = redis_client.get(make_cache_key(search_query_hash, service_id))
@@ -216,10 +217,7 @@ def view_notifications(service_id, message_type=None):
             # reference gets too long for the hint text
             None: ["recipient"],
         }.get(message_type, ["recipient"])
-        + {
-            True: ["reference"],
-            False: [],
-        }.get(bool(current_service.api_keys)),
+        + (["reference"] if current_service.api_keys else []),
         download_link=download_link,
         can_download=can_download,
         report_request_feature_flag=report_request_feature_flag,
@@ -394,22 +392,45 @@ def get_status_filters(service, message_type, statistics, search_query):
 @main.route("/services/<uuid:service_id>/usage")
 @user_has_permissions("manage_service", allow_org_user=True)
 def usage(service_id):
+    # the usage itself loads from usage.json, so the page and its loading indicators show straight away
     year, current_financial_year = requested_and_current_financial_year(request)
-
-    free_sms_allowance = billing_api_client.get_free_sms_fragment_limit_for_year(service_id, year)
-    units = billing_api_client.get_monthly_usage_for_service(service_id, year)
-    yearly_usage = billing_api_client.get_annual_usage_for_service(service_id, year)
 
     return render_template(
         "views/usage.html",
-        months=list(get_monthly_usage_breakdown(year, units)),
         selected_year=year,
         years=get_tuples_of_financial_years(
             partial(url_for, ".usage", service_id=service_id),
             start=current_financial_year - 2,
             end=current_financial_year,
         ),
-        **get_annual_usage_breakdown(yearly_usage, free_sms_allowance),
+        updates_url=url_for("json_updates.usage_updates", service_id=service_id, year=year),
+        partials={
+            "usage": render_template("views/usage/_usage-lazy.html"),
+            "updated_at": render_template("views/usage/_updated-at.html"),
+        },
+    )
+
+
+@json_updates.route("/services/<uuid:service_id>/usage.json")
+@user_has_permissions("manage_service", allow_org_user=True)
+def usage_updates(service_id):
+    year, current_financial_year = requested_and_current_financial_year(request)
+
+    free_sms_allowance = billing_api_client.get_free_sms_fragment_limit_for_year(service_id, year)
+    units = billing_api_client.get_monthly_usage_for_service(service_id, year)
+    yearly_usage = billing_api_client.get_annual_usage_for_service(service_id, year)
+    # earlier years are complete, only the current one is as fresh as the last hourly refresh
+    updated_at = billing_api_client.get_usage_updated_at(service_id) if year == current_financial_year else None
+
+    return jsonify(
+        usage=render_template(
+            "views/usage/_usage.html",
+            months=list(get_monthly_usage_breakdown(year, units)),
+            **get_annual_usage_breakdown(yearly_usage, free_sms_allowance),
+        ),
+        updated_at=render_template("views/usage/_updated-at.html", updated_at=updated_at),
+        # the data changes hourly at most: one response is enough
+        stop=1,
     )
 
 
@@ -702,13 +723,13 @@ def get_monthly_usage_breakdown_for_letters(monthly_letters):
 
     for _key, rate_group in rate_groups:
         # rate_group is a one-time generator so must be converted to a list for reuse
-        rate_group = list(rate_group)
+        rate_group_list = list(rate_group)
 
         yield {
-            "sent": sum(x["notifications_sent"] for x in rate_group),
-            "rate": rate_group[0]["rate"],
-            "cost": sum(x["cost"] for x in rate_group),
-            "postage_description": get_monthly_usage_postage_description(rate_group[0]),
+            "sent": sum(x["notifications_sent"] for x in rate_group_list),
+            "rate": rate_group_list[0]["rate"],
+            "cost": sum(x["cost"] for x in rate_group_list),
+            "postage_description": get_monthly_usage_postage_description(rate_group_list[0]),
         }
 
 

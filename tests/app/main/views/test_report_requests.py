@@ -2,7 +2,6 @@ import json
 import uuid
 from io import BytesIO
 
-import pytest
 from flask import url_for
 from notifications_python_client.errors import HTTPError
 
@@ -73,7 +72,6 @@ def test_report_request_download_when_report_is_in_wrong_status(client_request, 
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_report_request_renders_preparing_template_if_report_in_progress(
     client_request, fake_uuid, mocker, mock_get_service_data_retention
 ):
@@ -112,7 +110,6 @@ def test_report_request_redirects_to_ready_if_report_stored(client_request, fake
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_report_request_renders_error_template_if_report_failed(client_request, fake_uuid, mocker):
     request = create_report_request(user_id=fake_uuid, status="failed")
     mocker.patch("app.report_request_api_client.get_report_request", return_value={"data": request})
@@ -127,7 +124,6 @@ def test_report_request_renders_error_template_if_report_failed(client_request, 
     assert page.select_one(".banner-dangerous h1").text.strip() == "We could not create your report"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_report_request_renders_unavailable_template_if_report_not_found(client_request, fake_uuid, mocker):
     mocker.patch(
         "app.report_request_api_client.get_report_request",
@@ -165,7 +161,6 @@ def test_report_request_raises_403_for_unauthorized_user(client_request, mocker)
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_report_ready_renders_ready_template_if_report_ready(
     client_request, fake_uuid, mocker, mock_get_service_data_retention
 ):
@@ -245,7 +240,6 @@ def test_report_ready_raises_403_for_unauthorized_user(client_request, mocker):
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_report_ready_redirects_not_found_when_report_does_not_exist(client_request, fake_uuid, mocker):
     request = create_report_request(
         user_id=fake_uuid, status="stored", parameter={"notification_type": "sms", "notification_status": "all"}

@@ -83,11 +83,11 @@
                   Adres mag maximaal {{ letter_max_address_lines }} regels bevatten
                 {% elif not item.as_postal_address.has_valid_last_line %}
                   {% if item.as_postal_address.allow_international_letters %}
-                    De laatste regel van het adres moet een postcode uit het VK of een ander land zijn
+                    De laatste regel van het adres moet een geldige postcode en plaatsnaam of een ander land zijn
                   {% elif item.as_postal_address.international %}
                     U heeft geen toestemming om brieven naar andere landen te versturen
                   {% else %}
-                    De laatste regel van het adres moet een geldige postcode uit het VK zijn
+                    De laatste regel van het adres moet een geldige postcode en plaatsnaam zijn
                   {% endif %}
                 {% elif item.as_postal_address.has_invalid_characters %}
                   Adresregels mogen niet beginnen met een van de volgende tekens:

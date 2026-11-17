@@ -20,7 +20,6 @@ from notifications_utils.pdf import pdf_page_count
 from notifications_utils.recipient_validation.notifynl.postal_address import PostalAddress
 from notifications_utils.recipients import RecipientCSV
 from pypdf.errors import PdfReadError
-from requests import RequestException
 
 from app import (
     current_service,
@@ -31,6 +30,7 @@ from app import (
 from app.main import main
 from app.main.overrides_nl.forms import CsvUploadForm, LetterUploadPostageForm, PDFUploadForm
 from app.models.contact_list import ContactList
+from app.notify_client.letter_upload_api_client_nl import letter_upload_api_client
 from app.s3_client.s3_letter_upload_client import (
     LetterNotFoundError,
     backup_original_letter_to_s3,
@@ -146,38 +146,32 @@ def upload_letter(service_id):
             page_count = pdf_page_count(BytesIO(pdf_file_bytes))
         except PdfReadError:
             current_app.logger.info("Invalid PDF uploaded for service %s", service_id, extra={"service_id": service_id})
-            form.file.errors.append("Notify cannot read this PDF - save a new copy and try again")
+            form.file.errors.append(  # type: ignore[attr-defined]  # is there a better way?
+                "Notify kan deze pdf niet lezen – sla een nieuwe kopie op en probeer het opnieuw"
+            )
 
         if not form.errors:
             original_filename = form.file.data.filename
             upload_id = uuid.uuid4()
             file_location = get_transient_letter_file_location(service_id, upload_id)
 
-            try:
-                response = template_preview_client.sanitise_letter(
-                    BytesIO(pdf_file_bytes),
-                    upload_id=upload_id,
-                    allow_international_letters=current_service.has_permission("international_letters"),
-                    letter_address_placement=current_service.letter_address_placement,
-                )
-                response.raise_for_status()
-            except RequestException as ex:
-                if ex.response is not None and ex.response.status_code == 400:
-                    validation_failed_message = response.json().get("message")
-                    invalid_pages = response.json().get("invalid_pages")
+            # [NotifyNL] through notifynl-api, which decides the address window the letter is checked against and
+            # whether the service may send it abroad
+            response = letter_upload_api_client.sanitise_letter(service_id, pdf_file_bytes, upload_id=upload_id)
+            if response.status_code == 400:
+                validation_failed_message = response.json().get("message")
+                invalid_pages = response.json().get("invalid_pages")
 
-                    status = "invalid"
-                    upload_letter_to_s3(
-                        pdf_file_bytes,
-                        file_location=file_location,
-                        status=status,
-                        page_count=page_count,
-                        filename=original_filename,
-                        message=validation_failed_message,
-                        invalid_pages=invalid_pages,
-                    )
-                else:
-                    raise ex
+                status = "invalid"
+                upload_letter_to_s3(
+                    pdf_file_bytes,
+                    file_location=file_location,
+                    status=status,
+                    page_count=page_count,
+                    filename=original_filename,
+                    message=validation_failed_message,
+                    invalid_pages=invalid_pages,
+                )
             else:
                 response = response.json()
                 recipient = response["recipient_address"]
@@ -248,6 +242,8 @@ def uploaded_letter_preview(service_id, file_id):
         invalid_pages,
         page_count,
         letter_address_placement=current_service.letter_address_placement,
+        address_placement_decided_by_provider=current_service.letter_address_placement_decided_by_provider,
+        letter_address_window=current_service.letter_address_window,
     )
 
     form = LetterUploadPostageForm(postage_zone=postal_address.postage)
@@ -276,7 +272,7 @@ def uploaded_letter_preview(service_id, file_id):
 @user_has_permissions("send_messages")
 def view_letter_upload_as_preview(service_id, file_id):
     try:
-        page = int(request.args.get("page"))
+        page = int(request.args.get("page") or "")
     except ValueError:
         abort(400)
 
@@ -284,9 +280,7 @@ def view_letter_upload_as_preview(service_id, file_id):
     invalid_pages = json.loads(metadata.get("invalid_pages", "[]"))
 
     if metadata.get("message") == "content-outside-printable-area" and page in invalid_pages:
-        return template_preview_client.get_png_for_invalid_pdf_page(
-            pdf_file, page, letter_address_placement=current_service.letter_address_placement
-        )
+        return letter_upload_api_client.get_png_for_invalid_pdf_page(service_id, pdf_file, page)
     else:
         return template_preview_client.get_png_for_valid_pdf_page(pdf_file, page)
 
@@ -499,8 +493,8 @@ def delete_contact_list(service_id, contact_list_id):
         )
 
     flash(
-        [
-            f"Are you sure you want to delete ‘{contact_list.original_file_name}’?",
+        [  # type: ignore[arg-type]  # lists as messages is a notify hack
+            f"Weet u zeker dat u ‘{contact_list.original_file_name}’ wilt verwijderen?",
         ],
         "delete",
     )

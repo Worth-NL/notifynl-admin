@@ -3,6 +3,7 @@ import re
 import urllib
 from datetime import UTC, datetime, timedelta
 from numbers import Number
+from zoneinfo import ZoneInfo
 
 import ago
 import dateutil
@@ -18,6 +19,8 @@ from notifications_utils.take import Take
 from notifications_utils.timezones import utc_string_to_aware_gmt_datetime
 
 from app.utils.time import is_less_than_days_ago
+
+AMSTERDAM = ZoneInfo("Europe/Amsterdam")
 
 DUTCH_WEEKDAYS = {
     "Monday": "maandag",
@@ -79,6 +82,14 @@ def format_datetime_relative(date):
 
 def format_datetime_numeric(date):
     return f"{format_date_numeric(date)} {format_time_24h(date)}"
+
+
+def format_datetime_amsterdam(date):
+    """
+    The API's UTC time as Dutch clock time. notifications_utils' utc_string_to_aware_gmt_datetime, behind the other
+    filters, still converts to Europe/London.
+    """
+    return utc_string_to_aware_gmt_datetime(date).astimezone(AMSTERDAM).strftime("%Y-%m-%d %H:%M")
 
 
 def format_date_numeric(date):
@@ -259,7 +270,17 @@ def format_notification_status_text(notification):
             return f"{reason} ({code})" if code else reason
     status = _notification_attr(notification, "status")
     template_type = _notification_attr(notification, "template")["template_type"]
+    # a letter its print provider accepted: say which one (notifynl-api's print_provider)
+    if template_type == "letter" and status == "sent":
+        return f"Geaccepteerd door {format_print_provider(_notification_attr(notification, 'print_provider'))}"
     return format_notification_status(status, template_type)
+
+
+def format_print_provider(print_provider):
+    return {
+        "pingen": "Pingen",
+        "rest-endpoint": "de printleverancier van uw organisatie",
+    }.get(print_provider, "de printleverancier")
 
 
 def format_notification_status_as_time(status, created, updated):
@@ -339,7 +360,7 @@ def nl2br(value):
 
 
 def format_pounds_as_currency(number: float):
-    return format_pennies_as_currency(round(number * 100), long=False)
+    return format_pennies_as_currency(round(number * 100, ndigits=0), long=False)
 
 
 def format_pennies_as_currency(pennies: int | float, long: bool) -> str:
@@ -348,7 +369,11 @@ def format_pennies_as_currency(pennies: int | float, long: bool) -> str:
     if pennies >= 100:
         pennies = round(pennies)
         return f"€{pennies // 100:,}.{pennies % 100:02}"
-    elif long:
+    # non-fractional cents should be reported as 82 cent, not 82.0 cent
+    if float(pennies) == float(int(pennies)):
+        pennies = round(pennies)
+
+    if long:
         return f"{pennies} cent"
 
     return f"{pennies} cent"
@@ -493,7 +518,7 @@ def iteration_count(count):
 def character_count(count):
     if count == 1:
         return "1 karakter"
-    return f"{format_thousands(count)} karakter"
+    return f"{format_thousands(count)} karakters"
 
 
 def format_billions(count):

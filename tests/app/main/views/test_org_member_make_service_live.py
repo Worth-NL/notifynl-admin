@@ -96,7 +96,6 @@ test_user_auth_combinations = (
 )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(*test_user_auth_combinations)
 def test_get_org_member_make_service_live_start(
     client_request,
@@ -156,7 +155,6 @@ def test_make_service_live_start_with_no_organisation(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_make_service_live_start_with_no_organisation_platform_admin(
     client_request,
     service_one,
@@ -180,7 +178,6 @@ def test_make_service_live_start_with_no_organisation_platform_admin(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(*test_user_auth_combinations)
 def test_get_org_member_make_service_live_service_name(
     client_request,
@@ -219,7 +216,6 @@ def test_get_org_member_make_service_live_service_name(
         assert button.text.strip() == "Continue"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_post_org_member_make_service_live_service_name_error_summary(
     client_request,
     service_one,
@@ -356,7 +352,6 @@ def test_post_org_member_make_service_live_service_name(
     assert mock_notify.call_args_list == expected_notify_calls
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(*test_user_auth_combinations)
 def test_get_org_member_make_service_live_unique_service(
     client_request,
@@ -394,7 +389,6 @@ def test_get_org_member_make_service_live_unique_service(
         assert button.text.strip() == "Continue"
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 def test_post_org_member_make_service_live_unique_service_error_summary(
     client_request,
     service_one,
@@ -479,7 +473,6 @@ def test_post_org_member_make_service_live_unique_service(
     )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "data, expected_redirect",
     (
@@ -531,7 +524,6 @@ def test_get_org_member_make_service_live_contact_user(
         )
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(*test_user_auth_combinations)
 def test_get_org_member_make_service_live_decision(
     client_request,
@@ -573,7 +565,6 @@ def test_get_org_member_make_service_live_decision(
         ]
 
 
-@pytest.mark.skip(reason="[NOTIFYNL] Translation issue")
 @pytest.mark.parametrize(
     "post_data, expected_error_message",
     (
@@ -684,7 +675,7 @@ def test_post_org_member_make_service_live_decision(
         _expected_redirect=url_for("main.organisation_dashboard", org_id=ORGANISATION_ID),
     )
 
-    mock_update_service.assert_any_call(  # update_service can be called more than once if emails aren't used
+    mock_update_service.assert_called_once_with(
         SERVICE_ONE_ID,
         **expected_arguments_to_update_service,
     )
@@ -704,46 +695,34 @@ def test_post_org_member_make_service_live_decision(
 
 
 @pytest.mark.parametrize(
-    "query_args, post_data, email_volume, template_types, expect_email_to_be_turned_off",
+    "email_volume, template_types, expect_email_to_be_turned_off",
     (
         (
-            {"name": "ok", "unique": "yes"},
-            {"enabled": True},
             2000,
             ["email", "email", "sms", "letter"],
             False,
         ),
         (
-            {"name": "ok", "unique": "yes"},
-            {"enabled": True},
             2000,
             ["sms", "letter"],
             False,
         ),
         (
-            {"name": "ok", "unique": "yes"},
-            {"enabled": True},
             0,
             ["email", "email", "sms", "letter"],
             False,
         ),
         (
-            {"name": "ok", "unique": "yes"},
-            {"enabled": True},
             0,
             ["sms", "letter"],
             True,
         ),
         (
-            {"name": "ok", "unique": "yes"},
-            {"enabled": True},
             None,
             ["email", "email", "sms", "letter"],
             False,
         ),
         (
-            {"name": "ok", "unique": "yes"},
-            {"enabled": True},
             None,
             ["sms", "letter"],
             True,
@@ -757,8 +736,6 @@ def test_post_org_member_make_service_live_turns_email_off_if_no_expected_volume
     service_one,
     mock_get_organisation,
     mock_update_service,
-    query_args,
-    post_data,
     email_volume,
     template_types,
     expect_email_to_be_turned_off,
@@ -779,17 +756,18 @@ def test_post_org_member_make_service_live_turns_email_off_if_no_expected_volume
     client_request.post(
         "main.org_member_make_service_live_decision",
         service_id=SERVICE_ONE_ID,
-        **query_args,
-        _data=post_data,
+        name="ok",
+        unique=True,
+        _data={"enabled": True},
         _expected_redirect=url_for("main.organisation_dashboard", org_id=ORGANISATION_ID),
     )
 
-    # update_service should always be called to make the service live
-    # if emails aren't being used it's called again, to remove the 'emails' service permission
+    assert app.service_api_client.update_service.call_count == 1
+
     update_service_kwargs = app.service_api_client.update_service.call_args.kwargs
+    assert update_service_kwargs["restricted"] is False
+
     if expect_email_to_be_turned_off:
-        assert app.service_api_client.update_service.call_count == 2
         assert "permissions" in update_service_kwargs and set(update_service_kwargs["permissions"]) == {"sms", "letter"}
     else:
-        assert app.service_api_client.update_service.call_count == 1
         assert "permissions" not in update_service_kwargs

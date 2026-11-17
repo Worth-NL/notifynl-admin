@@ -16,10 +16,7 @@ def features_nav():
                     "name": "Beveiliging",
                     "link": "main.guidance_security",
                 },
-                # {
-                #     "name": "Prestaties",
-                #     "link": "main.performance",
-                # },
+                # [NOTIFYNL] The "Prestaties" (performance) page is not offered in NL.
             ],
         },
         {
@@ -51,14 +48,8 @@ def pricing_nav():
                     "name": "Brieven",
                     "link": "main.guidance_pricing_letters",
                 },
-                # {
-                #     "name": "Hoe u kunt betalen",
-                #     "link": "main.guidance_how_to_pay",
-                # },
-                # {
-                #     "name": "Factureringsgegevens",
-                #     "link": "main.guidance_billing_details",
-                # },
+                # [NOTIFYNL] The "Hoe u kunt betalen" (how to pay) and "Factureringsgegevens"
+                # (billing details) pages are not offered in NL.
             ],
         },
         {
@@ -109,6 +100,10 @@ def using_notify_nav():
                 {
                     "name": "E-mailopmaak",
                     "link": "main.guidance_email_branding",
+                },
+                {
+                    "name": "Lettertypen",
+                    "link": "main.guidance_fonts_typefaces",
                 },
                 {
                     "name": "E-mails en brieven opmaken",

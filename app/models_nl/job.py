@@ -1,10 +1,10 @@
-from datetime import UTC, datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from notifications_utils.letter_timings import (
     CANCELLABLE_JOB_LETTER_STATUSES,
-    get_letter_timings,
+    LetterTimings,
     letter_can_be_cancelled,
 )
 from werkzeug.utils import cached_property
@@ -20,7 +20,6 @@ from app.utils_nl.letters import get_letter_printing_statement
 
 
 class Job(JSONModel):
-    id: Any
     service: Any
     template_name: str
     template_version: int
@@ -148,13 +147,7 @@ class Job(JSONModel):
     def letter_printing_statement(self):
         if self.upload_type != "letter_day":
             raise TypeError
-        return get_letter_printing_statement(
-            "created",
-            # We have to make the time just before 5:30pm because a
-            # letter uploaded at 5:30pm will be printed the next day
-            (self.created_at - timedelta(minutes=1)).astimezone(UTC).isoformat(),
-            long_form=False,
-        )
+        return get_letter_printing_statement("created", self.created_at, long_form=False)
 
     @cached_property
     def all_notifications(self):
@@ -175,7 +168,7 @@ class Job(JSONModel):
 
     @property
     def letter_timings(self):
-        return get_letter_timings(self.created_at, postage=self.postage)
+        return LetterTimings(self.created_at.replace(tzinfo=None), postage=self.postage)
 
     @property
     def failure_rate(self):

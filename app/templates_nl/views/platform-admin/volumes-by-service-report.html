@@ -1,7 +1,7 @@
 {% extends "views/platform-admin/_base_template.html" %}
 {% from "components/form.html" import form_wrapper %}
-{% from "components/table.html" import mapping_table, row, text_field %}
 {% from "components/page-footer.html" import page_footer %}
+{% from "govuk_frontend_jinja/components/summary-list/macro.html" import govukSummaryList %}
 
 {% block per_page_title %}
   Rapport volumes per dienst
@@ -22,28 +22,74 @@
   <h2 class="heading-medium">
     Gegevens opgenomen in het rapport
   </h2>
-<div class="bottom-gutter-3-2">
-    {% call mapping_table(
-      caption='Omschrijving van volumes per dienst',
-      field_headings=['Naam', 'Omschrijving'],
-      field_headings_visible=True,
-      caption_visible=False
-    ) %}
-      {% for column_heading, description in [
-        ('gratis tegoed', 'Gratis tegoed ingesteld voor de dienst. Dit is het laatste gratis tegoed binnen de opgegeven datumbereik'),
-        ('sms-meldingen', 'Het aantal verzonden sms-berichten door de dienst.'),
-        ('sms kostenunits', 'Het aantal sms-berichtfragmenten vermenigvuldigd met de tariefvermenigvuldiger verzonden door de dienst.'),
-        ('e-mail totaal', 'Het aantal verzonden e-mails door een dienst'),
-        ('brief totaal', 'Het aantal verzonden brieven door een dienst'),
-        ('briefkosten', 'De kosten van de brieven, tarief × aantal brieven'),
-        ('aantal vellen brieven', 'Het aantal verzonden vellen door een dienst')
-      ] %}
-        {% call row() %}
-          {{ text_field(column_heading) }}
-          {{ text_field(description) }}
-        {% endcall %}
-      {% endfor %}
-    {% endcall %}
-  </div>
+
+  {{ govukSummaryList({
+    "classes": "notify-summary-list govuk-!-margin-bottom-7 govuk-!-font-size-16",
+    "rows": [
+      {
+        "key": {
+          "classes": "notify-summary-list__key",
+          "text": "gratis tegoed"
+        },
+        "value": {
+          "text": "Gratis tegoed ingesteld voor de dienst. Dit is het laatste gratis tegoed binnen de opgegeven datumbereik"
+        }
+      },
+      {
+        "key": {
+          "classes": "notify-summary-list__key",
+          "text": "sms-meldingen"
+        },
+        "value": {
+          "text": "Het aantal verzonden sms-berichten door de dienst."
+        }
+      },
+      {
+        "key": {
+          "classes": "notify-summary-list__key",
+          "text": "sms kostenunits"
+        },
+        "value": {
+          "text": "Het aantal sms-berichtfragmenten vermenigvuldigd met de tariefvermenigvuldiger verzonden door de dienst."
+        }
+      },
+      {
+        "key": {
+          "classes": "notify-summary-list__key",
+          "text": "e-mail totaal"
+        },
+        "value": {
+          "text": "Het aantal verzonden e-mails door een dienst"
+        }
+      },
+      {
+        "key": {
+          "classes": "notify-summary-list__key",
+          "text": "brief totaal"
+        },
+        "value": {
+          "text": "Het aantal verzonden brieven door een dienst"
+        }
+      },
+      {
+        "key": {
+          "classes": "notify-summary-list__key",
+          "text": "briefkosten"
+        },
+        "value": {
+          "text": "De kosten van de brieven, tarief × aantal brieven"
+        }
+      },
+      {
+        "key": {
+          "classes": "notify-summary-list__key",
+          "text": "aantal vellen brieven"
+        },
+        "value": {
+          "text": "Het aantal verzonden vellen door een dienst"
+        }
+      }
+    ]
+  }) }}
 
 {% endblock %}

@@ -1,5 +1,7 @@
 import itertools
+from collections.abc import Sequence
 from string import ascii_uppercase
+from typing import Any, cast
 
 from flask import (
     abort,
@@ -10,15 +12,16 @@ from flask import (
     session,
     url_for,
 )
-from flask_login import current_user
 from notifications_python_client.errors import HTTPError
 from notifications_utils import SMS_CHAR_COUNT_LIMIT
 from notifications_utils.insensitive_dict import InsensitiveDict, InsensitiveSet
+from notifications_utils.recipient_validation.phone_number import PhoneNumber
 from notifications_utils.recipient_validation.postal_address import PostalAddress, address_lines_1_to_7_keys
 from notifications_utils.recipients import RecipientCSV, first_column_headings
 
 from app import (
     current_service,
+    current_user,
     job_api_client,
     nl2br,
     notification_api_client,
@@ -45,7 +48,7 @@ from app.utils import PermanentRedirect, should_skip_template_page
 from app.utils.csv import Spreadsheet, get_errors_for_csv
 from app.utils.user import user_has_permissions
 
-letter_address_columns = [column.replace("_", " ") for column in address_lines_1_to_7_keys]
+letter_address_columns = InsensitiveSet(column.replace("_", " ") for column in address_lines_1_to_7_keys)
 
 
 def get_example_csv_fields(column_headers, use_example_as_example, submitted_fields):
@@ -66,11 +69,7 @@ def get_example_csv_rows(template, use_example_as_example=True, submitted_fields
             for key in letter_address_columns
         ],
     }[template.template_type] + get_example_csv_fields(
-        (
-            placeholder
-            for placeholder in template.placeholders
-            if placeholder not in InsensitiveDict.from_keys(first_column_headings[template.template_type])
-        ),
+        template.placeholders - first_column_headings[template.template_type],
         use_example_as_example,
         submitted_fields,
     )
@@ -135,7 +134,7 @@ def send_messages(service_id, template_id):
             )
         )
 
-    column_headings = get_spreadsheet_column_headings_from_template(template)
+    column_headings = fields_to_fill_in(template)
 
     return render_template(
         "views/send.html",
@@ -152,9 +151,7 @@ def send_messages(service_id, template_id):
 def get_example_csv(service_id, template_id):
     template = current_service.get_template(template_id)
     return (
-        Spreadsheet.from_rows(
-            [get_spreadsheet_column_headings_from_template(template), get_example_csv_rows(template)]
-        ).as_csv_data,
+        Spreadsheet.from_rows([fields_to_fill_in(template), get_example_csv_rows(template)]).as_csv_data,
         200,
         {
             "Content-Type": "text/csv; charset=utf-8",
@@ -213,7 +210,7 @@ def set_sender(service_id, template_id):
 
     # extend all radios that need hint text
     form.sender.param_extensions = {"items": []}
-    for item_id, _item_value in form.sender.choices:
+    for item_id, _item_value in cast(Sequence[tuple[str, str]], form.sender.choices):
         if item_id in option_hints:
             extensions = {"hint": {"text": option_hints[item_id]}}
         else:
@@ -235,7 +232,7 @@ def set_sender(service_id, template_id):
 
 
 def get_sender_context(sender_details, template_type):
-    context = {
+    context: dict[str, Any] = {
         "email": {
             "title": "Where should replies come back to?",
             "description": "Where should replies come back to?",
@@ -347,6 +344,7 @@ def send_one_off_letter_address(service_id, template_id):
     )
 
     if form.validate_on_submit():
+        assert form.address.data is not None  # type narrowing
         session["placeholders"].update(PostalAddress(form.address.data).as_personalisation)
 
         placeholders = fields_to_fill_in(template)
@@ -443,6 +441,7 @@ def send_one_off_step(service_id, template_id, step_index):  # noqa: C901
                 )
             )
         if current_placeholder in InsensitiveDict(PostalAddress("").as_personalisation):
+            assert request.endpoint is not None  # type narrowing
             return redirect(
                 url_for(
                     request.endpoint,
@@ -479,6 +478,7 @@ def send_one_off_step(service_id, template_id, step_index):  # noqa: C901
             if all_placeholders_in_session(placeholders):
                 return get_notification_check_endpoint(service_id, template)
 
+            assert request.endpoint is not None  # type narrowing
             return redirect(
                 url_for(
                     request.endpoint,
@@ -609,9 +609,7 @@ def _check_messages(service_id, template_id, upload_id, preview_row, emergency_c
         max_initial_rows_shown=50,
         max_errors_shown=50,
         guestlist=(
-            itertools.chain.from_iterable(
-                [user.name, user.mobile_number, user.email_address] for user in Users(service_id)
-            )
+            itertools.chain.from_iterable([user.mobile_number, user.email_address] for user in Users(service_id))
             if current_service.trial_mode
             else None
         ),
@@ -782,10 +780,10 @@ def start_job(service_id, upload_id):
 
 def fields_to_fill_in(template, prefill_current_user=False):
     if "letter" == template.template_type:
-        return InsensitiveSet(letter_address_columns + list(template.placeholders))
+        return letter_address_columns | template.placeholders
 
     if not prefill_current_user:
-        return InsensitiveSet(first_column_headings[template.template_type] + list(template.placeholders))
+        return first_column_headings[template.template_type] | template.placeholders
 
     if template.template_type == "sms":
         session["recipient"] = current_user.mobile_number
@@ -794,7 +792,7 @@ def fields_to_fill_in(template, prefill_current_user=False):
         session["recipient"] = current_user.email_address
         session["placeholders"]["email address"] = current_user.email_address
 
-    return InsensitiveSet(template.placeholders)
+    return template.placeholders
 
 
 def get_normalised_placeholders_from_session():
@@ -955,9 +953,15 @@ def _check_notification(service_id, template_id, exception=None):
 
     template.values = get_recipient_and_placeholders_from_session(template.template_type)
 
+    rate_multiplier = None
+
+    if template.template_type == "sms":
+        rate_multiplier = PhoneNumber(session["recipient"]).get_international_phone_info().rate_multiplier
+
     return dict(
         template=template,
         back_link=back_link,
+        rate_multiplier=rate_multiplier,
         **(get_template_error_dict(exception) if exception else {}),
     )
 
@@ -1049,22 +1053,6 @@ def get_email_reply_to_address_from_session():
 def get_sms_sender_from_session():
     if session.get("sender_id"):
         return current_service.get_sms_sender(session["sender_id"])["sms_sender"]
-
-
-def get_spreadsheet_column_headings_from_template(template):
-    column_headings = []
-
-    if template.template_type == "letter":
-        # We want to avoid showing `address line 7` for now
-        recipient_columns = letter_address_columns
-    else:
-        recipient_columns = first_column_headings[template.template_type]
-
-    for column_heading in recipient_columns + list(template.placeholders):
-        if column_heading not in InsensitiveDict.from_keys(column_headings):
-            column_headings.append(column_heading)
-
-    return column_headings
 
 
 def get_recipient():

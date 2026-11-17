@@ -21,22 +21,32 @@
   <li>ze veiliger zijn</li>
   <li>e-mailbijlagen vaak als spam worden gemarkeerd</li></ul>
 
+  <p class="govuk-body">Voor extra beveiliging kunt u kiezen hoe lang het bestand beschikbaar is en ontvangers vragen hun e-mailadres te bevestigen voordat ze het kunnen downloaden.</p>
 
-  <p class="govuk-body">To send a file by email:</p>
- <ol class="govuk-list govuk-list--number">
-   <li>Go to the {{ service_link(current_service, 'main.choose_template', 'templates') }} page.</li>
-   <li>Add a new email template or choose an existing one.</li>
-   <li>Select <b class="govuk-!-font-weight-bold">Attach files</b>.</li>
-   <li>Upload your file.</li>
+  <h2 class="heading-medium">Zo verstuurt u een bestand per e-mail</h2>
+
+<ol class="govuk-list govuk-list--number">
+   <li>Ga naar de pagina {{ service_link(current_service, 'main.choose_template', 'Sjablonen') }}.</li>
+   <li>Maak een nieuw e-mailsjabloon of kies een bestaand sjabloon.</li>
+   <li>Selecteer <b class="govuk-!-font-weight-bold">Bestanden bijvoegen</b>.</li>
+   <li>Upload uw bestand.</li>
  </ol>
 
-  <p class="govuk-body">For security, choose how long the file is available for and ask recipients to confirm their email address before they can download it.</p>
+  <p class="govuk-body">U kunt de volgende bestandstypen uploaden:</p>
 
-  <h2 class="heading-medium">If you use the Notify API</h2>
+  <ul class="govuk-list govuk-list--bullet">
+    {% for label, extensions in allowed_file_formats.items() %}
+      <li>{{ label }} (.{{ extensions|join(", .") }})</li>
+    {% endfor %}
+  </ul>
+
+  <p class="govuk-body">Uw bestand moet kleiner zijn dan 2MB. <a class="govuk-link govuk-link--no-visited-state" href="{{url_for('main.support')}}">Neem contact op met het NotifyNL-team</a> als u andere bestandstypen wilt versturen.</p>
+
+  <h2 class="heading-medium">Als u de Notify API gebruikt</h2>
   <p class="govuk-body">
-    Follow the instructions in our
-    <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_api_documentation') }}">API documentation</a>.</p>
-  <p class="govuk-body">You’ll need a developer on your team to set it up for you.</p>
+    Volg de instructies in onze
+    <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.guidance_api_documentation') }}">API-documentatie</a>.</p>
+  <p class="govuk-body">Een ontwikkelaar in uw team moet dit voor u instellen.</p>
 
 
 {% endblock %}

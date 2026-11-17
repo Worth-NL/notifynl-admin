@@ -1,9 +1,9 @@
 from datetime import UTC, datetime
 
 from flask import current_app, render_template
-from flask_login import current_user
 from notifications_utils.international_billing_rates import INTERNATIONAL_BILLING_RATES
 
+from app import current_user
 from app.main import main
 from app.main.forms import SearchByNameForm
 from app.main.views.sub_navigation_dictionaries import pricing_nav
@@ -31,6 +31,14 @@ def guidance_pricing_text_messages():
         _search_form=SearchByNameForm(),
         navigation_links=pricing_nav(),
         last_updated=datetime(2026, 4, 1).astimezone(UTC),
+    )
+
+
+@main.route("/pricing/free-text-message-allowance")
+def guidance_pricing_free_text_message_allowance():
+    return render_template(
+        "views/guidance/pricing/free-text-message-allowance.html",
+        navigation_links=pricing_nav(),
     )
 
 

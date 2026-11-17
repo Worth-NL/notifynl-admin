@@ -97,6 +97,7 @@ def test_landing_page(
         service_id=SERVICE_ONE_ID,
         document_id=fake_uuid,
         key=uuid_to_base64(fake_uuid),
+        template_version=email_template["version"],
     )
     assert normalize_spaces(button.text) == "Doorgaan"
 

@@ -21,6 +21,7 @@ class Organisation(JSONModel):
     TYPE_NHS_CENTRAL = "nhs_central"
     TYPE_NHS_LOCAL = "nhs_local"
     TYPE_NHS_GP = "nhs_gp"
+    TYPE_NHS_NOTIFY = "nhs_notify"
     TYPE_EMERGENCY_SERVICE = "emergency_service"
     TYPE_SCHOOL_OR_COLLEGE = "school_or_college"
     TYPE_OTHER = "other"
@@ -29,8 +30,15 @@ class Organisation(JSONModel):
         TYPE_NHS_CENTRAL,
         TYPE_NHS_LOCAL,
         TYPE_NHS_GP,
+        TYPE_NHS_NOTIFY,
     )
 
+    TYPES_WITH_NO_FREE_ALLOWANCE = (
+        TYPE_NHS_GP,
+        TYPE_NHS_NOTIFY,
+    )
+
+    # NHS_NOTIFY is excluded - it should not appear as an option for people to pick
     TYPE_LABELS = {
         TYPE_CENTRAL: "Centrale overheid",
         TYPE_LOCAL: "Lokale overheid",
@@ -42,7 +50,9 @@ class Organisation(JSONModel):
         TYPE_OTHER: "Anders",
     }
 
-    id: Any
+    NHS_NOTIFY_ID = "477f8870-af2b-4b81-9a2c-1fad12028919"
+    NHS_NOTIFY_TYPE_LABEL = "NHS Notify"
+
     name: str
     active: bool
     crown: bool
@@ -63,6 +73,8 @@ class Organisation(JSONModel):
     billing_reference: str
     purchase_order_number: str
     notes: str
+    area_boundary: Any
+    letter_provider: Any = None  # [NotifyNL] None when talking to a notifynl-api without letter providers
     can_approve_own_go_live_requests: bool
     permissions: list
 
@@ -77,10 +89,6 @@ class Organisation(JSONModel):
     @classmethod
     def from_domain(cls, domain):
         return cls(organisations_client.get_organisation_by_domain(domain))
-
-    @classmethod
-    def from_service(cls, service_id):
-        return cls(organisations_client.get_service_organisation(service_id))
 
     @classmethod
     def create_from_form(cls, form):
@@ -124,6 +132,9 @@ class Organisation(JSONModel):
 
     @property
     def organisation_type_label(self):
+        if self.organisation_type == self.TYPE_NHS_NOTIFY:
+            return self.NHS_NOTIFY_TYPE_LABEL
+
         return self.TYPE_LABELS.get(self.organisation_type)
 
     @property
@@ -226,6 +237,15 @@ class Organisation(JSONModel):
         organisations_client.update_organisation(
             self.id, cached_service_ids=self.service_ids if delete_services_cache else None, **kwargs
         )
+
+    # [NotifyNL] organisation letter provider
+    @property
+    def letter_provider_identifier(self):
+        # an organisation without a letter provider sends its letters with Pingen
+        return (self.letter_provider or {}).get("identifier") or "pingen"
+
+    def set_letter_provider(self, **data):
+        return organisations_client.set_organisation_letter_provider(self.id, data, cached_service_ids=self.service_ids)
 
     def associate_service(self, service_id):
         organisations_client.update_service_organisation(service_id, self.id)

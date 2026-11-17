@@ -27,6 +27,7 @@ from app.main.views_nl import (  # noqa
     letter_branding,
     make_your_service_live,
     manage_users,
+    messagebox_cpas,
     new_password,
     notifications,
     org_member_make_service_live,
@@ -52,7 +53,7 @@ from app.main.views_nl import (  # noqa
     your_account,
     your_services,
 )
-from app.main.views_nl.organisations import branding, index  # noqa
+from app.main.views_nl.organisations import branding, index, letter_provider  # noqa
 from app.main.views_nl.service_settings import branding, index  # noqa
 
 

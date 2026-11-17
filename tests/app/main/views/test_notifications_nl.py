@@ -1,3 +1,6 @@
+import pytest
+from freezegun import freeze_time
+
 from tests.conftest import (
     SERVICE_ONE_ID,
     create_notification,
@@ -52,6 +55,48 @@ def test_notification_page_shows_validation_failed_precompiled_letter(
     )
 
 
+def test_notification_page_explains_an_address_outside_the_providers_window(
+    client_request,
+    active_user_with_permissions,
+    service_one,
+    mocker,
+    fake_uuid,
+):
+    notification = create_notification(
+        template_type="letter", notification_status="validation-failed", is_precompiled_letter=True
+    )
+    mocker.patch("app.notification_api_client.get_notification", return_value=notification)
+    metadata = {
+        "page_count": "1",
+        "status": "validation-failed",
+        "invalid_pages": "[1]",
+        "message": "address-placement-mismatch",
+    }
+    mocker.patch("app.main.views_nl.notifications.get_letter_file_data", return_value=("some letter content", metadata))
+    do_mock_get_page_counts_for_letter(mocker, count=1)
+    service_one["letter_address_placement"] = "60mm"
+    service_one["letter_address_placement_decided_by_provider"] = True
+    service_one["letter_address_window"] = {
+        "id": "pingen",
+        "provider": "pingen",
+        "address_placement": "60mm",
+        "address_area": {"x": 22, "y": 60, "width": 85.5, "height": 25.5},
+        "postage_area": {"x": 20, "y": 40, "width": 89.5, "height": 47.5},
+    }
+    client_request.login(active_user_with_permissions, service=service_one)
+
+    page = client_request.get(
+        "main.view_notification",
+        service_id=SERVICE_ONE_ID,
+        notification_id=fake_uuid,
+    )
+
+    assert normalize_spaces(page.select_one("p.notification-status-cancelled").text) == (
+        "De validatie is mislukt omdat het adres niet binnen het adresvenster van de printleverancier van uw "
+        "organisatie staat (22 mm van links, 60 mm van boven, 85,5 mm breed en 25,5 mm hoog)."
+    )
+
+
 def test_should_show_image_of_templated_letter_notification_that_failed_validation_because_letter_is_too_long(
     client_request,
     mocker,
@@ -73,3 +118,72 @@ def test_should_show_image_of_templated_letter_notification_that_failed_validati
         == "De validatie is mislukt omdat deze brief 11 pagina’s lang is.Brieven mogen maximaal 10 pagina’s bevatten "
         "(5 dubbelzijdige vellen papier)."
     )
+
+
+@pytest.mark.parametrize(
+    "status, print_provider, expected_status",
+    [
+        ("created", None, "Wordt naar de printleverancier gestuurd"),
+        ("sending", None, "Wordt naar de printleverancier gestuurd"),
+        ("sent", "pingen", "Geaccepteerd door Pingen"),
+        ("sent", "rest-endpoint", "Geaccepteerd door de printleverancier van uw organisatie"),
+        ("delivered", "pingen", "Aan de post overgedragen"),
+    ],
+)
+@freeze_time("2026-09-30 10:00")
+def test_letter_notification_page_says_where_the_letter_is(
+    client_request, mocker, fake_uuid, mock_get_page_counts_for_letter, status, print_provider, expected_status
+):
+    notification = create_notification(template_type="letter", notification_status=status)
+    notification["print_provider"] = print_provider
+    mocker.patch("app.notification_api_client.get_notification", return_value=notification)
+
+    page = client_request.get("main.view_notification", service_id=SERVICE_ONE_ID, notification_id=fake_uuid)
+
+    assert normalize_spaces(page.select_one("#letter-status").text) == expected_status
+    # letters go to their print provider within minutes: no daily print run
+    assert "17:30" not in page.text
+
+
+@pytest.mark.parametrize(
+    "status, expected_status, expects_delivery_estimate",
+    [
+        ("pending-virus-check", "Wordt gecontroleerd op virussen", True),
+        ("delivered", "Aan de post overgedragen", True),
+        ("returned-letter", "Teruggestuurd", False),
+    ],
+)
+@freeze_time("2026-09-30 10:00")
+def test_letter_notification_page_only_estimates_delivery_for_letters_on_their_way(
+    client_request,
+    mocker,
+    fake_uuid,
+    mock_get_page_counts_for_letter,
+    status,
+    expected_status,
+    expects_delivery_estimate,
+):
+    notification = create_notification(template_type="letter", notification_status=status)
+    mocker.patch("app.notification_api_client.get_notification", return_value=notification)
+
+    page = client_request.get("main.view_notification", service_id=SERVICE_ONE_ID, notification_id=fake_uuid)
+
+    assert normalize_spaces(page.select_one("#letter-status").text) == expected_status
+    assert bool(page.select_one("#estimated-delivery")) is expects_delivery_estimate
+
+
+@freeze_time("2026-09-30 10:00")
+def test_letter_notification_page_for_a_letter_with_a_virus(
+    client_request, mocker, fake_uuid, mock_get_page_counts_for_letter
+):
+    notification = create_notification(template_type="letter", notification_status="virus-scan-failed")
+    mocker.patch("app.notification_api_client.get_notification", return_value=notification)
+
+    page = client_request.get("main.view_notification", service_id=SERVICE_ONE_ID, notification_id=fake_uuid)
+
+    assert normalize_spaces(page.select_one("p.notification-status-cancelled").text) == (
+        "Virus gedetecteerd – Er is een virus gevonden in deze brief. Uw brief wordt niet verzonden."
+    )
+    assert not page.select_one("#letter-status")
+    assert not page.select_one("#estimated-delivery")
+    assert "Geschatte levering" not in page.text
