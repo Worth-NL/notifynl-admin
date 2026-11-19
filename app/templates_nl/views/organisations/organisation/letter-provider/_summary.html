@@ -75,6 +75,11 @@
     "value": {"text": letter_provider.address_placement|replace("mm", " mm") ~ " vanaf de bovenkant"},
     "actions": change_endpoint
   }) %}
+  {% set _ = rows.append({
+    "key": {"text": "Bezorgd bij aanname", "classes": "notify-summary-list__key notify-summary-list__key--35-100"},
+    "value": {"text": "Aan" if letter_provider.mark_delivered_on_acceptance else "Uit"},
+    "actions": change_endpoint
+  }) %}
 {% else %}
   {% set _ = rows.append({
     "key": {"text": "Adres op de brief", "classes": "notify-summary-list__key notify-summary-list__key--35-100"},
@@ -85,6 +90,13 @@
 {% if is_endpoint and not letter_provider.is_complete %}
   {{ govukWarningText({
     "text": "De instellingen van uw printleverancier zijn niet compleet. Tot ze compleet zijn, stuurt NotifyNL uw brieven naar Pingen, en moet het adres op 60 mm vanaf de bovenkant staan.",
+    "iconFallbackText": "Waarschuwing"
+  }) }}
+{% endif %}
+
+{% if is_endpoint and letter_provider.mark_delivered_on_acceptance %}
+  {{ govukWarningText({
+    "text": "Brieven worden als bezorgd gemarkeerd zodra uw printleverancier ze aanneemt. NotifyNL weet dan alleen dat uw printleverancier een brief heeft aangenomen, niet dat die is geprint en aan de post gegeven.",
     "iconFallbackText": "Waarschuwing"
   }) }}
 {% endif %}

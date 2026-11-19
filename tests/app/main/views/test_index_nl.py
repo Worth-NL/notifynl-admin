@@ -45,3 +45,15 @@ def test_letter_spec_address_block_matches_nl_address_windows(client_request):
     assert "Afmeting: 95,4 mm breed bij 40 mm hoog" in page
     assert "Adresplaatsing op de brief" in page
     assert "39,5 mm" not in page
+
+
+def test_letter_message_status_explains_delivery_that_is_not_confirmed(client_request):
+    # [NOTIFYNL] letters an organisation's print provider accepted, marked delivered as it never reports back
+    client_request.logout()
+    page = client_request.get("main.guidance_message_status", notification_type="letter")
+
+    rows = {
+        normalize_spaces(row.select("td, th")[0].text): normalize_spaces(row.select("td, th")[1].text)
+        for row in page.select("tbody tr")
+    }
+    assert "stuurt geen status terug" in rows["Bezorging niet bevestigd"]

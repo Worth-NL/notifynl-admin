@@ -2,6 +2,7 @@
 {% from "components/ajax-block.html" import ajax_block %}
 {% from "components/page-header.html" import page_header %}
 {% from "jinja_templates_overrides/components/back-link/macro.html" import govukBackLink %}
+{% from "govuk_frontend_jinja/components/warning-text/macro.html" import govukWarningText %}
 
 {% block service_page_title %}
   {{ 1|message_count_label(template.template_type, suffix='') | capitalize }}
@@ -77,7 +78,7 @@
           {% endif %}
         {% else %}
           <p class="govuk-body" id="letter-status">
-            {% if notification.status == 'sent' %}
+            {% if notification.status == 'sent' or notification|is_letter_delivered_on_acceptance %}
               {{ notification|format_notification_status_text }}
             {% elif notification.status == 'delivered' %}
               Aan de post overgedragen
@@ -93,6 +94,13 @@
             <p class="govuk-body" id="estimated-delivery">
               Geschatte levering door {{ notification.estimated_letter_delivery_date|format_day_of_week }} {{ notification.estimated_letter_delivery_date|format_date_short }}
             </p>
+          {% endif %}
+          {% if notification|is_letter_delivered_on_acceptance %}
+            {{ govukWarningText({
+              "text": "Uw printleverancier stuurt geen status terug. NotifyNL weet alleen dat de printleverancier deze brief heeft aangenomen, niet dat die is geprint en aan de post gegeven.",
+              "iconFallbackText": "Waarschuwing",
+              "attributes": {"id": "delivered-on-acceptance-warning"}
+            }) }}
           {% endif %}
         {% endif %}
       {% endif %}

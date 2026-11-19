@@ -73,6 +73,12 @@
       "hint": {"text": "Waar het adres moet staan voor de vensterenveloppen van uw printleverancier."}
     }) }}
 
+    {{ form.mark_delivered_on_acceptance }}
+    {{ govukWarningText({
+      "text": "NotifyNL weet dan alleen dat uw printleverancier een brief heeft aangenomen, niet dat die is geprint en aan de post gegeven. Zet dit alleen aan als uw printleverancier geen status terugstuurt.",
+      "iconFallbackText": "Waarschuwing"
+    }) }}
+
     {{ govukInsetText({
       "text": "Vraagt uw printleverancier om een clientcertificaat (mutual TLS)? Neem dan contact op met het platformteam van NotifyNL."
     }) }}

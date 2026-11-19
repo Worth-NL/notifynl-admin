@@ -2,7 +2,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.overrides_nl.formatters import format_notification_status_text, format_notification_type
+from app.overrides_nl.formatters import (
+    format_notification_status_text,
+    format_notification_type,
+    is_letter_delivered_on_acceptance,
+)
 
 
 @pytest.mark.parametrize(
@@ -98,3 +102,52 @@ def test_format_notification_status_text_for_other_letter_statuses_is_unchanged(
     notification = {"status": status, "template": {"template_type": "letter"}, "print_provider": "pingen"}
 
     assert format_notification_status_text(notification) == ""
+
+
+@pytest.mark.parametrize(
+    "print_provider, expected",
+    [
+        ("rest-endpoint", "Als bezorgd gemarkeerd na aanname door de printleverancier van uw organisatie"),
+        (None, "Als bezorgd gemarkeerd na aanname door de printleverancier"),
+    ],
+)
+def test_format_notification_status_text_for_a_letter_marked_delivered_on_acceptance(print_provider, expected):
+    notification = {
+        "status": "delivered",
+        "detailed_status_code": "delivered-on-acceptance",
+        "template": {"template_type": "letter"},
+        "print_provider": print_provider,
+    }
+
+    assert format_notification_status_text(notification) == expected
+    assert format_notification_status_text(SimpleNamespace(**notification)) == expected
+
+
+def test_format_notification_status_text_for_a_letter_that_failed_after_being_marked_delivered_on_acceptance():
+    # a failure the provider reports later replaces the status and the detailed status code
+    notification = {
+        "status": "permanent-failure",
+        "detailed_status_code": "print-provider-rejected",
+        "template": {"template_type": "letter"},
+        "print_provider": "rest-endpoint",
+    }
+
+    assert format_notification_status_text(notification) == "Permanente fout"
+
+
+@pytest.mark.parametrize(
+    "notification, expected",
+    [
+        ({"status": "delivered", "detailed_status_code": "delivered-on-acceptance"}, True),
+        (SimpleNamespace(status="delivered", detailed_status_code="delivered-on-acceptance"), True),
+        # reported delivered by the print provider itself
+        ({"status": "delivered", "detailed_status_code": None}, False),
+        # replaced by a failure the print provider reported later
+        ({"status": "permanent-failure", "detailed_status_code": "print-provider-rejected"}, False),
+        # notification JSON (or an object) without the key at all
+        ({"status": "delivered"}, False),
+        (SimpleNamespace(status="delivered"), False),
+    ],
+)
+def test_is_letter_delivered_on_acceptance(notification, expected):
+    assert is_letter_delivered_on_acceptance(notification) is expected
