@@ -27,7 +27,6 @@ from app import (
 )
 from app.main import json_updates, main
 from app.models.notification import Notification
-from app.overrides_nl.formatters import is_letter_delivered_on_acceptance
 from app.utils import (
     NOTIFICATION_TYPES,
     get_help_argument,
@@ -129,7 +128,6 @@ def view_notification(service_id, notification_id):
     return render_template(
         "views/notifications/notification.html",
         notification=notification,
-        delivered_on_acceptance=is_letter_delivered_on_acceptance(notification),
         message=error_message,
         template=template,
         updates_url=url_for(

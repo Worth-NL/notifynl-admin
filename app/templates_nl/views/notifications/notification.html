@@ -78,9 +78,7 @@
           {% endif %}
         {% else %}
           <p class="govuk-body" id="letter-status">
-            {% if notification.status == 'sent' %}
-              {{ notification|format_notification_status_text }}
-            {% elif delivered_on_acceptance %}
+            {% if notification.status == 'sent' or notification|is_letter_delivered_on_acceptance %}
               {{ notification|format_notification_status_text }}
             {% elif notification.status == 'delivered' %}
               Aan de post overgedragen
@@ -97,7 +95,7 @@
               Geschatte levering door {{ notification.estimated_letter_delivery_date|format_day_of_week }} {{ notification.estimated_letter_delivery_date|format_date_short }}
             </p>
           {% endif %}
-          {% if delivered_on_acceptance %}
+          {% if notification|is_letter_delivered_on_acceptance %}
             {{ govukWarningText({
               "text": "Uw printleverancier stuurt geen status terug. NotifyNL weet alleen dat de printleverancier deze brief heeft aangenomen, niet dat die is geprint en aan de post gegeven.",
               "iconFallbackText": "Waarschuwing",

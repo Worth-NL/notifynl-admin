@@ -2,7 +2,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.overrides_nl.formatters import format_notification_status_text, format_notification_type
+from app.overrides_nl.formatters import (
+    format_notification_status_text,
+    format_notification_type,
+    is_letter_delivered_on_acceptance,
+)
 
 
 @pytest.mark.parametrize(
@@ -129,3 +133,21 @@ def test_format_notification_status_text_for_a_letter_that_failed_after_being_ma
     }
 
     assert format_notification_status_text(notification) == "Permanente fout"
+
+
+@pytest.mark.parametrize(
+    "notification, expected",
+    [
+        ({"status": "delivered", "detailed_status_code": "delivered-on-acceptance"}, True),
+        (SimpleNamespace(status="delivered", detailed_status_code="delivered-on-acceptance"), True),
+        # reported delivered by the print provider itself
+        ({"status": "delivered", "detailed_status_code": None}, False),
+        # replaced by a failure the print provider reported later
+        ({"status": "permanent-failure", "detailed_status_code": "print-provider-rejected"}, False),
+        # notification JSON (or an object) without the key at all
+        ({"status": "delivered"}, False),
+        (SimpleNamespace(status="delivered"), False),
+    ],
+)
+def test_is_letter_delivered_on_acceptance(notification, expected):
+    assert is_letter_delivered_on_acceptance(notification) is expected
