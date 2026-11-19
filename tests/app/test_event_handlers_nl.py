@@ -20,6 +20,8 @@ def _letter_provider_event_kwargs():
         "new_auth_config": {"token_endpoint": "https://login.example.com/token", "client_id": "notify"},
         "old_address_placement": "60mm",
         "new_address_placement": "50mm",
+        "old_mark_delivered_on_acceptance": None,
+        "new_mark_delivered_on_acceptance": True,
         "credentials_entered": True,
     }
 

@@ -3627,6 +3627,20 @@ class OrganisationLetterEndpointForm(StripWhitespaceForm):
         ],
         thing="waar het adres staat",
     )
+    mark_delivered_on_acceptance = GovukCheckboxField(
+        "Brieven als bezorgd markeren zodra uw printleverancier ze aanneemt",
+        param_extensions={
+            "items": [
+                {
+                    "hint": {
+                        "text": "Alleen voor een printleverancier die geen status terugstuurt naar de callbackUrl. "
+                        "Anders blijven brieven op ‘Geaccepteerd door de printleverancier’ staan."
+                    },
+                    "classes": "govuk-checkboxes__item--single-with-hint",
+                }
+            ],
+        },
+    )
     auth_method = GovukRadiosField(
         "Hoe logt NotifyNL in bij uw printleverancier?",
         choices=[
@@ -3704,6 +3718,7 @@ class OrganisationLetterEndpointForm(StripWhitespaceForm):
             "auth_method": auth_method,
             "auth_config": auth_config,
             "address_placement": self.address_placement.data,
+            "mark_delivered_on_acceptance": self.mark_delivered_on_acceptance.data,
         }
 
     def add_api_error(self, message):

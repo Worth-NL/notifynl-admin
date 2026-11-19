@@ -22,6 +22,9 @@ from app.utils.time import is_less_than_days_ago
 
 AMSTERDAM = ZoneInfo("Europe/Amsterdam")
 
+# notifynl-api's detailed status code for a letter marked delivered when its print provider accepted it
+LETTER_DELIVERED_ON_ACCEPTANCE = "delivered-on-acceptance"
+
 DUTCH_WEEKDAYS = {
     "Monday": "maandag",
     "Tuesday": "dinsdag",
@@ -273,7 +276,21 @@ def format_notification_status_text(notification):
     # a letter its print provider accepted: say which one (notifynl-api's print_provider)
     if template_type == "letter" and status == "sent":
         return f"Geaccepteerd door {format_print_provider(_notification_attr(notification, 'print_provider'))}"
+    if template_type == "letter" and is_letter_delivered_on_acceptance(notification):
+        provider = format_print_provider(_notification_attr(notification, "print_provider"))
+        return f"Als bezorgd gemarkeerd na aanname door {provider}"
     return format_notification_status(status, template_type)
+
+
+def is_letter_delivered_on_acceptance(notification):
+    """
+    Marked delivered because the organisation's print provider accepted it, not because the provider reported it
+    delivered, as the provider never reports back (notifynl-api's mark_delivered_on_acceptance).
+    """
+    return (
+        _notification_attr(notification, "status") == "delivered"
+        and _notification_attr(notification, "detailed_status_code") == LETTER_DELIVERED_ON_ACCEPTANCE
+    )
 
 
 def format_print_provider(print_provider):

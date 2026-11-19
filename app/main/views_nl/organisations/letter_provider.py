@@ -223,6 +223,7 @@ def _form_data(stored_endpoint):
     data = {
         "endpoint_url": stored_endpoint["endpoint_url"],
         "address_placement": stored_endpoint["address_placement"],
+        "mark_delivered_on_acceptance": stored_endpoint.get("mark_delivered_on_acceptance", False),
         "auth_method": auth_method,
         **{name: value for name, value in stored_endpoint["auth_config"].items() if value},
     }
@@ -249,6 +250,8 @@ def _save_letter_provider(data, stored):
         new_auth_config=_without_secrets(letter_provider.get("auth_config")),
         old_address_placement=stored.get("address_placement"),
         new_address_placement=letter_provider["address_placement"],
+        old_mark_delivered_on_acceptance=stored.get("mark_delivered_on_acceptance"),
+        new_mark_delivered_on_acceptance=letter_provider.get("mark_delivered_on_acceptance"),
         # only whether login details were typed in: the secrets themselves never go in the event
         credentials_entered=any(data.get("auth_config", {}).get(name) for name in LETTER_ENDPOINT_SECRET_FIELDS),
     )

@@ -17,6 +17,7 @@ PINGEN = {
     "address_placement": "60mm",
     "has_credentials": False,
     "auth_config": {},
+    "mark_delivered_on_acceptance": False,
     "is_complete": True,
     "updated_at": None,
     "updated_by_id": None,
@@ -70,6 +71,7 @@ def mock_set_letter_provider(notify_admin, mocker):
             "auth_method": data["auth_method"],
             "auth_config": {name: value for name, value in data["auth_config"].items() if name not in SECRETS},
             "address_placement": data["address_placement"],
+            "mark_delivered_on_acceptance": data["mark_delivered_on_acceptance"],
         }
 
     return mocker.patch("app.organisations_client.set_organisation_letter_provider", side_effect=_set)
@@ -229,6 +231,7 @@ def test_letter_provider_page_for_a_rest_endpoint(logged_in_org_member, letter_p
         "Gebruikersnaam: denhaag",
         "Inloggegevens: Opgeslagen",
         "Adres op de brief: 50 mm vanaf de bovenkant",
+        "Bezorgd bij aanname: Uit",
     ]
     assert not page.select(".govuk-warning-text")
     assert "mutual TLS" in normalize_spaces(page.select_one(".govuk-inset-text").text)
@@ -403,6 +406,8 @@ def test_confirming_pingen_saves_it_and_logs_an_event(
         "new_auth_config": {},
         "old_address_placement": "50mm",
         "new_address_placement": "60mm",
+        "old_mark_delivered_on_acceptance": False,
+        "new_mark_delivered_on_acceptance": False,
         "credentials_entered": False,
     }
 
@@ -516,6 +521,7 @@ def test_saving_a_rest_endpoint(
             "auth_method": form_data["auth_method"],
             "auth_config": expected_auth_config,
             "address_placement": "50mm",
+            "mark_delivered_on_acceptance": False,
             "updated_by_id": org_member["id"],
         },
         cached_service_ids=["service-1"],
@@ -531,6 +537,56 @@ def test_saving_a_rest_endpoint(
     # never any credentials in the audit event
     assert not {"auth_config", *SECRETS} & set(event_data)
     assert not any(secret in str(event_data) for secret in ("hunter2", "k3y", "s3cret"))
+
+
+def test_saving_a_rest_endpoint_that_marks_letters_delivered_on_acceptance(
+    logged_in_org_member, letter_provider, mock_set_letter_provider, organisation_services, mock_events
+):
+    letter_provider.return_value = REST_ENDPOINT
+
+    logged_in_org_member.post(
+        "main.organisation_letter_endpoint",
+        org_id=ORGANISATION_ID,
+        _data={
+            "endpoint_url": ENDPOINT_URL,
+            "address_placement": "50mm",
+            "auth_method": "basic",
+            "username": "denhaag",
+            "password": "secret_set",
+            "mark_delivered_on_acceptance": "y",
+        },
+        _expected_redirect=url_for("main.organisation_settings", org_id=ORGANISATION_ID),
+    )
+
+    assert mock_set_letter_provider.call_args.args[1]["mark_delivered_on_acceptance"] is True
+    assert _event_changes(mock_events) == {"mark_delivered_on_acceptance": (False, True)}
+
+
+@pytest.mark.parametrize("stored, expected_checked", [(False, False), (True, True)])
+def test_rest_endpoint_page_shows_whether_letters_are_marked_delivered_on_acceptance(
+    logged_in_org_member, letter_provider, stored, expected_checked
+):
+    letter_provider.return_value = REST_ENDPOINT | {"mark_delivered_on_acceptance": stored}
+
+    page = logged_in_org_member.get("main.organisation_letter_endpoint", org_id=ORGANISATION_ID)
+
+    checkbox = page.select_one("input[name=mark_delivered_on_acceptance]")
+    assert checkbox.has_attr("checked") is expected_checked
+    warnings = [normalize_spaces(warning.text) for warning in page.select(".govuk-warning-text")]
+    # always shown, so it's read before switching it on
+    assert any("niet dat die is geprint en aan de post gegeven" in warning for warning in warnings)
+
+
+def test_letter_provider_page_warns_about_letters_marked_delivered_on_acceptance(logged_in_org_member, letter_provider):
+    letter_provider.return_value = REST_ENDPOINT | {"mark_delivered_on_acceptance": True}
+
+    page = logged_in_org_member.get("main.organisation_settings", org_id=ORGANISATION_ID)
+
+    rows = [normalize_spaces(row.text) for row in page.select(".govuk-summary-list__row")]
+    assert "Bezorgd bij aanname Aan Wijzigen de instellingen van uw printleverancier" in rows
+    warning = normalize_spaces(page.select_one(".govuk-warning-text").text)
+    assert "als bezorgd gemarkeerd zodra uw printleverancier ze aanneemt" in warning
+    assert "niet dat die is geprint en aan de post gegeven" in warning
 
 
 def _event_changes(mock_events):

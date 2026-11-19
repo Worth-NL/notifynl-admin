@@ -104,6 +104,8 @@ class Events:
         new_auth_config,
         old_address_placement,
         new_address_placement,
+        old_mark_delivered_on_acceptance,
+        new_mark_delivered_on_acceptance,
         credentials_entered,
     ) -> None:
         pass
