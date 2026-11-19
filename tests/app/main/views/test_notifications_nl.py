@@ -146,6 +146,42 @@ def test_letter_notification_page_says_where_the_letter_is(
 
 
 @pytest.mark.parametrize(
+    "detailed_status_code, expected_status, expects_warning",
+    [
+        (
+            "delivered-on-acceptance",
+            "Als bezorgd gemarkeerd na aanname door de printleverancier van uw organisatie",
+            True,
+        ),
+        # reported delivered by the print provider itself
+        (None, "Aan de post overgedragen", False),
+    ],
+)
+@freeze_time("2026-09-30 10:00")
+def test_letter_notification_page_for_a_letter_marked_delivered_on_acceptance(
+    client_request,
+    mocker,
+    fake_uuid,
+    mock_get_page_counts_for_letter,
+    detailed_status_code,
+    expected_status,
+    expects_warning,
+):
+    notification = create_notification(template_type="letter", notification_status="delivered")
+    notification["print_provider"] = "rest-endpoint"
+    notification["detailed_status_code"] = detailed_status_code
+    mocker.patch("app.notification_api_client.get_notification", return_value=notification)
+
+    page = client_request.get("main.view_notification", service_id=SERVICE_ONE_ID, notification_id=fake_uuid)
+
+    assert normalize_spaces(page.select_one("#letter-status").text) == expected_status
+    warning = page.select_one("#delivered-on-acceptance-warning")
+    assert bool(warning) is expects_warning
+    if expects_warning:
+        assert "niet dat die is geprint en aan de post gegeven" in normalize_spaces(warning.text)
+
+
+@pytest.mark.parametrize(
     "status, expected_status, expects_delivery_estimate",
     [
         ("pending-virus-check", "Wordt gecontroleerd op virussen", True),
