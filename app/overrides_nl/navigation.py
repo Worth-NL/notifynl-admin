@@ -429,6 +429,8 @@ class OrgNavigation(Navigation):
             "organisation_change_letter_provider",
             "organisation_confirm_pingen_letter_provider",
             "organisation_letter_endpoint",
+            "organisation_test_letter_endpoint",
+            "organisation_delete_test_letter_endpoint",
         },
         "team-members": {
             "edit_organisation_user",

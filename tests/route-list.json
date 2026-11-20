@@ -71,6 +71,8 @@
     "/organisations/<uuid:org_id>/letter-provider/change",
     "/organisations/<uuid:org_id>/letter-provider/pingen",
     "/organisations/<uuid:org_id>/letter-provider/rest-endpoint",
+    "/organisations/<uuid:org_id>/letter-provider/test-endpoint",
+    "/organisations/<uuid:org_id>/letter-provider/test-endpoint/delete",
     "/organisations/<uuid:org_id>/settings/",
     "/organisations/<uuid:org_id>/settings/archive",
     "/organisations/<uuid:org_id>/settings/edit-agreement",

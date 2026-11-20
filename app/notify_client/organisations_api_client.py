@@ -78,8 +78,23 @@ class OrganisationsClient(NotifyAdminAPIClient):
 
         return api_response["data"]
 
+    # [NotifyNL] organisation test letter endpoint, for letters sent with test and team keys
+    def get_organisation_test_letter_endpoint(self, org_id):
+        return self.get(url=f"/organisations/{org_id}/letter-provider/test-endpoint")["data"]
+
+    def set_organisation_test_letter_endpoint(self, org_id, data):
+        return self.post(url=f"/organisations/{org_id}/letter-provider/test-endpoint", data=data)["data"]
+
+    def delete_organisation_test_letter_endpoint(self, org_id):
+        return self.delete(url=f"/organisations/{org_id}/letter-provider/test-endpoint")
+
     def start_letter_endpoint_connection_test(self, org_id, data):
         return self.post(url=f"/organisations/{org_id}/letter-provider/connection-test", data=data)["data"]
+
+    def start_test_letter_endpoint_connection_test(self, org_id, data):
+        return self.post(url=f"/organisations/{org_id}/letter-provider/test-endpoint/connection-test", data=data)[
+            "data"
+        ]
 
     def get_letter_endpoint_connection_test(self, org_id, connection_test_id):
         return self.get(url=f"/organisations/{org_id}/letter-provider/connection-test/{connection_test_id}")["data"]
