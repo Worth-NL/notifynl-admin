@@ -96,7 +96,7 @@ def organisation_letter_endpoint(org_id):
         try:
             if "test_connection" in request.form:
                 connection_test = _start_connection_test(
-                    form, organisations_client.start_letter_endpoint_connection_test
+                    form, organisations_client.start_letter_endpoint_connection_test, is_test_endpoint=False
                 )
             else:
                 _save_letter_provider(form.api_data(), stored)
@@ -126,7 +126,7 @@ def organisation_test_letter_endpoint(org_id):
     form = OrganisationTestLetterEndpointForm(
         stored=stored,
         allow_insecure=current_app.config.get("LETTER_ENDPOINT_ALLOW_INSECURE", False),
-        **_test_endpoint_form_data(stored),
+        **_form_data(stored, live=False),
     )
 
     connection_test = None
@@ -140,7 +140,7 @@ def organisation_test_letter_endpoint(org_id):
         try:
             if "test_connection" in request.form:
                 connection_test = _start_connection_test(
-                    form, organisations_client.start_test_letter_endpoint_connection_test
+                    form, organisations_client.start_test_letter_endpoint_connection_test, is_test_endpoint=True
                 )
             else:
                 _save_test_letter_endpoint(form.api_data(), stored)
@@ -178,9 +178,9 @@ def organisation_delete_test_letter_endpoint(org_id):
         return redirect(url_for(".organisation_settings", org_id=org_id))
 
     flash(
-        "Weet u zeker dat u het testeindpunt wilt verwijderen? Nieuwe brieven met een testsleutel worden dan weer "
-        "alleen gesimuleerd en niet naar een printleverancier gestuurd. Brieven met een testsleutel die nog niet "
-        "zijn verstuurd, mislukken.",
+        "Weet u zeker dat u het testeindpunt wilt verwijderen? Nieuwe brieven met een testsleutel of teamsleutel "
+        "worden dan weer alleen gesimuleerd en niet naar een printleverancier gestuurd. Brieven met een testsleutel "
+        "of teamsleutel die nog niet zijn verstuurd, mislukken.",
         "delete",
     )
     return organisation_settings(org_id)
@@ -209,7 +209,7 @@ def _running_test_id(error):
         return None
 
 
-def _start_connection_test(form, start_test):
+def _start_connection_test(form, start_test, *, is_test_endpoint):
     tested_values = _tested_values(form)
     connection_test_id = start_test(current_organisation.id, tested_values | {"started_by_id": current_user.id})["id"]
     Events.start_letter_endpoint_connection_test(
@@ -219,6 +219,7 @@ def _start_connection_test(form, start_test):
         endpoint_url=tested_values["endpoint_url"],
         token_endpoint=tested_values["auth_config"].get("token_endpoint"),
         auth_method=tested_values["auth_method"],
+        is_test_endpoint=is_test_endpoint,
     )
     return _wait_for_connection_test(connection_test_id) | {"tested_values": _signature(tested_values)}
 
@@ -283,36 +284,21 @@ def _is_rest_endpoint(stored):
     return bool(stored) and stored["identifier"] == "rest-endpoint"
 
 
-def _form_data(stored_endpoint):
+def _form_data(stored_endpoint, *, live=True):
+    """The form's initial values. The test endpoint has no address placement or delivered-on-acceptance setting."""
     if not stored_endpoint:
-        return {"address_placement": "50mm"}  # 60mm is only for Pingen
+        return {"address_placement": "50mm"} if live else {}  # 60mm is only for Pingen
 
     auth_method = stored_endpoint["auth_method"]
     data = {
         "endpoint_url": stored_endpoint["endpoint_url"],
-        "address_placement": stored_endpoint["address_placement"],
-        "mark_delivered_on_acceptance": stored_endpoint.get("mark_delivered_on_acceptance", False),
         "auth_method": auth_method,
         **{name: value for name, value in stored_endpoint["auth_config"].items() if value},
     }
+    if live:
+        data["address_placement"] = stored_endpoint["address_placement"]
+        data["mark_delivered_on_acceptance"] = stored_endpoint.get("mark_delivered_on_acceptance", False)
     if stored_endpoint["has_credentials"]:
-        for name in LETTER_ENDPOINT_AUTH_FIELDS.get(auth_method, ()):
-            if name in LETTER_ENDPOINT_SECRET_FIELDS:
-                data[name] = LETTER_ENDPOINT_DUMMY_SECRET
-    return data
-
-
-def _test_endpoint_form_data(stored):
-    if not stored:
-        return {}
-
-    auth_method = stored["auth_method"]
-    data = {
-        "endpoint_url": stored["endpoint_url"],
-        "auth_method": auth_method,
-        **{name: value for name, value in stored["auth_config"].items() if value},
-    }
-    if stored["has_credentials"]:
         for name in LETTER_ENDPOINT_AUTH_FIELDS.get(auth_method, ()):
             if name in LETTER_ENDPOINT_SECRET_FIELDS:
                 data[name] = LETTER_ENDPOINT_DUMMY_SECRET

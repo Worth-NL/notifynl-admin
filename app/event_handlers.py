@@ -146,6 +146,7 @@ class Events:
         endpoint_url,
         token_endpoint,
         auth_method,
+        is_test_endpoint,
     ) -> None:
         pass
 

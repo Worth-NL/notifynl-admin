@@ -50,6 +50,7 @@ def _connection_test_event_kwargs():
         "endpoint_url": "https://print.example.com/letters",
         "token_endpoint": "https://login.example.com/token",
         "auth_method": "oauth",
+        "is_test_endpoint": True,
     }
 
 

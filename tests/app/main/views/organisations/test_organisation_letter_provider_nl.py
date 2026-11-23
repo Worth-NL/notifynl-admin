@@ -1015,6 +1015,7 @@ def test_testing_the_connection_uses_the_typed_values_and_saves_nothing(
         "endpoint_url": ENDPOINT_URL,
         "token_endpoint": None,
         "auth_method": "basic",
+        "is_test_endpoint": False,
     }
 
 
@@ -1570,7 +1571,10 @@ def test_any_organisation_member_can_manage_the_test_letter_endpoint(
 ):
     test_letter_endpoint.return_value = TEST_ENDPOINT
 
-    logged_in_org_member_with_test_endpoint.get(endpoint, org_id=ORGANISATION_ID)
+    page = logged_in_org_member_with_test_endpoint.get(endpoint, org_id=ORGANISATION_ID)
+
+    assert page.select_one("h1")
+    assert "Testeindpunt" in normalize_spaces(page.text)
 
 
 @pytest.mark.parametrize(
@@ -1795,6 +1799,53 @@ def test_testing_the_test_endpoint_connection_uses_the_test_endpoint_and_saves_n
     assert not start_connection_test.called
     assert not mock_set_test_letter_endpoint.called
     assert page.select_one("#connection-test-result")
+    # the audit log tells this test from one of the live endpoint
+    event_type, event_data = mock_events.call_args.args
+    assert event_type == "start_letter_endpoint_connection_test"
+    assert event_data["is_test_endpoint"] is True
+
+
+def test_testing_the_live_endpoint_connection_is_logged_as_not_a_test_endpoint(
+    logged_in_platform_admin, start_connection_test, connection_test_result, mock_events
+):
+    _test_connection(logged_in_platform_admin)
+
+    assert mock_events.call_args.args[1]["is_test_endpoint"] is False
+
+
+@pytest.mark.parametrize(
+    "state, expected_text",
+    [
+        ({"state": "running", "host": "print.example.com"}, "NotifyNL wacht nog op antwoord van print.example.com."),
+        (_finished("authorized"), "Verbonden en correct geautoriseerd"),
+    ],
+)
+def test_a_test_endpoint_connection_test_can_be_looked_up_again(
+    logged_in_platform_admin,
+    test_letter_endpoint,
+    start_test_endpoint_connection_test,
+    connection_test_result,
+    mock_events,
+    mocker,
+    state,
+    expected_text,
+):
+    mocker.patch("app.main.views_nl.organisations.letter_provider.CONNECTION_TEST_WAIT_SECONDS", 0)
+    connection_test_result.return_value = state
+
+    page = logged_in_platform_admin.post(
+        "main.organisation_test_letter_endpoint",
+        org_id=ORGANISATION_ID,
+        _data=CONNECTION_TEST_FORM | {"connection_test_id": CONNECTION_TEST_ID},
+        _expected_status=200,
+    )
+
+    # a lookup starts nothing: it only shows the result of the test that was started
+    assert not start_test_endpoint_connection_test.called
+    connection_test_result.assert_called_once_with(ORGANISATION_ID, CONNECTION_TEST_ID)
+    result = normalize_spaces(page.select_one("#connection-test-result").text)
+    assert expected_text in result
+    assert NOT_SAVED in result
 
 
 def test_members_cannot_test_the_test_endpoint_connection(

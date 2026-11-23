@@ -121,7 +121,7 @@
 
 {% if test_letter_endpoint and not test_letter_endpoint.is_complete %}
   {{ govukWarningText({
-    "text": "De instellingen van het testeindpunt zijn niet compleet. Tot ze compleet zijn, worden nieuwe brieven met een testsleutel alleen gesimuleerd. Brieven met een testsleutel die al zijn aangemaakt, mislukken.",
+    "text": "De instellingen van het testeindpunt zijn niet compleet. Tot ze compleet zijn, worden nieuwe brieven met een testsleutel of teamsleutel alleen gesimuleerd. Brieven met een testsleutel of teamsleutel die al zijn aangemaakt, mislukken.",
     "iconFallbackText": "Waarschuwing"
   }) }}
 {% endif %}
@@ -136,7 +136,7 @@
 
 {% if test_letter_endpoint %}
   <p class="govuk-body">
-    <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.organisation_delete_test_letter_endpoint', org_id=current_org.id) }}">Testeindpunt verwijderen<span class="govuk-visually-hidden"> en brieven met een testsleutel weer simuleren</span></a>
+    <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.organisation_delete_test_letter_endpoint', org_id=current_org.id) }}">Testeindpunt verwijderen<span class="govuk-visually-hidden"> en brieven met een testsleutel of teamsleutel weer simuleren</span></a>
   </p>
 {% endif %}
 
