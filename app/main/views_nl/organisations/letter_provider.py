@@ -17,6 +17,7 @@ from app.main.overrides_nl.forms import (
     LETTER_ENDPOINT_SECRET_FIELDS,
     OrganisationLetterEndpointForm,
     OrganisationLetterProviderForm,
+    OrganisationTestLetterEndpointForm,
 )
 from app.main.views_nl.organisations.index import organisation_settings
 from app.utils.user import user_has_permissions
@@ -94,7 +95,9 @@ def organisation_letter_endpoint(org_id):
     elif form.validate_on_submit():
         try:
             if "test_connection" in request.form:
-                connection_test = _start_connection_test(form)
+                connection_test = _start_connection_test(
+                    form, organisations_client.start_letter_endpoint_connection_test, is_test_endpoint=False
+                )
             else:
                 _save_letter_provider(form.api_data(), stored)
         except HTTPError as e:
@@ -114,6 +117,73 @@ def organisation_letter_endpoint(org_id):
         has_stored_endpoint=bool(stored_endpoint),
         connection_test=connection_test,
     )
+
+
+@main.route("/organisations/<uuid:org_id>/letter-provider/test-endpoint", methods=["GET", "POST"])
+@user_has_permissions()  # the same as the live letter provider: anyone who can change that can change this
+def organisation_test_letter_endpoint(org_id):
+    stored = organisations_client.get_organisation_test_letter_endpoint(org_id)
+    form = OrganisationTestLetterEndpointForm(
+        stored=stored,
+        allow_insecure=current_app.config.get("LETTER_ENDPOINT_ALLOW_INSECURE", False),
+        **_form_data(stored, live=False),
+    )
+
+    connection_test = None
+    if _connection_test_requested() and not current_user.platform_admin:
+        # a test presents NotifyNL's client certificate to the host that was typed in, and shows its reply
+        abort(403)
+
+    if request.form.get("connection_test_id"):
+        connection_test = _look_up_connection_test_again(form)
+    elif form.validate_on_submit():
+        try:
+            if "test_connection" in request.form:
+                connection_test = _start_connection_test(
+                    form, organisations_client.start_test_letter_endpoint_connection_test, is_test_endpoint=True
+                )
+            else:
+                _save_test_letter_endpoint(form.api_data(), stored)
+        except HTTPError as e:
+            if "test_connection" in request.form and (refused := _refusal(e)):
+                connection_test = refused
+            elif e.status_code != 400:
+                raise
+            else:
+                form.add_api_error(e.message)
+        else:
+            if connection_test is None:
+                return redirect(url_for(".organisation_settings", org_id=org_id))
+
+    return render_template(
+        "views/organisations/organisation/letter-provider/test-endpoint.html",
+        form=form,
+        has_stored_endpoint=bool(stored),
+        connection_test=connection_test,
+    )
+
+
+@main.route("/organisations/<uuid:org_id>/letter-provider/test-endpoint/delete", methods=["GET", "POST"])
+@user_has_permissions()
+def organisation_delete_test_letter_endpoint(org_id):
+    stored = organisations_client.get_organisation_test_letter_endpoint(org_id)
+    if not stored:
+        return redirect(url_for(".organisation_settings", org_id=org_id))
+
+    if request.method == "POST":
+        organisations_client.delete_organisation_test_letter_endpoint(org_id)
+        Events.delete_organisation_test_letter_endpoint(
+            organisation_id=org_id, deleted_by_id=current_user.id, old_endpoint_url=stored["endpoint_url"]
+        )
+        return redirect(url_for(".organisation_settings", org_id=org_id))
+
+    flash(
+        "Weet u zeker dat u het testeindpunt wilt verwijderen? Nieuwe brieven met een testsleutel of teamsleutel "
+        "worden dan weer alleen gesimuleerd en niet naar een printleverancier gestuurd. Brieven met een testsleutel "
+        "of teamsleutel die nog niet zijn verstuurd, mislukken.",
+        "delete",
+    )
+    return organisation_settings(org_id)
 
 
 def _connection_test_requested():
@@ -139,11 +209,9 @@ def _running_test_id(error):
         return None
 
 
-def _start_connection_test(form):
+def _start_connection_test(form, start_test, *, is_test_endpoint):
     tested_values = _tested_values(form)
-    connection_test_id = organisations_client.start_letter_endpoint_connection_test(
-        current_organisation.id, tested_values | {"started_by_id": current_user.id}
-    )["id"]
+    connection_test_id = start_test(current_organisation.id, tested_values | {"started_by_id": current_user.id})["id"]
     Events.start_letter_endpoint_connection_test(
         organisation_id=current_organisation.id,
         started_by_id=current_user.id,
@@ -151,6 +219,7 @@ def _start_connection_test(form):
         endpoint_url=tested_values["endpoint_url"],
         token_endpoint=tested_values["auth_config"].get("token_endpoint"),
         auth_method=tested_values["auth_method"],
+        is_test_endpoint=is_test_endpoint,
     )
     return _wait_for_connection_test(connection_test_id) | {"tested_values": _signature(tested_values)}
 
@@ -215,23 +284,44 @@ def _is_rest_endpoint(stored):
     return bool(stored) and stored["identifier"] == "rest-endpoint"
 
 
-def _form_data(stored_endpoint):
+def _form_data(stored_endpoint, *, live=True):
+    """The form's initial values. The test endpoint has no address placement or delivered-on-acceptance setting."""
     if not stored_endpoint:
-        return {"address_placement": "50mm"}  # 60mm is only for Pingen
+        return {"address_placement": "50mm"} if live else {}  # 60mm is only for Pingen
 
     auth_method = stored_endpoint["auth_method"]
     data = {
         "endpoint_url": stored_endpoint["endpoint_url"],
-        "address_placement": stored_endpoint["address_placement"],
-        "mark_delivered_on_acceptance": stored_endpoint.get("mark_delivered_on_acceptance", False),
         "auth_method": auth_method,
         **{name: value for name, value in stored_endpoint["auth_config"].items() if value},
     }
+    if live:
+        data["address_placement"] = stored_endpoint["address_placement"]
+        data["mark_delivered_on_acceptance"] = stored_endpoint.get("mark_delivered_on_acceptance", False)
     if stored_endpoint["has_credentials"]:
         for name in LETTER_ENDPOINT_AUTH_FIELDS.get(auth_method, ()):
             if name in LETTER_ENDPOINT_SECRET_FIELDS:
                 data[name] = LETTER_ENDPOINT_DUMMY_SECRET
     return data
+
+
+def _save_test_letter_endpoint(data, stored):
+    test_endpoint = organisations_client.set_organisation_test_letter_endpoint(
+        current_organisation.id, {**data, "updated_by_id": current_user.id}
+    )
+    stored = stored or {}
+    Events.update_organisation_test_letter_endpoint(
+        organisation_id=current_organisation.id,
+        updated_by_id=current_user.id,
+        old_endpoint_url=stored.get("endpoint_url"),
+        new_endpoint_url=test_endpoint["endpoint_url"],
+        old_auth_method=stored.get("auth_method"),
+        new_auth_method=test_endpoint["auth_method"],
+        old_auth_config=_without_secrets(stored.get("auth_config")),
+        new_auth_config=_without_secrets(test_endpoint.get("auth_config")),
+        # only whether login details were typed in: the secrets themselves never go in the event
+        credentials_entered=any(data.get("auth_config", {}).get(name) for name in LETTER_ENDPOINT_SECRET_FIELDS),
+    )
 
 
 def _save_letter_provider(data, stored):

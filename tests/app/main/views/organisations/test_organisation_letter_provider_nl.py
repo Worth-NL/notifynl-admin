@@ -34,6 +34,7 @@ REST_ENDPOINT = PINGEN | {
 }
 # what notifynl-api's serialize_summary puts in the organisation JSON
 SUMMARY_FIELDS = ("identifier", "display_name", "endpoint_url", "auth_method", "address_placement", "has_credentials")
+TEST_SUMMARY_FIELDS = ("endpoint_url", "auth_method", "has_credentials")  # of the test endpoint
 SECRETS = {"password", "api_key", "client_secret"}
 
 
@@ -43,19 +44,23 @@ def org_member():
 
 
 @pytest.fixture
-def letter_provider(notify_admin, mocker):
+def letter_provider(notify_admin, mocker, test_letter_endpoint):
     """The organisation's letter provider as notifynl-api returns it: set .return_value to change it."""
     return mocker.patch("app.organisations_client.get_organisation_letter_provider", return_value=PINGEN)
 
 
 @pytest.fixture
-def mock_get_organisation(notify_admin, mocker, letter_provider):
+def mock_get_organisation(notify_admin, mocker, letter_provider, test_letter_endpoint):
     """Overrides the conftest fixture: the organisation JSON summarises the letter provider it has stored"""
 
     def _get_organisation(org_id):
         stored = letter_provider.return_value
         summary = {field: stored[field] for field in SUMMARY_FIELDS} if stored else None
-        return organisation_json(org_id, "Test organisation", letter_provider=summary)
+        test_endpoint = test_letter_endpoint.return_value
+        test_summary = {field: test_endpoint[field] for field in TEST_SUMMARY_FIELDS} if test_endpoint else None
+        return organisation_json(
+            org_id, "Test organisation", letter_provider=summary, test_letter_endpoint=test_summary
+        )
 
     return mocker.patch("app.organisations_client.get_organisation", side_effect=_get_organisation)
 
@@ -153,7 +158,7 @@ def test_organisation_members_see_only_the_letter_provider_in_the_settings(logge
 
     assert normalize_spaces(page.select_one("h1").text) == "Instellingen"
     keys = [normalize_spaces(key.text) for key in page.select(".govuk-summary-list__key")]
-    assert keys == ["Printleverancier", "Adres op de brief"]
+    assert keys == ["Printleverancier", "Adres op de brief", "Testeindpunt"]
     assert not page.select_one("a[href$='/settings/archive']")
 
 
@@ -170,7 +175,7 @@ def test_platform_admins_see_every_organisation_setting_and_then_the_letter_prov
 
     keys = [normalize_spaces(key.text) for key in page.select(".govuk-summary-list__key")]
     assert keys[0] == "Naam"
-    assert keys[-3:] == ["Gebiedsgrens", "Printleverancier", "Adres op de brief"]
+    assert keys[-4:] == ["Gebiedsgrens", "Printleverancier", "Adres op de brief", "Testeindpunt"]
     assert page.select_one("a[href$='/settings/archive']")
 
 
@@ -207,6 +212,7 @@ def test_letter_provider_page_for_pingen(logged_in_org_member, letter_provider, 
     assert rows == [
         "Printleverancier Pingen Wijzigen printleverancier",
         "Adres op de brief 60 mm vanaf de bovenkant (vast bij Pingen)",
+        "Testeindpunt Niet ingesteld Instellen het testeindpunt",
     ]
     assert not page.select(".govuk-warning-text")
     # nothing stored, nothing to fetch: the organisation JSON already says so
@@ -232,6 +238,7 @@ def test_letter_provider_page_for_a_rest_endpoint(logged_in_org_member, letter_p
         "Inloggegevens: Opgeslagen",
         "Adres op de brief: 50 mm vanaf de bovenkant",
         "Bezorgd bij aanname: Uit",
+        "Testeindpunt: Niet ingesteld",
     ]
     assert not page.select(".govuk-warning-text")
     assert "mutual TLS" in normalize_spaces(page.select_one(".govuk-inset-text").text)
@@ -1008,6 +1015,7 @@ def test_testing_the_connection_uses_the_typed_values_and_saves_nothing(
         "endpoint_url": ENDPOINT_URL,
         "token_endpoint": None,
         "auth_method": "basic",
+        "is_test_endpoint": False,
     }
 
 
@@ -1515,3 +1523,363 @@ def test_testing_the_connection_for_an_organisation_the_api_does_not_know(
     start_connection_test.side_effect = HTTPError(response=response, message="not found")
 
     _test_connection(logged_in_platform_admin, _expected_status=404)
+
+
+TEST_ENDPOINT_URL = "https://test.print.example.com/letters"
+TEST_ENDPOINT = {
+    "organisation_id": ORGANISATION_ID,
+    "endpoint_url": TEST_ENDPOINT_URL,
+    "auth_method": "basic",
+    "has_credentials": True,
+    "auth_config": {"username": "denhaag-test"},
+    "is_complete": True,
+    "updated_at": "2026-11-18T12:00:00.000000Z",
+    "updated_by_id": None,
+}
+
+
+@pytest.fixture
+def test_letter_endpoint(notify_admin, mocker):
+    """The organisation test endpoint as notifynl-api returns it (None without one), set .return_value to change."""
+    return mocker.patch("app.organisations_client.get_organisation_test_letter_endpoint", return_value=None)
+
+
+@pytest.fixture
+def mock_set_test_letter_endpoint(notify_admin, mocker):
+    def _set(org_id, data):
+        # like notifynl-api: what was saved, without the secrets
+        return TEST_ENDPOINT | {
+            "endpoint_url": data["endpoint_url"],
+            "auth_method": data["auth_method"],
+            "auth_config": {name: value for name, value in data["auth_config"].items() if name not in SECRETS},
+        }
+
+    return mocker.patch("app.organisations_client.set_organisation_test_letter_endpoint", side_effect=_set)
+
+
+@pytest.fixture
+def logged_in_org_member_with_test_endpoint(logged_in_org_member, test_letter_endpoint):
+    return logged_in_org_member
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    ["main.organisation_test_letter_endpoint", "main.organisation_delete_test_letter_endpoint"],
+)
+def test_any_organisation_member_can_manage_the_test_letter_endpoint(
+    logged_in_org_member_with_test_endpoint, test_letter_endpoint, endpoint
+):
+    test_letter_endpoint.return_value = TEST_ENDPOINT
+
+    page = logged_in_org_member_with_test_endpoint.get(endpoint, org_id=ORGANISATION_ID)
+
+    assert page.select_one("h1")
+    assert "Testeindpunt" in normalize_spaces(page.text)
+
+
+@pytest.mark.parametrize(
+    "endpoint, method",
+    [
+        ("main.organisation_test_letter_endpoint", "get"),
+        ("main.organisation_test_letter_endpoint", "post"),
+        ("main.organisation_delete_test_letter_endpoint", "post"),
+    ],
+)
+def test_people_outside_the_organisation_cannot_manage_the_test_letter_endpoint(
+    client_request, mock_get_organisation, test_letter_endpoint, endpoint, method
+):
+    client_request.login(create_user(id=sample_uuid(), organisations=[]))
+
+    getattr(client_request, method)(endpoint, org_id=ORGANISATION_ID, _expected_status=403)
+
+
+def test_organisation_settings_show_the_test_letter_endpoint(logged_in_org_member, test_letter_endpoint):
+    test_letter_endpoint.return_value = TEST_ENDPOINT
+
+    page = logged_in_org_member.get("main.organisation_settings", org_id=ORGANISATION_ID)
+
+    text = normalize_spaces(page.text)
+    assert "Testeindpunt" in text
+    assert TEST_ENDPOINT_URL in text
+    assert "denhaag-test" not in text
+    assert "Testeindpunt verwijderen" in text
+
+
+def test_organisation_settings_offer_to_set_up_a_test_letter_endpoint(logged_in_org_member, test_letter_endpoint):
+    page = logged_in_org_member.get("main.organisation_settings", org_id=ORGANISATION_ID)
+
+    assert "Testeindpunt Niet ingesteld Instellen" in normalize_spaces(page.text)
+
+
+def test_test_letter_endpoint_page_never_shows_stored_secrets(logged_in_org_member, test_letter_endpoint):
+    test_letter_endpoint.return_value = TEST_ENDPOINT
+
+    page = logged_in_org_member.get("main.organisation_test_letter_endpoint", org_id=ORGANISATION_ID)
+
+    assert page.select_one("input[name=endpoint_url]")["value"] == TEST_ENDPOINT_URL
+    assert page.select_one("input[name=username]")["value"] == "denhaag-test"
+    assert page.select_one("input[name=password]")["value"] == "secret_set"
+    # test letters are laid out like live ones
+    assert not page.select("input[name=address_placement]")
+
+
+def test_saving_the_test_letter_endpoint(
+    logged_in_org_member,
+    org_member,
+    test_letter_endpoint,
+    mock_set_test_letter_endpoint,
+    mock_events,
+    mock_set_letter_provider,
+):
+    logged_in_org_member.post(
+        "main.organisation_test_letter_endpoint",
+        org_id=ORGANISATION_ID,
+        _data={
+            "endpoint_url": TEST_ENDPOINT_URL,
+            "auth_method": "basic",
+            "username": "denhaag-test",
+            "password": "hunter2",
+        },
+        _expected_redirect=url_for("main.organisation_settings", org_id=ORGANISATION_ID),
+    )
+
+    saved = mock_set_test_letter_endpoint.call_args.args[1]
+    assert saved == {
+        "endpoint_url": TEST_ENDPOINT_URL,
+        "auth_method": "basic",
+        "auth_config": {"username": "denhaag-test", "password": "hunter2"},
+        "updated_by_id": org_member["id"],
+    }
+    # the live letter provider is untouched
+    assert not mock_set_letter_provider.called
+    event_type, event_data = mock_events.call_args.args
+    assert event_type == "update_organisation_test_letter_endpoint"
+    assert "hunter2" not in str(event_data)
+    assert event_data["credentials_entered"] is True
+    assert event_data["new_endpoint_url"] == TEST_ENDPOINT_URL
+
+
+def test_saving_the_test_letter_endpoint_keeps_stored_secrets(
+    logged_in_org_member, test_letter_endpoint, mock_set_test_letter_endpoint, mock_events
+):
+    test_letter_endpoint.return_value = TEST_ENDPOINT
+
+    logged_in_org_member.post(
+        "main.organisation_test_letter_endpoint",
+        org_id=ORGANISATION_ID,
+        _data={
+            "endpoint_url": TEST_ENDPOINT_URL,
+            "auth_method": "basic",
+            "username": "denhaag-test",
+            "password": "secret_set",
+        },
+        _expected_redirect=url_for("main.organisation_settings", org_id=ORGANISATION_ID),
+    )
+
+    # the API keeps the stored secret when it gets an empty one
+    assert mock_set_test_letter_endpoint.call_args.args[1]["auth_config"]["password"] == ""
+
+
+def test_saving_the_test_letter_endpoint_needs_a_https_url(
+    logged_in_org_member, test_letter_endpoint, mock_set_test_letter_endpoint
+):
+    page = logged_in_org_member.post(
+        "main.organisation_test_letter_endpoint",
+        org_id=ORGANISATION_ID,
+        _data={
+            "endpoint_url": "http://test.print.example.com",
+            "auth_method": "basic",
+            "username": "u",
+            "password": "p",
+        },
+        _expected_status=200,
+    )
+
+    assert "Het adres moet met https:// beginnen" in _form_errors(page)[0]
+    assert not mock_set_test_letter_endpoint.called
+
+
+def test_saving_the_test_letter_endpoint_shows_what_the_api_refuses(logged_in_org_member, test_letter_endpoint, mocker):
+    mocker.patch(
+        "app.organisations_client.set_organisation_test_letter_endpoint",
+        side_effect=HTTPError(
+            response=mocker.Mock(
+                status_code=400, json=lambda: {"message": "https://x must not point to a private or internal address"}
+            ),
+            message="https://x must not point to a private or internal address",
+        ),
+    )
+
+    page = logged_in_org_member.post(
+        "main.organisation_test_letter_endpoint",
+        org_id=ORGANISATION_ID,
+        _data={"endpoint_url": TEST_ENDPOINT_URL, "auth_method": "basic", "username": "u", "password": "p"},
+        _expected_status=200,
+    )
+
+    assert "onbekend of intern" in _form_errors(page)[0]
+
+
+def test_deleting_the_test_letter_endpoint_asks_first(logged_in_org_member, test_letter_endpoint, mocker):
+    test_letter_endpoint.return_value = TEST_ENDPOINT
+    delete = mocker.patch("app.organisations_client.delete_organisation_test_letter_endpoint")
+
+    page = logged_in_org_member.get("main.organisation_delete_test_letter_endpoint", org_id=ORGANISATION_ID)
+
+    assert "Weet u zeker dat u het testeindpunt wilt verwijderen?" in normalize_spaces(page.text)
+    assert not delete.called
+
+
+def test_deleting_the_test_letter_endpoint(logged_in_org_member, org_member, test_letter_endpoint, mock_events, mocker):
+    test_letter_endpoint.return_value = TEST_ENDPOINT
+    delete = mocker.patch("app.organisations_client.delete_organisation_test_letter_endpoint")
+
+    logged_in_org_member.post(
+        "main.organisation_delete_test_letter_endpoint",
+        org_id=ORGANISATION_ID,
+        _expected_redirect=url_for("main.organisation_settings", org_id=ORGANISATION_ID),
+    )
+
+    delete.assert_called_once_with(ORGANISATION_ID)
+    event_type, event_data = mock_events.call_args.args
+    assert event_type == "delete_organisation_test_letter_endpoint"
+    assert event_data["old_endpoint_url"] == TEST_ENDPOINT_URL
+
+
+@pytest.fixture
+def start_test_endpoint_connection_test(notify_admin, mocker, no_waiting):
+    return mocker.patch(
+        "app.organisations_client.start_test_letter_endpoint_connection_test",
+        return_value={"id": CONNECTION_TEST_ID},
+    )
+
+
+def _test_the_test_endpoint_connection(client_request, data=None, _expected_status=200):
+    return client_request.post(
+        "main.organisation_test_letter_endpoint",
+        org_id=ORGANISATION_ID,
+        _data=CONNECTION_TEST_FORM | (data or {}),
+        _expected_status=_expected_status,
+    )
+
+
+def test_test_endpoint_page_has_a_test_button_for_platform_admins(logged_in_platform_admin, test_letter_endpoint):
+    page = logged_in_platform_admin.get("main.organisation_test_letter_endpoint", org_id=ORGANISATION_ID)
+
+    assert _buttons(page) == ["Opslaan", "Verbinding testen"]
+
+
+def test_test_endpoint_page_has_no_test_button_for_members(logged_in_org_member, test_letter_endpoint):
+    page = logged_in_org_member.get("main.organisation_test_letter_endpoint", org_id=ORGANISATION_ID)
+
+    assert _buttons(page) == ["Opslaan"]
+
+
+def test_testing_the_test_endpoint_connection_uses_the_test_endpoint_and_saves_nothing(
+    logged_in_platform_admin,
+    platform_admin_user,
+    test_letter_endpoint,
+    start_test_endpoint_connection_test,
+    start_connection_test,
+    connection_test_result,
+    mock_set_test_letter_endpoint,
+    mock_events,
+):
+    page = _test_the_test_endpoint_connection(logged_in_platform_admin)
+
+    start_test_endpoint_connection_test.assert_called_once_with(
+        ORGANISATION_ID,
+        {
+            "endpoint_url": ENDPOINT_URL,
+            "auth_method": "basic",
+            "auth_config": {"username": "denhaag", "password": "typed-password"},
+            "started_by_id": platform_admin_user["id"],
+        },
+    )
+    assert not start_connection_test.called
+    assert not mock_set_test_letter_endpoint.called
+    assert page.select_one("#connection-test-result")
+    # the audit log tells this test from one of the live endpoint
+    event_type, event_data = mock_events.call_args.args
+    assert event_type == "start_letter_endpoint_connection_test"
+    assert event_data["is_test_endpoint"] is True
+
+
+def test_testing_the_live_endpoint_connection_is_logged_as_not_a_test_endpoint(
+    logged_in_platform_admin, start_connection_test, connection_test_result, mock_events
+):
+    _test_connection(logged_in_platform_admin)
+
+    assert mock_events.call_args.args[1]["is_test_endpoint"] is False
+
+
+@pytest.mark.parametrize(
+    "state, expected_text",
+    [
+        ({"state": "running", "host": "print.example.com"}, "NotifyNL wacht nog op antwoord van print.example.com."),
+        (_finished("authorized"), "Verbonden en correct geautoriseerd"),
+    ],
+)
+def test_a_test_endpoint_connection_test_can_be_looked_up_again(
+    logged_in_platform_admin,
+    test_letter_endpoint,
+    start_test_endpoint_connection_test,
+    connection_test_result,
+    mock_events,
+    mocker,
+    state,
+    expected_text,
+):
+    mocker.patch("app.main.views_nl.organisations.letter_provider.CONNECTION_TEST_WAIT_SECONDS", 0)
+    connection_test_result.return_value = state
+
+    page = logged_in_platform_admin.post(
+        "main.organisation_test_letter_endpoint",
+        org_id=ORGANISATION_ID,
+        _data=CONNECTION_TEST_FORM | {"connection_test_id": CONNECTION_TEST_ID},
+        _expected_status=200,
+    )
+
+    # a lookup starts nothing: it only shows the result of the test that was started
+    assert not start_test_endpoint_connection_test.called
+    connection_test_result.assert_called_once_with(ORGANISATION_ID, CONNECTION_TEST_ID)
+    result = normalize_spaces(page.select_one("#connection-test-result").text)
+    assert expected_text in result
+    assert NOT_SAVED in result
+
+
+def test_members_cannot_test_the_test_endpoint_connection(
+    logged_in_org_member, test_letter_endpoint, start_test_endpoint_connection_test, mock_set_test_letter_endpoint
+):
+    logged_in_org_member.post(
+        "main.organisation_test_letter_endpoint",
+        org_id=ORGANISATION_ID,
+        _data=CONNECTION_TEST_FORM,
+        _expected_status=403,
+    )
+
+    assert not start_test_endpoint_connection_test.called
+    assert not mock_set_test_letter_endpoint.called
+
+
+def test_organisation_settings_warn_about_an_incomplete_test_letter_endpoint(
+    logged_in_org_member, test_letter_endpoint
+):
+    test_letter_endpoint.return_value = TEST_ENDPOINT | {"has_credentials": False, "is_complete": False}
+
+    page = logged_in_org_member.get("main.organisation_settings", org_id=ORGANISATION_ID)
+
+    warning = normalize_spaces(page.select_one(".govuk-warning-text").text)
+    assert "De instellingen van het testeindpunt zijn niet compleet" in warning
+    assert "die al zijn aangemaakt, mislukken" in warning
+    assert "Testeindpunt Niet compleet" in normalize_spaces(page.text)
+
+
+def test_organisation_settings_have_no_test_endpoint_warning_for_a_complete_one(
+    logged_in_org_member, test_letter_endpoint
+):
+    test_letter_endpoint.return_value = TEST_ENDPOINT
+
+    page = logged_in_org_member.get("main.organisation_settings", org_id=ORGANISATION_ID)
+
+    assert not page.select(".govuk-warning-text")

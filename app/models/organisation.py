@@ -75,6 +75,7 @@ class Organisation(JSONModel):
     notes: str
     area_boundary: Any
     letter_provider: Any = None  # [NotifyNL] None when talking to a notifynl-api without letter providers
+    test_letter_endpoint: Any = None  # [NotifyNL] a summary, None without a test endpoint
     can_approve_own_go_live_requests: bool
     permissions: list
 

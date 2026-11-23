@@ -3712,14 +3712,17 @@ class OrganisationLetterEndpointForm(StripWhitespaceForm):
             value = getattr(self, name).data
             # the API keeps the stored secret when it gets an empty one
             auth_config[name] = "" if value == LETTER_ENDPOINT_DUMMY_SECRET else value
-        return {
+        data = {
             "provider": "rest-endpoint",
             "endpoint_url": self.endpoint_url.data,
             "auth_method": auth_method,
             "auth_config": auth_config,
-            "address_placement": self.address_placement.data,
-            "mark_delivered_on_acceptance": self.mark_delivered_on_acceptance.data,
         }
+        if self.address_placement is not None:  # not on the test endpoint's form
+            data["address_placement"] = self.address_placement.data
+        if self.mark_delivered_on_acceptance is not None:  # nor is this
+            data["mark_delivered_on_acceptance"] = self.mark_delivered_on_acceptance.data
+        return data
 
     def add_api_error(self, message):
         """Show an error the API gave when saving, for checks the admin can't do itself (like resolving hosts)."""
@@ -3779,6 +3782,23 @@ class OrganisationLetterEndpointForm(StripWhitespaceForm):
     def _add_error(field, message):
         field.errors = [*field.errors, message]
         return False
+
+
+class OrganisationTestLetterEndpointForm(OrganisationLetterEndpointForm):
+    """
+    The endpoint for letters sent with test and team keys: the live endpoint's form without the address placement
+    (test letters are laid out like live ones) and the delivered-on-acceptance setting, saved as an endpoint on its
+    own, not as the letter provider.
+    """
+
+    # WTForms drops a field a subclass sets to None; the test endpoint has neither of these live-only settings
+    address_placement = None
+    mark_delivered_on_acceptance = None
+
+    def api_data(self):
+        data = super().api_data()
+        del data["provider"]
+        return data
 
 
 ########################################################################################################################
