@@ -217,19 +217,46 @@ ADDRESS_OUTSIDE_PROVIDER_WINDOW = {
 }
 
 
+# A window with a postage area (Pingen) also fails letters the letter specification allows: content in the postage
+# area around the address area, and an address running past the address area, whose last line is then cut off. These
+# errors then say where the print provider wants the address.
+PROVIDER_POSTAGE_AREA_SENTENCE = (
+    "<br>Op pagina 1 mag in het gebied rond het adresvenster ({postage_area}) alleen het adres staan, "
+    "binnen het adresvenster zelf ({address_area})."
+)
+PROVIDER_ADDRESS_AREA_SENTENCE = (
+    "<br>De printleverancier van uw organisatie leest het adres alleen binnen het adresvenster ({address_area})."
+)
+LAST_ADDRESS_LINE_ERROR_CODES = frozenset({"not-a-real-uk-postcode", "not-a-real-uk-postcode-or-country"})
+
+
 def _format_mm(value):
     return f"{value:g}".replace(".", ",") + " mm"
 
 
-def format_address_area(letter_address_window):
-    """Where a letter address window's address goes, e.g. "22 mm van links, 60 mm van boven, 85,5 mm breed en ..."."""
-    area = (letter_address_window or {}).get("address_area")
+def _format_area(area):
     if not area:
         return ""
     return (
         f"{_format_mm(area['x'])} van links, {_format_mm(area['y'])} van boven, "
         f"{_format_mm(area['width'])} breed en {_format_mm(area['height'])} hoog"
     )
+
+
+def format_address_area(letter_address_window):
+    """Where a letter address window's address goes, e.g. "22 mm van links, 60 mm van boven, 85,5 mm breed en ..."."""
+    return _format_area((letter_address_window or {}).get("address_area"))
+
+
+def _provider_window_sentence(validation_message, invalid_pages, letter_address_window):
+    """The sentence an error gets when the print provider's window has a postage area, otherwise ""."""
+    if not (letter_address_window or {}).get("postage_area"):
+        return ""
+    if validation_message == "content-outside-printable-area" and 1 in invalid_pages:
+        return PROVIDER_POSTAGE_AREA_SENTENCE
+    if validation_message in LAST_ADDRESS_LINE_ERROR_CODES:
+        return PROVIDER_ADDRESS_AREA_SENTENCE
+    return ""
 
 
 def get_letter_validation_error(
@@ -246,6 +273,7 @@ def get_letter_validation_error(
         return {"title": "Validatie mislukt"}
 
     invalid_pages_are_or_is = "is" if len(invalid_pages) == 1 else "zijn"
+    window_sentence = _provider_window_sentence(validation_message, invalid_pages, letter_address_window)
 
     invalid_pages = unescaped_formatted_list(
         invalid_pages, before_each="", after_each="", prefix="pagina", prefix_plural="pagina’s", conjunction="en"
@@ -267,21 +295,23 @@ def get_letter_validation_error(
 
     return {
         "title": messages["title"],
-        "detail": messages["detail"].format(
+        "detail": (messages["detail"] + window_sentence).format(
             invalid_pages=invalid_pages,
             invalid_pages_are_or_is=invalid_pages_are_or_is,
             page_count=page_count,
             letter_spec_guidance=url_for("main.guidance_upload_a_letter"),
             letter_address_placement=letter_address_placement,
             address_area=format_address_area(letter_address_window),
+            postage_area=_format_area((letter_address_window or {}).get("postage_area")),
         ),
-        "summary": messages["summary"].format(
+        "summary": (messages["summary"] + window_sentence).format(
             invalid_pages=invalid_pages,
             invalid_pages_are_or_is=invalid_pages_are_or_is,
             page_count=page_count,
             letter_spec_guidance=url_for("main.guidance_upload_a_letter"),
             letter_address_placement=letter_address_placement,
             address_area=format_address_area(letter_address_window),
+            postage_area=_format_area((letter_address_window or {}).get("postage_area")),
         ),
     }
 

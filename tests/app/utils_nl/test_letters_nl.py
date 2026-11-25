@@ -168,3 +168,66 @@ def test_get_letter_validation_error_for_a_standard_window_decided_by_the_print_
 )
 def test_format_address_area(letter_address_window, expected):
     assert format_address_area(letter_address_window) == expected
+
+
+@pytest.mark.parametrize(
+    "validation_message, invalid_pages, expected_sentence",
+    [
+        (
+            "content-outside-printable-area",
+            [1, 2],
+            "Op pagina 1 mag in het gebied rond het adresvenster (20 mm van links, 40 mm van boven, 89,5 mm breed en "
+            "47,5 mm hoog) alleen het adres staan, binnen het adresvenster zelf (22 mm van links, 60 mm van boven, "
+            "85,5 mm breed en 25,5 mm hoog).",
+        ),
+        (
+            "not-a-real-uk-postcode",
+            [1],
+            "De printleverancier van uw organisatie leest het adres alleen binnen het adresvenster (22 mm van links, "
+            "60 mm van boven, 85,5 mm breed en 25,5 mm hoog).",
+        ),
+        (
+            "not-a-real-uk-postcode-or-country",
+            [1],
+            "De printleverancier van uw organisatie leest het adres alleen binnen het adresvenster (22 mm van links, "
+            "60 mm van boven, 85,5 mm breed en 25,5 mm hoog).",
+        ),
+    ],
+)
+def test_get_letter_validation_error_says_where_the_print_provider_wants_the_address(
+    notify_admin, validation_message, invalid_pages, expected_sentence
+):
+    with notify_admin.test_request_context():
+        error = get_letter_validation_error(validation_message, invalid_pages, letter_address_window=PINGEN_WINDOW)
+
+    assert error["detail"].endswith("<br>" + expected_sentence)
+    assert error["summary"].endswith("<br>" + expected_sentence)
+
+
+@pytest.mark.parametrize(
+    "validation_message, invalid_pages, letter_address_window",
+    [
+        # only page 1 has an address window
+        ("content-outside-printable-area", [2], PINGEN_WINDOW),
+        # a window without a postage area is the standard one the letter specification describes
+        ("content-outside-printable-area", [1], {**PINGEN_WINDOW, "postage_area": None}),
+        ("not-a-real-uk-postcode", [1], {**PINGEN_WINDOW, "postage_area": None}),
+        # letter attachments pass no window
+        ("content-outside-printable-area", [1], None),
+        # template-preview turns these into address-placement-mismatch when another window reads the address
+        ("address-is-empty", [1], PINGEN_WINDOW),
+        ("not-enough-address-lines", [1], PINGEN_WINDOW),
+        ("too-many-address-lines", [1], PINGEN_WINDOW),
+    ],
+)
+def test_get_letter_validation_error_leaves_out_the_print_providers_window(
+    notify_admin, validation_message, invalid_pages, letter_address_window
+):
+    with notify_admin.test_request_context():
+        error = get_letter_validation_error(
+            validation_message, invalid_pages, letter_address_window=letter_address_window
+        )
+        expected = get_letter_validation_error(validation_message, invalid_pages)
+
+    assert error == expected
+    assert "adresvenster" not in error["detail"] + error["summary"]
