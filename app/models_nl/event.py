@@ -93,6 +93,13 @@ class ServiceEvent(Event):
             format_thousands(self.value_to),
         )
 
+    def format_messagebox_message_limit(self):
+        return "{} de dagelijkse berichtenboxlimiet van deze service van {} naar {}".format(
+            "Reduced" if self.value_from > self.value_to else "Increased",
+            format_thousands(self.value_from),
+            format_thousands(self.value_to),
+        )
+
     def format_name(self):
         return f"Hernoemde deze service van ‘{self.value_from}’ naar ‘{self.value_to}’"
 
