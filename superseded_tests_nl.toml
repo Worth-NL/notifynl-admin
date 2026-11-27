@@ -1084,6 +1084,16 @@ nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_s
 reason = "Translation issue"
 
 [[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_switch_service_to_live"
+reason = "NL also sets the messagebox daily limit"
+twin = ["tests/app/main/views/service_settings/test_service_settings_nl.py::test_switch_service_to_live"]
+
+[[test]]
+nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_switch_service_to_restricted"
+reason = "NL also sets the messagebox daily limit"
+twin = ["tests/app/main/views/service_settings/test_service_settings_nl.py::test_switch_service_to_restricted"]
+
+[[test]]
 nodeid = "tests/app/main/views/service_settings/test_service_settings.py::test_update_service_data_retention_return_validation_error_for_negative_days_of_retention"
 reason = "Translation issue"
 
@@ -2500,6 +2510,11 @@ nodeid = "tests/app/main/views/test_org_member_make_service_live.py::test_make_s
 reason = "Translation issue"
 
 [[test]]
+nodeid = "tests/app/main/views/test_org_member_make_service_live.py::test_post_org_member_make_service_live_decision"
+reason = "NL also sets the messagebox daily limit"
+twin = ["tests/app/main/views/test_org_member_make_service_live_nl.py::test_post_org_member_make_service_live_decision"]
+
+[[test]]
 nodeid = "tests/app/main/views/test_org_member_make_service_live.py::test_post_org_member_make_service_live_decision_error_summary"
 reason = "Translation issue"
 
@@ -3850,6 +3865,16 @@ reason = "Translation issue"
 nodeid = "tests/app/notify_client/test_billing_client.py::test_get_free_sms_fragment_limit_for_year_correct_endpoint"
 reason = "NL caches the free SMS allowance, which can't encode the MagicMock the API call returns here"
 twin = ["tests/app/notify_client/test_billing_client_nl.py::test_get_free_sms_fragment_limit_for_year_correct_endpoint"]
+
+[[test]]
+nodeid = "tests/app/notify_client/test_service_api_client.py::test_client_update_status_when_no_permissions_are_given"
+reason = "NL also sets the messagebox daily limit"
+twin = ["tests/app/notify_client/test_service_api_client_nl.py::test_client_update_status_sets_all_daily_limits"]
+
+[[test]]
+nodeid = "tests/app/notify_client/test_service_api_client.py::test_client_update_status_when_permissions_are_given"
+reason = "NL also sets the messagebox daily limit"
+twin = ["tests/app/notify_client/test_service_api_client_nl.py::test_client_update_status_sets_all_daily_limits"]
 
 [[test]]
 nodeid = "tests/app/test_navigation.py::test_a_page_should_have_selected_header_navigation_item"

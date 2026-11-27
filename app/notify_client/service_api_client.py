@@ -160,6 +160,7 @@ class ServiceAPIClient(NotifyAdminAPIClient):
             "email_message_limit": get_daily_limit(live, "email"),
             "sms_message_limit": get_daily_limit(live, "sms"),
             "letter_message_limit": get_daily_limit(live, "letter"),
+            "messagebox_message_limit": get_daily_limit(live, "messagebox"),
             "restricted": (not live),
             "go_live_at": str_no_tz(datetime.now(UTC)) if live else None,
             "has_active_go_live_request": False,

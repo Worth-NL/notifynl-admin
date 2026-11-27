@@ -40,6 +40,7 @@ class Config:
         "email": 250_000,
         "sms": 250_000,
         "letter": 20_000,
+        "messagebox": 999_999_999,
     }
 
     EMAIL_EXPIRY_SECONDS = 3600  # 1 hour

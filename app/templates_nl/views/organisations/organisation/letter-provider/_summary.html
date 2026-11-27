@@ -87,6 +87,24 @@
   }) %}
 {% endif %}
 
+{% if test_letter_endpoint %}
+  {% set test_value = test_letter_endpoint.endpoint_url if test_letter_endpoint.is_complete else "Niet compleet" %}
+{% else %}
+  {% set test_value = "Niet ingesteld" %}
+{% endif %}
+{% set _ = rows.append({
+  "key": {"text": "Testeindpunt", "classes": "notify-summary-list__key notify-summary-list__key--35-100"},
+  "value": {"text": test_value},
+  "actions": {
+    "items": [{
+      "href": url_for('main.organisation_test_letter_endpoint', org_id=current_org.id),
+      "text": "Wijzigen" if test_letter_endpoint else "Instellen",
+      "visuallyHiddenText": "het testeindpunt",
+      "classes": "govuk-link--no-visited-state"
+    }]
+  }
+}) %}
+
 {% if is_endpoint and not letter_provider.is_complete %}
   {{ govukWarningText({
     "text": "De instellingen van uw printleverancier zijn niet compleet. Tot ze compleet zijn, stuurt NotifyNL uw brieven naar Pingen, en moet het adres op 60 mm vanaf de bovenkant staan.",
@@ -101,11 +119,24 @@
   }) }}
 {% endif %}
 
+{% if test_letter_endpoint and not test_letter_endpoint.is_complete %}
+  {{ govukWarningText({
+    "text": "De instellingen van het testeindpunt zijn niet compleet. Tot ze compleet zijn, worden nieuwe brieven met een testsleutel of teamsleutel alleen gesimuleerd. Brieven met een testsleutel of teamsleutel die al zijn aangemaakt, mislukken.",
+    "iconFallbackText": "Waarschuwing"
+  }) }}
+{% endif %}
+
 {{ govukSummaryList({"classes": "notify-summary-list", "rows": rows}) }}
 
 {% if letter_provider and letter_provider.updated_at %}
   <p class="govuk-body govuk-hint">
     Laatst gewijzigd {{ letter_provider.updated_at|format_datetime_short }}
+  </p>
+{% endif %}
+
+{% if test_letter_endpoint %}
+  <p class="govuk-body">
+    <a class="govuk-link govuk-link--no-visited-state" href="{{ url_for('main.organisation_delete_test_letter_endpoint', org_id=current_org.id) }}">Testeindpunt verwijderen<span class="govuk-visually-hidden"> en brieven met een testsleutel of teamsleutel weer simuleren</span></a>
   </p>
 {% endif %}
 

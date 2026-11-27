@@ -234,7 +234,14 @@ def organisation_settings(org_id):
     letter_provider = None
     if current_organisation.letter_provider:
         letter_provider = organisations_client.get_organisation_letter_provider(org_id)
-    return render_template("views/organisations/organisation/settings/index.html", letter_provider=letter_provider)
+    test_letter_endpoint = None
+    if current_organisation.test_letter_endpoint:
+        test_letter_endpoint = organisations_client.get_organisation_test_letter_endpoint(org_id)
+    return render_template(
+        "views/organisations/organisation/settings/index.html",
+        letter_provider=letter_provider,
+        test_letter_endpoint=test_letter_endpoint,
+    )
 
 
 @main.route("/organisations/<uuid:org_id>/settings/edit-name", methods=["GET", "POST"])

@@ -1,10 +1,13 @@
 from unittest.mock import call
 
 import pytest
+from flask import url_for
+from freezegun import freeze_time
 
 from tests import find_element_by_tag_and_partial_text, organisation_json, sample_uuid
 from tests.conftest import (
     SERVICE_ONE_ID,
+    _template,
     create_active_user_no_settings_permission,
     create_active_user_with_permissions,
     create_letter_contact_block,
@@ -555,3 +558,88 @@ def test_send_client_reference_to_letter_provider_needs_manage_service(
         _expected_status=403,
     )
     assert not mock_update_service.called
+
+
+@pytest.mark.parametrize(
+    "agreement_signed",
+    (
+        True,
+        None,
+    ),
+)
+@freeze_time("2017-04-01 11:09:00.061258")
+def test_switch_service_to_live(
+    client_request,
+    platform_admin_user,
+    mock_update_service,
+    mock_get_inbound_number_for_service,
+    mock_get_service_organisation,
+    agreement_signed,
+    mocker,
+):
+    mocker.patch(
+        "app.organisations_client.get_organisation",
+        return_value=organisation_json(agreement_signed=agreement_signed),
+    )
+    mix_of_all_template_types = [
+        _template(template_type, f"Template {index}")
+        for index, template_type in enumerate(["email", "email", "sms", "letter"])
+    ]
+    mocker.patch("app.service_api_client.get_service_templates", return_value={"data": mix_of_all_template_types})
+    client_request.login(platform_admin_user)
+    client_request.post(
+        "main.service_switch_live",
+        service_id=SERVICE_ONE_ID,
+        _data={"enabled": "True"},
+        _expected_status=302,
+        _expected_redirect=url_for(
+            "main.service_settings",
+            service_id=SERVICE_ONE_ID,
+        ),
+    )
+    mock_update_service.assert_called_with(
+        SERVICE_ONE_ID,
+        email_message_limit=250_000,
+        sms_message_limit=250_000,
+        letter_message_limit=20_000,
+        messagebox_message_limit=999_999_999,
+        restricted=False,
+        go_live_at="2017-04-01 11:09:00.061258",
+        has_active_go_live_request=False,
+    )
+
+
+def test_switch_service_to_restricted(
+    client_request,
+    platform_admin_user,
+    mock_get_live_service,
+    mock_update_service,
+    mock_get_inbound_number_for_service,
+    mocker,
+):
+    mix_of_all_template_types = [
+        _template(template_type, f"Template {index}")
+        for index, template_type in enumerate(["email", "email", "sms", "letter"])
+    ]
+    mocker.patch("app.service_api_client.get_service_templates", return_value={"data": mix_of_all_template_types})
+    client_request.login(platform_admin_user)
+    client_request.post(
+        "main.service_switch_live",
+        service_id=SERVICE_ONE_ID,
+        _data={"enabled": "False"},
+        _expected_status=302,
+        _expected_response=url_for(
+            "main.service_settings",
+            service_id=SERVICE_ONE_ID,
+        ),
+    )
+    mock_update_service.assert_called_with(
+        SERVICE_ONE_ID,
+        email_message_limit=50,
+        sms_message_limit=50,
+        letter_message_limit=50,
+        messagebox_message_limit=50,
+        restricted=True,
+        go_live_at=None,
+        has_active_go_live_request=False,
+    )

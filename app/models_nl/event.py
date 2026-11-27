@@ -58,37 +58,44 @@ class ServiceEvent(Event):
 
     def format_active(self):
         if self.value_to is False:
-            return "Deleted this service"
+            return "Verwijderde deze service"
         if self.value_to is True:
-            return "Deze service niet -ondersteund"
+            return "Hief de opschorting van deze service op"
 
     def format_contact_link(self):
         return f"Stel de contactgegevens in voor deze service op ‘{self.value_to}’"
 
     def format_message_limit(self):
         return "{} de dagelijkse berichtlimiet van deze service van {} naar {}".format(
-            "Reduced" if self.value_from > self.value_to else "Increased",
+            "Verlaagde" if self.value_from > self.value_to else "Verhoogde",
             format_thousands(self.value_from),
             format_thousands(self.value_to),
         )
 
     def format_sms_message_limit(self):
-        return "{} de dagelijkse sms -limiet van deze service van {} naar {}".format(
-            "Reduced" if self.value_from > self.value_to else "Increased",
+        return "{} de dagelijkse sms-limiet van deze service van {} naar {}".format(
+            "Verlaagde" if self.value_from > self.value_to else "Verhoogde",
             format_thousands(self.value_from),
             format_thousands(self.value_to),
         )
 
     def format_email_message_limit(self):
-        return "{} de dagelijkse e -maillimiet van deze service van {} naar {}".format(
-            "Reduced" if self.value_from > self.value_to else "Increased",
+        return "{} de dagelijkse e-maillimiet van deze service van {} naar {}".format(
+            "Verlaagde" if self.value_from > self.value_to else "Verhoogde",
             format_thousands(self.value_from),
             format_thousands(self.value_to),
         )
 
     def format_letter_message_limit(self):
         return "{} de dagelijkse letterlimiet van deze service van {} naar {}".format(
-            "Reduced" if self.value_from > self.value_to else "Increased",
+            "Verlaagde" if self.value_from > self.value_to else "Verhoogde",
+            format_thousands(self.value_from),
+            format_thousands(self.value_to),
+        )
+
+    def format_messagebox_message_limit(self):
+        return "{} de dagelijkse berichtenboxlimiet van deze service van {} naar {}".format(
+            "Verlaagde" if self.value_from > self.value_to else "Verhoogde",
             format_thousands(self.value_from),
             format_thousands(self.value_to),
         )
@@ -127,9 +134,9 @@ class APIKeyEvent(Event):
 
     def __str__(self):
         if self.item["updated_at"]:
-            return f"De ‘{self.item['name']}’ API -sleutel ingetrokken"
+            return f"De ‘{self.item['name']}’ API-sleutel ingetrokken"
         else:
-            return f"Een API -sleutel gemaakt met de naam ‘{self.item['name']}’"
+            return f"Een API-sleutel gemaakt met de naam ‘{self.item['name']}’"
 
 
 class APIKeyEvents(SerialisedModelCollection):

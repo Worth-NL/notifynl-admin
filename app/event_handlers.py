@@ -112,6 +112,32 @@ class Events:
 
     @staticmethod
     @event_creator
+    def update_organisation_test_letter_endpoint(  # [NotifyNL] never any credentials
+        *,
+        organisation_id,
+        updated_by_id,
+        old_endpoint_url,
+        new_endpoint_url,
+        old_auth_method,
+        new_auth_method,
+        old_auth_config,
+        new_auth_config,
+        credentials_entered,
+    ) -> None:
+        pass
+
+    @staticmethod
+    @event_creator
+    def delete_organisation_test_letter_endpoint(  # [NotifyNL]
+        *,
+        organisation_id,
+        deleted_by_id,
+        old_endpoint_url,
+    ) -> None:
+        pass
+
+    @staticmethod
+    @event_creator
     def start_letter_endpoint_connection_test(  # [NotifyNL] never any credentials
         *,
         organisation_id,
@@ -120,6 +146,7 @@ class Events:
         endpoint_url,
         token_endpoint,
         auth_method,
+        is_test_endpoint,
     ) -> None:
         pass
 
